@@ -367,7 +367,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                                          </div>
                                          <span className="text-[9px] text-slate-400 font-bold">{rel.relationship}</span>
                                        </div>
-                                     ))
+                                     ))}
                                    </div>
                                  ) : (
                                    <span className="text-xs text-slate-300 italic">No companion items identified.</span>
