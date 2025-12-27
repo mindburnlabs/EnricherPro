@@ -1,27 +1,7 @@
 {
   "name": "Consumable Enricher Pro",
-  "description": "AI-powered consumable enrichment system with Russian market compliance, comprehensive validation, and complete audit trails. Transforms supplier titles into structured product data using Gemini AI, Firecrawl web scraping, and multi-source verification.",
-  "version": "2.0.0",
+  "description": "Automated enrichment of printer consumable data using Gemini and Search Grounding. Features strict validation, evidence tracking, and image verification.",
   "requestFramePermissions": [
     "camera"
-  ],
-  "features": [
-    "Automated data processing pipeline",
-    "Russian market compliance (2+ source verification)",
-    "NIX.ru exclusive integration for logistics data",
-    "Comprehensive image validation",
-    "Publication readiness scoring",
-    "Complete audit trail and source provenance",
-    "Batch processing with queue management",
-    "CSV export with enhanced data fields"
-  ],
-  "aiIntegrations": {
-    "gemini": "Content generation, image analysis, search grounding",
-    "firecrawl": "Web scraping with v2 API and autonomous research"
-  },
-  "dataCompliance": {
-    "russianMarket": "Strict 2+ source verification for printer compatibility",
-    "auditTrail": "Complete processing history and source tracking",
-    "qualityScoring": "Multi-dimensional confidence and readiness assessment"
-  }
+  ]
 }

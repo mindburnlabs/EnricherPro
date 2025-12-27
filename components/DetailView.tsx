@@ -57,14 +57,6 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                    <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest shrink-0">Model: {editedData.model || 'N/A'}</span>
                    <ConfidenceIndicator value={item.data.confidence?.model_name} label="MPN" />
                    <ConfidenceIndicator value={item.data.confidence?.logistics} label="Logistics" />
-                   <ConfidenceIndicator value={item.data.confidence?.overall} label="Overall" />
-                   <ConfidenceIndicator value={item.data.confidence?.source_reliability} label="Sources" />
-                   {item.quality_score && (
-                     <div className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-lg shadow-sm">
-                       <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                       <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">Quality: {Math.round(item.quality_score * 100)}%</span>
-                     </div>
-                   )}
                 </div>
             </div>
         </div>
@@ -174,16 +166,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                       <div className="lg:col-span-4 space-y-6">
                          <div className="bg-slate-900 rounded-[32px] p-8 text-white shadow-xl shadow-slate-200">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                              <Ruler size={14} className="text-indigo-400" /> Logistics (NIX.ru Exclusive)
-                              {editedData.packaging_from_nix?.confidence && (
-                                <span className={`text-[8px] px-2 py-1 rounded-full ${
-                                  editedData.packaging_from_nix.confidence > 0.8 ? 'bg-green-500/20 text-green-400' :
-                                  editedData.packaging_from_nix.confidence > 0.5 ? 'bg-yellow-500/20 text-yellow-400' :
-                                  'bg-red-500/20 text-red-400'
-                                }`}>
-                                  {Math.round(editedData.packaging_from_nix.confidence * 100)}% confidence
-                                </span>
-                              )}
+                              <Ruler size={14} className="text-indigo-400" /> Logistics (NIX.ru Logic)
                             </h3>
                             <div className="space-y-6">
                                <div className="flex justify-between items-center border-b border-slate-800 pb-4">
@@ -204,174 +187,34 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                                      <div className="text-xs font-bold">{editedData.packaging_from_nix?.depth_mm || '--'}</div>
                                   </div>
                                </div>
-                               
-                               {/* Enhanced source information */}
-                               {editedData.packaging_from_nix?.source_url && (
-                                 <div className="text-[9px] text-slate-400 bg-white/5 p-3 rounded-xl">
-                                   <div className="flex items-center gap-2 mb-2">
-                                     <span className="text-green-400">✓</span>
-                                     <span className="font-semibold">NIX.ru Exclusive Source</span>
-                                   </div>
-                                   <div className="text-slate-500">
-                                     URL: <span className="font-mono">{editedData.packaging_from_nix.source_url}</span>
-                                   </div>
-                                   {editedData.packaging_from_nix.extraction_timestamp && (
-                                     <div className="text-slate-500 mt-1">
-                                       Extracted: {new Date(editedData.packaging_from_nix.extraction_timestamp).toLocaleString()}
-                                     </div>
-                                   )}
-                                 </div>
-                               )}
-                               
                                {editedData.packaging_from_nix?.raw_source_string && (
                                    <div className="text-[9px] text-slate-500 italic font-mono bg-white/5 p-3 rounded-xl">
-                                      Raw Data: {editedData.packaging_from_nix.raw_source_string}
+                                      Source: {editedData.packaging_from_nix.raw_source_string}
                                    </div>
                                )}
-                               
                                {!editedData.packaging_from_nix && (
                                   <div className="text-[10px] text-amber-400 flex items-center gap-2 bg-amber-400/10 p-2 rounded-lg border border-amber-400/20">
-                                     <AlertTriangle size={12} /> NIX.ru data unavailable. Manual review required.
+                                     <AlertTriangle size={12} /> Logistics crawl failed. Review NIX manually.
                                   </div>
-                               )}
-                               
-                               {/* Validation warnings */}
-                               {editedData.packaging_from_nix && editedData.packaging_from_nix.confidence && editedData.packaging_from_nix.confidence < 0.5 && (
-                                 <div className="text-[10px] text-red-400 flex items-center gap-2 bg-red-400/10 p-2 rounded-lg border border-red-400/20">
-                                   <AlertTriangle size={12} /> Low confidence data. Verify dimensions manually.
-                                 </div>
                                )}
                             </div>
                          </div>
                          
                          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-200">
                             <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Related Consumables</h3>
-                            <div className="space-y-4">
-                               {/* Enhanced related products display */}
-                               {editedData.related_consumables_display && editedData.related_consumables_display.length > 0 ? (
-                                 <>
-                                   {/* Categorized display */}
-                                   {editedData.related_consumables_categories && (
-                                     <div className="space-y-4">
-                                       {/* Companions */}
-                                       {editedData.related_consumables_categories.companions.length > 0 && (
-                                         <div>
-                                           <h4 className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-2">Essential Companions</h4>
-                                           <div className="space-y-2">
-                                             {editedData.related_consumables_categories.companions.slice(0, 3).map((rel, i) => (
-                                               <div key={i} className="flex items-center justify-between p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                                                 <div className="min-w-0 flex-1">
-                                                   <div className="text-xs font-bold text-slate-900 truncate">{rel.model}</div>
-                                                   <div className="text-[9px] text-indigo-600 font-bold uppercase">{rel.type}</div>
-                                                   <div className="flex items-center gap-2 mt-1">
-                                                     <span className="text-[8px] text-slate-400">Priority: {rel.priority}/10</span>
-                                                     <span className="text-[8px] text-slate-400">•</span>
-                                                     <span className="text-[8px] text-slate-400">Confidence: {Math.round(rel.confidence * 100)}%</span>
-                                                     {rel.isOEM && <span className="text-[8px] bg-green-100 text-green-700 px-1 rounded">OEM</span>}
-                                                   </div>
-                                                 </div>
-                                                 <div className="text-right">
-                                                   <span className="text-[9px] text-slate-400 font-bold block">{rel.relationship.replace(/_/g, ' ')}</span>
-                                                   <span className="text-[8px] text-slate-300">{rel.sourceCount} source{rel.sourceCount !== 1 ? 's' : ''}</span>
-                                                 </div>
-                                               </div>
-                                             ))}
-                                           </div>
-                                         </div>
-                                       )}
-                                       
-                                       {/* Alternatives */}
-                                       {editedData.related_consumables_categories.alternatives.length > 0 && (
-                                         <div>
-                                           <h4 className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2">Alternatives</h4>
-                                           <div className="space-y-2">
-                                             {editedData.related_consumables_categories.alternatives.slice(0, 3).map((rel, i) => (
-                                               <div key={i} className="flex items-center justify-between p-3 bg-amber-50/50 rounded-xl border border-amber-100">
-                                                 <div className="min-w-0 flex-1">
-                                                   <div className="text-xs font-bold text-slate-900 truncate">{rel.model}</div>
-                                                   <div className="text-[9px] text-amber-600 font-bold uppercase">{rel.type}</div>
-                                                   <div className="flex items-center gap-2 mt-1">
-                                                     {rel.yieldComparison && (
-                                                       <span className={`text-[8px] px-1 rounded ${
-                                                         rel.yieldComparison === 'higher' ? 'bg-green-100 text-green-700' :
-                                                         rel.yieldComparison === 'lower' ? 'bg-red-100 text-red-700' :
-                                                         'bg-gray-100 text-gray-700'
-                                                       }`}>
-                                                         {rel.yieldComparison} yield
-                                                       </span>
-                                                     )}
-                                                     {rel.colorVariant && (
-                                                       <span className="text-[8px] bg-blue-100 text-blue-700 px-1 rounded">{rel.colorVariant}</span>
-                                                     )}
-                                                     <span className="text-[8px] text-slate-400">Confidence: {Math.round(rel.confidence * 100)}%</span>
-                                                   </div>
-                                                 </div>
-                                                 <div className="text-right">
-                                                   <span className="text-[9px] text-slate-400 font-bold block">{rel.relationship.replace(/_/g, ' ')}</span>
-                                                   <span className="text-[8px] text-slate-300">{rel.sourceCount} source{rel.sourceCount !== 1 ? 's' : ''}</span>
-                                                 </div>
-                                               </div>
-                                             ))}
-                                           </div>
-                                         </div>
-                                       )}
-                                       
-                                       {/* Color Variants */}
-                                       {editedData.related_consumables_categories.colorVariants.length > 0 && (
-                                         <div>
-                                           <h4 className="text-[10px] font-bold text-purple-600 uppercase tracking-wider mb-2">Color Variants</h4>
-                                           <div className="grid grid-cols-2 gap-2">
-                                             {editedData.related_consumables_categories.colorVariants.slice(0, 4).map((rel, i) => (
-                                               <div key={i} className="p-2 bg-purple-50/50 rounded-lg border border-purple-100">
-                                                 <div className="text-xs font-bold text-slate-900 truncate">{rel.model}</div>
-                                                 <div className="text-[9px] text-purple-600 font-bold">{rel.colorVariant || 'Color'}</div>
-                                               </div>
-                                             ))}
-                                           </div>
-                                         </div>
-                                       )}
-                                     </div>
-                                   )}
-                                   
-                                   {/* Fallback to display list if categories not available */}
-                                   {!editedData.related_consumables_categories && (
-                                     <div className="space-y-3">
-                                       {editedData.related_consumables_display.map((rel, i) => (
-                                         <div key={i} className="flex items-center justify-between p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                                           <div className="min-w-0 flex-1">
-                                             <div className="text-xs font-bold text-slate-900 truncate">{rel.model}</div>
-                                             <div className="text-[9px] text-indigo-600 font-bold uppercase">{rel.type}</div>
-                                             <div className="flex items-center gap-2 mt-1">
-                                               <span className="text-[8px] text-slate-400">Priority: {rel.priority}/10</span>
-                                               <span className="text-[8px] text-slate-400">•</span>
-                                               <span className="text-[8px] text-slate-400">Confidence: {Math.round(rel.confidence * 100)}%</span>
-                                             </div>
-                                           </div>
-                                           <div className="text-right">
-                                             <span className="text-[9px] text-slate-400 font-bold">{rel.relationship.replace(/_/g, ' ')}</span>
-                                           </div>
-                                         </div>
-                                       ))}
-                                     </div>
-                                   )}
-                                 </>
-                               ) : (
-                                 /* Fallback to legacy related_consumables */
-                                 editedData.related_consumables && editedData.related_consumables.length > 0 ? (
-                                   <div className="space-y-3">
-                                     {editedData.related_consumables.map((rel, i) => (
-                                       <div key={i} className="flex items-center justify-between p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                                         <div className="min-w-0">
+                            <div className="space-y-3">
+                               {editedData.related_consumables && editedData.related_consumables.length > 0 ? (
+                                 editedData.related_consumables.map((rel, i) => (
+                                     <div key={i} className="flex items-center justify-between p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                                        <div className="min-w-0">
                                            <div className="text-xs font-bold text-slate-900 truncate">{rel.model}</div>
                                            <div className="text-[9px] text-indigo-600 font-bold uppercase">{rel.type}</div>
-                                         </div>
-                                         <span className="text-[9px] text-slate-400 font-bold">{rel.relationship}</span>
-                                       </div>
-                                     ))
-                                   </div>
-                                 ) : (
-                                   <span className="text-xs text-slate-300 italic">No companion items identified.</span>
-                                 )
+                                        </div>
+                                        <span className="text-[9px] text-slate-400 font-bold">{rel.relationship}</span>
+                                     </div>
+                                 ))
+                               ) : (
+                                 <span className="text-xs text-slate-300 italic">No companion items identified.</span>
                                )}
                             </div>
                          </div>
@@ -401,222 +244,40 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
               )}
 
               {activeTab === 'evidence' && (
-                  <div className="space-y-8 animate-in fade-in duration-300">
-                    {/* Quality Metrics Overview */}
-                    {item.evidence.quality_metrics && (
-                      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-8 rounded-[32px] border border-indigo-100">
-                        <h3 className="text-sm font-black text-indigo-900 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                          <ShieldCheck size={16} className="text-indigo-600" /> Quality Metrics Dashboard
-                        </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                          <div className="bg-white p-4 rounded-2xl border border-indigo-100">
-                            <div className="text-2xl font-black text-indigo-600">{Math.round(item.evidence.quality_metrics.data_completeness_score * 100)}%</div>
-                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Data Complete</div>
-                          </div>
-                          <div className="bg-white p-4 rounded-2xl border border-indigo-100">
-                            <div className="text-2xl font-black text-emerald-600">{Math.round(item.evidence.quality_metrics.source_reliability_score * 100)}%</div>
-                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Source Trust</div>
-                          </div>
-                          <div className="bg-white p-4 rounded-2xl border border-indigo-100">
-                            <div className="text-2xl font-black text-blue-600">{Math.round(item.evidence.quality_metrics.validation_pass_rate * 100)}%</div>
-                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Validation Pass</div>
-                          </div>
-                          <div className="bg-white p-4 rounded-2xl border border-indigo-100">
-                            <div className="text-2xl font-black text-purple-600">{Math.round(item.evidence.quality_metrics.processing_efficiency * 100)}%</div>
-                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Efficiency</div>
-                          </div>
-                          <div className="bg-white p-4 rounded-2xl border border-indigo-100">
-                            <div className="text-2xl font-black text-amber-600">{item.evidence.quality_metrics.total_sources_used}</div>
-                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sources Used</div>
-                          </div>
-                        </div>
-                        {item.evidence.quality_metrics.failed_validations.length > 0 && (
-                          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
-                            <h4 className="text-xs font-bold text-amber-900 mb-2">Failed Validations</h4>
-                            <ul className="text-[10px] text-amber-700 space-y-1">
-                              {item.evidence.quality_metrics.failed_validations.map((validation, i) => (
-                                <li key={i} className="flex items-center gap-2">
-                                  <AlertTriangle size={10} />
-                                  {validation}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
+                    {item.evidence.sources.map((src, i) => (
+                      <div key={i} className="bg-white p-6 rounded-3xl border border-slate-200">
+                         <div className="flex justify-between items-start mb-4">
+                           <div className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500">
+                             {src.source_type}
+                           </div>
+                           <a href={src.url} target="_blank" rel="noreferrer" className="text-indigo-500 hover:text-indigo-700 transition-all">
+                             <ExternalLink size={16} />
+                           </a>
+                         </div>
+                         <h4 className="font-bold text-slate-900 mb-3 text-sm">Data Extraction Log</h4>
+                         <div className="space-y-2">
+                            {src.claims.map(claim => (
+                               <div key={claim} className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                                  <Check size={10} className="text-emerald-500" /> {claim.toUpperCase()} VERIFIED
+                               </div>
+                            ))}
+                         </div>
+                         <p className="mt-4 text-[10px] text-slate-400 font-mono truncate">{src.url}</p>
                       </div>
-                    )}
-
-                    {/* Processing History Timeline */}
-                    {item.evidence.processing_history && item.evidence.processing_history.length > 0 && (
-                      <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-200">
-                        <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                          <Cpu size={16} className="text-indigo-400" /> Processing Timeline
-                        </h3>
-                        <div className="space-y-4">
-                          {item.evidence.processing_history.map((step, i) => (
-                            <div key={i} className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl">
-                              <div className={`w-3 h-3 rounded-full mt-1 ${
-                                step.status === 'completed' ? 'bg-emerald-500' : 
-                                step.status === 'failed' ? 'bg-rose-500' : 
-                                step.status === 'started' ? 'bg-blue-500' : 'bg-slate-400'
-                              }`}></div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-sm font-bold text-slate-900 capitalize">{step.step.replace('_', ' ')}</span>
-                                  <span className="text-[10px] font-mono text-slate-400">
-                                    {step.duration_ms ? `${step.duration_ms}ms` : 'In progress'}
-                                  </span>
-                                </div>
-                                <div className="text-xs text-slate-600">
-                                  Status: <span className={`font-bold ${
-                                    step.status === 'completed' ? 'text-emerald-600' : 
-                                    step.status === 'failed' ? 'text-rose-600' : 
-                                    'text-blue-600'
-                                  }`}>{step.status}</span>
-                                </div>
-                                {step.error_message && (
-                                  <div className="mt-2 p-2 bg-rose-50 border border-rose-200 rounded-lg">
-                                    <span className="text-xs text-rose-700">{step.error_message}</span>
-                                  </div>
-                                )}
-                                {step.data_changes && step.data_changes.length > 0 && (
-                                  <div className="mt-2 flex flex-wrap gap-1">
-                                    {step.data_changes.map((change, j) => (
-                                      <span key={j} className="px-2 py-1 bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded-lg">
-                                        {change}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Evidence Sources */}
-                    <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-200">
-                      <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                        <LinkIcon size={16} className="text-indigo-400" /> Evidence Sources
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {item.evidence.sources.map((src, i) => (
-                          <div key={i} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                            <div className="flex justify-between items-start mb-4">
-                              <div className="flex items-center gap-2">
-                                <div className="px-3 py-1 bg-white rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 border border-slate-200">
-                                  {src.source_type}
-                                </div>
-                                {src.confidence && (
-                                  <div className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
-                                    src.confidence > 0.8 ? 'bg-emerald-100 text-emerald-700' :
-                                    src.confidence > 0.6 ? 'bg-amber-100 text-amber-700' :
-                                    'bg-rose-100 text-rose-700'
-                                  }`}>
-                                    {Math.round(src.confidence * 100)}% confidence
-                                  </div>
-                                )}
-                              </div>
-                              <a href={src.url} target="_blank" rel="noreferrer" className="text-indigo-500 hover:text-indigo-700 transition-all">
-                                <ExternalLink size={16} />
-                              </a>
-                            </div>
-                            
-                            <div className="space-y-3">
-                              <div>
-                                <h4 className="font-bold text-slate-900 mb-2 text-sm">Verified Claims</h4>
-                                <div className="space-y-1">
-                                  {src.claims.map(claim => (
-                                    <div key={claim} className="flex items-center gap-2 text-[10px] font-bold text-slate-600">
-                                      <Check size={10} className="text-emerald-500" /> {claim.toUpperCase()}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {src.evidence_snippets_by_claim && Object.keys(src.evidence_snippets_by_claim).length > 0 && (
-                                <div>
-                                  <h4 className="font-bold text-slate-900 mb-2 text-sm">Evidence Snippets</h4>
-                                  <div className="space-y-2">
-                                    {Object.entries(src.evidence_snippets_by_claim).map(([claim, snippet]) => (
-                                      <div key={claim} className="bg-white p-3 rounded-lg border border-slate-200">
-                                        <div className="text-[10px] font-bold text-indigo-600 uppercase mb-1">{claim}</div>
-                                        <div className="text-xs text-slate-700 font-mono leading-relaxed">{snippet}</div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              <div className="pt-2 border-t border-slate-200">
-                                <div className="flex justify-between items-center text-[10px] text-slate-400">
-                                  <span>Method: {src.extraction_method || 'automated'}</span>
-                                  <span>{new Date(src.extracted_at).toLocaleString()}</span>
-                                </div>
-                                {src.processing_duration_ms && (
-                                  <div className="text-[10px] text-slate-400 mt-1">
-                                    Processing: {src.processing_duration_ms}ms
-                                    {src.retry_count && src.retry_count > 0 && ` (${src.retry_count} retries)`}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Audit Trail */}
-                    {item.evidence.audit_trail && item.evidence.audit_trail.length > 0 && (
-                      <div className="bg-slate-900 rounded-[32px] p-1 shadow-2xl overflow-hidden">
-                        <div className="px-6 py-3 border-b border-slate-800 flex items-center gap-2">
-                          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-                          <span className="text-[10px] font-mono text-slate-500 uppercase font-bold tracking-widest">Audit_Trail.log</span>
-                        </div>
-                        <div className="bg-slate-900 p-6 font-mono text-xs text-emerald-300/80 leading-relaxed overflow-auto max-h-[40vh] custom-scrollbar">
-                          {item.evidence.audit_trail.map((entry, i) => (
-                            <div key={i} className="mb-4 pb-4 border-b border-slate-800 last:border-b-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-slate-500">[{new Date(entry.timestamp).toLocaleTimeString()}]</span>
-                                <span className="text-indigo-400 font-bold">{entry.action.toUpperCase()}</span>
-                                <span className="text-slate-400">@{entry.component}</span>
-                              </div>
-                              <div className="text-emerald-300 mb-2">{entry.details}</div>
-                              {entry.data_fields_affected.length > 0 && (
-                                <div className="text-slate-500 text-[10px]">
-                                  Fields: {entry.data_fields_affected.join(', ')}
-                                </div>
-                              )}
-                              {entry.confidence_impact && (
-                                <div className="text-amber-400 text-[10px]">
-                                  Confidence impact: {(entry.confidence_impact * 100).toFixed(1)}%
-                                </div>
-                              )}
-                              {entry.processing_time_ms && (
-                                <div className="text-blue-400 text-[10px]">
-                                  Duration: {entry.processing_time_ms}ms
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Search Grounding */}
+                    ))}
                     {item.evidence.grounding_metadata && (
-                      <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100">
-                        <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-4">Search Grounding Sources</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {item.evidence.grounding_metadata.map((g, i) => (
-                            <a key={i} href={g.uri} target="_blank" rel="noreferrer" className="bg-white p-3 rounded-xl border border-indigo-200 flex items-center justify-between text-[10px] font-bold text-indigo-700 hover:bg-indigo-600 hover:text-white transition-all">
-                              <span className="truncate pr-4">{g.uri}</span>
-                              <ExternalLink size={12} />
-                            </a>
-                          ))}
+                        <div className="md:col-span-2 bg-indigo-50 p-6 rounded-3xl border border-indigo-100">
+                           <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-4">Search Grounding Chunks</h4>
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {item.evidence.grounding_metadata.map((g, i) => (
+                                 <a key={i} href={g.uri} target="_blank" rel="noreferrer" className="bg-white p-3 rounded-xl border border-indigo-200 flex items-center justify-between text-[10px] font-bold text-indigo-700 hover:bg-indigo-600 hover:text-white transition-all">
+                                    <span className="truncate pr-4">{g.uri}</span>
+                                    <ExternalLink size={12} />
+                                 </a>
+                              ))}
+                           </div>
                         </div>
-                      </div>
                     )}
                   </div>
               )}
@@ -652,12 +313,6 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                                  </div>
                                  <div className="space-y-1">
                                     <div className="flex items-center justify-between text-[9px] font-bold">
-                                       <span className="text-slate-400">RESOLUTION (800x800+)</span>
-                                       <span className={img.width >= 800 && img.height >= 800 ? 'text-emerald-500' : 'text-rose-500'}>
-                                          {img.width >= 800 && img.height >= 800 ? 'PASS' : 'FAIL'}
-                                       </span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-[9px] font-bold">
                                        <span className="text-slate-400">NO PACKAGING</span>
                                        <span className={img.is_packaging ? 'text-rose-500' : 'text-emerald-500'}>{img.is_packaging ? 'FAIL' : 'PASS'}</span>
                                     </div>
@@ -669,14 +324,6 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                                        <span className="text-slate-400">COMPATIBLE LOOK</span>
                                        <span className={img.has_oem_logo ? 'text-rose-500' : 'text-emerald-500'}>{img.has_oem_logo ? 'OEM LOGO' : 'OK'}</span>
                                     </div>
-                                    {img.reject_reasons && img.reject_reasons.length > 0 && (
-                                       <div className="mt-2 p-2 bg-rose-50 rounded-lg">
-                                          <div className="text-[8px] font-bold text-rose-600 uppercase mb-1">Rejection Reasons</div>
-                                          {img.reject_reasons.map((reason, idx) => (
-                                             <div key={idx} className="text-[8px] text-rose-500 font-mono">{reason}</div>
-                                          ))}
-                                       </div>
-                                    )}
                                  </div>
                               </div>
                           </div>
