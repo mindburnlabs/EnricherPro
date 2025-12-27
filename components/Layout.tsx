@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileInput, List, Database, Settings, ShieldCheck } from 'lucide-react';
+import { FileInput, List, Database, Settings, ShieldCheck, Award } from 'lucide-react';
 import { getFirecrawlApiKey } from '../services/firecrawlService';
+import ApiStatusIndicator from './ApiStatusIndicator';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -70,6 +71,13 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
             active={activeTab === 'results'} 
             onClick={onTabChange} 
           />
+          <NavItem 
+            icon={Award} 
+            label="Publication Readiness" 
+            id="publication" 
+            active={activeTab === 'publication'} 
+            onClick={onTabChange} 
+          />
           <div className="pt-6 mt-6 border-t border-slate-800">
             <NavItem 
               icon={Settings} 
@@ -81,8 +89,20 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
           </div>
         </nav>
 
-        <div className="mt-auto pt-6">
-           <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50">
+        <div className="mt-auto pt-6 space-y-4">
+          {/* Enhanced API Status Indicator */}
+          <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50">
+            <div className="flex items-center gap-2 mb-3">
+              <ShieldCheck size={16} className="text-indigo-400" />
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">API Services</span>
+            </div>
+            <div className="text-white">
+              <ApiStatusIndicator compact={true} />
+            </div>
+          </div>
+          
+          {/* Legacy Engine Status */}
+          <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50">
              <div className="flex items-center gap-2 mb-3">
                <ShieldCheck size={16} className="text-indigo-400" />
                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Live Engine</span>
@@ -110,6 +130,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
       <div className="md:hidden bg-white/80 glass border-t border-slate-100 flex justify-around shrink-0 py-2 px-4 z-20 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
           <NavItem icon={FileInput} label="Import" id="import" active={activeTab === 'import'} onClick={onTabChange} mobile />
           <NavItem icon={List} label="Results" id="results" active={activeTab === 'results'} onClick={onTabChange} mobile />
+          <NavItem icon={Award} label="Publish" id="publication" active={activeTab === 'publication'} onClick={onTabChange} mobile />
           <NavItem icon={Settings} label="Settings" id="settings" active={activeTab === 'settings'} onClick={onTabChange} mobile />
       </div>
     </div>
