@@ -67,7 +67,7 @@ export interface RelatedProductsResult {
  * Determines the relationship type between two consumables
  */
 export function categorizeRelationship(
-  currentItem: ConsumableData,
+  currentItem: Partial<ConsumableData>,
   relatedItem: Partial<ConsumableData>,
   printerOverlap: number
 ): RelationshipType {
