@@ -1,8 +1,11 @@
 
 /**
  * Firecrawl Service Implementation
- * Production-ready wrapper for v2 API with v1 fallback for stable validation.
+ * Production-ready wrapper for v2 API with enhanced API integration optimization
+ * Implements rate limiting, circuit breaker patterns, and health monitoring
  */
+
+import { apiIntegrationService, createApiIntegrationError } from './apiIntegrationService';
 
 const API_V1 = 'https://api.firecrawl.dev/v1';
 const API_V2 = 'https://api.firecrawl.dev/v2';
@@ -11,12 +14,7 @@ const STORAGE_KEY = 'firecrawl_api_key';
 export const getFirecrawlApiKey = () => {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) return saved;
-  // Use a safe check for process.env
-  try {
-    return (window as any).process?.env?.FIRECRAWL_API_KEY || '';
-  } catch (e) {
-    return '';
-  }
+  return (process as any).env?.FIRECRAWL_API_KEY || '';
 };
 
 export interface FirecrawlExtractSchema {
@@ -52,82 +50,113 @@ export const validateFirecrawlApiKey = async (key: string): Promise<boolean> => 
   try {
     const response = await fetch(`${API_V1}/team`, {
       method: 'GET',
-      mode: 'cors',
-      credentials: 'omit',
       headers: {
-        'Authorization': `Bearer ${key.trim()}`
-        // Removed Content-Type for GET to avoid unnecessary CORS preflights
+        'Authorization': `Bearer ${key.trim()}`,
+        'Content-Type': 'application/json'
       }
     });
     
     return response.ok;
   } catch (e) {
     console.error("Firecrawl validation network error:", e);
-    // If it's a TypeError, it's likely a CORS or network failure.
-    // We throw a specific error so the UI can handle it.
-    if (e instanceof TypeError && e.message === 'Failed to fetch') {
-       throw new Error("Network error: Could not reach Firecrawl API. Check your internet connection or ad-blocker settings.");
-    }
     return false;
   }
 };
 
 /**
- * Firecrawl Agent: Autonomous data gathering (v2).
- * Returns job info which may be 'completed' or 'processing'.
+ * Enhanced Firecrawl Agent with optimized API integration
+ * Uses Search Grounding to find primary source URLs with rate limiting and circuit breaker protection
  */
 export const firecrawlAgent = async (prompt: string, schema?: any, urls?: string[]) => {
   const apiKey = getFirecrawlApiKey();
   if (!apiKey) throw new Error("Firecrawl API Key missing.");
 
-  const response = await fetch(`${API_V2}/agent`, {
-    method: 'POST',
-    mode: 'cors',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey.trim()}`
+  // Use the optimized API integration service
+  const response = await apiIntegrationService.makeRequest(
+    {
+      serviceId: 'firecrawl',
+      operation: 'agent',
+      priority: 'high',
+      retryable: true,
+      creditsRequired: 40,
+      metadata: { prompt: prompt.substring(0, 100) + '...' }
     },
-    body: JSON.stringify({
-      prompt,
-      schema,
-      urls,
-      maxCredits: 40 // Limit credits per research session
-    })
-  });
+    async () => {
+      const httpResponse = await fetch(`${API_V2}/agent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey.trim()}`
+        },
+        body: JSON.stringify({
+          prompt,
+          schema,
+          urls,
+          maxCredits: 40 // Limit credits per research session
+        })
+      });
 
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(`Agent Error: ${result.message || response.status}`);
+      const result = await httpResponse.json().catch(() => ({}));
+      
+      return {
+        success: httpResponse.ok,
+        data: result,
+        error: httpResponse.ok ? undefined : result.message || `Agent Error: ${httpResponse.status}`,
+        statusCode: httpResponse.status,
+        responseTime: 0, // Will be set by API integration service
+        creditsUsed: result.creditsUsed || 40
+      };
+    }
+  );
+
+  if (!response.success) {
+    throw new Error(response.error || 'Firecrawl agent request failed');
   }
 
-  return result; 
+  return response.data;
 };
 
 /**
- * Polls the status of an agent job (v2).
+ * Enhanced agent status polling with optimized API integration
  */
 export const getAgentStatus = async (jobId: string) => {
   const apiKey = getFirecrawlApiKey();
-  const response = await fetch(`${API_V2}/agent/${jobId}`, {
-    method: 'GET',
-    mode: 'cors',
-    headers: { 
-      'Authorization': `Bearer ${apiKey.trim()}`
-      // Removed Content-Type for GET
-    }
-  });
   
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(`Status Check Failed: ${err.message || response.status}`);
+  const response = await apiIntegrationService.makeRequest(
+    {
+      serviceId: 'firecrawl',
+      operation: 'getAgentStatus',
+      priority: 'medium',
+      retryable: true,
+      metadata: { jobId }
+    },
+    async () => {
+      const httpResponse = await fetch(`${API_V2}/agent/${jobId}`, {
+        headers: { 'Authorization': `Bearer ${apiKey.trim()}` }
+      });
+      
+      const result = await httpResponse.json().catch(() => ({}));
+      
+      return {
+        success: httpResponse.ok,
+        data: result,
+        error: httpResponse.ok ? undefined : result.message || `Status Check Failed: ${httpResponse.status}`,
+        statusCode: httpResponse.status,
+        responseTime: 0
+      };
+    }
+  );
+
+  if (!response.success) {
+    throw new Error(response.error || 'Agent status check failed');
   }
   
-  return await response.json();
+  return response.data;
 };
 
 /**
- * Scrapes a single URL using v2.
- * Uses the new formats array for extraction and markdown.
+ * Enhanced scraping with optimized API integration
+ * Uses the new formats array for extraction and markdown with rate limiting protection
  */
 export const firecrawlScrape = async (url: string, extractPrompt?: string, schema?: any): Promise<ScrapeResponse> => {
   const apiKey = getFirecrawlApiKey();
@@ -142,29 +171,47 @@ export const firecrawlScrape = async (url: string, extractPrompt?: string, schem
     });
   }
 
-  const response = await fetch(`${API_V2}/scrape`, {
-    method: 'POST',
-    mode: 'cors',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey.trim()}`
+  const response = await apiIntegrationService.makeRequest(
+    {
+      serviceId: 'firecrawl',
+      operation: 'scrape',
+      priority: 'medium',
+      retryable: true,
+      creditsRequired: 1,
+      metadata: { url, hasExtraction: !!extractPrompt }
     },
-    body: JSON.stringify({
-      url,
-      formats,
-      onlyMainContent: true,
-      maxAge: 172800000 // Use cache if < 2 days old
-    })
-  });
+    async () => {
+      const httpResponse = await fetch(`${API_V2}/scrape`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey.trim()}`
+        },
+        body: JSON.stringify({
+          url,
+          formats,
+          onlyMainContent: true,
+          maxAge: 172800000 // Use cache if < 2 days old
+        })
+      });
 
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    return {
-      success: false,
-      data: {},
-      error: result.message || `Scrape failed with status ${response.status}`
-    };
-  }
+      const result = await httpResponse.json().catch(() => ({}));
+      
+      return {
+        success: httpResponse.ok,
+        data: result,
+        error: httpResponse.ok ? undefined : result.message || `Scrape failed with status ${httpResponse.status}`,
+        statusCode: httpResponse.status,
+        responseTime: 0,
+        creditsUsed: 1
+      };
+    }
+  );
 
-  return result;
+  // Return in the expected ScrapeResponse format
+  return {
+    success: response.success,
+    data: response.data || {},
+    error: response.error
+  };
 };
