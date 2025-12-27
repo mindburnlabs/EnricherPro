@@ -1,0 +1,7 @@
+{
+  "name": "Consumable Enricher Pro",
+  "description": "Automated enrichment of printer consumable data using Gemini and Search Grounding. Features strict validation, evidence tracking, and image verification.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
