@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Activity, 
-  AlertCircle, 
-  CheckCircle, 
-  Clock, 
-  Zap, 
+import {
+  Activity,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Zap,
   TrendingUp,
   AlertTriangle,
   Wifi,
   WifiOff
 } from 'lucide-react';
-import { apiIntegrationService } from '../services/apiIntegrationService';
+import { apiIntegrationService, ApiHealthStatus, CircuitBreakerState } from '../services/apiIntegrationService';
 
+// Redefine locally to match usage
 interface ServiceStatus {
   name: string;
   priority: string;
-  health: 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
+  health: ApiHealthStatus;
   rateLimitUsage: number;
-  circuitBreakerState: 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+  circuitBreakerState: CircuitBreakerState;
   creditsRemaining?: number;
   queueLength: number;
 }
@@ -27,9 +28,9 @@ interface ApiStatusIndicatorProps {
   showDetails?: boolean;
 }
 
-export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({ 
-  compact = false, 
-  showDetails = false 
+export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({
+  compact = false,
+  showDetails = false
 }) => {
   const [services, setServices] = useState<Record<string, ServiceStatus>>({});
   const [queueStats, setQueueStats] = useState({
@@ -45,8 +46,8 @@ export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({
       try {
         const servicesStatus = apiIntegrationService.getAllServicesStatus();
         const queueStatus = apiIntegrationService.getQueueStats();
-        
-        setServices(servicesStatus);
+
+        setServices(servicesStatus as unknown as Record<string, ServiceStatus>);
         setQueueStats(queueStatus);
       } catch (error) {
         console.warn('Failed to get API status:', error);
@@ -88,12 +89,12 @@ export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({
   };
 
   const getOverallHealth = () => {
-    const servicesList = Object.values(services);
+    const servicesList = Object.values(services) as any[];
     if (servicesList.length === 0) return 'unknown';
-    
+
     const unhealthyCount = servicesList.filter(s => s.health === 'unhealthy').length;
     const degradedCount = servicesList.filter(s => s.health === 'degraded').length;
-    
+
     if (unhealthyCount > 0) return 'unhealthy';
     if (degradedCount > 0) return 'degraded';
     return 'healthy';
@@ -108,9 +109,9 @@ export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({
   if (compact) {
     const overallHealth = getOverallHealth();
     const totalQueued = queueStats.totalQueued;
-    
+
     return (
-      <div 
+      <div
         className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
@@ -123,12 +124,12 @@ export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({
             {totalQueued} queued
           </span>
         )}
-        
+
         {isExpanded && (
           <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4">
             <h3 className="font-semibold text-gray-900 mb-3">API Services Status</h3>
-            
-            {Object.entries(services).map(([serviceName, service]) => (
+
+            {Object.entries(services).map(([serviceName, service]: [string, any]) => (
               <div key={serviceName} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
                 <div className="flex items-center gap-2">
                   {getHealthIcon(service.health)}
@@ -143,7 +144,7 @@ export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({
                 </div>
               </div>
             ))}
-            
+
             {queueStats.totalQueued > 0 && (
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <div className="text-sm text-gray-600">
@@ -161,7 +162,7 @@ export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({
   if (!showDetails) {
     return (
       <div className="flex items-center gap-4">
-        {Object.entries(services).map(([serviceName, service]) => (
+        {Object.entries(services).map(([serviceName, service]: [string, any]) => (
           <div key={serviceName} className="flex items-center gap-2">
             {getHealthIcon(service.health)}
             <span className="text-sm font-medium capitalize">{serviceName}</span>
@@ -187,7 +188,7 @@ export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        {Object.entries(services).map(([serviceName, service]) => (
+        {Object.entries(services).map(([serviceName, service]: [string, any]) => (
           <div key={serviceName} className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold capitalize">{serviceName}</h3>
@@ -196,51 +197,48 @@ export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({
                 {getCircuitBreakerIcon(service.circuitBreakerState)}
               </div>
             </div>
-            
+
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Priority:</span>
-                <span className={`font-medium ${
-                  service.priority === 'high' ? 'text-red-600' :
+                <span className={`font-medium ${service.priority === 'high' ? 'text-red-600' :
                   service.priority === 'medium' ? 'text-yellow-600' : 'text-green-600'
-                }`}>
+                  }`}>
                   {service.priority}
                 </span>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-gray-600">Rate Limit:</span>
                 <div className="flex items-center gap-1">
                   <div className="w-16 bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full ${
-                        service.rateLimitUsage > 80 ? 'bg-red-500' :
+                    <div
+                      className={`h-2 rounded-full ${service.rateLimitUsage > 80 ? 'bg-red-500' :
                         service.rateLimitUsage > 60 ? 'bg-yellow-500' : 'bg-green-500'
-                      }`}
+                        }`}
                       style={{ width: `${Math.min(service.rateLimitUsage, 100)}%` }}
                     />
                   </div>
                   <span className="text-xs">{Math.round(service.rateLimitUsage)}%</span>
                 </div>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-gray-600">Circuit:</span>
-                <span className={`font-medium ${
-                  service.circuitBreakerState === 'CLOSED' ? 'text-green-600' :
+                <span className={`font-medium ${service.circuitBreakerState === 'CLOSED' ? 'text-green-600' :
                   service.circuitBreakerState === 'HALF_OPEN' ? 'text-yellow-600' : 'text-red-600'
-                }`}>
+                  }`}>
                   {service.circuitBreakerState}
                 </span>
               </div>
-              
+
               {service.creditsRemaining !== undefined && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Credits:</span>
                   <span className="font-medium text-blue-600">{service.creditsRemaining}</span>
                 </div>
               )}
-              
+
               {service.queueLength > 0 && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Queued:</span>

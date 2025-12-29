@@ -9,20 +9,22 @@ Transform supplier product titles into publication-ready consumable cards with s
 ### ✅ Fully Implemented Components
 
 #### Core Services Layer
-- **geminiService.ts** - Gemini AI integration with search grounding
-- **firecrawlService.ts** - Firecrawl v2 API with rate limiting and circuit breakers
-- **nixService.ts** - Exclusive NIX.ru integration for package data
-- **russianMarketFilter.ts** - 2+ source verification for printer compatibility
-- **textProcessingService.ts** - Unicode normalization and pattern extraction
-- **imageValidationService.ts** - Quality validation with Google Vision API
-- **publicationReadinessService.ts** - Multi-dimensional quality scoring
-- **auditTrailService.ts** - Complete source provenance tracking
-- **errorHandlingService.ts** - Comprehensive error categorization and retry logic
-- **relatedProductsService.ts** - Compatible consumables discovery
-- **apiIntegrationService.ts** - Centralized API health monitoring
+- **geminiService.ts** - Primary synthesis engine with OpenRouter fallback
+- **openRouterService.ts** - GPT-4o fallback for Gemini failures
+- **firecrawlService.ts** - Firecrawl v2 API integration
+- **nixService.ts** - Exclusive logistics data extraction
+- **russianMarketFilter.ts** - 2+ source verification logic
+- **textProcessingService.ts** - Unicode & pattern normalization
+- **imageValidationService.ts** - Automated quality auditing
+- **publicationReadinessService.ts** - Readiness scoring engine
+- **auditTrailService.ts** - Source provenance tracking
+
+#### Data Architecture
+- **types/** - Modular TypeScript definitions (Error, Domain, Audit, API)
+- **types/index.ts** - Barrel export for all system types
 
 #### React Components
-- **App.tsx** - Main application with queue processing and state management
+- **App.tsx** - Main application & queue controller
 - **Layout.tsx** - Navigation, sidebar, and service status indicators
 - **ImportView.tsx** - Text input and photo recognition interface
 - **ResultsView.tsx** - Filtered results with search and export
@@ -160,9 +162,10 @@ npm run test:ui                 # Visual test interface
 - Error handling and retry logic
 
 ### ⚠️ External Dependencies
-- **Gemini API Quota** - May require quota management
-- **Google Cloud Credentials** - Needed for full image validation
-- **Rate Limiting** - Implemented but may need tuning
+- **Gemini API** - Primary model (Search Grounding & Thinking)
+- **OpenRouter API** - Secondary model (GPT-4o fallback)
+- **Firecrawl V2 API** - Web research & scraping
+- **Rate Limiting** - Integrated with circuit breakers
 
 ### 🎯 Deployment Checklist
 - [x] Core functionality implemented and tested

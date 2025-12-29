@@ -14,7 +14,7 @@ const STORAGE_KEY = 'firecrawl_api_key';
 export const getFirecrawlApiKey = () => {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) return saved;
-  return (process as any).env?.FIRECRAWL_API_KEY || '';
+  return import.meta.env.VITE_FIRECRAWL_API_KEY || '';
 };
 
 export interface FirecrawlExtractSchema {
@@ -46,7 +46,7 @@ export interface ScrapeResponse {
  */
 export const validateFirecrawlApiKey = async (key: string): Promise<boolean> => {
   if (!key || !key.trim().startsWith('fc-')) return false;
-  
+
   try {
     const response = await fetch(`${API_V1}/team`, {
       method: 'GET',
@@ -55,7 +55,7 @@ export const validateFirecrawlApiKey = async (key: string): Promise<boolean> => 
         'Content-Type': 'application/json'
       }
     });
-    
+
     return response.ok;
   } catch (e) {
     console.error("Firecrawl validation network error:", e);
@@ -97,7 +97,7 @@ export const firecrawlAgent = async (prompt: string, schema?: any, urls?: string
       });
 
       const result = await httpResponse.json().catch(() => ({}));
-      
+
       return {
         success: httpResponse.ok,
         data: result,
@@ -121,7 +121,7 @@ export const firecrawlAgent = async (prompt: string, schema?: any, urls?: string
  */
 export const getAgentStatus = async (jobId: string) => {
   const apiKey = getFirecrawlApiKey();
-  
+
   const response = await apiIntegrationService.makeRequest(
     {
       serviceId: 'firecrawl',
@@ -134,9 +134,9 @@ export const getAgentStatus = async (jobId: string) => {
       const httpResponse = await fetch(`${API_V2}/agent/${jobId}`, {
         headers: { 'Authorization': `Bearer ${apiKey.trim()}` }
       });
-      
+
       const result = await httpResponse.json().catch(() => ({}));
-      
+
       return {
         success: httpResponse.ok,
         data: result,
@@ -150,7 +150,7 @@ export const getAgentStatus = async (jobId: string) => {
   if (!response.success) {
     throw new Error(response.error || 'Agent status check failed');
   }
-  
+
   return response.data;
 };
 
@@ -196,7 +196,7 @@ export const firecrawlScrape = async (url: string, extractPrompt?: string, schem
       });
 
       const result = await httpResponse.json().catch(() => ({}));
-      
+
       return {
         success: httpResponse.ok,
         data: result,

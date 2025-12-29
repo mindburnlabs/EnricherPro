@@ -90,6 +90,7 @@ interface OpenRouterConfig {
 
 **Functions**:
 ```typescript
+synthesizeConsumableData(context: string, query: string, textProcessingResult: any, firecrawlData?: any): Promise<Data>
 processSupplierTitle(title: string): ProcessingResult
 normalizeText(input: string): string
 extractModel(title: string): ModelExtractionResult
@@ -237,7 +238,7 @@ trackApiUsage(service: string, endpoint: string): void
 
 ## 📊 Data Types and Interfaces
 
-### Core Data Types (`types.ts`)
+### Core Data Types (`types/index.ts`)
 
 ```typescript
 interface EnrichedItem {

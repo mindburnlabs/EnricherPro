@@ -1,6 +1,6 @@
-import { 
-  EnrichedItem, 
-  ConsumableData, 
+import {
+  EnrichedItem,
+  ConsumableData,
   ValidationStatus,
   FailureReason,
   ErrorDetail,
@@ -25,7 +25,7 @@ export const READINESS_WEIGHTS = {
 // Required fields for publication
 export const REQUIRED_FIELDS = [
   'brand',
-  'consumable_type', 
+  'consumable_type',
   'model',
   'packaging_from_nix',
   'compatible_printers_ru'
@@ -117,7 +117,7 @@ export function evaluatePublicationReadiness(item: EnrichedItem): PublicationRea
   };
 
   // Calculate weighted overall score
-  const overall_score = 
+  const overall_score =
     componentScores.required_fields * READINESS_WEIGHTS.required_fields +
     componentScores.data_quality * READINESS_WEIGHTS.data_quality +
     componentScores.russian_market * READINESS_WEIGHTS.russian_market +
@@ -127,7 +127,7 @@ export function evaluatePublicationReadiness(item: EnrichedItem): PublicationRea
   const blocking_issues = identifyBlockingIssues(item, componentScores);
   const recommendations = generateReadinessRecommendations(item, componentScores);
   const is_ready = overall_score >= READINESS_THRESHOLDS.minimum_score && blocking_issues.length === 0;
-  
+
   const confidence_level = determineConfidenceLevel(overall_score, item.data.confidence?.overall || 0);
   const estimated_manual_effort = estimateManualEffort(blocking_issues, recommendations);
 
@@ -161,11 +161,11 @@ function evaluateRequiredFields(data: ConsumableData): number {
         if (data.model && data.model.trim() !== '') score += 1;
         break;
       case 'packaging_from_nix':
-        if (data.packaging_from_nix && 
-            data.packaging_from_nix.weight_g && 
-            data.packaging_from_nix.width_mm &&
-            data.packaging_from_nix.height_mm &&
-            data.packaging_from_nix.depth_mm) {
+        if (data.packaging_from_nix &&
+          data.packaging_from_nix.weight_g &&
+          data.packaging_from_nix.width_mm &&
+          data.packaging_from_nix.height_mm &&
+          data.packaging_from_nix.depth_mm) {
           score += 1;
         }
         break;
@@ -229,7 +229,7 @@ function evaluateRussianMarketCompliance(data: ConsumableData): number {
   // Check for verified Russian printers
   const ruPrinters = data.compatible_printers_ru || [];
   const verifiedRuPrinters = ruPrinters.filter(p => p.ruMarketEligibility === 'ru_verified');
-  
+
   if (verifiedRuPrinters.length >= READINESS_THRESHOLDS.minimum_ru_printers) {
     score += 0.6; // 60% for having verified printers
   } else if (ruPrinters.length > 0) {
@@ -239,7 +239,7 @@ function evaluateRussianMarketCompliance(data: ConsumableData): number {
   // Check for Russian source verification
   const russianSources = ruPrinters.flatMap(p => p.sources)
     .filter(s => s.sourceType === 'compatibility_db' || s.url.includes('.ru'));
-  
+
   if (russianSources.length >= READINESS_THRESHOLDS.minimum_source_count) {
     score += 0.4; // 40% for sufficient Russian sources
   } else if (russianSources.length > 0) {
@@ -344,10 +344,10 @@ function evaluateSourceReliability(item: EnrichedItem): number {
   });
 
   const averageReliability = weightedSources > 0 ? totalReliability / weightedSources : 0;
-  
+
   // Bonus for having multiple sources
   const sourceCountBonus = Math.min(sources.length * 0.1, 0.3);
-  
+
   return Math.min(averageReliability + sourceCountBonus, 1.0);
 }
 
@@ -373,7 +373,7 @@ function identifyBlockingIssues(item: EnrichedItem, componentScores: any): strin
   if (componentScores.russian_market < 0.5) {
     const ruPrinters = item.data.compatible_printers_ru || [];
     const verifiedPrinters = ruPrinters.filter(p => p.ruMarketEligibility === 'ru_verified');
-    
+
     if (verifiedPrinters.length === 0) {
       issues.push('No verified Russian market printers');
     }
@@ -449,7 +449,7 @@ function generateReadinessRecommendations(item: EnrichedItem, componentScores: a
  */
 function determineConfidenceLevel(overallScore: number, confidenceScore: number): 'high' | 'medium' | 'low' {
   const combinedScore = (overallScore + confidenceScore) / 2;
-  
+
   if (combinedScore >= 0.8) return 'high';
   if (combinedScore >= 0.6) return 'medium';
   return 'low';
@@ -487,15 +487,15 @@ export function generatePublicationReadinessReport(items: EnrichedItem[]): Publi
   }));
 
   const ready_for_publication = evaluations.filter(e => e.readiness.is_ready).length;
-  const needs_minor_fixes = evaluations.filter(e => 
+  const needs_minor_fixes = evaluations.filter(e =>
     !e.readiness.is_ready && e.readiness.overall_score >= 0.6
   ).length;
-  const needs_major_work = evaluations.filter(e => 
+  const needs_major_work = evaluations.filter(e =>
     e.readiness.overall_score >= 0.3 && e.readiness.overall_score < 0.6
   ).length;
   const blocked_items = evaluations.filter(e => e.readiness.overall_score < 0.3).length;
 
-  const average_readiness_score = evaluations.length > 0 
+  const average_readiness_score = evaluations.length > 0
     ? evaluations.reduce((sum, e) => sum + e.readiness.overall_score, 0) / evaluations.length
     : 0;
 
@@ -569,7 +569,7 @@ function determineSeverity(issue: string): string {
  * Performs bulk approval based on criteria
  */
 export function performBulkApproval(
-  items: EnrichedItem[], 
+  items: EnrichedItem[],
   criteria: BulkApprovalCriteria
 ): BulkApprovalResult {
   const approved_items: string[] = [];
@@ -586,11 +586,11 @@ export function performBulkApproval(
 
     // Check confidence level
     const confidenceValue = item.data.confidence?.overall || 0;
-    const meetsConfidence = 
+    const meetsConfidence =
       (criteria.required_confidence_level === 'high' && confidenceValue >= 0.8) ||
       (criteria.required_confidence_level === 'medium' && confidenceValue >= 0.6) ||
       (criteria.required_confidence_level === 'low' && confidenceValue >= 0.4);
-    
+
     if (!meetsConfidence) {
       rejectionReasons.push(`Confidence level below ${criteria.required_confidence_level} threshold`);
     }
@@ -621,7 +621,7 @@ export function performBulkApproval(
 
     // Check error categories
     if (criteria.exclude_error_categories.length > 0) {
-      const hasExcludedErrors = item.error_details?.some(error => 
+      const hasExcludedErrors = item.error_details?.some(error =>
         criteria.exclude_error_categories.includes(error.category)
       ) || false;
       if (hasExcludedErrors) {
@@ -681,22 +681,28 @@ export function getItemsNeedingAttention(items: EnrichedItem[]): Array<{
   priority: 'high' | 'medium' | 'low';
 }> {
   return items
-    .map(item => ({
-      item,
-      readiness: evaluatePublicationReadiness(item),
-      priority: 'medium' as 'high' | 'medium' | 'low'
-    }))
+    .map(item => {
+      const readiness = evaluatePublicationReadiness(item);
+      return { item, readiness };
+    })
     .filter(entry => !entry.readiness.is_ready)
-    .map(entry => ({
-      ...entry,
-      priority: entry.readiness.overall_score < 0.3 ? 'high' :
-                entry.readiness.overall_score < 0.6 ? 'medium' : 'low'
-    }))
+    .map(entry => {
+      // Determine priority based on readiness score
+      let priority: 'low' | 'medium' | 'high' = 'low';
+      if (entry.readiness.overall_score < 0.4) priority = 'high';
+      else if (entry.readiness.overall_score < 0.7) priority = 'medium';
+
+      return {
+        item: entry.item,
+        readiness: entry.readiness,
+        priority
+      };
+    })
     .sort((a, b) => {
-      // Sort by priority first, then by readiness score
-      const priorityOrder = { high: 3, medium: 2, low: 1 };
-      if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
-        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      const priorityScore = { high: 3, medium: 2, low: 1 };
+      // Sort by priority first (descending), then by readiness score (ascending)
+      if (priorityScore[a.priority] !== priorityScore[b.priority]) {
+        return priorityScore[b.priority] - priorityScore[a.priority];
       }
       return a.readiness.overall_score - b.readiness.overall_score;
     });

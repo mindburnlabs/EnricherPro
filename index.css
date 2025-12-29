@@ -1,3 +1,90 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 11%;
+    --foreground: 213 31% 91%;
+    
+    --card: 222 47% 11%;
+    --card-foreground: 213 31% 91%;
+    
+    --primary: 250 89% 65%;
+    --primary-foreground: 210 40% 98%;
+    
+    --secondary: 222 47% 11%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --accent: 250 89% 65%;
+    --accent-foreground: 210 40% 98%;
+    
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 56.9%;
+    
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+body {
+  @apply bg-[#0f172a] text-slate-200 antialiased;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(250, 89%, 65%, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(190, 89%, 65%, 0.05) 0px, transparent 50%);
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-slate-900/40 backdrop-blur-xl border border-white/10 shadow-2xl;
+  }
+  
+  .glass-sidebar {
+    @apply bg-slate-900/60 backdrop-blur-2xl border-r border-white/5;
+  }
+  
+  .premium-shadow {
+    box-shadow: 
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      0 10px 15px -3px rgba(0, 0, 0, 0.3),
+      0 4px 6px -4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .premium-button {
+    @apply relative overflow-hidden transition-all duration-300 active:scale-95;
+  }
+  
+  .premium-button::after {
+    content: '';
+    @apply absolute inset-0 bg-white/10 opacity-0 transition-opacity duration-300;
+  }
+  
+  .premium-button:hover::after {
+    @apply opacity-100;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-700/50 rounded-full hover:bg-slate-600;
+}

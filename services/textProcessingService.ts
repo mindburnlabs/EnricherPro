@@ -3,6 +3,12 @@
  * Handles text normalization, parsing, and extraction according to Russian market requirements
  */
 
+export interface ExtractionResult<T> {
+  value: T;
+  confidence: number;
+  source: string;
+}
+
 export interface ModelExtractionResult {
   model: string;
   candidates: string[];
@@ -28,6 +34,64 @@ export interface NormalizationLog {
   before: string;
   after: string;
   description: string;
+}
+
+/**
+ * Normalizes consumable type based on keywords
+ * Requirements: 2.3
+ */
+export function normalizeType(title: string): ExtractionResult<'toner_cartridge' | 'drum_unit' | 'ink_cartridge' | 'unknown'> {
+  const lower = title.toLowerCase();
+
+  // Drum Unit patterns (High priority)
+  if (/(drum|драм|фотобарабан|копи-картридж|оптический блок|image unit|imaging unit)/i.test(lower)) {
+    return { value: 'drum_unit', confidence: 0.95, source: 'keyword_match' };
+  }
+
+  // Toner Cartridge patterns
+  if (/(toner|тонер|cartridge|картридж|laser|лазерный)/i.test(lower)) {
+    // Distinguish waste toner if needed, but for now map to toner structure
+    if (/waste|бункер/i.test(lower)) return { value: 'unknown', confidence: 0.8, source: 'waste_check' }; // Or 'waste_toner' if supported
+    return { value: 'toner_cartridge', confidence: 0.9, source: 'keyword_match' };
+  }
+
+  // Ink patterns
+  if (/(ink|чернила|струйный)/i.test(lower)) {
+    return { value: 'ink_cartridge', confidence: 0.9, source: 'keyword_match' };
+  }
+
+  return { value: 'unknown', confidence: 0, source: 'default' };
+}
+
+/**
+ * Normalizes color based on common abbreviations
+ * Requirements: 2.4
+ */
+export function normalizeColor(title: string): ExtractionResult<string | null> {
+  const lower = title.toLowerCase();
+
+  if (/\b(black|bk|k|черный|чёрный)\b/i.test(lower)) return { value: 'Black', confidence: 0.95, source: 'keyword' };
+  if (/\b(cyan|c|синий|голубой)\b/i.test(lower)) return { value: 'Cyan', confidence: 0.95, source: 'keyword' };
+  if (/\b(magenta|m|purpur|пурпурный|магента)\b/i.test(lower)) return { value: 'Magenta', confidence: 0.95, source: 'keyword' };
+  if (/\b(yellow|y|желтый|жёлтый)\b/i.test(lower)) return { value: 'Yellow', confidence: 0.95, source: 'keyword' };
+
+  return { value: null, confidence: 0, source: 'default' };
+}
+
+/**
+ * Extracts printer candidates from "for..." blocks
+ * Requirements: 2.5
+ */
+export function extractPrinterCandidates(title: string): string[] {
+  // Pattern: "for/для [Printers]"
+  const forPattern = /\b(for|для|printers?|совместим с)\s+([a-z0-9\s\/\.,-]+)/i;
+  const match = title.match(forPattern);
+
+  if (!match) return [];
+
+  const block = match[2];
+  // Split by slashes, commas, or " and "
+  return block.split(/[\/,]|\s+and\s+/).map(s => s.trim()).filter(s => s.length > 2);
 }
 
 /**
@@ -91,13 +155,13 @@ export function standardizeYieldNotation(text: string): { converted: string; ext
   // Matches: 15K, 300К, 2.5K, 1,5К, etc.
   // Note: Removed \b word boundary as it doesn't work properly with Cyrillic characters
   const yieldPattern = /(\d+(?:[.,]\d+)?)\s*([K\u041A])(?=\s|$)/gi;
-  
+
   result = result.replace(yieldPattern, (match, number, multiplier) => {
     // Convert comma decimal separator to dot
     const normalizedNumber = number.replace(',', '.');
     const numValue = parseFloat(normalizedNumber);
     const convertedValue = numValue * 1000;
-    
+
     extractions.push({
       value: convertedValue,
       unit: 'pages', // Default assumption for K notation
@@ -110,11 +174,11 @@ export function standardizeYieldNotation(text: string): { converted: string; ext
 
   // Pattern for explicit page/copy yields (including Russian terms)
   const explicitYieldPattern = /(\d+(?:[.,]\d+)?)\s*(pages?|copies?|страниц|копий|мл|ml)\b/gi;
-  
+
   result.replace(explicitYieldPattern, (match, number, unit) => {
     const normalizedNumber = number.replace(',', '.');
     const numValue = parseFloat(normalizedNumber);
-    
+
     let standardUnit: 'pages' | 'copies' | 'ml' = 'pages';
     if (unit.toLowerCase().includes('cop') || unit.includes('копий')) {
       standardUnit = 'copies';
@@ -231,7 +295,7 @@ export function extractConsumableModel(title: string): ModelExtractionResult {
     const best = candidates[0];
     selectedModel = best.model;
     extractionMethod = best.method;
-    
+
     // Set confidence based on method and number of candidates
     switch (best.method) {
       case 'brother_kyocera_pattern':
@@ -394,25 +458,36 @@ export function processSupplierTitle(title: string): {
   model: ModelExtractionResult;
   brand: BrandDetectionResult;
   yieldInfo: YieldExtractionResult[];
+  detectedType: ExtractionResult<'toner_cartridge' | 'drum_unit' | 'ink_cartridge' | 'unknown'>;
+  detectedColor: ExtractionResult<string | null>;
+  printerCandidates: string[];
   normalizationLog: NormalizationLog[];
 } {
   // Step 1: Normalize title
   const { normalized, log } = normalizeTitle(title);
-  
+
   // Step 2: Standardize yield notation
   const { converted, extractions } = standardizeYieldNotation(normalized);
-  
+
   // Step 3: Extract model
   const modelResult = extractConsumableModel(converted);
-  
+
   // Step 4: Detect brand
   const brandResult = detectBrand(converted, modelResult.model);
-  
+
+  // Step 5: Detect type and color
+  const typeResult = normalizeType(converted);
+  const colorResult = normalizeColor(converted);
+  const printerCandidates = extractPrinterCandidates(converted);
+
   return {
     normalized: converted,
     model: modelResult,
     brand: brandResult,
     yieldInfo: extractions,
+    detectedType: typeResult,
+    detectedColor: colorResult,
+    printerCandidates,
     normalizationLog: log
   };
 }

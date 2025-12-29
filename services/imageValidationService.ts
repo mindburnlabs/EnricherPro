@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { ImageCandidate } from "../types";
 
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getAI = () => new GoogleGenAI({ apiKey: import.meta.env.VITE_GOOGLE_API_KEY });
 
 export interface ImageValidationConfig {
   minResolution: number; // 800x800 minimum
@@ -51,7 +51,7 @@ export async function validateResolution(imageUrl: string, config: ImageValidati
         const height = parseInt(match[2]);
         const minDimension = Math.min(width, height);
         const passed = minDimension >= config.minResolution;
-        
+
         return {
           checkName: 'resolution_validation',
           passed,
@@ -122,7 +122,8 @@ export async function analyzeBackground(imageUrl: string, config: ImageValidatio
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: [
-        { text: `Analyze this product image for background color and cleanliness. 
+        {
+          text: `Analyze this product image for background color and cleanliness. 
         
         Requirements:
         - Background should be pure white or very light gray
@@ -181,7 +182,8 @@ export async function detectTextAndLogos(imageUrl: string, consumableModel: stri
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: [
-        { text: `Analyze this consumable product image for text and brand logos.
+        {
+          text: `Analyze this consumable product image for text and brand logos.
         
         DETECTION RULES:
         1. Identify all visible text in the image
@@ -226,7 +228,7 @@ export async function detectTextAndLogos(imageUrl: string, consumableModel: stri
     });
 
     const result = JSON.parse(response.text || '{"text_coverage_percent": 0, "detected_text": [], "has_oem_logos": false, "detected_brands": [], "has_trademarks": false, "is_compatible_friendly": true, "rejection_reasons": []}');
-    
+
     // Reject if too much text coverage or OEM logos detected
     const textCoverageOk = (result.text_coverage_percent / 100) <= config.maxTextDetectionScore;
     const noOemLogos = !result.has_oem_logos;
@@ -276,7 +278,8 @@ export async function detectWatermarks(imageUrl: string, config: ImageValidation
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: [
-        { text: `Analyze this image for watermarks and copyright protection elements.
+        {
+          text: `Analyze this image for watermarks and copyright protection elements.
         
         WATERMARK DETECTION:
         1. Look for semi-transparent text overlays
@@ -313,7 +316,7 @@ export async function detectWatermarks(imageUrl: string, config: ImageValidation
     });
 
     const result = JSON.parse(response.text || '{"has_watermark": false, "watermark_confidence": 0.0, "watermark_types": [], "watermark_locations": [], "detected_text": []}');
-    
+
     // Reject if watermark confidence exceeds threshold
     const passed = !result.has_watermark || result.watermark_confidence < config.watermarkDetectionSensitivity;
 
@@ -346,7 +349,7 @@ export async function detectWatermarks(imageUrl: string, config: ImageValidation
 export function checkApprovedImageLibrary(imageUrl: string, config: ImageValidationConfig = DEFAULT_CONFIG): ValidationCheck {
   const approvedSources = config.approvedImageLibraryUrls || [];
   const isApproved = approvedSources.some(source => imageUrl.startsWith(source));
-  
+
   // Placeholder images are considered approved for testing
   const isPlaceholder = imageUrl.includes('placehold.co');
   const passed = isApproved || isPlaceholder;
@@ -355,7 +358,7 @@ export function checkApprovedImageLibrary(imageUrl: string, config: ImageValidat
     checkName: 'approved_library_check',
     passed,
     confidence: 1.0,
-    details: passed 
+    details: passed
       ? `Image from approved source: ${isPlaceholder ? 'placeholder' : 'approved library'}`
       : `Image not from approved sources. Approved: ${approvedSources.join(', ')}`
   };
@@ -365,24 +368,34 @@ export function checkApprovedImageLibrary(imageUrl: string, config: ImageValidat
  * Comprehensive image validation pipeline
  */
 export async function validateProductImage(
-  imageUrl: string, 
-  consumableModel: string, 
+  imageUrl: string,
+  consumableModel: string,
   config: ImageValidationConfig = DEFAULT_CONFIG
 ): Promise<ImageValidationResult> {
   try {
     // Run all validation checks
-    const checks = await Promise.all([
+    // Determine policy from environment
+    const policy = import.meta.env.VITE_IMAGE_POLICY || 'approved_library_only';
+
+    // Prepare checks
+    const checksToRun = [
       validateResolution(imageUrl, config),
       analyzeBackground(imageUrl, config),
       detectTextAndLogos(imageUrl, consumableModel, config),
-      detectWatermarks(imageUrl, config),
-      Promise.resolve(checkApprovedImageLibrary(imageUrl, config))
-    ]);
+      detectWatermarks(imageUrl, config)
+    ];
+
+    // Only add library check if policy is strict
+    if (policy === 'approved_library_only') {
+      checksToRun.push(Promise.resolve(checkApprovedImageLibrary(imageUrl, config)));
+    }
+
+    const checks = await Promise.all(checksToRun);
 
     // Calculate overall validation result
     const allPassed = checks.every(check => check.passed);
     const averageConfidence = checks.reduce((sum, check) => sum + check.confidence, 0) / checks.length;
-    
+
     const rejectionReasons = checks
       .filter(check => !check.passed)
       .map(check => `${check.checkName}: ${check.details}`);
