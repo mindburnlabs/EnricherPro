@@ -540,7 +540,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                         <span className="text-xs text-primary-subtle">
                           Attempt #{entry.attemptCount + 1}
                         </span>
-                        {entry.context.confidenceScores && (
+                        {entry.context?.confidenceScores?.overall && (
                           <ConfidenceIndicator
                             confidence={entry.context.confidenceScores.overall}
                             size="sm"

@@ -114,25 +114,25 @@ const ImportView: React.FC<ImportViewProps> = ({ onImport }) => {
               <div className="flex gap-4">
                 <div className="w-8 h-8 rounded-xl bg-primary-accent/20 border border-primary-accent/20 flex items-center justify-center shrink-0 font-bold text-primary-accent">1</div>
                 <div>
-                  <p className="text-primary font-bold mb-1">Search</p>
-                  <p className="text-primary-subtle leading-relaxed uppercase text-[10px] tracking-widest font-bold">Gemini 3 Flash</p>
-                  <p className="text-xs text-primary-subtle mt-1">Locates official source URLs for precision.</p>
+                  <p className="text-primary font-bold mb-1">Parallel Discovery</p>
+                  <p className="text-primary-subtle leading-relaxed uppercase text-[10px] tracking-widest font-bold">Firecrawl (Web) + Perplexity (Deep)</p>
+                  <p className="text-xs text-primary-subtle mt-1">Simultaneous broad & deep research for maximum coverage.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="w-8 h-8 rounded-xl bg-primary-accent/20 border border-primary-accent/20 flex items-center justify-center shrink-0 font-bold text-primary-accent">2</div>
                 <div>
-                  <p className="text-primary font-bold mb-1">Scrape</p>
-                  <p className="text-primary-subtle leading-relaxed uppercase text-[10px] tracking-widest font-bold">Firecrawl v2</p>
-                  <p className="text-xs text-primary-subtle mt-1">Deep markdown extraction from raw web sources.</p>
+                  <p className="text-primary font-bold mb-1">Consensus Merge</p>
+                  <p className="text-primary-subtle leading-relaxed uppercase text-[10px] tracking-widest font-bold">Multi-Agent Synthesis</p>
+                  <p className="text-xs text-primary-subtle mt-1">Cross-validates sources to eliminate hallucinations.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="w-8 h-8 rounded-xl bg-primary-accent/20 border border-primary-accent/20 flex items-center justify-center shrink-0 font-bold text-primary-accent">3</div>
                 <div>
-                  <p className="text-primary font-bold mb-1">Think</p>
-                  <p className="text-primary-subtle leading-relaxed uppercase text-[10px] tracking-widest font-bold">Gemini 3 Pro</p>
-                  <p className="text-xs text-primary-subtle mt-1">Logic-driven synthesis for global compatibility.</p>
+                  <p className="text-primary font-bold mb-1">Reactive Self-Repair</p>
+                  <p className="text-primary-subtle leading-relaxed uppercase text-[10px] tracking-widest font-bold">Auto-Correction Loop</p>
+                  <p className="text-xs text-primary-subtle mt-1">If data is missing, the agent autonomously generates targeted queries to find it.</p>
                 </div>
               </div>
             </div>
