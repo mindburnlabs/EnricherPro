@@ -527,17 +527,17 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-primary text-sm truncate">{entry.inputRaw}</h4>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${entry.priority === 'high' ? 'bg-red-100 text-red-700' :
-                          entry.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
-                            'bg-gray-100 text-gray-700'
+                        <span className={`px-2 py-1 rounded text-xs font-bold ${entry.priority === 'high' ? 'bg-status-error/10 text-status-error' :
+                          entry.priority === 'medium' ? 'bg-status-warning/10 text-status-warning' :
+                            'bg-surface text-primary-subtle border border-border-subtle'
                           }`}>
                           {entry.priority} priority
                         </span>
-                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                        <span className="text-xs text-primary-subtle flex items-center gap-1">
                           <Clock size={12} />
                           ~{entry.estimatedResolutionTime}min
                         </span>
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-primary-subtle">
                           Attempt #{entry.attemptCount + 1}
                         </span>
                         {entry.context.confidenceScores && (
@@ -569,13 +569,13 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs">
                     {/* Missing Fields */}
                     <div>
-                      <h5 className="font-bold text-slate-700 mb-2 flex items-center gap-1">
+                      <h5 className="font-bold text-primary-subtle mb-2 flex items-center gap-1">
                         <AlertTriangle size={12} />
                         Missing Required Fields:
                       </h5>
                       <div className="flex flex-wrap gap-1">
                         {entry.missingFields.map(field => (
-                          <span key={field} className="px-2 py-1 bg-red-100 text-red-700 rounded font-bold">
+                          <span key={field} className="px-2 py-1 bg-status-error/10 text-status-error border border-status-error/20 rounded font-bold">
                             {field.replace(/_/g, ' ')}
                           </span>
                         ))}
@@ -584,11 +584,11 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
                     {/* Actionable Recommendations */}
                     <div>
-                      <h5 className="font-bold text-slate-700 mb-2 flex items-center gap-1">
+                      <h5 className="font-bold text-primary-subtle mb-2 flex items-center gap-1">
                         <Target size={12} />
                         Recommended Actions:
                       </h5>
-                      <ul className="text-slate-600 space-y-1">
+                      <ul className="text-primary-subtle space-y-1">
                         {entry.recommendations.slice(0, 3).map((rec, i) => (
                           <li key={i} className="text-xs flex items-start gap-2">
                             <span className="text-emerald-500 font-bold shrink-0 mt-0.5">•</span>
@@ -606,44 +606,44 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
                   {/* Error Details */}
                   {entry.failureReasons.length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-amber-200">
-                      <h5 className="font-bold text-slate-700 mb-2 text-xs flex items-center gap-1">
+                    <div className="mt-4 pt-3 border-t border-border-subtle">
+                      <h5 className="font-bold text-primary-subtle mb-2 text-xs flex items-center gap-1">
                         <Zap size={12} />
                         Error Analysis:
                       </h5>
                       <div className="space-y-2">
                         {entry.failureReasons.slice(0, 3).map((error, i) => (
-                          <div key={i} className={`p-2 rounded-lg border ${error.severity === 'critical' ? 'bg-red-50 border-red-200' :
-                            error.severity === 'high' ? 'bg-orange-50 border-orange-200' :
-                              error.severity === 'medium' ? 'bg-yellow-50 border-yellow-200' :
-                                'bg-gray-50 border-gray-200'
+                          <div key={i} className={`p-2 rounded-lg border ${error.severity === 'critical' ? 'bg-status-error/10 border-status-error/20' :
+                            error.severity === 'high' ? 'bg-status-warning/10 border-status-warning/20' :
+                              error.severity === 'medium' ? 'bg-status-warning/5 border-status-warning/10' :
+                                'bg-surface border-border-subtle'
                             }`}>
                             <div className="flex items-center justify-between mb-1">
-                              <span className={`text-xs font-bold ${error.severity === 'critical' ? 'text-red-700' :
-                                error.severity === 'high' ? 'text-orange-700' :
-                                  error.severity === 'medium' ? 'text-yellow-700' :
-                                    'text-gray-700'
+                              <span className={`text-xs font-bold ${error.severity === 'critical' ? 'text-status-error' :
+                                error.severity === 'high' ? 'text-status-warning' :
+                                  error.severity === 'medium' ? 'text-status-warning' :
+                                    'text-primary'
                                 }`}>
                                 {error.reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                               </span>
-                              <span className={`px-1 py-0.5 rounded text-[8px] font-bold ${error.severity === 'critical' ? 'bg-red-100 text-red-700' :
-                                error.severity === 'high' ? 'bg-orange-100 text-orange-700' :
-                                  error.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                    'bg-gray-100 text-gray-700'
+                              <span className={`px-1 py-0.5 rounded text-[8px] font-bold ${error.severity === 'critical' ? 'bg-status-error/20 text-status-error' :
+                                error.severity === 'high' ? 'bg-status-warning/20 text-status-warning' :
+                                  error.severity === 'medium' ? 'bg-status-warning/10 text-status-warning' :
+                                    'bg-primary-subtle/10 text-primary-subtle'
                                 }`}>
                                 {error.severity}
                               </span>
                             </div>
-                            <p className="text-xs text-slate-600 mb-1">{error.message}</p>
+                            <p className="text-xs text-primary-subtle mb-1">{error.message}</p>
                             {error.suggestedAction && (
-                              <p className="text-xs text-indigo-600 font-medium">
+                              <p className="text-xs text-primary-accent font-medium">
                                 💡 {error.suggestedAction}
                               </p>
                             )}
                           </div>
                         ))}
                         {entry.failureReasons.length > 3 && (
-                          <div className="text-xs text-slate-400 italic text-center py-2">
+                          <div className="text-xs text-primary-subtle italic text-center py-2">
                             +{entry.failureReasons.length - 3} more errors (view in detail panel)
                           </div>
                         )}

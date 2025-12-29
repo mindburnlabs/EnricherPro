@@ -90,6 +90,36 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
         description: 'Final validation and cleanup',
         color: 'bg-rose-50 text-rose-700 border-rose-200'
       },
+      normalization: {
+        label: 'Normalizing',
+        icon: Brain,
+        description: 'Standardizing input',
+        color: 'bg-slate-50 text-slate-700 border-slate-200'
+      },
+      parsing: {
+        label: 'Parsing',
+        icon: Search,
+        description: 'Extracting product identity',
+        color: 'bg-blue-50 text-blue-700 border-blue-200'
+      },
+      discovery: {
+        label: 'Deep Research',
+        icon: Zap,
+        description: 'Agentic discovery in progress',
+        color: 'bg-violet-50 text-violet-700 border-violet-200'
+      },
+      enrichment: {
+        label: 'Enrichment',
+        icon: Sparkles,
+        description: 'Synthesizing final record',
+        color: 'bg-indigo-50 text-indigo-700 border-indigo-200'
+      },
+      failed: {
+        label: 'Failed',
+        icon: XCircle,
+        description: 'Process failed',
+        color: 'bg-red-50 text-red-700 border-red-200'
+      },
     };
 
     const config = stepLabels[step || 'searching'];

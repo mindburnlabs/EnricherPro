@@ -134,6 +134,11 @@ export class PerplexityService {
                     return { success: true, data: await res.json(), responseTime: 0 };
                 }
             );
+
+            if (!response.success) {
+                throw new Error(response.error || 'Perplexity Direct API request failed.');
+            }
+
             return this.parseResponse(response.data);
         } catch (error) {
             console.error('Perplexity Direct discovery failed:', error);
@@ -177,6 +182,10 @@ export class PerplexityService {
                     return { success: true, data: await res.json(), responseTime: 0 };
                 }
             );
+
+            if (!response.success) {
+                throw new Error(response.error || 'Perplexity (OpenRouter) request failed.');
+            }
 
             return this.parseResponse(response.data);
 

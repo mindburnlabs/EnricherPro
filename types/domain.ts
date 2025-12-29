@@ -1,7 +1,7 @@
 
 export type RuMarketEligibility = 'ru_verified' | 'ru_unknown' | 'ru_rejected';
 
-export type ProcessingStep = 'idle' | 'searching' | 'filtering' | 'scraping_nix' | 'scraping_compat' | 'analyzing' | 'auditing_images' | 'finalizing' | 'gate_check' | 'complete' | 'error';
+export type ProcessingStep = 'idle' | 'normalization' | 'parsing' | 'discovery' | 'searching' | 'filtering' | 'scraping_nix' | 'scraping_compat' | 'enrichment' | 'analyzing' | 'auditing_images' | 'finalizing' | 'gate_check' | 'complete' | 'error' | 'failed';
 
 export type AutomationStatus = 'done' | 'needs_review' | 'failed';
 

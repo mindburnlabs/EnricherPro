@@ -27,7 +27,7 @@ import { createErrorDetail } from './errorHandlingService';
 import { discoverRelatedProducts } from './relatedProductsService';
 import { apiIntegrationService, createApiIntegrationError } from './apiIntegrationService';
 import { createOpenRouterService, OpenRouterService } from './openRouterService';
-import { RecursiveResearchService } from './recursiveResearchService';
+
 
 const getAI = () => {
   const apiKey = (typeof localStorage !== 'undefined' ? localStorage.getItem('gemini_api_key') : null) || (import.meta as any).env?.VITE_GOOGLE_API_KEY || process.env.VITE_GOOGLE_API_KEY;

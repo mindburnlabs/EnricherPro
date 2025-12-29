@@ -423,7 +423,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   {item.evidence.quality_metrics.failed_validations?.length > 0 && (
                     <div className="mt-8 p-6 bg-red-500/10 border border-red-500/20 rounded-2xl">
                       <h4 className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-4">Failed Validations</h4>
-                      <ul className="text-[10px] text-slate-400 space-y-2 font-mono">
+                      <ul className="text-[10px] text-primary-subtle space-y-2 font-mono">
                         {item.evidence.quality_metrics.failed_validations.map((validation, i) => (
                           <li key={i} className="flex items-center gap-3">
                             <AlertTriangle size={12} className="text-red-500" />

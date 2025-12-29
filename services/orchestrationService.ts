@@ -8,6 +8,7 @@ import {
     DataSource,
     FieldEvidence
 } from "../types/domain";
+import { Result, Ok, Err } from '../types/sota';
 // Replacing ParserService with superior textProcessingService
 import { processSupplierTitle } from './textProcessingService';
 import { nixService } from './nixService';
@@ -17,11 +18,9 @@ import { synthesizeConsumableData as synthesizeWithGemini } from './geminiServic
 import { getOpenRouterService } from './openRouterService';
 import { evaluateQualityGates } from './qualityGates';
 
-export type OrchestrationStage = 'normalization' | 'parsing' | 'discovery' | 'enrichment' | 'gate_check' | 'complete' | 'failed';
-
 export interface WorkflowState {
     id: string;
-    stage: OrchestrationStage;
+    stage: ProcessingStep;
     query: string;
     normalizedTitle?: string;
     parsedData?: Partial<ConsumableData>;
@@ -47,9 +46,29 @@ class OrchestrationService {
         return OrchestrationService.instance;
     }
 
+    // SOTA 2025: Type-Safe Agent Execution Wrapper
+    private async executeAgent<T>(
+        name: string,
+        promise: Promise<T>
+    ): Promise<Result<T>> {
+        try {
+            const data = await promise;
+            return Ok(data);
+        } catch (e) {
+            return Err(e as Error);
+        }
+    }
+
+    private getError(result: Result<any>): string {
+        if (!result.success) {
+            return (result as { success: false; error: Error }).error.message;
+        }
+        return 'Unknown Error';
+    }
+
     public async processItem(
         rawQuery: string,
-        onProgress: (stage: OrchestrationStage) => void = () => { },
+        onProgress: (stage: ProcessingStep) => void = () => { },
         options: { engine: ProcessingEngine } = { engine: 'gemini' }
     ): Promise<EnrichedItem> {
         const jobId = uuidv4();
@@ -90,54 +109,83 @@ class OrchestrationService {
 
             const researchQuery = `${data.brand || ''} ${data.model || rawQuery} ${data.consumable_type !== 'unknown' && data.consumable_type ? data.consumable_type : ''}`;
 
-            // Define research promises
-            const researchPromises: Promise<any>[] = [
-                // Agent A: Logistics (NIX.ru)
-                data.model ? nixService.getPackagingInfo(data.model, data.brand || '') : Promise.resolve(null)
-            ];
+            // Define typed research results containers (Initialized to Error 'Not Run')
+            let nixResult: Result<any> = Err(new Error('Agent not scheduled'));
+            let firecrawlResult: Result<any> = Err(new Error('Agent not scheduled'));
+            let discoveryResult: Result<any> = Err(new Error('Agent not scheduled'));
+            let openRouterResult: Result<any> = Err(new Error('Agent not scheduled'));
 
-            let isConsensusMode = false;
+            // PARALLEL EXECUTION PLAN DAG
+            const tasks: Promise<void>[] = [];
 
-            // Agent B & C: Market & Compatibility
+            // Task A: NIX.ru (Logistics Agent)
+            // Independent task, runs alongside discovery
+            tasks.push((async () => {
+                if (data.model) {
+                    const res = await this.executeAgent('NIX.ru', nixService.getPackagingInfo(data.model, data.brand || ''));
+                    nixResult = res;
+                    if (!res.success) logs.push(`Warning: NIX.ru agent failed: ${this.getError(res)}`);
+                } else {
+                    nixResult = Ok(null); // Explicit null for 'not applicable'
+                }
+            })());
+
+            // Task B: Market Discovery (Consensus or Single Mode)
             if (options.engine === 'firecrawl') {
-                // SOTA CONSENSUS MODE: Run BOTH Firecrawl types and Perplexity
-                isConsensusMode = true;
+                // SOTA CONSENSUS MODE: Firecrawl + Perplexity
                 logs.push("Executing Parallel Research Strategy: Deep Agent + Broad LLM Search");
 
-                // 1. Firecrawl Deep Agent
-                researchPromises.push(deepAgentResearch(researchQuery, data.brand || undefined));
+                // 1. Firecrawl (Deep Agent)
+                tasks.push((async () => {
+                    const res = await this.executeAgent('Firecrawl Deep Agent', deepAgentResearch(researchQuery, data.brand || undefined));
+                    firecrawlResult = res;
+                    if (!res.success) logs.push(`Warning: Firecrawl agent failed: ${this.getError(res)}`);
+                })());
 
-                // 2. Perplexity Broad Search (Concurrent)
-                researchPromises.push(perplexityService.discoverSources(researchQuery));
+                // 2. Perplexity (Broad Context Augmentation)
+                tasks.push((async () => {
+                    const res = await this.executeAgent('Perplexity Broad Search', perplexityService.discoverSources(researchQuery));
+                    discoveryResult = res;
+                    if (!res.success) logs.push(`Warning: Perplexity agent failed: ${this.getError(res)}`);
+                })());
 
             } else {
                 // Classic Single-Engine Mode
-                researchPromises.push(
-                    options.engine === 'openrouter'
+                tasks.push((async () => {
+                    const promise = options.engine === 'openrouter'
                         ? getOpenRouterService()?.researchProductContext(rawQuery)
-                        : perplexityService.discoverSources(researchQuery)
-                );
+                        : perplexityService.discoverSources(researchQuery);
+
+                    if (options.engine === 'openrouter') {
+                        const res = await this.executeAgent('OpenRouter Agent', promise || Promise.resolve(null));
+                        openRouterResult = res;
+                        if (!res.success) logs.push(`Warning: OpenRouter agent failed: ${this.getError(res)}`);
+                        discoveryResult = openRouterResult; // alias
+                    } else {
+                        const res = await this.executeAgent('Perplexity Agent', promise || Promise.resolve(null));
+                        discoveryResult = res;
+                        if (!res.success) logs.push(`Warning: Perplexity agent failed: ${this.getError(res)}`);
+                    }
+                })());
             }
 
-            const results = await Promise.all(researchPromises);
+            // Await all parallel agents
+            await Promise.all(tasks);
 
-            // Map results based on index
-            const nixInfo = results[0];
-            let firecrawlResult = null;
-            let perplexityResult = null;
-            let openRouterResult = null;
-            let discoveryResult = null; // Legacy holder
+            // Synthesize Context from Successes (Result Unwrapping)
+            const nixInfo = nixResult.success ? nixResult.data : null;
 
-            if (isConsensusMode) {
-                firecrawlResult = results[1];
-                perplexityResult = results[2];
-                // For legacy compatibility, use perplexity as 'discoveryResult' base but we'll use both in context
-                discoveryResult = perplexityResult;
-            } else {
-                // Index 1 is the selected engine result
-                if (options.engine === 'openrouter') openRouterResult = results[1];
-                else perplexityResult = results[1]; // gemini uses perplexity
-                discoveryResult = results[1];
+            // Resolve the best available discovery data
+            let effectiveDiscovery = discoveryResult.success ? discoveryResult.data : null;
+
+            // Fallback strategy: If Perplexity Failed, check if Firecrawl succeeded to provide basic context
+            if (!effectiveDiscovery && options.engine === 'firecrawl' && firecrawlResult.success) {
+                effectiveDiscovery = {
+                    summary: "Perplexity failed. Using Firecrawl data for synthesis context.",
+                    urls: []
+                };
+            } else if (!effectiveDiscovery) {
+                effectiveDiscovery = { summary: "Search Agent Failed completely.", urls: [] };
             }
 
             // Process Logistics Result
@@ -175,39 +223,45 @@ class OrchestrationService {
             let researchSummary = "";
             let researchUrls: string[] = [];
 
+            // Restore consensus mode flag for logic
+            const isConsensusMode = options.engine === 'firecrawl';
+
             try {
                 if (isConsensusMode) {
-                    // MERGE SUMMARY STRATEGY
-                    const fcSummary = firecrawlResult ? `
-                     [FIRECRAWL_AGENT_FINDINGS]
-                     MPN: ${firecrawlResult.mpn || 'N/A'}
-                     Specifications: ${JSON.stringify(firecrawlResult.specifications || {}, null, 2)}
-                     Compatibility: ${JSON.stringify(firecrawlResult.compatibility || {}, null, 2)}
-                     ` : "Firecrawl Agent returned no data.";
+                    // MERGE SUMMARY STRATEGY (Type-Safe Unwrapping)
+                    const fcData = firecrawlResult.success ? firecrawlResult.data : null;
+                    const pplxData = discoveryResult.success ? discoveryResult.data : null; // discoveryResult holds PPLX data in consensus
 
-                    const pplxSummary = perplexityResult ? `
+                    const fcSummary = fcData ? `
+                     [FIRECRAWL_AGENT_FINDINGS]
+                     MPN: ${fcData.mpn || 'N/A'}
+                     Specifications: ${JSON.stringify(fcData.specifications || {}, null, 2)}
+                     Compatibility: ${JSON.stringify(fcData.compatibility || {}, null, 2)}
+                     ` : "Firecrawl Agent returned no data or failed.";
+
+                    const pplxSummary = pplxData ? `
                      [PERPLEXITY_BROAD_SEARCH]
-                     ${perplexityResult.summary}
-                     ` : "Perplexity returned no data.";
+                     ${pplxData.summary}
+                     ` : "Perplexity returned no data or failed.";
 
                     researchSummary = `${fcSummary}\n\n${pplxSummary}`;
 
-                    // Merge URLs
-                    const fcUrls = firecrawlResult?.compatibility?.sources?.map((s: any) => s.url) || [];
-                    const pplxUrls = perplexityResult?.urls || [];
+                    // Merge URLs safely
+                    const fcUrls = fcData?.compatibility?.sources?.map((s: any) => s.url) || [];
+                    const pplxUrls = pplxData?.urls || [];
                     researchUrls = [...new Set([...fcUrls, ...pplxUrls])].filter(u => !!u);
 
                     logs.push(`Consensus: Merged ${fcUrls.length} Deep Agent URLs and ${pplxUrls.length} Broad Search URLs.`);
 
                 } else if (options.engine === 'openrouter') {
-                    if (discoveryResult) {
-                        researchSummary = discoveryResult.researchSummary;
-                        researchUrls = discoveryResult.urls;
+                    if (openRouterResult.success && openRouterResult.data) {
+                        researchSummary = openRouterResult.data.researchSummary || openRouterResult.data.summary;
+                        researchUrls = openRouterResult.data.urls || [];
                     }
                 } else { // Gemini / Default Perplexity
-                    if (discoveryResult) {
-                        researchSummary = discoveryResult.summary;
-                        researchUrls = discoveryResult.urls;
+                    if (discoveryResult.success && discoveryResult.data) {
+                        researchSummary = discoveryResult.data.summary;
+                        researchUrls = discoveryResult.data.urls || [];
                     }
                 }
             } catch (err) {
