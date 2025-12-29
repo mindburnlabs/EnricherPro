@@ -30,16 +30,27 @@ const NavItem = ({ icon: Icon, label, id, active, onClick, mobile = false }: any
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => {
   const [isFirecrawlReady, setIsFirecrawlReady] = useState(false);
+  const [modelName, setModelName] = useState('Gemini 1.5 Pro');
 
   const checkKeys = () => {
     const fcKey = getFirecrawlApiKey();
     setIsFirecrawlReady(!!fcKey && fcKey.startsWith('fc-'));
+
+    // Update model name dynamically
+    const storedModel = localStorage.getItem('gemini_model') || 'gemini-1.5-pro';
+    const display = storedModel.replace('google/', '').replace('gemini-', 'Gemini ');
+    setModelName(display);
   };
 
   useEffect(() => {
     checkKeys();
     window.addEventListener('storage', checkKeys);
-    return () => window.removeEventListener('storage', checkKeys);
+    // Custom event for immediate updates within the same window
+    window.addEventListener('settings-updated', checkKeys);
+    return () => {
+      window.removeEventListener('storage', checkKeys);
+      window.removeEventListener('settings-updated', checkKeys);
+    };
   }, []);
 
   return (
@@ -104,7 +115,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-primary-subtle font-medium">Gemini 3 Pro</span>
+                <span className="text-primary-subtle font-medium truncate max-w-[120px]" title={localStorage.getItem('gemini_model') || 'gemini-1.5-pro'}>
+                  {modelName}
+                </span>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
               </div>
               <div className="flex justify-between items-center text-xs">

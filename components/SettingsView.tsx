@@ -458,7 +458,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
 
               <div className="flex justify-end pt-4">
                 <button
-                  onClick={handleSaveGemini}
+                  onClick={() => {
+                    handleSaveGemini();
+                    window.dispatchEvent(new Event('settings-updated'));
+                  }}
                   className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/40"
                 >
                   {geminiStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
