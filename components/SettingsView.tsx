@@ -301,7 +301,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <button
                   onClick={() => setEngine('gemini')}
-                  className={`p-3 rounded-lg border text-left transition-colors ${engine === 'gemini'
+                  className={`p-3 rounded-xl border text-left transition-colors ${engine === 'gemini'
                     ? 'bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10'
                     : 'bg-surface border-border-subtle hover:border-primary-accent/50 text-primary-subtle hover:bg-card'
                     }`}
@@ -312,7 +312,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
 
                 <button
                   onClick={() => setEngine('openrouter')}
-                  className={`p-3 rounded-lg border text-left transition-colors ${engine === 'openrouter'
+                  className={`p-3 rounded-xl border text-left transition-colors ${engine === 'openrouter'
                     ? 'bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10'
                     : 'bg-surface border-border-subtle hover:border-primary-accent/50 text-primary-subtle hover:bg-card'
                     }`}
@@ -323,7 +323,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
 
                 <button
                   onClick={() => setEngine('firecrawl')}
-                  className={`p-3 rounded-lg border text-left transition-colors ${engine === 'firecrawl'
+                  className={`p-3 rounded-xl border text-left transition-colors ${engine === 'firecrawl'
                     ? 'bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10'
                     : 'bg-surface border-border-subtle hover:border-primary-accent/50 text-primary-subtle hover:bg-card'
                     }`}
@@ -451,13 +451,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
             <div className="bg-surface p-1 rounded-xl flex w-fit border border-border-subtle">
               <button
                 onClick={() => setPerplexityConfig(prev => ({ ...prev, provider: 'openrouter' }))}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${perplexityConfig.provider === 'openrouter' ? 'bg-card text-primary shadow-sm' : 'text-primary-subtle'}`}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${perplexityConfig.provider === 'openrouter' ? 'bg-card text-primary shadow-sm' : 'text-primary-subtle'}`}
               >
                 Use OpenRouter
               </button>
               <button
                 onClick={() => setPerplexityConfig(prev => ({ ...prev, provider: 'direct' }))}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${perplexityConfig.provider === 'direct' ? 'bg-card text-primary shadow-sm' : 'text-primary-subtle'}`}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${perplexityConfig.provider === 'direct' ? 'bg-card text-primary shadow-sm' : 'text-primary-subtle'}`}
               >
                 Use Direct API
               </button>

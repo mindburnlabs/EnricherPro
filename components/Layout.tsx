@@ -61,7 +61,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex w-72 glass-sidebar flex-shrink-0 flex-col h-full p-6">
         <div className="flex items-center gap-3 text-primary font-bold text-xl mb-10 px-2">
-          <div className="p-2 bg-primary-accent rounded-lg shadow-xl shadow-primary-accent/20 text-white">
+          <div className="p-2 bg-primary-accent rounded-xl shadow-xl shadow-primary-accent/20 text-white">
             <Database size={24} />
           </div>
           <span className="tracking-tight">Enricher<span className="text-primary-accent">Pro</span></span>
