@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { EnrichedItem } from '../types';
-import { ExternalLink, AlertTriangle, Check, Save, ChevronLeft, Brain, Link as LinkIcon, Box, Ruler, FileText, Image as ImageIcon, HelpCircle, ShieldCheck, AlertCircle, Cpu, Layers, Package, Target } from 'lucide-react';
+import { ExternalLink, AlertTriangle, Check, Save, ChevronLeft, Brain, Link as LinkIcon, Box, Ruler, FileText, Image as ImageIcon, HelpCircle, ShieldCheck, AlertCircle, Cpu, Layers, Package, Target, Globe } from 'lucide-react';
+import ConfidenceIndicator from './ConfidenceIndicator';
 
 interface DetailViewProps {
   item: EnrichedItem;
@@ -32,21 +33,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
     </button>
   );
 
-  const ConfidenceIndicator = ({ value, label, size = 'md' }: { value?: number, label: string, size?: 'sm' | 'md' }) => {
-    if (value === undefined) return null;
-    const isHigh = value > 0.85;
-    const isMed = value > 0.6;
-    const color = isHigh ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' :
-      isMed ? 'text-amber-400 border-amber-500/30 bg-amber-500/10' :
-        'text-red-400 border-red-500/30 bg-red-500/10';
 
-    return (
-      <div className={`flex items-center gap-2 px-3 py-1 border rounded-xl ${color}`}>
-        <div className={`w-1.5 h-1.5 rounded-full ${isHigh ? 'bg-emerald-400' : isMed ? 'bg-amber-400' : 'bg-red-400'} shadow-[0_0_6px_currentColor]`}></div>
-        <span className="text-[10px] font-black uppercase tracking-widest">{label}: {Math.round(value * 100)}%</span>
-      </div>
-    );
-  };
 
   return (
     <div className="fixed inset-0 bg-background z-[100] flex flex-col h-full overflow-hidden animate-in fade-in duration-500 transition-colors">
@@ -64,7 +51,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                 <span className="text-sm font-bold text-primary tracking-widest font-mono">{editedData.model || 'UNIDENTIFIED'}</span>
               </div>
               <div className="h-4 w-px bg-border-subtle shrink-0"></div>
-              <ConfidenceIndicator value={item.data.confidence?.overall} label="System Confidence" />
+              <ConfidenceIndicator confidence={item.data.confidence?.overall} label="System Confidence" />
               {item.quality_score && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-surface border border-border-subtle rounded-xl">
                   <span className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">Quality Matched</span>
@@ -492,65 +479,99 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   <div className="p-2 bg-indigo-500/10 rounded-lg">
                     <LinkIcon size={16} className="text-primary-accent" />
                   </div>
-                  Evidence Sources
+                  Parallel Consensus Evidence
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {item.evidence.sources.map((src, i) => (
-                    <div key={i} className="bg-surface p-8 rounded-[2rem] border border-border-subtle hover:border-primary-accent/30 transition-all group">
-                      <div className="flex justify-between items-start mb-6">
-                        <div className="flex items-center gap-3">
-                          <div className="px-3 py-1 bg-background rounded-lg text-[9px] font-black uppercase tracking-widest text-primary-subtle border border-border-subtle group-hover:bg-primary-accent/10 group-hover:text-primary-accent transition-colors">
-                            {src.source_type}
-                          </div>
-                          {src.confidence && (
-                            <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${src.confidence > 0.8 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                              src.confidence > 0.6 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                                'bg-red-500/10 text-red-400 border border-red-500/20'
-                              }`}>
-                              {Math.round(src.confidence * 100)}% Match
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                  {/* Firecrawl Agent */}
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3 border-b border-border-subtle pb-4 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-status-warning shadow-[0_0_8px_rgba(245,158,11,0.6)]"></div>
+                      <h4 className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">Firecrawl Scraper</h4>
+                    </div>
+                    {item.evidence.sources.filter(s => ['search_result', 'direct_navigation'].includes(s.source_type)).length === 0 && (
+                      <div className="text-[9px] text-primary-subtle italic opacity-50">No direct scraping sources found.</div>
+                    )}
+                    {item.evidence.sources.filter(s => ['search_result', 'direct_navigation'].includes(s.source_type)).map((src, i) => (
+                      <div key={i} className="bg-surface p-6 rounded-[2rem] border border-border-subtle hover:border-status-warning/30 transition-all group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-5">
+                          <Globe size={40} />
+                        </div>
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                          <div className="flex items-center gap-3">
+                            <div className="px-3 py-1 bg-background rounded-lg text-[9px] font-black uppercase tracking-widest text-primary-subtle border border-border-subtle group-hover:bg-status-warning/10 group-hover:text-status-warning transition-colors">
+                              {src.source_type.replace('_', ' ')}
                             </div>
-                          )}
-                        </div>
-                        <a href={src.url} target="_blank" rel="noreferrer" className="text-primary-subtle hover:text-white transition-all p-2 hover:bg-white/10 rounded-full">
-                          <ExternalLink size={14} />
-                        </a>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="font-black text-primary-subtle mb-2 text-[9px] uppercase tracking-widest">Verified Claims</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {src.claims.map(claim => (
-                              <div key={claim} className="flex items-center gap-2 text-[10px] font-bold text-primary bg-surface px-2 py-1 rounded-lg border border-border-subtle">
-                                <Check size={10} className="text-emerald-400" /> {claim.toUpperCase()}
-                              </div>
-                            ))}
+                            <ConfidenceIndicator confidence={src.confidence} size="sm" showIcon={false} />
                           </div>
+                          <a href={src.url} target="_blank" rel="noreferrer" className="text-primary-subtle hover:text-white transition-all p-2 hover:bg-white/10 rounded-full">
+                            <ExternalLink size={14} /> // Note: GLOBE icon missing import. I need to add it or use LinkIcon.
+                          </a>
                         </div>
-
-                        {src.evidence_snippets_by_claim && Object.keys(src.evidence_snippets_by_claim).length > 0 && (
-                          <div>
-                            <h4 className="font-black text-primary-subtle mb-2 text-[9px] uppercase tracking-widest">Evidence Snippets</h4>
-                            <div className="space-y-2">
-                              {Object.entries(src.evidence_snippets_by_claim).map(([claim, snippet]) => (
-                                <div key={claim} className="bg-background p-4 rounded-xl border border-border-subtle">
-                                  <div className="text-[9px] font-black text-primary-accent uppercase mb-1 tracking-wider">{claim}</div>
-                                  <div className="text-[10px] text-primary-subtle font-mono leading-relaxed line-clamp-3 hover:line-clamp-none transition-all">{snippet}</div> // Cast to string if needed
+                        <div className="space-y-4 relative z-10">
+                          {src.claims.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {src.claims.slice(0, 3).map(claim => (
+                                <div key={claim} className="flex items-center gap-2 text-[9px] font-bold text-primary bg-background px-2 py-1 rounded-lg border border-border-subtle">
+                                  <Check size={10} className="text-emerald-400" /> {claim.toUpperCase()}
                                 </div>
                               ))}
                             </div>
-                          </div>
-                        )}
-
-                        <div className="pt-4 border-t border-border-subtle">
-                          <div className="flex justify-between items-center text-[9px] text-primary-subtle font-mono uppercase tracking-widest">
-                            <span>Method: {src.extraction_method || 'automated'}</span>
+                          )}
+                          <div className="pt-3 border-t border-border-subtle text-[8px] text-primary-subtle font-mono uppercase tracking-widest flex justify-between">
+                            <span className="truncate max-w-[150px]">{new URL(src.url).hostname}</span>
                             <span>{new Date(src.extracted_at).toLocaleDateString()}</span>
                           </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+
+                  {/* Perplexity Agent */}
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3 border-b border-border-subtle pb-4 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-primary-accent shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>
+                      <h4 className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">Deep Research (Perplexity)</h4>
                     </div>
-                  ))}
+                    {item.evidence.sources.filter(s => !['search_result', 'direct_navigation'].includes(s.source_type)).length === 0 && (
+                      <div className="text-[9px] text-primary-subtle italic opacity-50">No deep research sources found.</div>
+                    )}
+                    {item.evidence.sources.filter(s => !['search_result', 'direct_navigation'].includes(s.source_type)).map((src, i) => (
+                      <div key={i} className="bg-surface p-6 rounded-[2rem] border border-border-subtle hover:border-primary-accent/30 transition-all group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-5">
+                          <Brain size={40} />
+                        </div>
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                          <div className="flex items-center gap-3">
+                            <div className="px-3 py-1 bg-background rounded-lg text-[9px] font-black uppercase tracking-widest text-primary-subtle border border-border-subtle group-hover:bg-primary-accent/10 group-hover:text-primary-accent transition-colors">
+                              {src.source_type.replace('_', ' ')}
+                            </div>
+                            <ConfidenceIndicator confidence={src.confidence} size="sm" showIcon={false} />
+                          </div>
+                          <a href={src.url} target="_blank" rel="noreferrer" className="text-primary-subtle hover:text-white transition-all p-2 hover:bg-white/10 rounded-full">
+                            <ExternalLink size={14} />
+                          </a>
+                        </div>
+
+                        <div className="space-y-4 relative z-10">
+                          {src.claims.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {src.claims.slice(0, 3).map(claim => (
+                                <div key={claim} className="flex items-center gap-2 text-[9px] font-bold text-primary bg-background px-2 py-1 rounded-lg border border-border-subtle">
+                                  <Check size={10} className="text-emerald-400" /> {claim.toUpperCase()}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <div className="pt-3 border-t border-border-subtle text-[8px] text-primary-subtle font-mono uppercase tracking-widest flex justify-between">
+                            <span className="truncate max-w-[150px]">{new URL(src.url).hostname}</span>
+                            <span>{new Date(src.extracted_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
                 </div>
               </div>
 

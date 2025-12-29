@@ -215,7 +215,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
   }) => {
     if (confidence === undefined) return <span className="text-xs text-slate-400">--</span>;
 
-    return <ConfidenceIndicator confidence={confidence} size={size} variant="dot" />;
+    return <ConfidenceIndicator confidence={confidence} size={size} />;
   };
 
   return (
@@ -543,8 +543,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                         {entry.context.confidenceScores && (
                           <ConfidenceIndicator
                             confidence={entry.context.confidenceScores.overall}
-                            size="xs"
-                            variant="badge"
+                            size="sm"
                           />
                         )}
                       </div>

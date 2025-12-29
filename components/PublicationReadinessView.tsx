@@ -406,7 +406,6 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                     <ConfidenceIndicator
                       confidence={item.data.confidence?.overall || 0}
                       size="sm"
-                      variant="badge"
                     />
                   </td>
                   <td className="px-6 py-5">
