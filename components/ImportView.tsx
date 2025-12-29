@@ -51,7 +51,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImport }) => {
         <h1 className="text-4xl md:text-5xl font-extrabold text-primary mb-4 tracking-tight">
           Ready to <span className="text-indigo-600 dark:text-indigo-400">enrich</span> data?
         </h1>
-        <p className="text-slate-400 max-w-xl mx-auto text-lg">
+        <p className="text-primary-subtle max-w-xl mx-auto text-lg">
           Input your raw supplier strings or snap a photo of the product packaging. Our AI agent handles the research.
         </p>
       </div>
@@ -142,7 +142,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImport }) => {
             <div className="flex items-center gap-2 text-amber-500 font-bold mb-3 uppercase text-[10px] tracking-widest">
               <Info size={16} /> Quality Tips
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-primary-subtle leading-relaxed">
               For best results, include full manufacturer part numbers (MPNs). Image recognition works best with clear shots of the box labels.
             </p>
           </div>

@@ -16,6 +16,7 @@ import {
   PARSER_VERSION
 } from './auditTrailService';
 import { nixService } from './nixService';
+import { firecrawlAgent, deepAgentResearch, getAgentStatus } from './firecrawlService';
 import { filterPrintersForRussianMarket } from './russianMarketFilter';
 import { apiIntegrationService } from './apiIntegrationService';
 
@@ -266,50 +267,53 @@ class OpenRouterService {
   /**
    * Research product context using web search capabilities
    */
+  /**
+   * Enhanced Research product context using Firecrawl Agent
+   * Replaces LLM-only hallucination with actual web research
+   */
   async researchProductContext(query: string): Promise<{ researchSummary: string; urls: string[] }> {
-    const messages = [
-      {
-        role: 'system',
-        content: `You are a technical research assistant specializing in printer consumables. Your task is to identify the most relevant and reliable sources for product information.
-
-Focus on finding:
-1. Official manufacturer pages (HP, Canon, Brother, Epson, etc.)
-2. Russian market retailers (nix.ru, cartridge.ru, rashodnika.net)
-3. Technical specification databases
-4. Compatibility information sources
-
-Return a structured response with research summary and relevant URLs.`
-      },
-      {
-        role: 'user',
-        content: `Research printer consumable: "${query}"
-
-Please provide:
-1. A brief research summary identifying the product type, brand, and model
-2. List of relevant URLs where technical specifications might be found
-3. Focus on Russian market sources and official manufacturer pages
-
-Format your response as JSON:
-{
-  "researchSummary": "Brief summary of the product and research approach",
-  "urls": ["url1", "url2", "url3"]
-}`
-      }
-    ];
-
-    const response = await this.makeCompletionRequest(messages, { maxTokens: 1000 });
+    console.log(`[OpenRouter] Starting real web research for: ${query}`);
 
     try {
-      const content = response.choices[0]?.message?.content || '{}';
-      const parsed = JSON.parse(content);
+      // Use Firecrawl Agent for broad context research
+      const agentResult = await firecrawlAgent(
+        `Research printer consumable: "${query}". 
+        Find:
+        1. Official manufacturer page
+        2. Major Russian retailers (nix.ru, cartridge.ru)
+        3. Compatibility details
+        
+        Return a summary and list of sources.`,
+        undefined // No strict schema for broad research, just let it return default structure
+      );
+
+      // Extract URLs from agent result
+      // Agent result structure varies, but usually has 'references' or similar in v2, 
+      // or we can extract from text if not structured.
+      // Our Firecrawl wrapper returns { answer: string, references: ... } or similar depending on query.
+      // Let's assume standardized output or parse it.
+
+      let urls: string[] = [];
+      if (agentResult && typeof agentResult === 'object') {
+        // Try to find URLs in common fields
+        if (Array.isArray(agentResult.references)) {
+          urls = agentResult.references.map((r: any) => typeof r === 'string' ? r : r.url).filter(Boolean);
+        } else if (agentResult.urls && Array.isArray(agentResult.urls)) {
+          urls = agentResult.urls;
+        }
+      }
+
+      const summary = agentResult.answer || agentResult.summary || "Research completed via Firecrawl Agent";
+
       return {
-        researchSummary: parsed.researchSummary || 'Research completed',
-        urls: Array.isArray(parsed.urls) ? parsed.urls : []
+        researchSummary: summary,
+        urls: Array.from(new Set(urls))
       };
+
     } catch (error) {
-      console.warn('Failed to parse research response, using fallback');
+      console.warn('[OpenRouter] Firecrawl research failed, falling back to basic analysis', error);
       return {
-        researchSummary: 'Research completed with basic analysis',
+        researchSummary: `Research failed: ${(error as Error).message}. Proceeding with internal knowledge.`,
         urls: []
       };
     }
@@ -511,7 +515,7 @@ IMPORTANT: Return ONLY the JSON object. No markdown, no explanations, no additio
       processingHistory.push(createProcessingHistoryEntry('searching', 'started', { startTime: researchStart }));
 
       // Parallelize generic research and Nix specific lookup
-      const [researchResult, nixData] = await Promise.all([
+      let [researchResult, nixData] = await Promise.all([
         this.researchProductContext(inputRaw),
         nixService.getPackagingInfo(textProcessingResult.model.model, textProcessingResult.brand.brand)
       ]);
@@ -523,6 +527,35 @@ IMPORTANT: Return ONLY the JSON object. No markdown, no explanations, no additio
           `Found Nix.ru data: ${nixData.width_mm}x${nixData.height_mm}x${nixData.depth_mm}mm, ${nixData.weight_g}g`,
           { sourceUrls: [nixData.source_url || 'nix.ru'] }
         ));
+      } else {
+        // Fallback: Use Deep Agent Research if Nix service failed
+        console.log('[OpenRouter] NixService failed, triggering Deep Agent Research fallback...');
+        const agentStart = new Date();
+
+        try {
+          const firecrawlAgentData = await deepAgentResearch(textProcessingResult.model.model, textProcessingResult.brand.brand);
+
+          if (firecrawlAgentData && firecrawlAgentData.nix_logistics) {
+            const nd = firecrawlAgentData.nix_logistics;
+            nixData = {
+              width_mm: nd.dimensions_mm?.width,
+              height_mm: nd.dimensions_mm?.height,
+              depth_mm: nd.dimensions_mm?.length,
+              weight_g: nd.weight_g,
+              source_url: nd.source_url,
+              confidence: 0.8 // Estimated confidence for agent fallback
+            };
+
+            auditTrail.push(createAuditTrailEntry(
+              'enrichment',
+              'deepAgentResearch',
+              `Recovered Nix.ru data via Deep Agent: ${nixData.width_mm}x${nixData.height_mm}x${nixData.depth_mm}mm`,
+              { sourceUrls: [nixData.source_url || 'firecrawl-agent'] }
+            ));
+          }
+        } catch (err) {
+          console.warn('[OpenRouter] Deep Agent Research fallback failed:', err);
+        }
       }
 
       processingHistory.push(createProcessingHistoryEntry('searching', 'completed', {

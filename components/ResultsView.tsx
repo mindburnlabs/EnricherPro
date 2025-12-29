@@ -220,7 +220,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-transparent animate-in">
-      <div className="px-6 py-8 border-b border-white/5 bg-transparent">
+      <div className="px-6 py-8 border-b border-border-subtle bg-transparent">
         {/* Enhanced Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           <div className="bg-card p-5 rounded-[1.5rem] border border-primary-accent/10 shadow-sm">
@@ -274,7 +274,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
         {/* Batch Progress Bar */}
         {batchProgress && (
-          <div className="mt-6 p-5 glass-card rounded-2xl border-indigo-500/20 bg-indigo-500/5">
+          <div className="mt-6 p-5 glass-card rounded-2xl border-indigo-500/20 bg-primary/5">
             <div className="flex justify-between items-center mb-3">
               <span className="text-sm font-bold text-primary flex items-center gap-2">
                 <Loader2 size={16} className="animate-spin text-indigo-400" />
@@ -284,7 +284,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                 {batchProgress.processedItems} / {batchProgress.totalItems} ENRICHED
               </span>
             </div>
-            <div className="w-full bg-white/5 rounded-full h-1.5 mb-3 overflow-hidden">
+            <div className="w-full bg-primary/5 rounded-full h-1.5 mb-3 overflow-hidden">
               <div
                 className="bg-indigo-500 h-1.5 rounded-full transition-all duration-700 ease-in-out shadow-[0_0_12px_rgba(99,102,241,0.5)]"
                 style={{ width: `${progressPercent}%` }}
@@ -488,7 +488,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       <div className="flex-1 overflow-auto p-6 space-y-6">
         {/* Processing Queue Display */}
         {(queue.length > 0 || processingItem) && (
-          <div className="bg-white rounded-3xl shadow-xl shadow-indigo-100/20 border border-indigo-100 overflow-hidden animate-pulse-subtle p-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="bg-surface rounded-3xl shadow-xl shadow-indigo-100/20 border border-indigo-100 overflow-hidden animate-pulse-subtle p-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
             {processingItem && (
               <div className="px-4 py-2 bg-indigo-600 text-white rounded-2xl flex items-center justify-between text-xs font-bold">
                 <span className="truncate pr-4">{processingItem.input_raw}</span>

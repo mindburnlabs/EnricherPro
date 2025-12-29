@@ -316,7 +316,10 @@ function evaluateSourceReliability(item: EnrichedItem): number {
     let weight = 1;
 
     // Adjust reliability based on source type - handle both camelCase and snake_case for safety
-    const type = (source as any).sourceType || source.source_type;
+    const safeSource = source as any;
+    if (!safeSource) return;
+
+    const type = safeSource.sourceType || safeSource.source_type;
 
     switch (type) {
       case 'nix_ru':

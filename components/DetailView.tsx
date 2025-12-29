@@ -167,7 +167,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   </div>
                 </div>
 
-                <div className="glass-card p-10 rounded-[3rem] border-white/5">
+                <div className="glass-card p-10 rounded-[3rem] border-border-subtle">
                   <div className="flex justify-between items-center mb-8">
                     <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] flex items-center gap-3">
                       <div className="p-2 bg-status-success/10 rounded-lg">
@@ -189,7 +189,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
               </div>
 
               <div className="lg:col-span-4 space-y-8">
-                <div className="glass-card rounded-[3rem] p-10 border-white/5 relative overflow-hidden group">
+                <div className="glass-card rounded-[3rem] p-10 border-border-subtle relative overflow-hidden group">
                   <div className="absolute -top-10 -right-10 p-10 opacity-5 group-hover:opacity-10 transition-opacity">
                     <Package size={140} className="text-primary-accent" />
                   </div>
@@ -254,7 +254,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   </div>
                 </div>
 
-                <div className="glass-card rounded-[3rem] p-10 border-white/5">
+                <div className="glass-card rounded-[3rem] p-10 border-border-subtle">
                   <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10">Cross-Entity Dynamics</h3>
                   <div className="space-y-6">
                     {editedData.related_consumables_display && editedData.related_consumables_display.length > 0 ? (
@@ -354,7 +354,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
 
           {activeTab === 'faq' && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="glass-card p-10 rounded-[3rem] border-white/5">
+              <div className="glass-card p-10 rounded-[3rem] border-border-subtle">
                 <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
                   <div className="p-2 bg-primary-accent/10 rounded-lg">
                     <HelpCircle size={16} className="text-primary-accent" />
@@ -391,7 +391,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
             <div className="space-y-8 animate-in fade-in duration-500">
               {/* Quality Metrics Overview */}
               {item.evidence.quality_metrics && (
-                <div className="glass-card p-10 rounded-[3rem] border-white/5 relative overflow-hidden">
+                <div className="glass-card p-10 rounded-[3rem] border-border-subtle relative overflow-hidden">
                   <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
                     <div className="p-2 bg-indigo-500/10 rounded-lg">
                       <ShieldCheck size={16} className="text-indigo-400" />
@@ -438,7 +438,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
 
               {/* Processing History Timeline */}
               {item.evidence.processing_history && item.evidence.processing_history.length > 0 && (
-                <div className="glass-card p-10 rounded-[3rem] border-white/5">
+                <div className="glass-card p-10 rounded-[3rem] border-border-subtle">
                   <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
                     <div className="p-2 bg-indigo-500/10 rounded-lg">
                       <Cpu size={16} className="text-indigo-400" />
@@ -487,7 +487,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
               )}
 
               {/* Evidence Sources */}
-              <div className="glass-card p-10 rounded-[3rem] border-white/5">
+              <div className="glass-card p-10 rounded-[3rem] border-border-subtle">
                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
                   <div className="p-2 bg-indigo-500/10 rounded-lg">
                     <LinkIcon size={16} className="text-indigo-400" />
@@ -586,11 +586,11 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
 
               {/* Search Grounding */}
               {item.evidence.grounding_metadata && (
-                <div className="glass-card p-10 rounded-[3rem] border-white/5">
+                <div className="glass-card p-10 rounded-[3rem] border-border-subtle">
                   <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-6">Search Grounding Sources</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {item.evidence.grounding_metadata.map((g, i) => (
-                      <a key={i} href={g.uri} target="_blank" rel="noreferrer" className="bg-white/5 p-4 rounded-xl border border-white/5 flex items-center justify-between text-[10px] font-bold text-slate-300 hover:bg-indigo-500/10 hover:text-indigo-300 hover:border-indigo-500/30 transition-all group">
+                      <a key={i} href={g.uri} target="_blank" rel="noreferrer" className="bg-surface p-4 rounded-xl border border-border-subtle flex items-center justify-between text-[10px] font-bold text-primary-subtle hover:bg-indigo-500/10 hover:text-indigo-300 hover:border-indigo-500/30 transition-all group">
                         <span className="truncate pr-4 font-mono">{g.uri}</span>
                         <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                       </a>
@@ -672,8 +672,8 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   </div>
                 </div>
               ))}
-              <div className="aspect-[3/4] border-2 border-dashed border-white/10 rounded-[32px] flex flex-col items-center justify-center text-slate-500 hover:border-indigo-500/50 hover:text-indigo-400 transition-all cursor-pointer hover:bg-white/5 gap-4 group">
-                <div className="p-4 bg-white/5 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+              <div className="aspect-[3/4] border-2 border-dashed border-border-subtle rounded-[32px] flex flex-col items-center justify-center text-primary-subtle hover:border-indigo-500/50 hover:text-indigo-400 transition-all cursor-pointer hover:bg-surface gap-4 group">
+                <div className="p-4 bg-surface rounded-2xl group-hover:scale-110 transition-transform duration-300">
                   <ImageIcon size={32} className="opacity-50 group-hover:opacity-100" />
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-center px-8">Upload Manual Evidence</span>

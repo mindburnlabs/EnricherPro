@@ -103,3 +103,37 @@ export class NixService {
 }
 
 export const nixService = new NixService();
+
+// Adapters for checkpoint-validation.ts
+export const fetchNIXPackageData = async (brand: string, model: string): Promise<NixPackagingInfo | null> => {
+  return nixService.getPackagingInfo(model, brand);
+};
+
+export const validatePackageDimensions = (info: NixPackagingInfo): { isValid: boolean; missingFields: string[] } => {
+  const missingFields: string[] = [];
+  if (!info.width_mm) missingFields.push('width_mm');
+  if (!info.height_mm) missingFields.push('height_mm');
+  if (!info.depth_mm) missingFields.push('depth_mm');
+  if (!info.weight_g) missingFields.push('weight_g');
+
+  return {
+    isValid: missingFields.length === 0,
+    missingFields
+  };
+};
+
+export const convertToStandardUnits = (info: any): NixPackagingInfo => {
+  // Handle conversion from cm/kg if present (legacy support for tests)
+  if (info.width_cm !== undefined || info.weight_kg !== undefined) {
+    return {
+      width_mm: info.width_cm ? info.width_cm * 10 : null,
+      height_mm: info.height_cm ? info.height_cm * 10 : null,
+      depth_mm: info.depth_cm ? info.depth_cm * 10 : null,
+      weight_g: info.weight_kg ? info.weight_kg * 1000 : null,
+      source_url: info.source_url,
+      confidence: info.confidence
+    };
+  }
+  // Already standardized
+  return info as NixPackagingInfo;
+};
