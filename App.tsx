@@ -9,7 +9,7 @@ import PublicationReadinessView from './components/PublicationReadinessView';
 import { EnrichedItem, ProcessingStats, ProcessingStep, BatchProcessingProgress, ManualQueueEntry } from './types';
 
 import { orchestrationService } from './services/orchestrationService';
-// remove import { processItem } from './services/geminiService'; -- handled by Replacement
+
 
 
 import { createOpenRouterService, getOpenRouterService, OpenRouterConfig } from './services/openRouterService';
@@ -77,7 +77,6 @@ const App: React.FC = () => {
       const savedEngine = localStorage.getItem(PRIMARY_ENGINE_KEY);
       if (savedEngine && ['gemini', 'openrouter', 'firecrawl'].includes(savedEngine)) {
         setProcessingEngine(savedEngine as any);
-        console.log('Processing Engine set to:', savedEngine);
         return;
       }
 
@@ -147,7 +146,6 @@ const App: React.FC = () => {
       const readyItems = getItemsReadyForRetry(items);
       if (readyItems.length > 0 && !processing) {
         const itemToRetry = readyItems[0];
-        console.log(`Retrying item: ${itemToRetry.id}`);
 
         // Remove from items and add back to queue
         setItems(prev => prev.filter(item => item.id !== itemToRetry.id));
