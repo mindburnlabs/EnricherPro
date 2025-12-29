@@ -45,8 +45,11 @@ export interface ScrapeResponse {
  * Account and team management endpoints are most stable on v1.
  */
 export const validateFirecrawlApiKey = async (key: string): Promise<boolean> => {
+  // Simple prefix validation to avoid blocking users if validation endpoints change
   if (!key || !key.trim().startsWith('fc-')) return false;
+  return true;
 
+  /* Network validation disabled due to unstable endpoints
   try {
     const response = await fetch(`${API_V1}/team`, {
       method: 'GET',
@@ -59,8 +62,10 @@ export const validateFirecrawlApiKey = async (key: string): Promise<boolean> => 
     return response.ok;
   } catch (e) {
     console.error("Firecrawl validation network error:", e);
-    return false;
+    // Allow saving even if network check fails, to not block offline/network issues
+    return true; 
   }
+  */
 };
 
 /**
