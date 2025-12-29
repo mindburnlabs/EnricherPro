@@ -97,7 +97,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   </div>
                 )}
 
-                <div className="glass-card p-10 rounded-[3rem] border-border-subtle relative overflow-hidden group">
+                <div className="glass-card p-10 rounded-[2rem] border-border-subtle relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                     <FileText size={120} />
                   </div>
@@ -154,7 +154,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   </div>
                 </div>
 
-                <div className="glass-card p-10 rounded-[3rem] border-border-subtle">
+                <div className="glass-card p-10 rounded-[2rem] border-border-subtle">
                   <div className="flex justify-between items-center mb-8">
                     <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] flex items-center gap-3">
                       <div className="p-2 bg-status-success/10 rounded-lg">

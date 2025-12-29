@@ -223,27 +223,27 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       <div className="px-6 py-8 border-b border-border-subtle bg-transparent">
         {/* Enhanced Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-          <div className="bg-card p-5 rounded-[1.5rem] border border-primary-accent/10 shadow-sm">
+          <div className="bg-card p-5 rounded-[2rem] border border-primary-accent/10 shadow-sm">
             <div className="text-[10px] font-bold text-primary-accent uppercase mb-2 tracking-widest">Total Queue</div>
             <div className="text-3xl font-black text-primary">{stats.total}</div>
           </div>
-          <div className="bg-card p-5 rounded-[1.5rem] border border-status-success/20 shadow-sm">
+          <div className="bg-card p-5 rounded-[2rem] border border-status-success/20 shadow-sm">
             <div className="text-[10px] font-bold text-status-success uppercase mb-2 tracking-widest">Approved</div>
             <div className="text-3xl font-black text-primary">{stats.ok}</div>
           </div>
-          <div className="bg-card p-5 rounded-[1.5rem] border border-status-warning/20 shadow-sm">
+          <div className="bg-card p-5 rounded-[2rem] border border-status-warning/20 shadow-sm">
             <div className="text-[10px] font-bold text-status-warning uppercase mb-2 tracking-widest">Review</div>
             <div className="text-3xl font-black text-primary">{stats.needs_review}</div>
           </div>
-          <div className="bg-card p-5 rounded-[1.5rem] border border-status-error/20 shadow-sm">
+          <div className="bg-card p-5 rounded-[2rem] border border-status-error/20 shadow-sm">
             <div className="text-[10px] font-bold text-status-error uppercase mb-2 tracking-widest">Failed</div>
             <div className="text-3xl font-black text-primary">{stats.failed}</div>
           </div>
-          <div className="bg-card p-5 rounded-[1.5rem] border border-status-info/10 shadow-sm">
+          <div className="bg-card p-5 rounded-[2rem] border border-status-info/10 shadow-sm">
             <div className="text-[10px] font-bold text-status-info uppercase mb-2 tracking-widest">Retrying</div>
             <div className="text-3xl font-black text-primary">{stats.retrying}</div>
           </div>
-          <div className="bg-card p-5 rounded-[1.5rem] border border-border-subtle flex items-center justify-between shadow-sm">
+          <div className="bg-card p-5 rounded-[2rem] border border-border-subtle flex items-center justify-between shadow-sm">
             <div>
               <div className="text-[10px] font-bold text-primary-subtle uppercase mb-2 tracking-widest">Progress</div>
               <div className="text-3xl font-black text-primary">{progressPercent}%</div>
@@ -354,7 +354,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                 <button
                   key={f}
                   onClick={() => setFilter(f as any)}
-                  className={`px-4 py-1.5 text-[10px] uppercase tracking-widest font-black rounded-lg transition-all ${filter === f ? 'bg-primary-accent text-white shadow-lg' : 'text-primary-subtle hover:text-primary'}`}
+                  className={`px-4 py-1.5 text-[10px] uppercase tracking-widest font-black rounded-xl transition-all ${filter === f ? 'bg-primary-accent text-white shadow-lg' : 'text-primary-subtle hover:text-primary'}`}
                 >
                   {f === 'needs_review' ? 'Review' : f}
                 </button>
@@ -401,7 +401,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               <select
                 value={confidenceFilter}
                 onChange={(e) => setConfidenceFilter(e.target.value as any)}
-                className="px-3 py-1.5 text-xs bg-surface border border-border-subtle rounded-lg text-primary focus:border-indigo-500 outline-none"
+                className="px-3 py-1.5 text-xs bg-surface border border-border-subtle rounded-xl text-primary focus:border-indigo-500 outline-none"
               >
                 <option value="all">All Levels</option>
                 <option value="high">High (85%+)</option>
@@ -415,7 +415,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               <select
                 value={brandFilter}
                 onChange={(e) => setBrandFilter(e.target.value)}
-                className="px-3 py-1.5 text-xs bg-surface border border-border-subtle rounded-lg text-primary focus:border-indigo-500 outline-none"
+                className="px-3 py-1.5 text-xs bg-surface border border-border-subtle rounded-xl text-primary focus:border-indigo-500 outline-none"
               >
                 <option value="all">All Brands</option>
                 {uniqueBrands.map(brand => (
@@ -429,7 +429,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               <select
                 value={errorTypeFilter}
                 onChange={(e) => setErrorTypeFilter(e.target.value)}
-                className="px-3 py-1.5 text-xs bg-surface border border-border-subtle rounded-lg text-primary focus:border-indigo-500 outline-none"
+                className="px-3 py-1.5 text-xs bg-surface border border-border-subtle rounded-xl text-primary focus:border-indigo-500 outline-none"
               >
                 <option value="all">No Exceptions</option>
                 {uniqueErrorCategories.map(category => (
@@ -446,7 +446,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-3 py-1.5 text-xs bg-surface border border-border-subtle rounded-lg text-primary focus:border-indigo-500 outline-none"
+                  className="px-3 py-1.5 text-xs bg-surface border border-border-subtle rounded-xl text-primary focus:border-indigo-500 outline-none"
                 >
                   <option value="created_at">Timestamp</option>
                   <option value="quality_score">Quality Score</option>
@@ -455,7 +455,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                 </select>
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="p-2 bg-surface border border-border-subtle rounded-lg text-primary-subtle hover:text-primary transition-all"
+                  className="p-2 bg-surface border border-border-subtle rounded-xl text-primary-subtle hover:text-primary transition-all"
                 >
                   {sortOrder === 'asc' ? <SortAsc size={16} /> : <SortDesc size={16} />}
                 </button>
@@ -476,7 +476,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                   setSortBy('created_at');
                   setSortOrder('desc');
                 }}
-                className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 bg-indigo-400/10 rounded-lg border border-indigo-400/20 transition-all font-bold"
+                className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 bg-indigo-400/10 rounded-xl border border-indigo-400/20 transition-all font-bold"
               >
                 Wipe Filters
               </button>
