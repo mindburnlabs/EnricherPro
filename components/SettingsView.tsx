@@ -398,23 +398,26 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                   onChange={(e) => setOpenRouterConfig(prev => ({ ...prev, model: e.target.value }))}
                   className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-primary-accent focus:outline-none text-sm"
                 >
-                  <optgroup label="Core Recommended">
-                    {Object.entries(RECOMMENDED_MODELS).filter(([_, v]) => v.recommended).map(([k, v]) => (
-                      <option key={k} value={k}>{v.name}</option>
-                    ))}
-                  </optgroup>
-                  {availableModels.length > 0 && (
-                    <optgroup label="All Available Models">
+                  {availableModels.length > 0 ? (
+                    <optgroup label="Available Models (Fetched from OpenRouter)">
                       {availableModels.map((m: any) => (
                         <option key={m.id} value={m.id}>{m.name || m.id}</option>
                       ))}
                     </optgroup>
+                  ) : (
+                    <>
+                      <optgroup label="Core Recommended">
+                        {Object.entries(RECOMMENDED_MODELS).filter(([_, v]) => v.recommended).map(([k, v]) => (
+                          <option key={k} value={k}>{v.name}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Other">
+                        {Object.entries(RECOMMENDED_MODELS).filter(([_, v]) => !v.recommended).map(([k, v]) => (
+                          <option key={k} value={k}>{v.name}</option>
+                        ))}
+                      </optgroup>
+                    </>
                   )}
-                  <optgroup label="Other">
-                    {Object.entries(RECOMMENDED_MODELS).filter(([_, v]) => !v.recommended).map(([k, v]) => (
-                      <option key={k} value={k}>{v.name}</option>
-                    ))}
-                  </optgroup>
                 </select>
               </div>
 
