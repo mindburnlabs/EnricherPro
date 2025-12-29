@@ -386,6 +386,18 @@ export const firecrawlScrape = async (url: string, extractPrompt?: string, schem
     });
   }
 
+  // TEST KEY MOCK RESPONSE
+  if (apiKey.startsWith('fc-test-')) {
+    console.log('Using Firecrawl TEST KEY - Returning mock SCRAPE response');
+    return {
+      success: true,
+      data: {
+        markdown: "## Mock Scraped Content\n\nProduct: **HP CF226X**\nYield: 9000 pages\nColor: Black\n\nCompatibility: HP LaserJet Pro M402, M426.",
+        metadata: { title: "Mock Page Title", statusCode: 200 }
+      }
+    };
+  }
+
   const response = await apiIntegrationService.makeRequest(
     {
       serviceId: 'firecrawl',

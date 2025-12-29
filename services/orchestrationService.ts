@@ -12,7 +12,7 @@ import {
 import { processSupplierTitle } from './textProcessingService';
 import { nixService } from './nixService';
 import { perplexityService } from './perplexityService';
-import { startCrawlJob, getCrawlJobStatus, crawlResultToMarkdown, deepAgentResearch } from './firecrawlService';
+import { startCrawlJob, getCrawlJobStatus, crawlResultToMarkdown, deepAgentResearch, firecrawlScrape } from './firecrawlService';
 import { synthesizeConsumableData as synthesizeWithGemini } from './geminiService';
 import { getOpenRouterService } from './openRouterService';
 import { evaluateQualityGates } from './qualityGates';
@@ -207,6 +207,41 @@ export class OrchestrationService {
 
             logs.push(`Discovery Agent: Found ${researchUrls.length} sources.`);
 
+            // --- STEP 2.5: DEEP CONTENT EXTRACTION (Firecrawl Maximization) ---
+            let deepScrapeContent = "";
+            if (researchUrls.length > 0) {
+                const highValueDomains = ['nix.ru', 'hp.com', 'canon', 'brother', 'epson', 'kyocera', 'xerox', 'ricoh', 'lexmark', 'cartridge.ru'];
+                // Prioritize unique high-value domains, limit to 2 to avoid latency spikes
+                const targetUrls = researchUrls
+                    .filter((url, index, self) => highValueDomains.some(d => url.toLowerCase().includes(d)) && self.indexOf(url) === index)
+                    .slice(0, 2);
+
+                if (targetUrls.length > 0) {
+                    logs.push(`Deep Research: Scraping ${targetUrls.length} high-value URLs via Firecrawl...`);
+                    try {
+                        // Perform scrapes in parallel
+                        const scrapePromises = targetUrls.map(url => firecrawlScrape(url));
+                        const scrapeResults = await Promise.all(scrapePromises);
+
+                        deepScrapeContent = scrapeResults.map((res, idx) => {
+                            if (res.success && res.data.markdown) {
+                                const content = res.data.markdown.substring(0, 8000); // Limit context to 8k chars per page
+                                return `### DEEP SCRAPE OF: ${targetUrls[idx]}\n${content}\n\n`;
+                            }
+                            return "";
+                        }).join("\n");
+
+                        if (deepScrapeContent.length > 0) {
+                            logs.push(`Deep Research: Successfully extracted ${deepScrapeContent.length} chars of raw content.`);
+                        } else {
+                            logs.push("Deep Research: Scrape returned no useful markdown.");
+                        }
+                    } catch (scrapeErr) {
+                        logs.push(`Deep Research Warning: Scrape failed - ${(scrapeErr as Error).message}`);
+                    }
+                }
+            }
+
             // --- STEP 3: SYNTHESIS (Engine Agnostic) ---
             onProgress('analyzing');
             logs.push(`Step 3: Synthesis (${options.engine})`);
@@ -223,6 +258,9 @@ export class OrchestrationService {
             [RESEARCH_SUMMARY]
             ${researchSummary}
             
+            [DEEP_RESEARCH_CONTENT]
+            ${deepScrapeContent}
+
             [DISCOVERED_URLS]
             ${researchUrls.join('\n')}
             `;
