@@ -223,52 +223,52 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       <div className="px-6 py-8 border-b border-white/5 bg-transparent">
         {/* Enhanced Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-          <div className="glass-card p-5 rounded-[1.5rem] border-indigo-500/10">
-            <div className="text-[10px] font-bold text-indigo-400 uppercase mb-2 tracking-widest">Total Queue</div>
-            <div className="text-3xl font-black text-white">{stats.total}</div>
+          <div className="bg-card p-5 rounded-[1.5rem] border border-primary-accent/10 shadow-sm">
+            <div className="text-[10px] font-bold text-primary-accent uppercase mb-2 tracking-widest">Total Queue</div>
+            <div className="text-3xl font-black text-primary">{stats.total}</div>
           </div>
-          <div className="glass-card p-5 rounded-[1.5rem] border-emerald-500/10">
-            <div className="text-[10px] font-bold text-emerald-400 uppercase mb-2 tracking-widest">Approved</div>
-            <div className="text-3xl font-black text-white">{stats.ok}</div>
+          <div className="bg-card p-5 rounded-[1.5rem] border border-status-success/10 shadow-sm">
+            <div className="text-[10px] font-bold text-status-success uppercase mb-2 tracking-widest">Approved</div>
+            <div className="text-3xl font-black text-primary">{stats.ok}</div>
           </div>
-          <div className="glass-card p-5 rounded-[1.5rem] border-amber-500/10">
-            <div className="text-[10px] font-bold text-amber-400 uppercase mb-2 tracking-widest">Review</div>
-            <div className="text-3xl font-black text-white">{stats.needs_review}</div>
+          <div className="bg-card p-5 rounded-[1.5rem] border border-status-warning/10 shadow-sm">
+            <div className="text-[10px] font-bold text-status-warning uppercase mb-2 tracking-widest">Review</div>
+            <div className="text-3xl font-black text-primary">{stats.needs_review}</div>
           </div>
-          <div className="glass-card p-5 rounded-[1.5rem] border-red-500/10">
-            <div className="text-[10px] font-bold text-red-400 uppercase mb-2 tracking-widest">Failed</div>
-            <div className="text-3xl font-black text-white">{stats.failed}</div>
+          <div className="bg-card p-5 rounded-[1.5rem] border border-status-error/10 shadow-sm">
+            <div className="text-[10px] font-bold text-status-error uppercase mb-2 tracking-widest">Failed</div>
+            <div className="text-3xl font-black text-primary">{stats.failed}</div>
           </div>
-          <div className="glass-card p-5 rounded-[1.5rem] border-blue-500/10">
-            <div className="text-[10px] font-bold text-blue-400 uppercase mb-2 tracking-widest">Retrying</div>
-            <div className="text-3xl font-black text-white">{stats.retrying}</div>
+          <div className="bg-card p-5 rounded-[1.5rem] border border-status-info/10 shadow-sm">
+            <div className="text-[10px] font-bold text-status-info uppercase mb-2 tracking-widest">Retrying</div>
+            <div className="text-3xl font-black text-primary">{stats.retrying}</div>
           </div>
-          <div className="glass-card p-5 rounded-[1.5rem] border-white/5 flex items-center justify-between">
+          <div className="bg-card p-5 rounded-[1.5rem] border border-border-subtle flex items-center justify-between shadow-sm">
             <div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-widest">Progress</div>
-              <div className="text-3xl font-black text-white">{progressPercent}%</div>
+              <div className="text-[10px] font-bold text-primary-subtle uppercase mb-2 tracking-widest">Progress</div>
+              <div className="text-3xl font-black text-primary">{progressPercent}%</div>
             </div>
-            <TrendingUp className="text-indigo-400/50" size={24} />
+            <TrendingUp className="text-primary-subtle/50" size={24} />
           </div>
         </div>
 
         {/* Enhanced Metrics Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="px-4 py-3 rounded-2xl bg-white/5 border border-white/5">
-            <div className="text-[10px] font-bold text-slate-500 uppercase mb-1 tracking-wider">Error Rate</div>
-            <div className="text-lg font-bold text-slate-200">{stats.error_rate.toFixed(1)}%</div>
+          <div className="px-4 py-3 rounded-2xl bg-surface border border-border-subtle">
+            <div className="text-[10px] font-bold text-primary-subtle uppercase mb-1 tracking-wider">Error Rate</div>
+            <div className="text-lg font-bold text-primary">{stats.error_rate.toFixed(1)}%</div>
           </div>
-          <div className="px-4 py-3 rounded-2xl bg-white/5 border border-white/5">
-            <div className="text-[10px] font-bold text-slate-500 uppercase mb-1 tracking-wider">Avg Time</div>
-            <div className="text-lg font-bold text-slate-200">{(stats.average_processing_time / 1000).toFixed(1)}s</div>
+          <div className="px-4 py-3 rounded-2xl bg-surface border border-border-subtle">
+            <div className="text-[10px] font-bold text-primary-subtle uppercase mb-1 tracking-wider">Avg Time</div>
+            <div className="text-lg font-bold text-primary">{(stats.average_processing_time / 1000).toFixed(1)}s</div>
           </div>
-          <div className="px-4 py-3 rounded-2xl bg-white/5 border border-white/5">
-            <div className="text-[10px] font-bold text-slate-500 uppercase mb-1 tracking-wider">Manual Queue</div>
-            <div className="text-lg font-bold text-slate-200">{stats.manual_queue}</div>
+          <div className="px-4 py-3 rounded-2xl bg-surface border border-border-subtle">
+            <div className="text-[10px] font-bold text-primary-subtle uppercase mb-1 tracking-wider">Manual Queue</div>
+            <div className="text-lg font-bold text-primary">{stats.manual_queue}</div>
           </div>
-          <div className="px-4 py-3 rounded-2xl bg-white/5 border border-white/5">
-            <div className="text-[10px] font-bold text-slate-500 uppercase mb-1 tracking-wider">Quality Score</div>
-            <div className="text-lg font-bold text-slate-200">{(stats.quality_score_average * 100).toFixed(0)}%</div>
+          <div className="px-4 py-3 rounded-2xl bg-surface border border-border-subtle">
+            <div className="text-[10px] font-bold text-primary-subtle uppercase mb-1 tracking-wider">Quality Score</div>
+            <div className="text-lg font-bold text-primary">{(stats.quality_score_average * 100).toFixed(0)}%</div>
           </div>
         </div>
 
@@ -322,7 +322,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         )}
       </div>
 
-      <div className="px-6 py-4 bg-white/5 backdrop-blur-md border-b border-white/5 flex flex-col gap-4 z-10">
+      <div className="px-6 py-4 bg-surface backdrop-blur-md border-b border-border-subtle flex flex-col gap-4 z-10">
         {/* Primary Search and Filter Row */}
         <div className="flex flex-col md:flex-row justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -331,7 +331,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               <input
                 type="text"
                 placeholder="Search by model, brand, or title..."
-                className="w-full md:w-80 pl-11 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-slate-600 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none transition-all"
+                className="w-full md:w-80 pl-11 pr-4 py-2.5 bg-card border border-border-subtle rounded-xl text-sm text-primary placeholder:text-primary-subtle focus:ring-4 focus:ring-primary-accent/10 focus:border-primary-accent/50 outline-none transition-all"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -339,7 +339,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className={`premium-button px-4 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center gap-2 ${showAdvancedFilters ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-400 hover:text-white border border-white/5'
+              className={`premium-button px-4 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center gap-2 ${showAdvancedFilters ? 'bg-primary-accent text-white' : 'bg-card text-primary-subtle hover:text-primary border border-border-subtle'
                 }`}
             >
               <Filter size={14} />
@@ -349,12 +349,12 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           </div>
 
           <div className="flex gap-2 items-center">
-            <div className="bg-slate-800 p-1 rounded-xl flex gap-1 border border-slate-700">
+            <div className="bg-card p-1 rounded-xl flex gap-1 border border-border-subtle">
               {['all', 'ok', 'needs_review', 'failed'].map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f as any)}
-                  className={`px-4 py-1.5 text-[10px] uppercase tracking-widest font-black rounded-lg transition-all ${filter === f ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                  className={`px-4 py-1.5 text-[10px] uppercase tracking-widest font-black rounded-lg transition-all ${filter === f ? 'bg-primary-accent text-white shadow-lg' : 'text-primary-subtle hover:text-primary'}`}
                 >
                   {f === 'needs_review' ? 'Review' : f}
                 </button>
@@ -387,7 +387,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               </button>
             )}
 
-            <button onClick={handleExportCSV} className="p-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all border border-slate-700" title="Export Enhanced CSV">
+            <button onClick={handleExportCSV} className="p-2.5 text-primary-subtle hover:text-primary hover:bg-card rounded-xl transition-all border border-border-subtle" title="Export Enhanced CSV">
               <FileSpreadsheet size={20} />
             </button>
           </div>
@@ -509,23 +509,23 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
         {/* Enhanced Manual Queue Display */}
         {showManualQueue && manualQueue.length > 0 && (
-          <div className="bg-amber-50 rounded-3xl border border-amber-200 overflow-hidden">
-            <div className="px-6 py-4 bg-amber-100 border-b border-amber-200">
-              <h3 className="text-lg font-bold text-amber-900 flex items-center gap-2">
+          <div className="bg-status-warning/5 rounded-3xl border border-status-warning/20 overflow-hidden">
+            <div className="px-6 py-4 bg-status-warning/10 border-b border-status-warning/20">
+              <h3 className="text-lg font-bold text-status-warning flex items-center gap-2">
                 <Users size={20} />
                 Manual Review Queue
-                <span className="px-2 py-1 bg-amber-200 text-amber-800 text-xs font-bold rounded-full">
+                <span className="px-2 py-1 bg-status-warning/20 text-status-warning text-xs font-bold rounded-full">
                   {manualQueue.length} items
                 </span>
               </h3>
-              <p className="text-sm text-amber-700 mt-1">Items requiring human intervention with actionable recommendations</p>
+              <p className="text-sm text-status-warning/80 mt-1">Items requiring human intervention with actionable recommendations</p>
             </div>
             <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
               {manualQueue.map((entry) => (
-                <div key={entry.itemId} className="bg-white rounded-xl border border-amber-200 p-4 shadow-sm">
+                <div key={entry.itemId} className="bg-card rounded-xl border border-border-subtle p-4 shadow-sm">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-slate-900 text-sm truncate">{entry.inputRaw}</h4>
+                      <h4 className="font-bold text-primary text-sm truncate">{entry.inputRaw}</h4>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <span className={`px-2 py-1 rounded text-xs font-bold ${entry.priority === 'high' ? 'bg-red-100 text-red-700' :
                           entry.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
@@ -690,9 +690,9 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         )}
 
         {/* Enhanced Results Table */}
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-card rounded-3xl shadow-sm border border-border-subtle overflow-hidden">
           <table className="w-full text-left">
-            <thead className="bg-slate-50/50 border-b border-slate-100 text-[10px] uppercase font-black text-slate-400">
+            <thead className="bg-surface border-b border-border-subtle text-[10px] uppercase font-black text-primary-subtle">
               <tr>
                 <th className="px-6 py-4">
                   <input
@@ -720,19 +720,19 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border-subtle">
               {filteredAndSortedItems.map((item) => (
-                <tr key={item.id} className="hover:bg-white/[0.02] transition-all group border-b border-white/[0.02]">
+                <tr key={item.id} className="hover:bg-primary/5 transition-all group border-b border-border-subtle">
                   <td className="px-6 py-5">
                     <input
                       type="checkbox"
                       checked={selectedItems.includes(item.id)}
                       onChange={() => handleSelectItem(item.id)}
-                      className="rounded bg-slate-900 border-white/10 text-indigo-600 focus:ring-indigo-500/20"
+                      className="rounded bg-surface border-border-subtle text-primary-accent focus:ring-primary-accent/20"
                     />
                   </td>
                   <td className="px-6 py-5 cursor-pointer" onClick={() => onViewItem(item)}>
-                    <div className="text-sm font-bold text-slate-200 truncate group-hover:text-white transition-colors">
+                    <div className="text-sm font-bold text-primary truncate group-hover:text-primary-accent transition-colors">
                       {item.data.model || item.input_raw}
                     </div>
                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2 mt-1">
@@ -780,8 +780,8 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                     {item.quality_score ? (
                       <div className="flex items-center gap-2.5">
                         <div className={`w-2 h-2 rounded-full shadow-lg ${item.quality_score > 0.8 ? 'bg-emerald-500 shadow-emerald-500/20' :
-                            item.quality_score > 0.6 ? 'bg-amber-500 shadow-amber-500/20' :
-                              'bg-red-500 shadow-red-500/20'
+                          item.quality_score > 0.6 ? 'bg-amber-500 shadow-amber-500/20' :
+                            'bg-red-500 shadow-red-500/20'
                           }`}></div>
                         <span className="text-xs font-black text-slate-300">
                           {(item.quality_score * 100).toFixed(0)}%
@@ -801,8 +801,8 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                         <div className="flex flex-wrap gap-1">
                           {item.error_details.slice(0, 2).map((error, i) => (
                             <span key={i} className={`px-1.5 py-0.5 text-[8px] font-black uppercase rounded-md border ${error.severity === 'critical' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                error.severity === 'high' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                                  'bg-white/5 text-slate-500 border-white/5'
+                              error.severity === 'high' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                                'bg-white/5 text-slate-500 border-white/5'
                               }`}>
                               {error.category.split('_')[0]}
                             </span>

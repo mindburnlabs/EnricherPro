@@ -96,20 +96,24 @@
 }
 
 body {
-  @apply bg-[#0f172a] text-slate-200 antialiased;
+  @apply bg-background text-primary antialiased;
   font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
   background-image:
-    radial-gradient(at 0% 0%, hsla(250, 89%, 65%, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 0%, hsla(var(--text-accent), 0.1) 0px, transparent 50%),
     radial-gradient(at 100% 0%, hsla(190, 89%, 65%, 0.05) 0px, transparent 50%);
 }
 
 @layer components {
   .glass-card {
-    @apply bg-slate-900/40 backdrop-blur-xl border border-white/10 shadow-2xl;
+    @apply backdrop-blur-xl shadow-2xl;
+    background-color: rgba(var(--bg-card-glass), var(--glass-opacity));
+    border: 1px solid rgba(var(--text-primary), var(--glass-border-opacity));
   }
 
   .glass-sidebar {
-    @apply bg-slate-900/60 backdrop-blur-2xl border-r border-white/5;
+    @apply backdrop-blur-2xl border-r;
+    background-color: rgba(var(--bg-sidebar), var(--glass-opacity));
+    border-color: rgba(var(--text-primary), var(--glass-border-opacity));
   }
 
   .premium-shadow {
@@ -160,5 +164,5 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-700/50 rounded-full hover:bg-slate-600;
+  @apply bg-primary-subtle/20 rounded-full hover:bg-primary-subtle/40;
 }

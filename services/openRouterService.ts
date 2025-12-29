@@ -56,18 +56,18 @@ const DEFAULT_CONFIG: Partial<OpenRouterConfig> = {
 
 // Popular models for consumable enrichment
 export const RECOMMENDED_MODELS = {
-  // --- Paid / Standard Models ---
-  'google/gemini-2.0-flash-001': {
-    name: 'Gemini 2.0 Flash',
-    description: 'Fast, efficient multimodal model (Standard)',
+  // --- Google / Gemini Models ---
+  'google/gemini-3-flash-preview': {
+    name: 'Gemini 3.0 Flash Preview',
+    description: 'Latest high-speed preview model',
     recommended: true,
     category: 'standard'
   },
-  'google/gemini-2.5-flash': {
-    name: 'Gemini 2.5 Flash',
-    description: 'Next-gen fast model',
+  'google/gemini-3-pro-preview': {
+    name: 'Gemini 3.0 Pro Preview',
+    description: 'Latest professional preview model',
     recommended: true,
-    category: 'standard'
+    category: 'premium'
   },
   'google/gemini-2.5-pro': {
     name: 'Gemini 2.5 Pro',
@@ -75,6 +75,38 @@ export const RECOMMENDED_MODELS = {
     recommended: true,
     category: 'premium'
   },
+  'google/gemini-2.5-flash': {
+    name: 'Gemini 2.5 Flash',
+    description: 'Next-gen fast model',
+    recommended: true,
+    category: 'standard'
+  },
+  'google/gemini-2.5-flash-preview-09-2025': {
+    name: 'Gemini 2.5 Flash (Sep 2025)',
+    description: 'Preview checkpoint',
+    recommended: false,
+    category: 'standard'
+  },
+  'google/gemini-2.0-flash-001': {
+    name: 'Gemini 2.0 Flash',
+    description: 'Fast, efficient multimodal model',
+    recommended: true,
+    category: 'standard'
+  },
+  'google/gemini-2.0-flash-lite-001': {
+    name: 'Gemini 2.0 Flash Lite',
+    description: 'Lightweight efficient model',
+    recommended: true,
+    category: 'efficient'
+  },
+  'google/gemini-pro-1.5': {
+    name: 'Gemini 1.5 Pro',
+    description: 'Stable professional model',
+    recommended: false,
+    category: 'premium'
+  },
+
+  // --- Other Premium ---
   'anthropic/claude-sonnet-4.5': {
     name: 'Claude 4.5 Sonnet',
     description: 'High intelligence and speed',
@@ -105,30 +137,36 @@ export const RECOMMENDED_MODELS = {
     recommended: true,
     category: 'standard'
   },
-  'x-ai/grok-code-fast-1': {
-    name: 'Grok Code Fast',
-    description: 'optimized for code generation',
-    recommended: false,
-    category: 'efficient'
-  },
-  'minimax/minimax-m2': {
-    name: 'MiniMax M2',
-    description: 'Balanced performance',
-    recommended: false,
-    category: 'standard'
-  },
 
   // --- Free Models ---
-  'google/gemini-2.0-flash-lite-preview-02-05:free': {
-    name: 'Gemini 2.0 Flash Lite (Free)',
-    description: 'Free tier flash model',
+  'google/gemini-2.0-flash-exp:free': {
+    name: 'Gemini 2.0 Flash Exp (Free)',
+    description: 'Free tier flash experiment',
     recommended: true,
     category: 'free'
   },
-  'google/gemma-3-27b:free': {
-    name: 'Gemma 3 27B (Free)',
-    description: 'Open weight model by Google',
+  'google/gemma-3n-e4b-it:free': {
+    name: 'Gemma 3N E4B (Free)',
+    description: 'Experimental free model',
     recommended: false,
+    category: 'free'
+  },
+  'google/gemma-3-4b-it:free': {
+    name: 'Gemma 3 4B (Free)',
+    description: 'Lightweight free model',
+    recommended: false,
+    category: 'free'
+  },
+  'google/gemma-3-12b-it:free': {
+    name: 'Gemma 3 12B (Free)',
+    description: 'Balanced free model',
+    recommended: true,
+    category: 'free'
+  },
+  'google/gemma-3-27b-it:free': {
+    name: 'Gemma 3 27B (Free)',
+    description: 'Large free model',
+    recommended: true,
     category: 'free'
   },
   'meta-llama/llama-3.3-70b-instruct:free': {
@@ -141,12 +179,6 @@ export const RECOMMENDED_MODELS = {
     name: 'DeepSeek R1 (Free)',
     description: 'Strong reasoning capabilities',
     recommended: true,
-    category: 'free'
-  },
-  'qwen/qwen3-coder-480b-a35b-instruct:free': {
-    name: 'Qwen 3 Coder (Free)',
-    description: 'Specialized for code',
-    recommended: false,
     category: 'free'
   }
 };

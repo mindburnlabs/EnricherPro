@@ -22,7 +22,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
   const [geminiModel, setGeminiModel] = useState('gemini-1.5-pro'); // Default model
   const [openRouterConfig, setOpenRouterConfig] = useState<OpenRouterConfig>({
     apiKey: '',
-    model: 'anthropic/claude-3.5-sonnet'
+    model: 'google/gemini-3-flash-preview'
   });
 
   const [status, setStatus] = useState<'idle' | 'validating' | 'saved' | 'error'>('idle');
@@ -151,20 +151,20 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
   return (
     <div className="p-4 md:p-12 max-w-4xl mx-auto w-full h-full overflow-y-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-slate-900 mb-2 flex items-center gap-3">
-          <Shield className="text-indigo-600" size={32} /> System Settings
+        <h1 className="text-3xl font-black text-primary mb-2 flex items-center gap-3">
+          <Shield className="text-primary-accent" size={32} /> System Settings
         </h1>
-        <p className="text-slate-500 font-medium">Configure external integrations, monitor API health, and manage system parameters.</p>
+        <p className="text-primary-subtle font-medium">Configure external integrations, monitor API health, and manage system parameters.</p>
       </div>
 
       {/* Tab Navigation */}
       <div className="mb-8">
-        <div className="flex space-x-1 bg-slate-100 p-1 rounded-2xl w-fit">
+        <div className="flex space-x-1 bg-surface p-1 rounded-2xl w-fit border border-border-subtle">
           <button
             onClick={() => setActiveTab('api-keys')}
             className={`px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'api-keys'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700'
+              ? 'bg-card text-primary shadow-sm'
+              : 'text-primary-subtle hover:text-primary'
               }`}
           >
             <Key size={16} className="inline mr-2" />
@@ -173,8 +173,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
           <button
             onClick={() => setActiveTab('monitoring')}
             className={`px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'monitoring'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700'
+              ? 'bg-card text-primary shadow-sm'
+              : 'text-primary-subtle hover:text-primary'
               }`}
           >
             <Activity size={16} className="inline mr-2" />
@@ -185,7 +185,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
 
       {activeTab === 'general' && (
         <div className="space-y-8">
-          <div className="bg-card rounded-[32px] shadow-xl shadow-black/5 border border-border-subtle overflow-hidden">
+          <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle overflow-hidden">
             <div className="p-8 space-y-8">
               <section>
                 <div className="flex items-center gap-2 mb-6">
@@ -245,18 +245,18 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
       {activeTab === 'api-keys' && (
         <div className="space-y-8">
           {/* OpenRouter Configuration */}
-          <div className="bg-white rounded-[32px] shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
+          <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle overflow-hidden">
             <div className="p-8 space-y-8">
               <section>
                 <div className="flex items-center gap-2 mb-6">
-                  <Brain size={18} className="text-purple-400" />
-                  <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">OpenRouter AI (Primary Engine)</h2>
-                  <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-lg text-xs font-bold">RECOMMENDED</span>
+                  <Brain size={18} className="text-primary-accent" />
+                  <h2 className="text-xs font-black text-primary-subtle uppercase tracking-[0.2em]">OpenRouter AI (Primary Engine)</h2>
+                  <span className="bg-primary-accent/10 text-primary-accent px-2 py-1 rounded-lg text-xs font-bold">RECOMMENDED</span>
                 </div>
 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-2 px-1">
+                    <label className="block text-xs font-bold text-primary-subtle mb-2 px-1">
                       API KEY
                     </label>
                     <input
@@ -266,20 +266,20 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
                         setOpenRouterConfig(prev => ({ ...prev, apiKey: e.target.value }));
                         if (openRouterStatus === 'error') setOpenRouterStatus('idle');
                       }}
-                      className={`w-full px-5 py-4 bg-slate-50 border-2 rounded-2xl focus:bg-white focus:outline-none font-mono text-sm transition-all ${openRouterStatus === 'error' ? 'border-rose-200 focus:border-rose-500' : 'border-slate-50 focus:border-purple-500'
+                      className={`w-full px-5 py-4 bg-surface border-2 rounded-2xl focus:bg-card focus:outline-none font-mono text-sm transition-all text-primary ${openRouterStatus === 'error' ? 'border-status-error/50 focus:border-status-error' : 'border-border-subtle focus:border-primary-accent'
                         }`}
                       placeholder="sk-or-v1-..."
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-2 px-1">
+                    <label className="block text-xs font-bold text-primary-subtle mb-2 px-1">
                       MODEL SELECTION
                     </label>
                     <select
                       value={openRouterConfig.model}
                       onChange={(e) => setOpenRouterConfig(prev => ({ ...prev, model: e.target.value }))}
-                      className="w-full px-5 py-4 bg-background border-2 border-border-subtle rounded-2xl focus:bg-card focus:outline-none focus:border-purple-500 text-sm transition-all text-primary"
+                      className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:outline-none focus:border-primary-accent text-sm transition-all text-primary"
                     >
                       <optgroup label="Recommended Models">
                         {Object.entries(RECOMMENDED_MODELS)
@@ -311,28 +311,28 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
                     </div>
                   )}
 
-                  <div className="bg-purple-50 border border-purple-100 p-5 rounded-2xl flex gap-4">
-                    <Zap className="text-purple-600 shrink-0" size={20} />
+                  <div className="bg-primary-accent/5 border border-primary-accent/20 p-5 rounded-2xl flex gap-4">
+                    <Zap className="text-primary-accent shrink-0" size={20} />
                     <div className="space-y-2">
-                      <p className="text-xs text-purple-800 font-medium leading-relaxed">
+                      <p className="text-xs text-primary font-medium leading-relaxed">
                         <strong>OpenRouter</strong> provides access to multiple AI models including Claude, GPT-4, and Llama. This is the primary engine for consumable enrichment.
                       </p>
-                      <p className="text-xs text-purple-700 font-medium">
-                        Get your API key at <a href="https://openrouter.ai" target="_blank" rel="noreferrer" className="text-purple-600 hover:underline font-bold">openrouter.ai</a>
+                      <p className="text-xs text-primary-accent font-medium">
+                        Get your API key at <a href="https://openrouter.ai" target="_blank" rel="noreferrer" className="text-primary-accent hover:underline font-bold">openrouter.ai</a>
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-slate-100 flex justify-end">
+                <div className="pt-6 border-t border-border-subtle flex justify-end">
                   <button
                     onClick={handleOpenRouterSave}
                     disabled={openRouterStatus === 'validating'}
                     className={`flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg ${openRouterStatus === 'saved'
-                      ? 'bg-emerald-500 text-white shadow-emerald-200'
+                      ? 'bg-status-success text-white shadow-status-success/40'
                       : openRouterStatus === 'validating'
-                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                        : 'bg-purple-600 text-white hover:bg-purple-700 shadow-purple-200'
+                        ? 'bg-surface text-primary-subtle cursor-not-allowed'
+                        : 'bg-primary-accent text-white hover:bg-primary-accent/90 shadow-primary-accent/40'
                       }`}
                   >
                     {openRouterStatus === 'validating' ? <Loader2 size={18} className="animate-spin" /> : openRouterStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
@@ -344,17 +344,17 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
           </div>
 
           {/* Gemini Configuration */}
-          <div className="bg-white rounded-[32px] shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
+          <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle overflow-hidden">
             <div className="p-8 space-y-8">
               <section>
                 <div className="flex items-center gap-2 mb-6">
                   <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500"></div>
-                  <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Google Gemini (Primary Fallback)</h2>
+                  <h2 className="text-xs font-black text-primary-subtle uppercase tracking-[0.2em]">Google Gemini (Primary Fallback)</h2>
                 </div>
 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-2 px-1">
+                    <label className="block text-xs font-bold text-primary-subtle mb-2 px-1">
                       API KEY
                     </label>
                     <input
@@ -364,23 +364,25 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
                         setGeminiKey(e.target.value);
                         if (geminiStatus === 'error') setGeminiStatus('idle');
                       }}
-                      className={`w-full px-5 py-4 bg-slate-50 border-2 rounded-2xl focus:bg-white focus:outline-none font-mono text-sm transition-all ${geminiStatus === 'error' ? 'border-rose-200 focus:border-rose-500' : 'border-slate-50 focus:border-blue-500'
+                      className={`w-full px-5 py-4 bg-surface border-2 rounded-2xl focus:bg-card focus:outline-none font-mono text-sm transition-all text-primary ${geminiStatus === 'error' ? 'border-status-error/50 focus:border-status-error' : 'border-border-subtle focus:border-blue-500'
                         }`}
                       placeholder="AIza..."
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-2 px-1">
+                    <label className="block text-xs font-bold text-primary-subtle mb-2 px-1">
                       MODEL SELECTION
                     </label>
                     <select
                       value={geminiModel}
                       onChange={(e) => setGeminiModel(e.target.value)}
-                      className="w-full px-5 py-4 bg-background border-2 border-border-subtle rounded-2xl focus:bg-card focus:outline-none focus:border-blue-500 text-sm transition-all text-primary"
+                      className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:outline-none focus:border-blue-500 text-sm transition-all text-primary"
                     >
                       <option value="gemini-2.0-flash-001">Gemini 2.0 Flash (Recommended)</option>
                       <option value="gemini-2.5-flash">Gemini 2.5 Flash (Next-Gen)</option>
+                      <option value="gemini-3.0-flash-preview">Gemini 3.0 Flash Preview</option>
+                      <option value="gemini-3.0-pro-preview">Gemini 3.0 Pro Preview</option>
                       <option value="gemini-2.5-pro">Gemini 2.5 Pro (Powerful)</option>
                       <option value="gemini-1.5-pro">Gemini 1.5 Pro (Stable)</option>
                       <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
@@ -396,24 +398,24 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
                     </div>
                   )}
 
-                  <div className="bg-blue-50 border border-blue-100 p-5 rounded-2xl flex gap-4">
-                    <Brain className="text-blue-600 shrink-0" size={20} />
-                    <p className="text-xs text-blue-800 font-medium leading-relaxed">
+                  <div className="bg-blue-500/5 border border-blue-500/20 p-5 rounded-2xl flex gap-4">
+                    <Brain className="text-blue-500 shrink-0" size={20} />
+                    <p className="text-xs text-primary font-medium leading-relaxed">
                       <strong>Gemini</strong> is used as a powerful fallback and second opinion for enrichment tasks.
-                      Get your key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-bold">aistudio.google.com</a>
+                      Get your key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline font-bold">aistudio.google.com</a>
                     </p>
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-slate-100 flex justify-end">
+                <div className="pt-6 border-t border-border-subtle flex justify-end">
                   <button
                     onClick={handleSaveGemini}
                     disabled={geminiStatus === 'validating'}
                     className={`flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg ${geminiStatus === 'saved'
-                      ? 'bg-emerald-500 text-white shadow-emerald-200'
+                      ? 'bg-status-success text-white shadow-status-success/40'
                       : geminiStatus === 'validating'
-                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
+                        ? 'bg-surface text-primary-subtle cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/40'
                       }`}
                   >
                     {geminiStatus === 'validating' ? <Loader2 size={18} className="animate-spin" /> : geminiStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
@@ -425,17 +427,17 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
           </div>
 
           {/* Firecrawl Configuration */}
-          <div className="bg-white rounded-[32px] shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
+          <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle overflow-hidden">
             <div className="p-8 space-y-8">
               <section>
                 <div className="flex items-center gap-2 mb-6">
-                  <Key size={18} className="text-indigo-400" />
-                  <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Firecrawl API (Live Scraper)</h2>
+                  <Key size={18} className="text-primary-accent" />
+                  <h2 className="text-xs font-black text-primary-subtle uppercase tracking-[0.2em]">Firecrawl API (Live Scraper)</h2>
                 </div>
 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-2 px-1">
+                    <label className="block text-xs font-bold text-primary-subtle mb-2 px-1">
                       API KEY (V2)
                     </label>
                     <input
@@ -445,12 +447,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
                         setApiKey(e.target.value);
                         if (status === 'error') setStatus('idle');
                       }}
-                      className={`w-full px-5 py-4 bg-slate-50 border-2 rounded-2xl focus:bg-white focus:outline-none font-mono text-sm transition-all ${status === 'error' ? 'border-rose-200 focus:border-rose-500' : 'border-slate-50 focus:border-indigo-500'
+                      className={`w-full px-5 py-4 bg-surface border-2 rounded-2xl focus:bg-card focus:outline-none font-mono text-sm transition-all text-primary ${status === 'error' ? 'border-status-error/50 focus:border-status-error' : 'border-border-subtle focus:border-primary-accent'
                         }`}
                       placeholder="fc-..."
                     />
-                    <p className="mt-3 text-[10px] text-slate-400 font-medium leading-relaxed">
-                      Your key is stored locally in your browser. Get yours at <a href="https://firecrawl.dev" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline font-bold">firecrawl.dev</a>.
+                    <p className="mt-3 text-[10px] text-primary-subtle font-medium leading-relaxed">
+                      Your key is stored locally in your browser. Get yours at <a href="https://firecrawl.dev" target="_blank" rel="noreferrer" className="text-primary-accent hover:underline font-bold">firecrawl.dev</a>.
                     </p>
                   </div>
 
@@ -463,23 +465,23 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
                     </div>
                   )}
 
-                  <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl flex gap-4">
-                    <AlertCircle className="text-indigo-600 shrink-0" size={20} />
-                    <p className="text-xs text-indigo-800 font-medium leading-relaxed">
+                  <div className="bg-primary-accent/5 border border-primary-accent/20 p-5 rounded-2xl flex gap-4">
+                    <AlertCircle className="text-primary-accent shrink-0" size={20} />
+                    <p className="text-xs text-primary font-medium leading-relaxed">
                       This key enables the <strong>Smart Research</strong> phase, allowing the AI to pull live specs from NIX.ru and manufacturer sites.
                     </p>
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-slate-100 flex justify-end">
+                <div className="pt-6 border-t border-border-subtle flex justify-end">
                   <button
                     onClick={handleSaveFirecrawl}
                     disabled={status === 'validating'}
                     className={`flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg ${status === 'saved'
-                      ? 'bg-emerald-500 text-white shadow-emerald-200'
+                      ? 'bg-status-success text-white shadow-status-success'
                       : status === 'validating'
-                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                        : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'
+                        ? 'bg-surface text-primary-subtle cursor-not-allowed'
+                        : 'bg-primary-accent text-white hover:bg-primary-accent/90 shadow-primary-accent/40'
                       }`}
                   >
                     {status === 'validating' ? <Loader2 size={18} className="animate-spin" /> : status === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
@@ -496,43 +498,43 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
         <div className="space-y-8">
           {/* System Health Overview */}
           {systemHealth && (
-            <div className="bg-white rounded-[32px] shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
+            <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle overflow-hidden">
               <div className="p-8">
                 <div className="flex items-center gap-2 mb-6">
-                  <TrendingUp size={18} className="text-indigo-400" />
-                  <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">System Health Overview</h2>
+                  <TrendingUp size={18} className="text-primary-accent" />
+                  <h2 className="text-xs font-black text-primary-subtle uppercase tracking-[0.2em]">System Health Overview</h2>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
                   <div className="text-center">
-                    <div className={`text-2xl font-black mb-1 ${systemHealth.overallHealth === 'healthy' ? 'text-green-600' :
-                      systemHealth.overallHealth === 'degraded' ? 'text-yellow-600' : 'text-red-600'
+                    <div className={`text-2xl font-black mb-1 ${systemHealth.overallHealth === 'healthy' ? 'text-status-success' :
+                      systemHealth.overallHealth === 'degraded' ? 'text-status-warning' : 'text-status-error'
                       }`}>
                       {systemHealth.overallHealth}
                     </div>
-                    <div className="text-xs text-slate-500 font-medium">Overall Health</div>
+                    <div className="text-xs text-primary-subtle font-medium">Overall Health</div>
                   </div>
 
                   <div className="text-center">
-                    <div className="text-2xl font-black text-slate-900 mb-1">
+                    <div className="text-2xl font-black text-primary mb-1">
                       {systemHealth.healthyServices}/{systemHealth.servicesCount}
                     </div>
-                    <div className="text-xs text-slate-500 font-medium">Healthy Services</div>
+                    <div className="text-xs text-primary-subtle font-medium">Healthy Services</div>
                   </div>
 
                   <div className="text-center">
-                    <div className={`text-2xl font-black mb-1 ${systemHealth.criticalAlerts > 0 ? 'text-red-600' : 'text-green-600'
+                    <div className={`text-2xl font-black mb-1 ${systemHealth.criticalAlerts > 0 ? 'text-status-error' : 'text-status-success'
                       }`}>
                       {systemHealth.criticalAlerts}
                     </div>
-                    <div className="text-xs text-slate-500 font-medium">Critical Alerts</div>
+                    <div className="text-xs text-primary-subtle font-medium">Critical Alerts</div>
                   </div>
 
                   <div className="text-center">
-                    <div className="text-2xl font-black text-slate-900 mb-1">
+                    <div className="text-2xl font-black text-primary mb-1">
                       {Math.round(systemHealth.averageResponseTime)}ms
                     </div>
-                    <div className="text-xs text-slate-500 font-medium">Avg Response</div>
+                    <div className="text-xs text-primary-subtle font-medium">Avg Response</div>
                   </div>
                 </div>
 
@@ -552,11 +554,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
           )}
 
           {/* Detailed API Status */}
-          <div className="bg-white rounded-[32px] shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
+          <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle overflow-hidden">
             <div className="p-8">
               <div className="flex items-center gap-2 mb-6">
-                <SettingsIcon size={18} className="text-indigo-400" />
-                <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">API Services Monitoring</h2>
+                <SettingsIcon size={18} className="text-primary-accent" />
+                <h2 className="text-xs font-black text-primary-subtle uppercase tracking-[0.2em]">API Services Monitoring</h2>
               </div>
 
               <ApiStatusIndicator showDetails={true} />

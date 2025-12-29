@@ -15,10 +15,10 @@ const NavItem = ({ icon: Icon, label, id, active, onClick, mobile = false }: any
     onClick={() => onClick(id)}
     className={
       mobile
-        ? `flex-1 flex flex-col items-center justify-center py-2 px-1 transition-all ${active ? 'text-indigo-400 scale-110' : 'text-slate-400'
+        ? `flex-1 flex flex-col items-center justify-center py-2 px-1 transition-all ${active ? 'text-primary-accent scale-110' : 'text-primary-subtle'
         }`
         : `w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-all rounded-xl mb-1 ${active
-          ? 'bg-primary-accent/10 text-primary-accent border border-primary-accent/20 shadow-lg shadow-indigo-900/20'
+          ? 'bg-primary-accent/10 text-primary-accent border border-primary-accent/20 shadow-lg shadow-primary-accent/20'
           : 'text-primary-subtle hover:bg-primary-accent/5 hover:text-primary'
         }`
     }
@@ -47,7 +47,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex w-72 glass-sidebar flex-shrink-0 flex-col h-full p-6">
         <div className="flex items-center gap-3 text-primary font-bold text-xl mb-10 px-2">
-          <div className="p-2 bg-primary-accent rounded-lg shadow-xl shadow-indigo-900/20 text-white">
+          <div className="p-2 bg-primary-accent rounded-lg shadow-xl shadow-primary-accent/20 text-white">
             <Database size={24} />
           </div>
           <span className="tracking-tight">Enricher<span className="text-primary-accent">Pro</span></span>
@@ -109,7 +109,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-primary-subtle font-medium">Firecrawl v2</span>
-                <span className={`w-2 h-2 rounded-full transition-all duration-500 ${isFirecrawlReady ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-400'}`}></span>
+                <span className={`w-2 h-2 rounded-full transition-all duration-500 ${isFirecrawlReady ? 'bg-status-success shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-primary-subtle'}`}></span>
               </div>
             </div>
           </div>

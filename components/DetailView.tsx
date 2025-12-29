@@ -99,11 +99,11 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <div className="lg:col-span-8 space-y-10">
                 {item.validation_errors.length > 0 && (
-                  <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-[2rem] flex gap-4">
-                    <AlertCircle className="text-red-400 shrink-0" size={24} />
+                  <div className="bg-status-error/10 border border-status-error/20 p-6 rounded-[2rem] flex gap-4">
+                    <AlertCircle className="text-status-error shrink-0" size={24} />
                     <div>
-                      <h4 className="text-[10px] font-black text-red-400 mb-1 uppercase tracking-widest">Structural Alert</h4>
-                      <ul className="text-xs text-slate-400 list-disc list-inside space-y-1 font-medium">
+                      <h4 className="text-[10px] font-black text-status-error mb-1 uppercase tracking-widest">Structural Alert</h4>
+                      <ul className="text-xs text-primary-subtle list-disc list-inside space-y-1 font-medium">
                         {item.validation_errors.map((e, i) => <li key={i}>{e}</li>)}
                       </ul>
                     </div>
@@ -114,9 +114,9 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                     <FileText size={120} />
                   </div>
-                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
-                    <div className="p-2 bg-indigo-500/10 rounded-lg">
-                      <FileText size={16} className="text-indigo-400" />
+                  <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
+                    <div className="p-2 bg-primary-accent/10 rounded-lg">
+                      <FileText size={16} className="text-primary-accent" />
                     </div>
                     Identity Extraction
                   </h3>
@@ -147,19 +147,19 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                     <div className="md:col-span-2 grid grid-cols-2 gap-6 pt-4">
                       <button
                         onClick={() => setEditedData({ ...editedData, has_chip: !editedData.has_chip })}
-                        className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${editedData.has_chip ? 'bg-indigo-500/10 border-indigo-500/30 text-primary-accent' : 'bg-surface border-border-subtle text-primary-subtle hover:border-primary-accent/30'}`}
+                        className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${editedData.has_chip ? 'bg-primary-accent/10 border-primary-accent/30 text-primary-accent' : 'bg-surface border-border-subtle text-primary-subtle hover:border-primary-accent/30'}`}
                       >
                         <span className="text-[10px] font-black flex items-center gap-3 uppercase tracking-widest"><Cpu size={16} className={editedData.has_chip ? 'text-primary-accent' : ''} /> IC Chip Architecture</span>
-                        <div className={`w-10 h-5 rounded-full relative transition-all ${editedData.has_chip ? 'bg-primary-accent' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                        <div className={`w-10 h-5 rounded-full relative transition-all ${editedData.has_chip ? 'bg-primary-accent' : 'bg-border-subtle'}`}>
                           <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${editedData.has_chip ? 'left-6' : 'left-1'}`} />
                         </div>
                       </button>
                       <button
                         onClick={() => setEditedData({ ...editedData, has_page_counter: !editedData.has_page_counter })}
-                        className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${editedData.has_page_counter ? 'bg-emerald-500/10 border-emerald-500/30 text-white' : 'bg-surface border-border-subtle text-primary-subtle hover:border-primary-accent/30'}`}
+                        className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${editedData.has_page_counter ? 'bg-status-success/10 border-status-success/30 text-white' : 'bg-surface border-border-subtle text-primary-subtle hover:border-primary-accent/30'}`}
                       >
-                        <span className="text-[10px] font-black flex items-center gap-3 uppercase tracking-widest"><Layers size={16} className={editedData.has_page_counter ? 'text-emerald-400' : ''} /> Logic Counter FW</span>
-                        <div className={`w-10 h-5 rounded-full relative transition-all ${editedData.has_page_counter ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                        <span className="text-[10px] font-black flex items-center gap-3 uppercase tracking-widest"><Layers size={16} className={editedData.has_page_counter ? 'text-status-success' : ''} /> Logic Counter FW</span>
+                        <div className={`w-10 h-5 rounded-full relative transition-all ${editedData.has_page_counter ? 'bg-status-success' : 'bg-border-subtle'}`}>
                           <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${editedData.has_page_counter ? 'left-6' : 'left-1'}`} />
                         </div>
                       </button>
@@ -169,13 +169,13 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
 
                 <div className="glass-card p-10 rounded-[3rem] border-white/5">
                   <div className="flex justify-between items-center mb-8">
-                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3">
-                      <div className="p-2 bg-emerald-500/10 rounded-lg">
-                        <ShieldCheck size={16} className="text-emerald-400" />
+                    <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] flex items-center gap-3">
+                      <div className="p-2 bg-status-success/10 rounded-lg">
+                        <ShieldCheck size={16} className="text-status-success" />
                       </div>
                       Market Eligibility (RU)
                     </h3>
-                    <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-slate-400">
+                    <div className="px-3 py-1 bg-surface border border-border-subtle rounded-xl text-[10px] font-black text-primary-subtle">
                       {editedData.printers_ru.length} AGENTS VALIDATED
                     </div>
                   </div>
@@ -191,57 +191,57 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
               <div className="lg:col-span-4 space-y-8">
                 <div className="glass-card rounded-[3rem] p-10 border-white/5 relative overflow-hidden group">
                   <div className="absolute -top-10 -right-10 p-10 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <Package size={140} className="text-indigo-400" />
+                    <Package size={140} className="text-primary-accent" />
                   </div>
-                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
-                    <div className="p-2 bg-indigo-500/10 rounded-lg">
-                      <Ruler size={14} className="text-indigo-400" />
+                  <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
+                    <div className="p-2 bg-primary-accent/10 rounded-lg">
+                      <Ruler size={14} className="text-primary-accent" />
                     </div>
                     Logistics Protocol
                     {editedData.packaging_from_nix?.confidence && (
-                      <span className={`text-[8px] px-2 py-1 rounded-lg font-black uppercase tracking-widest ${editedData.packaging_from_nix.confidence > 0.8 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                        editedData.packaging_from_nix.confidence > 0.5 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                          'bg-red-500/10 text-red-400 border border-red-500/20'
+                      <span className={`text-[8px] px-2 py-1 rounded-lg font-black uppercase tracking-widest ${editedData.packaging_from_nix.confidence > 0.8 ? 'bg-status-success/10 text-status-success border border-status-success/20' :
+                        editedData.packaging_from_nix.confidence > 0.5 ? 'bg-status-warning/10 text-status-warning border border-status-warning/20' :
+                          'bg-status-error/10 text-status-error border border-status-error/20'
                         }`}>
                         {Math.round(editedData.packaging_from_nix.confidence * 100)}% RELIABILITY
                       </span>
                     )}
                   </h3>
                   <div className="space-y-10 relative z-10">
-                    <div className="flex justify-between items-center border-b border-white/5 pb-6">
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Gross Mass</span>
-                      <span className="text-xl font-black text-indigo-400 font-mono tracking-widest">{editedData.packaging_from_nix?.weight_g || 0}<span className="text-xs ml-1 text-slate-600">G</span></span>
+                    <div className="flex justify-between items-center border-b border-border-subtle pb-6">
+                      <span className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">Gross Mass</span>
+                      <span className="text-xl font-black text-primary-accent font-mono tracking-widest">{editedData.packaging_from_nix?.weight_g || 0}<span className="text-xs ml-1 text-primary-subtle">G</span></span>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/30 transition-all">
-                        <div className="text-[9px] text-slate-600 uppercase font-black mb-2 tracking-widest">Width</div>
-                        <div className="text-xs font-black text-white font-mono">{editedData.packaging_from_nix?.width_mm || '--'}</div>
+                      <div className="text-center p-4 rounded-2xl bg-surface border border-border-subtle hover:border-primary-accent/30 transition-all">
+                        <div className="text-[9px] text-primary-subtle uppercase font-black mb-2 tracking-widest">Width</div>
+                        <div className="text-xs font-black text-primary font-mono">{editedData.packaging_from_nix?.width_mm || '--'}</div>
                       </div>
-                      <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/30 transition-all">
-                        <div className="text-[9px] text-slate-600 uppercase font-black mb-2 tracking-widest">Height</div>
-                        <div className="text-xs font-black text-white font-mono">{editedData.packaging_from_nix?.height_mm || '--'}</div>
+                      <div className="text-center p-4 rounded-2xl bg-surface border border-border-subtle hover:border-primary-accent/30 transition-all">
+                        <div className="text-[9px] text-primary-subtle uppercase font-black mb-2 tracking-widest">Height</div>
+                        <div className="text-xs font-black text-primary font-mono">{editedData.packaging_from_nix?.height_mm || '--'}</div>
                       </div>
-                      <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/30 transition-all">
-                        <div className="text-[9px] text-slate-600 uppercase font-black mb-2 tracking-widest">Depth</div>
-                        <div className="text-xs font-black text-white font-mono">{editedData.packaging_from_nix?.depth_mm || '--'}</div>
+                      <div className="text-center p-4 rounded-2xl bg-surface border border-border-subtle hover:border-primary-accent/30 transition-all">
+                        <div className="text-[9px] text-primary-subtle uppercase font-black mb-2 tracking-widest">Depth</div>
+                        <div className="text-xs font-black text-primary font-mono">{editedData.packaging_from_nix?.depth_mm || '--'}</div>
                       </div>
                     </div>
 
                     {/* Enhanced source information */}
                     {editedData.packaging_from_nix?.source_url && (
-                      <div className="text-[10px] bg-emerald-500/5 p-4 rounded-2xl border border-emerald-500/10">
+                      <div className="text-[10px] bg-status-success/5 p-4 rounded-2xl border border-status-success/10">
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
-                          <span className="font-black text-emerald-400 uppercase tracking-widest">NIX.ru Authority Verified</span>
+                          <div className="w-1.5 h-1.5 rounded-full bg-status-success shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
+                          <span className="font-black text-status-success uppercase tracking-widest">NIX.ru Authority Verified</span>
                         </div>
-                        <div className="text-slate-500 font-mono text-[9px] break-all leading-relaxed">
+                        <div className="text-primary-subtle font-mono text-[9px] break-all leading-relaxed">
                           {editedData.packaging_from_nix.source_url}
                         </div>
                       </div>
                     )}
 
                     {editedData.packaging_from_nix?.raw_source_string && (
-                      <div className="text-[9px] text-slate-600 italic font-mono bg-white/5 p-4 rounded-2xl border border-white/5 max-h-24 overflow-y-auto no-scrollbar">
+                      <div className="text-[9px] text-primary-subtle italic font-mono bg-surface p-4 rounded-2xl border border-border-subtle max-h-24 overflow-y-auto no-scrollbar">
                         {editedData.packaging_from_nix.raw_source_string}
                       </div>
                     )}
@@ -264,21 +264,21 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                             {/* Companions */}
                             {editedData.related_consumables_categories.companions.length > 0 && (
                               <div>
-                                <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Core Companions</h4>
+                                <h4 className="text-[10px] font-black text-primary-accent uppercase tracking-[0.2em] mb-4">Core Companions</h4>
                                 <div className="space-y-3">
                                   {editedData.related_consumables_categories.companions.slice(0, 3).map((rel, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-indigo-500/30 transition-all group">
+                                    <div key={i} className="flex items-center justify-between p-4 bg-surface rounded-2xl border border-border-subtle hover:border-primary-accent/30 transition-all group">
                                       <div className="min-w-0 flex-1">
-                                        <div className="text-xs font-black text-white group-hover:text-indigo-300 transition-colors uppercase tracking-tight truncate">{rel.model}</div>
+                                        <div className="text-xs font-black text-primary group-hover:text-primary-accent transition-colors uppercase tracking-tight truncate">{rel.model}</div>
                                         <div className="flex items-center gap-2 mt-2">
-                                          <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">{rel.type}</span>
-                                          <div className="w-1 h-1 rounded-full bg-slate-800"></div>
-                                          <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{Math.round(rel.confidence * 100)}% Match</span>
+                                          <span className="text-[9px] font-black text-primary-accent uppercase tracking-widest">{rel.type}</span>
+                                          <div className="w-1 h-1 rounded-full bg-border-subtle"></div>
+                                          <span className="text-[9px] font-bold text-primary-subtle uppercase tracking-widest">{Math.round(rel.confidence * 100)}% Match</span>
                                         </div>
                                       </div>
                                       <div className="text-right ml-4">
-                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">{rel.relationship.replace(/_/g, ' ')}</span>
-                                        {rel.isOEM && <span className="text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-md font-black uppercase tracking-widest">OEM</span>}
+                                        <span className="text-[9px] font-black text-primary-subtle uppercase tracking-widest block mb-1">{rel.relationship.replace(/_/g, ' ')}</span>
+                                        {rel.isOEM && <span className="text-[8px] bg-status-success/10 text-status-success border border-status-success/20 px-2 py-0.5 rounded-md font-black uppercase tracking-widest">OEM</span>}
                                       </div>
                                     </div>
                                   ))}
@@ -289,26 +289,26 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                             {/* Alternatives */}
                             {editedData.related_consumables_categories.alternatives.length > 0 && (
                               <div>
-                                <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] mb-4">Functional Alternatives</h4>
+                                <h4 className="text-[10px] font-black text-status-warning uppercase tracking-[0.2em] mb-4">Functional Alternatives</h4>
                                 <div className="space-y-3">
                                   {editedData.related_consumables_categories.alternatives.slice(0, 3).map((rel, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-white/10 transition-all group">
+                                    <div key={i} className="flex items-center justify-between p-4 bg-surface rounded-2xl border border-border-subtle hover:border-border-highlight transition-all group">
                                       <div className="min-w-0 flex-1">
-                                        <div className="text-xs font-black text-slate-200 group-hover:text-white transition-colors uppercase tracking-tight truncate">{rel.model}</div>
+                                        <div className="text-xs font-black text-primary group-hover:text-primary-subtle transition-colors uppercase tracking-tight truncate">{rel.model}</div>
                                         <div className="flex items-center gap-2 mt-2">
                                           {rel.yieldComparison && (
-                                            <span className={`text-[8px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest border ${rel.yieldComparison === 'higher' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                              rel.yieldComparison === 'lower' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                                'bg-slate-800 text-slate-500 border-white/5'
+                                            <span className={`text-[8px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest border ${rel.yieldComparison === 'higher' ? 'bg-status-success/10 text-status-success border-status-success/20' :
+                                              rel.yieldComparison === 'lower' ? 'bg-status-error/10 text-status-error border-status-error/20' :
+                                                'bg-surface text-primary-subtle border-border-subtle'
                                               }`}>
                                               {rel.yieldComparison} Capacity
                                             </span>
                                           )}
-                                          <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{Math.round(rel.confidence * 100)}% Reliability</span>
+                                          <span className="text-[9px] font-bold text-primary-subtle uppercase tracking-widest">{Math.round(rel.confidence * 100)}% Reliability</span>
                                         </div>
                                       </div>
                                       <div className="text-right ml-4">
-                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">{rel.relationship.replace(/_/g, ' ')}</span>
+                                        <span className="text-[9px] font-black text-primary-subtle uppercase tracking-widest block">{rel.relationship.replace(/_/g, ' ')}</span>
                                       </div>
                                     </div>
                                   ))}
@@ -339,9 +339,9 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                         )}
                       </div>
                     ) : (
-                      <div className="p-8 border-2 border-dashed border-white/5 rounded-[2rem] flex flex-col items-center justify-center text-center opacity-30 grayscale">
-                        <Layers size={32} className="mb-4 text-slate-500" />
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">No relational data identified</span>
+                      <div className="p-8 border-2 border-dashed border-border-subtle rounded-[2rem] flex flex-col items-center justify-center text-center opacity-30 grayscale">
+                        <Layers size={32} className="mb-4 text-primary-subtle" />
+                        <span className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">No relational data identified</span>
                       </div>
                     )}
                   </div>
@@ -445,12 +445,12 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                     </div>
                     Processing Timeline
                   </h3>
-                  <div className="space-y-6 relative before:absolute before:inset-0 before:left-6 before:w-px before:bg-white/5">
+                  <div className="space-y-6 relative before:absolute before:inset-0 before:left-6 before:w-px before:bg-border-subtle">
                     {item.evidence.processing_history.map((step, i) => (
                       <div key={i} className="flex items-start gap-6 relative">
-                        <div className={`w-3 h-3 rounded-full mt-2 ring-4 ring-[#08090f] z-10 ${step.status === 'completed' ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' :
-                          step.status === 'failed' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' :
-                            step.status === 'started' ? 'bg-blue-500 animate-pulse' : 'bg-slate-700'
+                        <div className={`w-3 h-3 rounded-full mt-2 ring-4 ring-background z-10 ${step.status === 'completed' ? 'bg-status-success shadow-[0_0_10px_rgba(16,185,129,0.5)]' :
+                          step.status === 'failed' ? 'bg-status-error shadow-[0_0_10px_rgba(239,68,68,0.5)]' :
+                            step.status === 'started' ? 'bg-status-info animate-pulse' : 'bg-border-subtle'
                           }`}></div>
                         <div className="flex-1 min-w-0 bg-surface p-6 rounded-2xl border border-border-subtle hover:border-primary-accent/30 transition-all">
                           <div className="flex items-center justify-between mb-2">
@@ -533,9 +533,9 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                             <h4 className="font-black text-slate-500 mb-2 text-[9px] uppercase tracking-widest">Evidence Snippets</h4>
                             <div className="space-y-2">
                               {Object.entries(src.evidence_snippets_by_claim).map(([claim, snippet]) => (
-                                <div key={claim} className="bg-[#08090f] p-4 rounded-xl border border-white/5">
-                                  <div className="text-[9px] font-black text-indigo-400 uppercase mb-1 tracking-wider">{claim}</div>
-                                  <div className="text-[10px] text-slate-400 font-mono leading-relaxed line-clamp-3 hover:line-clamp-none transition-all">{snippet}</div> // Cast to string if needed
+                                <div key={claim} className="bg-background p-4 rounded-xl border border-border-subtle">
+                                  <div className="text-[9px] font-black text-primary-accent uppercase mb-1 tracking-wider">{claim}</div>
+                                  <div className="text-[10px] text-primary-subtle font-mono leading-relaxed line-clamp-3 hover:line-clamp-none transition-all">{snippet}</div> // Cast to string if needed
                                 </div>
                               ))}
                             </div>
@@ -556,15 +556,15 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
 
               {/* Audit Trail */}
               {item.evidence.audit_trail && item.evidence.audit_trail.length > 0 && (
-                <div className="bg-[#0f111a] rounded-[2rem] p-1 shadow-2xl border border-white/5 overflow-hidden">
-                  <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                <div className="bg-surface rounded-[2rem] p-1 shadow-2xl border border-border-subtle overflow-hidden">
+                  <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-background/50">
                     <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></div>
-                      <span className="text-[10px] font-mono text-slate-400 uppercase font-bold tracking-widest">Audit_Trail.log</span>
+                      <div className="w-2.5 h-2.5 rounded-full bg-status-success shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></div>
+                      <span className="text-[10px] font-mono text-primary-subtle uppercase font-bold tracking-widest">Audit_Trail.log</span>
                     </div>
-                    <div className="text-[9px] font-mono text-slate-600 uppercase tracking-widest">Read Only</div>
+                    <div className="text-[9px] font-mono text-primary-subtle uppercase tracking-widest">Read Only</div>
                   </div>
-                  <div className="bg-[#08090f] p-8 font-mono text-xs text-emerald-400/80 leading-relaxed overflow-auto max-h-[40vh] custom-scrollbar">
+                  <div className="bg-background p-8 font-mono text-xs text-status-success/80 leading-relaxed overflow-auto max-h-[40vh] custom-scrollbar">
                     {item.evidence.audit_trail.map((entry, i) => (
                       <div key={i} className="mb-4 pb-4 border-b border-white/5 last:border-b-0 last:pb-0 last:mb-0">
                         <div className="flex items-center gap-3 mb-2 opacity-70">
@@ -622,8 +622,8 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
           {activeTab === 'images' && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-8 animate-in fade-in duration-300">
               {editedData.images.map((img, idx) => (
-                <div key={idx} className="glass-card p-6 rounded-[32px] border-white/5 group relative hover:bg-white/10 transition-all">
-                  <div className="aspect-square bg-[#08090f] rounded-[24px] overflow-hidden flex items-center justify-center p-4 border border-white/5 relative">
+                <div key={idx} className="glass-card p-6 rounded-[32px] border-border-subtle group relative hover:bg-surface/50 transition-all">
+                  <div className="aspect-square bg-background rounded-[24px] overflow-hidden flex items-center justify-center p-4 border border-border-subtle relative">
                     <img src={img.url} alt="Consumable" className="max-w-full max-h-full object-contain" />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 backdrop-blur-sm">
                       <button className="p-3 bg-white/10 rounded-full hover:bg-white/20 text-white backdrop-blur-md transition-all"><ExternalLink size={20} /></button>
@@ -639,7 +639,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                         {img.passes_rules ? <Check size={16} /> : <AlertTriangle size={16} />}
                       </div>
                     </div>
-                    <div className="space-y-2 bg-white/5 p-4 rounded-2xl border border-white/5">
+                    <div className="space-y-2 bg-background p-4 rounded-2xl border border-border-subtle">
                       <div className="flex items-center justify-between text-[9px] font-bold">
                         <span className="text-slate-500">RESOLUTION (800x800+)</span>
                         <span className={img.width >= 800 && img.height >= 800 ? 'text-emerald-400' : 'text-red-400 font-black'}>
