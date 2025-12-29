@@ -159,6 +159,12 @@ export const RECOMMENDED_MODELS = {
   'nvidia/nemotron-3-nano-30b-a3b:free': {
     name: 'NVIDIA Nemotron 3 Nano (Free)',
     description: 'Efficient 30B parameter model by NVIDIA',
+    recommended: false,
+    category: 'free'
+  },
+  'xiaomi/mimo-v2-flash:free': {
+    name: 'Xiaomi Mimo V2 Flash (Free)',
+    description: 'High-speed free flash model',
     recommended: true,
     category: 'free'
   }

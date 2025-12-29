@@ -39,7 +39,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
   // OpenRouter
   const [openRouterConfig, setOpenRouterConfig] = useState<OpenRouterConfig>({
     apiKey: '',
-    model: 'nvidia/nemotron-3-nano-30b-a3b:free'
+    model: 'xiaomi/mimo-v2-flash:free'
   });
   const [openRouterStatus, setOpenRouterStatus] = useState<'idle' | 'validating' | 'saved' | 'error'>('idle');
   const [openRouterError, setOpenRouterError] = useState('');
