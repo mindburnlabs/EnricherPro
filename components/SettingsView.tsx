@@ -4,17 +4,11 @@ import { Shield, Key, Save, AlertCircle, CheckCircle2, Loader2, XCircle, Activit
 import { validateFirecrawlApiKey } from '../services/firecrawlService';
 import ApiStatusIndicator from './ApiStatusIndicator';
 import { apiHealthMonitoringService } from '../services/apiHealthMonitoringService';
-import { createOpenRouterService, RECOMMENDED_MODELS, OpenRouterConfig } from '../services/openRouterService';
-import { PerplexityService, DEFAULT_PERPLEXITY_CONFIG, PerplexityConfig, PERPLEXITY_MODELS } from '../services/perplexityService';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Card } from './ui/Card';
 
 const FIRECRAWL_STORAGE_KEY = 'firecrawl_api_key';
-const OPENROUTER_STORAGE_KEY = 'openrouter_config';
-const GEMINI_STORAGE_KEY = 'gemini_api_key';
-const GEMINI_MODEL_STORAGE_KEY = 'gemini_model';
-const PRIMARY_ENGINE_KEY = 'primary_engine_preference';
 
 interface SettingsViewProps {
   theme: 'light' | 'dark' | 'system';
@@ -23,7 +17,7 @@ interface SettingsViewProps {
 }
 
 const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onClearData }) => {
-  const [activeTab, setActiveTab] = useState<'general' | 'openrouter' | 'perplexity' | 'gemini' | 'firecrawl' | 'monitoring'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'firecrawl' | 'monitoring'>('general');
   const [systemHealth, setSystemHealth] = useState<any>(null);
 
   // --- Start: Configuration States ---
@@ -33,45 +27,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
   const [firecrawlStatus, setFirecrawlStatus] = useState<'idle' | 'validating' | 'saved' | 'error'>('idle');
   const [firecrawlError, setFirecrawlError] = useState('');
 
-  // Gemini
-  const [geminiKey, setGeminiKey] = useState('');
-  const [geminiModel, setGeminiModel] = useState('gemini-1.5-pro');
-  const [geminiStatus, setGeminiStatus] = useState<'idle' | 'validating' | 'saved' | 'error'>('idle');
-  const [geminiError, setGeminiError] = useState('');
-
-  // OpenRouter
-  const [openRouterConfig, setOpenRouterConfig] = useState<OpenRouterConfig>({
-    apiKey: '',
-    model: 'xiaomi/mimo-v2-flash:free'
-  });
-  const [openRouterStatus, setOpenRouterStatus] = useState<'idle' | 'validating' | 'saved' | 'error'>('idle');
-  const [openRouterError, setOpenRouterError] = useState('');
-  const [availableModels, setAvailableModels] = useState<any[]>([]);
-  const [isFetchingModels, setIsFetchingModels] = useState(false);
-
-  // Perplexity
-  const [perplexityConfig, setPerplexityConfig] = useState<PerplexityConfig>(DEFAULT_PERPLEXITY_CONFIG);
-  const [perplexityStatus, setPerplexityStatus] = useState<'idle' | 'validating' | 'saved' | 'error'>('idle');
-  const [perplexityError, setPerplexityError] = useState('');
-
-  // Engine
-  const [engine, setEngine] = useState<'gemini' | 'openrouter' | 'firecrawl'>('gemini');
-
   // --- End: Configuration States ---
 
   useEffect(() => {
     loadSettings();
-
-    // Load available OpenRouter models if key exists
-    const savedOrKey = localStorage.getItem(OPENROUTER_STORAGE_KEY);
-    if (savedOrKey) {
-      try {
-        const config = JSON.parse(savedOrKey);
-        if (config.apiKey) {
-          // Initial fetch could go here if we wanted to auto-load models
-        }
-      } catch (e) { }
-    }
 
     // Load system health data
     const updateHealth = () => {
@@ -92,38 +51,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
     // Firecrawl
     const savedFirecrawl = localStorage.getItem(FIRECRAWL_STORAGE_KEY);
     if (savedFirecrawl) setFirecrawlKey(savedFirecrawl);
-
-    // Gemini
-    const savedGemini = localStorage.getItem(GEMINI_STORAGE_KEY);
-    if (savedGemini) setGeminiKey(savedGemini);
-    const savedGeminiModel = localStorage.getItem(GEMINI_MODEL_STORAGE_KEY);
-    if (savedGeminiModel) setGeminiModel(savedGeminiModel);
-
-    // OpenRouter
-    const savedOpenRouter = localStorage.getItem(OPENROUTER_STORAGE_KEY);
-    if (savedOpenRouter) {
-      try {
-        setOpenRouterConfig(JSON.parse(savedOpenRouter));
-      } catch (e) { console.warn('Failed to parse OpenRouter config', e); }
-    }
-
-    // Perplexity
-    const perplexityService = PerplexityService.getInstance();
-    setPerplexityConfig(perplexityService.getConfig());
-
-    // Engine
-    const savedEngine = localStorage.getItem(PRIMARY_ENGINE_KEY) as any;
-    if (savedEngine && ['gemini', 'openrouter', 'firecrawl'].includes(savedEngine)) {
-      setEngine(savedEngine);
-    }
   };
-
-  // Save engine preference when it changes
-  useEffect(() => {
-    localStorage.setItem(PRIMARY_ENGINE_KEY, engine);
-    // Dispatch event so other components (like App.tsx) can react immediately if they listen
-    window.dispatchEvent(new Event('engine-preference-changed'));
-  }, [engine]);
 
   // --- Handlers ---
 
@@ -150,160 +78,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
     }
   };
 
-  const handleSaveGemini = async () => {
-    if (!geminiKey.trim()) {
-      setGeminiError("API Key cannot be empty");
-      setGeminiStatus('error');
-      return;
-    }
-    // Simple format check
-    if (!geminiKey.startsWith('AIza')) {
-      // Just a warning, don't block
-      console.warn("API Key doesn't start with AIza, might be invalid but proceeding.");
-    }
-
-    setGeminiStatus('saved');
-    localStorage.setItem(GEMINI_STORAGE_KEY, geminiKey);
-    localStorage.setItem(GEMINI_MODEL_STORAGE_KEY, geminiModel);
-    setTimeout(() => setGeminiStatus('idle'), 3000);
-  };
-
-  const handleOpenRouterSave = async () => {
-    if (!openRouterConfig.apiKey.trim()) {
-      setOpenRouterError("API Key cannot be empty");
-      setOpenRouterStatus('error');
-      return;
-    }
-
-    setOpenRouterStatus('validating');
-    setOpenRouterError('');
-
-    try {
-      const service = createOpenRouterService(openRouterConfig);
-      // Validate by fetching models if haven't already
-      if (availableModels?.length === 0) {
-        await service.getAvailableModels();
-      }
-
-      localStorage.setItem(OPENROUTER_STORAGE_KEY, JSON.stringify(openRouterConfig));
-      window.dispatchEvent(new Event('storage'));
-      setOpenRouterStatus('saved');
-      setTimeout(() => setOpenRouterStatus('idle'), 3000);
-    } catch (error) {
-      setOpenRouterError(`Invalid configuration: ${error}`);
-      setOpenRouterStatus('error');
-    }
-  };
-
-  const fetchOpenRouterModels = async () => {
-    if (!openRouterConfig.apiKey) {
-      setOpenRouterError("Enter API Key first.");
-      return;
-    }
-    setIsFetchingModels(true);
-    setOpenRouterError('');
-    try {
-      const service = createOpenRouterService(openRouterConfig);
-      const models = await service.getAvailableModels();
-      setAvailableModels(models);
-    } catch (e) {
-      setOpenRouterError(`Failed to fetch models: ${e}`);
-    } finally {
-      setIsFetchingModels(false);
-    }
-  };
-
-  // Gemini Dynamic Fetch
-  const [availableGeminiModels, setAvailableGeminiModels] = useState<{ id: string; name: string }[]>([]);
-  const [isFetchingGeminiModels, setIsFetchingGeminiModels] = useState(false);
-
-  const fetchGeminiModels = async () => {
-    if (!geminiKey) {
-      setGeminiError("Enter API Key first.");
-      return;
-    }
-    setIsFetchingGeminiModels(true);
-    setGeminiError('');
-    try {
-      const { getAvailableModels } = await import('../services/geminiService');
-      const models = await getAvailableModels(geminiKey);
-      // Sort: newer (higher version numbers) first roughly, or just alphabetical
-      models.sort((a, b) => b.id.localeCompare(a.id));
-      setAvailableGeminiModels(models);
-    } catch (e) {
-      setGeminiError(`Failed to fetch models: ${e}`);
-    } finally {
-      setIsFetchingGeminiModels(false);
-    }
-  };
-
-  // Perplexity Dynamic Fetch
-  const [availablePerplexityModels, setAvailablePerplexityModels] = useState<string[]>([]);
-  const [isFetchingPerplexityModels, setIsFetchingPerplexityModels] = useState(false);
-
-  const fetchPerplexityModels = async () => {
-    if (perplexityConfig.provider === 'direct') {
-      if (openRouterConfig.apiKey) {
-        setIsFetchingPerplexityModels(true);
-        try {
-          const service = createOpenRouterService(openRouterConfig);
-          const models = await service.getAvailableModels();
-          const pplxModels = models
-            .filter((m: any) => m.id.startsWith('perplexity/'))
-            .map((m: any) => m.id.replace('perplexity/', ''));
-          setAvailablePerplexityModels(pplxModels.length > 0 ? pplxModels : []);
-        } catch (e) {
-          setPerplexityError("Could not fetch models via OpenRouter proxy: " + e);
-        } finally {
-          setIsFetchingPerplexityModels(false);
-        }
-      } else {
-        setPerplexityError("Dynamic fetch requires OpenRouter Key (used as directory). Using static list.");
-      }
-      return;
-    }
-
-    // OpenRouter Provider Mode
-    if (!openRouterConfig.apiKey) {
-      setPerplexityError("Enter OpenRouter API Key in OpenRouter tab first.");
-      return;
-    }
-    setIsFetchingPerplexityModels(true);
-    setPerplexityError('');
-    try {
-      const service = createOpenRouterService(openRouterConfig);
-      const models = await service.getAvailableModels();
-      const pplxModels = models
-        .filter((m: any) => m.id.startsWith('perplexity/'))
-        .map((m: any) => m.id);
-      setAvailablePerplexityModels(pplxModels);
-    } catch (e) {
-      setPerplexityError(`Failed to fetch models: ${e}`);
-    } finally {
-      setIsFetchingPerplexityModels(false);
-    }
-  };
-
-
-
-  const handleSavePerplexity = async () => {
-    if (perplexityConfig.provider === 'direct' && !perplexityConfig.apiKey) {
-      setPerplexityError("Direct API requires an API Key.");
-      setPerplexityStatus('error');
-      return;
-    }
-
-    setPerplexityStatus('validating');
-    setPerplexityError('');
-
-    // Save via service
-    const service = PerplexityService.getInstance();
-    service.updateConfig(perplexityConfig);
-
-    setPerplexityStatus('saved');
-    setTimeout(() => setPerplexityStatus('idle'), 3000);
-  };
-
 
   return (
     <div className="p-4 md:p-12 max-w-6xl mx-auto w-full h-full overflow-y-auto">
@@ -311,16 +85,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
         <h1 className="text-3xl font-black text-primary mb-2 flex items-center gap-3">
           <SettingsIcon className="text-primary-accent" size={32} /> System Settings
         </h1>
-        <p className="text-primary-subtle font-medium">Configure AI providers, API keys, and system preferences.</p>
+        <p className="text-primary-subtle font-medium">Configure API keys and system preferences.</p>
       </div>
 
       {/* Modern Tabs */}
       <div className="mb-8 flex flex-wrap gap-2 bg-surface p-1.5 rounded-2xl border border-border-subtle w-fit">
         {[
           { id: 'general', label: 'General', icon: Monitor },
-          { id: 'openrouter', label: 'OpenRouter', icon: Brain },
-          { id: 'perplexity', label: 'Perplexity', icon: Search },
-          { id: 'gemini', label: 'Gemini', icon: Zap },
           { id: 'firecrawl', label: 'Firecrawl', icon: Globe },
           { id: 'monitoring', label: 'Monitoring', icon: Activity },
         ].map((tab) => (
@@ -377,38 +148,16 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <button
-                  onClick={() => setEngine('gemini')}
-                  className={`p-3 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] active:scale-95 ${engine === 'gemini'
-                    ? 'bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10'
-                    : 'bg-surface border-border-subtle hover:border-primary-accent/50 text-primary-subtle hover:bg-card'
-                    }`}
-                >
-                  <div className="font-medium mb-1">Gemini 2.0 (Default)</div>
-                  <div className="text-xs opacity-70">Best overall reasoning & synthesis</div>
-                </button>
-
-                <button
-                  onClick={() => setEngine('openrouter')}
-                  className={`p-3 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] active:scale-95 ${engine === 'openrouter'
-                    ? 'bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10'
-                    : 'bg-surface border-border-subtle hover:border-primary-accent/50 text-primary-subtle hover:bg-card'
-                    }`}
-                >
-                  <div className="font-medium mb-1">OpenRouter</div>
-                  <div className="text-xs opacity-70">Access to GPT-4o, Claude 3.5, etc.</div>
-                </button>
-
-                <button
-                  onClick={() => setEngine('firecrawl')}
-                  className={`p-3 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] active:scale-95 ${engine === 'firecrawl'
-                    ? 'bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10'
-                    : 'bg-surface border-border-subtle hover:border-primary-accent/50 text-primary-subtle hover:bg-card'
-                    }`}
+                  disabled
+                  className="p-3 rounded-xl border text-left transition-all duration-200 bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10 cursor-default"
                 >
                   <div className="font-medium mb-1">Firecrawl Agent</div>
                   <div className="text-xs opacity-70">Advanced Autonomous Web Research</div>
                 </button>
               </div>
+              <p className="mt-2 text-xs text-primary-subtle">
+                * Enricher Pro now runs exclusively on Firecrawl for maximum reliability.
+              </p>
             </section>
 
             <section className="mt-8 pt-8 border-t border-border-subtle">
@@ -430,247 +179,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                 </Button>
               </div>
             </section>
-          </Card>
-        )}
-
-        {/* === OPENROUTER TAB === */}
-        {activeTab === 'openrouter' && (
-          <Card className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-xl font-bold text-primary mb-2">OpenRouter Configuration</h2>
-                <p className="text-sm text-primary-subtle">Primary engine for complex synthesis and model routing.</p>
-              </div>
-              <div className="bg-primary-accent/10 px-3 py-1 rounded-full">
-                <span className="text-xs font-bold text-primary-accent">RECOMMENDED</span>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <Input
-                type="password"
-                label="API KEY"
-                value={openRouterConfig.apiKey}
-                onChange={(e) => setOpenRouterConfig(prev => ({ ...prev, apiKey: e.target.value }))}
-                placeholder="sk-or-v1-..."
-              />
-
-              <div>
-                <div className="flex justify-between items-end mb-2 ml-1">
-                  <label className="block text-xs font-bold text-primary-subtle">MODEL SELECTION</label>
-                  <button
-                    onClick={fetchOpenRouterModels}
-                    disabled={isFetchingModels || !openRouterConfig.apiKey}
-                    className="text-xs font-bold text-primary-accent hover:text-primary-accent-hover flex items-center gap-1 disabled:opacity-50"
-                  >
-                    {isFetchingModels ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                    {isFetchingModels ? 'Fetching...' : 'Refresh Models'}
-                  </button>
-                </div>
-                <select
-                  value={openRouterConfig.model}
-                  onChange={(e) => setOpenRouterConfig(prev => ({ ...prev, model: e.target.value }))}
-                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-xl focus:bg-card focus:border-primary-accent focus:outline-none text-sm transition-all text-primary"
-                >
-                  {availableModels?.length > 0 ? (
-                    <optgroup label="Available Models (Fetched from OpenRouter)">
-                      {availableModels.map((m: any) => (
-                        <option key={m.id} value={m.id}>{m.name || m.id}</option>
-                      ))}
-                    </optgroup>
-                  ) : (
-                    <>
-                      <optgroup label="Core Recommended">
-                        {Object.entries(RECOMMENDED_MODELS).filter(([_, v]) => v.recommended).map(([k, v]) => (
-                          <option key={k} value={k}>{v.name}</option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="Other">
-                        {Object.entries(RECOMMENDED_MODELS).filter(([_, v]) => !v.recommended).map(([k, v]) => (
-                          <option key={k} value={k}>{v.name}</option>
-                        ))}
-                      </optgroup>
-                    </>
-                  )}
-                </select>
-              </div>
-
-              {openRouterStatus === 'error' && (
-                <div className="p-4 bg-status-error/10 border border-status-error/20 rounded-xl text-xs font-bold text-status-error flex items-center gap-2">
-                  <XCircle size={16} /> {openRouterError}
-                </div>
-              )}
-
-              <div className="flex justify-end pt-4">
-                <Button
-                  onClick={handleOpenRouterSave}
-                  isLoading={openRouterStatus === 'validating'}
-                  loadingText="Validating..."
-                >
-                  {openRouterStatus === 'saved' ? 'Saved' : 'Save Configuration'}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* === PERPLEXITY TAB === */}
-        {activeTab === 'perplexity' && (
-          <Card className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-xl font-bold text-primary mb-2">Perplexity Search Engine</h2>
-                <p className="text-sm text-primary-subtle">Configure the "Search" phase engine. Choose between OpenRouter or Direct API.</p>
-              </div>
-              <Search size={24} className="text-primary-subtle" />
-            </div>
-
-            <div className="bg-surface p-1 rounded-xl flex w-fit border border-border-subtle">
-              <Button
-                onClick={() => setPerplexityConfig(prev => ({ ...prev, provider: 'openrouter' }))}
-                variant={perplexityConfig.provider === 'openrouter' ? 'secondary' : 'ghost'}
-                size="sm"
-                className={perplexityConfig.provider === 'openrouter' ? 'bg-card shadow-sm' : ''}
-              >
-                Use OpenRouter
-              </Button>
-              <Button
-                onClick={() => setPerplexityConfig(prev => ({ ...prev, provider: 'direct' }))}
-                variant={perplexityConfig.provider === 'direct' ? 'secondary' : 'ghost'}
-                size="sm"
-                className={perplexityConfig.provider === 'direct' ? 'bg-card shadow-sm' : ''}
-              >
-                Use Direct API
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              {perplexityConfig.provider === 'direct' && (
-                <div className="animate-in fade-in slide-in-from-top-2">
-                  <Input
-                    type="password"
-                    label="PERPLEXITY API KEY"
-                    value={perplexityConfig.apiKey}
-                    onChange={(e) => setPerplexityConfig(prev => ({ ...prev, apiKey: e.target.value }))}
-                    placeholder="pplx-..."
-                  />
-                </div>
-              )}
-
-              <div>
-                <div className="flex justify-between items-end mb-2 ml-1">
-                  <label className="block text-xs font-bold text-primary-subtle">MODEL</label>
-                  <button
-                    onClick={fetchPerplexityModels}
-                    disabled={isFetchingPerplexityModels}
-                    className="text-xs font-bold text-primary-accent hover:text-primary-accent-hover flex items-center gap-1 disabled:opacity-50"
-                  >
-                    {isFetchingPerplexityModels ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                    {isFetchingPerplexityModels ? 'Fetching...' : 'Refresh Models'}
-                  </button>
-                </div>
-                <select
-                  value={perplexityConfig.model}
-                  onChange={(e) => setPerplexityConfig(prev => ({ ...prev, model: e.target.value }))}
-                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-xl focus:bg-card focus:border-primary-accent focus:outline-none text-sm transition-all text-primary"
-                >
-                  {availablePerplexityModels?.length > 0 ? (
-                    <optgroup label={`Available Models (${perplexityConfig.provider === 'openrouter' ? 'OpenRouter' : 'Inferred'})`}>
-                      {availablePerplexityModels.map(m => (
-                        <option key={m} value={m}>{m}</option>
-                      ))}
-                    </optgroup>
-                  ) : (
-                    Object.entries(PERPLEXITY_MODELS).map(([k, v]) => (
-                      <option key={v} value={perplexityConfig.provider === 'openrouter' ? `perplexity/${v}` : v}>
-                        {k.replace(/-/g, ' ').toUpperCase()} ({perplexityConfig.provider === 'openrouter' ? 'Via OpenRouter' : 'Direct'})
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              {perplexityStatus === 'error' && (
-                <div className="p-4 bg-status-error/10 border border-status-error/20 rounded-xl text-xs font-bold text-status-error flex items-center gap-2">
-                  <XCircle size={16} /> {perplexityError}
-                </div>
-              )}
-
-              <div className="flex justify-end pt-4">
-                <Button
-                  onClick={handleSavePerplexity}
-                >
-                  {perplexityStatus === 'saved' ? 'Saved' : 'Save Perplexity Settings'}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* === GEMINI TAB === */}
-        {activeTab === 'gemini' && (
-          <Card className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-            <div>
-              <h2 className="text-xl font-bold text-primary mb-2">Google Gemini</h2>
-              <p className="text-sm text-primary-subtle">Primary data synthesis and reasoning engine.</p>
-            </div>
-
-            <div className="space-y-4">
-              <Input
-                type="password"
-                label="API KEY"
-                value={geminiKey}
-                onChange={(e) => setGeminiKey(e.target.value)}
-                placeholder="AIza..."
-              />
-
-              <div>
-                <div className="flex justify-between items-end mb-2 ml-1">
-                  <label className="block text-xs font-bold text-primary-subtle">MODEL</label>
-                  <button
-                    onClick={fetchGeminiModels}
-                    disabled={isFetchingGeminiModels || !geminiKey}
-                    className="text-xs font-bold text-primary-accent hover:text-primary-accent-hover flex items-center gap-1 disabled:opacity-50"
-                  >
-                    {isFetchingGeminiModels ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                    {isFetchingGeminiModels ? 'Fetching...' : 'Refresh Models'}
-                  </button>
-                </div>
-                <select
-                  value={geminiModel}
-                  onChange={(e) => setGeminiModel(e.target.value)}
-                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-xl focus:bg-card focus:border-primary-accent focus:outline-none text-sm transition-all text-primary"
-                >
-                  {availableGeminiModels?.length > 0 ? (
-                    <optgroup label="Available Models (Fetched from Google)">
-                      {availableGeminiModels.map((m) => (
-                        <option key={m.id} value={m.id}>{m.name || m.id}</option>
-                      ))}
-                    </optgroup>
-                  ) : (
-                    <optgroup label="Recommended Models">
-                      <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Latest)</option>
-                      <option value="gemini-1.5-pro">Gemini 1.5 Pro (Stable)</option>
-                      <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
-                      <option value="gemini-pro">Gemini Pro 1.0 (Legacy)</option>
-                    </optgroup>
-                  )}
-                </select>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <Button
-                  onClick={() => {
-                    handleSaveGemini();
-                    window.dispatchEvent(new Event('settings-updated'));
-                  }}
-                  leftIcon={geminiStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
-                  variant={geminiStatus === 'saved' ? 'success' : 'primary'}
-                >
-                  {geminiStatus === 'saved' ? 'Settings Saved' : 'Save Gemini Settings'}
-                </Button>
-              </div>
-            </div>
           </Card>
         )}
 

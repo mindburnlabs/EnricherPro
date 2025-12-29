@@ -1,6 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Play, FileText, Camera, Loader2, Sparkles, Wand2, Info } from 'lucide-react';
-import { analyzeConsumableImage } from '../services/geminiService';
 
 interface ImportViewProps {
   onImport: (inputs: string[]) => void;
@@ -23,23 +22,9 @@ const ImportView: React.FC<ImportViewProps> = ({ onImport }) => {
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setAnalyzing(true);
-    try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = (reader.result as string).split(',')[1];
-        const result = await analyzeConsumableImage(base64);
-        setText(prev => (prev ? prev + '\n' + result : result));
-        setAnalyzing(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      console.error("Image analysis failed", err);
-      setAnalyzing(false);
-    }
+    // Image analysis temporarily disabled
+    console.warn("Image analysis feature requires an active vision model.");
+    setAnalyzing(false);
   };
 
   return (

@@ -793,33 +793,6 @@ export class ApiIntegrationService {
 
 // Default service configurations
 export const DEFAULT_CONFIGS: Record<string, ApiServiceConfig> = {
-  openrouter: {
-    name: 'openrouter',
-    baseUrl: 'https://openrouter.ai/api/v1',
-    priority: 'high',
-    rateLimit: {
-      maxRequests: 100,
-      windowMs: 60000, // 1 minute
-      burstLimit: 20,
-      backoffMultiplier: 1.5,
-      maxBackoffMs: 15000
-    },
-    circuitBreaker: {
-      failureThreshold: 3,
-      recoveryTimeout: 30000,
-      monitoringWindow: 180000, // 3 minutes
-      halfOpenMaxCalls: 2,
-      successThreshold: 2
-    },
-    timeout: {
-      requestTimeout: 45000,
-      connectionTimeout: 10000,
-      retryTimeout: 3000,
-      maxRetries: 2
-    },
-    healthCheckInterval: 180000 // 3 minutes
-  },
-
   firecrawl: {
     name: 'firecrawl',
     baseUrl: 'https://api.firecrawl.dev',
@@ -854,33 +827,6 @@ export const DEFAULT_CONFIGS: Record<string, ApiServiceConfig> = {
     healthCheckInterval: 300000 // 5 minutes
   },
 
-  gemini: {
-    name: 'gemini',
-    baseUrl: 'https://generativelanguage.googleapis.com',
-    priority: 'high',
-    rateLimit: {
-      maxRequests: 15, // Reduced from 60 to avoid 429s
-      windowMs: 60000, // 1 minute
-      burstLimit: 2,   // Reduced from 10 to strictly throttle bursts
-      backoffMultiplier: 2, // Increased backoff multiplier
-      maxBackoffMs: 60000 // Increased max backoff to 1 minute
-    },
-    circuitBreaker: {
-      failureThreshold: 3,
-      recoveryTimeout: 30000,
-      monitoringWindow: 180000, // 3 minutes
-      halfOpenMaxCalls: 1, // Reduced to be more cautious during recovery
-      successThreshold: 2
-    },
-    timeout: {
-      requestTimeout: 60000,
-      connectionTimeout: 10000,
-      retryTimeout: 3000,
-      maxRetries: 3 // Allow one more retry with proper backoff
-    },
-    healthCheckInterval: 180000 // 3 minutes
-  },
-
   nix: {
     name: 'nix',
     baseUrl: 'https://nix.ru',
@@ -907,60 +853,6 @@ export const DEFAULT_CONFIGS: Record<string, ApiServiceConfig> = {
     },
     // healthCheckEndpoint: 'https://nix.ru', // Disabled to prevent CORS errors in browser
     healthCheckInterval: 600000 // 10 minutes
-  },
-
-  'perplexity-direct': {
-    name: 'perplexity-direct',
-    baseUrl: 'https://api.perplexity.ai',
-    priority: 'high',
-    rateLimit: {
-      maxRequests: 10,
-      windowMs: 60000, // 1 minute
-      burstLimit: 2,
-      backoffMultiplier: 2,
-      maxBackoffMs: 60000
-    },
-    circuitBreaker: {
-      failureThreshold: 3,
-      recoveryTimeout: 30000,
-      monitoringWindow: 180000, // 3 minutes
-      halfOpenMaxCalls: 1,
-      successThreshold: 2
-    },
-    timeout: {
-      requestTimeout: 60000,
-      connectionTimeout: 10000,
-      retryTimeout: 3000,
-      maxRetries: 2
-    },
-    healthCheckInterval: 180000 // 3 minutes
-  },
-
-  'perplexity-openrouter': {
-    name: 'perplexity-openrouter',
-    baseUrl: 'https://openrouter.ai/api/v1',
-    priority: 'high',
-    rateLimit: {
-      maxRequests: 50,
-      windowMs: 60000, // 1 minute
-      burstLimit: 10,
-      backoffMultiplier: 1.5,
-      maxBackoffMs: 30000
-    },
-    circuitBreaker: {
-      failureThreshold: 5,
-      recoveryTimeout: 30000,
-      monitoringWindow: 180000, // 3 minutes
-      halfOpenMaxCalls: 2,
-      successThreshold: 2
-    },
-    timeout: {
-      requestTimeout: 60000,
-      connectionTimeout: 10000,
-      retryTimeout: 3000,
-      maxRetries: 2
-    },
-    healthCheckInterval: 180000 // 3 minutes
   }
 };
 

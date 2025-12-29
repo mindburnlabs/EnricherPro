@@ -43,43 +43,12 @@ const App: React.FC = () => {
   }, [theme]);
 
   // Engine Management
-  const [processingEngine, setProcessingEngine] = useState<'gemini' | 'openrouter' | 'firecrawl'>('gemini');
+  const [processingEngine] = useState<'firecrawl'>('firecrawl');
 
   useEffect(() => {
     // Initialize API services explicitly
     initializeApiServices();
-
-    const loadEnginePreference = () => {
-      const savedEngine = localStorage.getItem(PRIMARY_ENGINE_KEY);
-      if (savedEngine && ['gemini', 'openrouter', 'firecrawl'].includes(savedEngine)) {
-        setProcessingEngine(savedEngine as any);
-        return;
-      }
-
-      // Fallback to legacy check
-      const savedOrConfig = localStorage.getItem(OPENROUTER_STORAGE_KEY);
-      if (savedOrConfig) {
-        try {
-          const config = JSON.parse(savedOrConfig);
-          if (config.apiKey) {
-            setProcessingEngine('gemini');
-          }
-        } catch (e) { }
-      }
-    };
-
-    loadEnginePreference();
-
-    const handleStorageChange = () => loadEnginePreference();
-    const handleEngineChange = () => loadEnginePreference();
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('engine-preference-changed', handleEngineChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('engine-preference-changed', handleEngineChange);
-    };
+    // Default engine is now always firecrawl
   }, []);
 
   // Load Data from Storage
