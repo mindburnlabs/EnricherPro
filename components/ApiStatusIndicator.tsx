@@ -112,42 +112,42 @@ export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({
 
     return (
       <div
-        className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-2 px-3 py-1 bg-surface/50 border border-border-subtle rounded-lg cursor-pointer hover:bg-surface transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         {getHealthIcon(overallHealth)}
-        <span className="text-sm font-medium">
+        <span className="text-sm font-medium text-primary">
           APIs {overallHealth}
         </span>
         {totalQueued > 0 && (
-          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+          <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20">
             {totalQueued} queued
           </span>
         )}
 
         {isExpanded && (
-          <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4">
-            <h3 className="font-semibold text-gray-900 mb-3">API Services Status</h3>
+          <div className="absolute bottom-full left-0 mb-2 w-80 bg-card border border-border-subtle rounded-lg shadow-xl shadow-black/50 z-50 p-4 text-primary">
+            <h3 className="font-semibold text-primary mb-3">API Services Status</h3>
 
             {Object.entries(services).map(([serviceName, service]: [string, any]) => (
-              <div key={serviceName} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+              <div key={serviceName} className="flex items-center justify-between py-2 border-b border-border-subtle last:border-b-0">
                 <div className="flex items-center gap-2">
                   {getHealthIcon(service.health)}
-                  <span className="font-medium capitalize">{serviceName}</span>
+                  <span className="font-medium capitalize text-primary">{serviceName}</span>
                   {getCircuitBreakerIcon(service.circuitBreakerState)}
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-sm text-primary-subtle">
                   <span>{Math.round(service.rateLimitUsage)}%</span>
                   {service.creditsRemaining !== undefined && (
-                    <span className="text-blue-600">{service.creditsRemaining} credits</span>
+                    <span className="text-blue-400">{service.creditsRemaining} credits</span>
                   )}
                 </div>
               </div>
             ))}
 
             {queueStats.totalQueued > 0 && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <div className="text-sm text-gray-600">
+              <div className="mt-3 pt-3 border-t border-border-subtle">
+                <div className="text-sm text-primary-subtle">
                   <div>Queue: {queueStats.totalQueued} requests</div>
                   <div>Avg wait: {formatTime(queueStats.averageWaitTime)}</div>
                 </div>

@@ -442,107 +442,112 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
 
               <div>
                 <label className="block text-xs font-bold text-primary-subtle mb-2 ml-1">MODEL</label>
-                <option value="gemini-3.0-flash-preview">Gemini 3.0 Flash Preview (Latest)</option>
-                <option value="gemini-3.0-pro-preview">Gemini 3.0 Pro Preview (Powerful)</option>
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fast & Stable)</option>
-                <option value="gemini-2.5-pro">Gemini 2.5 Pro (Reasoning)</option>
-                <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
-                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Legacy Stable)</option>
-              </select>
-            </div>
+                <select
+                  value={geminiModel}
+                  onChange={(e) => setGeminiModel(e.target.value)}
+                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-blue-500 focus:outline-none text-sm"
+                >
+                  <option value="gemini-3.0-flash-preview">Gemini 3.0 Flash Preview (Latest)</option>
+                  <option value="gemini-3.0-pro-preview">Gemini 3.0 Pro Preview (Powerful)</option>
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fast & Stable)</option>
+                  <option value="gemini-2.5-pro">Gemini 2.5 Pro (Reasoning)</option>
+                  <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
+                  <option value="gemini-1.5-pro">Gemini 1.5 Pro (Legacy Stable)</option>
+                </select>
+              </div>
 
-            <div className="flex justify-end pt-4">
-              <button
-                onClick={handleSaveGemini}
-                className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/40"
-              >
-                {geminiStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
-                {geminiStatus === 'saved' ? 'Settings Saved' : 'Save Gemini Settings'}
-              </button>
+              <div className="flex justify-end pt-4">
+                <button
+                  onClick={handleSaveGemini}
+                  className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/40"
+                >
+                  {geminiStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
+                  {geminiStatus === 'saved' ? 'Settings Saved' : 'Save Gemini Settings'}
+                </button>
+              </div>
             </div>
-          </div>
           </div>
         )}
 
-      {/* === FIRECRAWL TAB === */}
-      {activeTab === 'firecrawl' && (
-        <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
-          <div>
-            <h2 className="text-xl font-bold text-primary mb-2">Firecrawl Scraper</h2>
-            <p className="text-sm text-primary-subtle">Advanced web scraping & agentic crawling.</p>
-          </div>
-
-          <div className="space-y-4">
+        {/* === FIRECRAWL TAB === */}
+        {activeTab === 'firecrawl' && (
+          <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div>
-              <label className="block text-xs font-bold text-primary-subtle mb-2 ml-1">API KEY (V2)</label>
-              <input
-                type="password"
-                value={firecrawlKey}
-                onChange={(e) => setFirecrawlKey(e.target.value)}
-                className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-orange-500 focus:outline-none font-mono text-sm"
-                placeholder="fc-..."
-              />
-              <div className="mt-2 text-xs text-primary-subtle flex items-center gap-1">
-                <CheckCircle2 size={12} className="text-status-success" /> Using API V2 (Latest)
-              </div>
+              <h2 className="text-xl font-bold text-primary mb-2">Firecrawl Scraper</h2>
+              <p className="text-sm text-primary-subtle">Advanced web scraping & agentic crawling.</p>
             </div>
 
-            {firecrawlStatus === 'error' && (
-              <div className="p-4 bg-status-error/10 border border-status-error/20 rounded-xl text-xs font-bold text-status-error flex items-center gap-2">
-                <XCircle size={16} /> {firecrawlError}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-primary-subtle mb-2 ml-1">API KEY (V2)</label>
+                <input
+                  type="password"
+                  value={firecrawlKey}
+                  onChange={(e) => setFirecrawlKey(e.target.value)}
+                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-orange-500 focus:outline-none font-mono text-sm"
+                  placeholder="fc-..."
+                />
+                <div className="mt-2 text-xs text-primary-subtle flex items-center gap-1">
+                  <CheckCircle2 size={12} className="text-status-success" /> Using API V2 (Latest)
+                </div>
+              </div>
+
+              {firecrawlStatus === 'error' && (
+                <div className="p-4 bg-status-error/10 border border-status-error/20 rounded-xl text-xs font-bold text-status-error flex items-center gap-2">
+                  <XCircle size={16} /> {firecrawlError}
+                </div>
+              )}
+
+              <div className="flex justify-end pt-4">
+                <button
+                  onClick={handleSaveFirecrawl}
+                  disabled={firecrawlStatus === 'validating'}
+                  className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg bg-orange-600 text-white hover:bg-orange-700 shadow-orange-500/40"
+                >
+                  {firecrawlStatus === 'validating' ? <Loader2 size={18} className="animate-spin" /> : firecrawlStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
+                  {firecrawlStatus === 'validating' ? 'Verifying...' : firecrawlStatus === 'saved' ? 'Verified & Saved' : 'Save Firecrawl Key'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === MONITORING TAB === */}
+        {activeTab === 'monitoring' && (
+          <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
+            <div className="flex items-center gap-2 mb-6">
+              <Activity size={18} className="text-primary-accent" />
+              <h2 className="text-xs font-black text-primary-subtle uppercase tracking-[0.2em]">Live API Status</h2>
+            </div>
+
+            {systemHealth && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                <div className="bg-surface p-4 rounded-2xl text-center border border-border-subtle">
+                  <div className={`text-2xl font-black ${systemHealth.overallHealth === 'healthy' ? 'text-status-success' : 'text-status-error'}`}>
+                    {systemHealth.overallHealth.toUpperCase()}
+                  </div>
+                  <div className="text-xs font-bold text-primary-subtle mt-1">SYSTEM HEALTH</div>
+                </div>
+                <div className="bg-surface p-4 rounded-2xl text-center border border-border-subtle">
+                  <div className="text-2xl font-black text-primary">{Math.round(systemHealth.averageResponseTime)}ms</div>
+                  <div className="text-xs font-bold text-primary-subtle mt-1">AVG LATENCY</div>
+                </div>
+                <div className="bg-surface p-4 rounded-2xl text-center border border-border-subtle">
+                  <div className="text-2xl font-black text-primary">{systemHealth.totalRequests}</div>
+                  <div className="text-xs font-bold text-primary-subtle mt-1">TOTAL REQUESTS</div>
+                </div>
+                <div className="bg-surface p-4 rounded-2xl text-center border border-border-subtle">
+                  <div className="text-2xl font-black text-primary">{systemHealth.uptime}%</div>
+                  <div className="text-xs font-bold text-primary-subtle mt-1">EST. UPTIME</div>
+                </div>
               </div>
             )}
 
-            <div className="flex justify-end pt-4">
-              <button
-                onClick={handleSaveFirecrawl}
-                disabled={firecrawlStatus === 'validating'}
-                className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg bg-orange-600 text-white hover:bg-orange-700 shadow-orange-500/40"
-              >
-                {firecrawlStatus === 'validating' ? <Loader2 size={18} className="animate-spin" /> : firecrawlStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
-                {firecrawlStatus === 'validating' ? 'Verifying...' : firecrawlStatus === 'saved' ? 'Verified & Saved' : 'Save Firecrawl Key'}
-              </button>
-            </div>
+            <ApiStatusIndicator showDetails={true} />
           </div>
-        </div>
-      )}
+        )}
 
-      {/* === MONITORING TAB === */}
-      {activeTab === 'monitoring' && (
-        <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
-          <div className="flex items-center gap-2 mb-6">
-            <Activity size={18} className="text-primary-accent" />
-            <h2 className="text-xs font-black text-primary-subtle uppercase tracking-[0.2em]">Live API Status</h2>
-          </div>
-
-          {systemHealth && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-surface p-4 rounded-2xl text-center border border-border-subtle">
-                <div className={`text-2xl font-black ${systemHealth.overallHealth === 'healthy' ? 'text-status-success' : 'text-status-error'}`}>
-                  {systemHealth.overallHealth.toUpperCase()}
-                </div>
-                <div className="text-xs font-bold text-primary-subtle mt-1">SYSTEM HEALTH</div>
-              </div>
-              <div className="bg-surface p-4 rounded-2xl text-center border border-border-subtle">
-                <div className="text-2xl font-black text-primary">{Math.round(systemHealth.averageResponseTime)}ms</div>
-                <div className="text-xs font-bold text-primary-subtle mt-1">AVG LATENCY</div>
-              </div>
-              <div className="bg-surface p-4 rounded-2xl text-center border border-border-subtle">
-                <div className="text-2xl font-black text-primary">{systemHealth.totalRequests}</div>
-                <div className="text-xs font-bold text-primary-subtle mt-1">TOTAL REQUESTS</div>
-              </div>
-              <div className="bg-surface p-4 rounded-2xl text-center border border-border-subtle">
-                <div className="text-2xl font-black text-primary">{systemHealth.uptime}%</div>
-                <div className="text-xs font-bold text-primary-subtle mt-1">EST. UPTIME</div>
-              </div>
-            </div>
-          )}
-
-          <ApiStatusIndicator showDetails={true} />
-        </div>
-      )}
-
-    </div>
+      </div>
     </div >
   );
 };
