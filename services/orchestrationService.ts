@@ -525,7 +525,7 @@ class OrchestrationService {
             return {
                 id: jobId,
                 input_raw: rawQuery,
-                input_hash: Buffer.from(rawQuery).toString('base64'),
+                input_hash: btoa(unescape(encodeURIComponent(rawQuery))),
                 data: finalDataObj,
                 status: finalDataObj.automation_status === 'done' ? 'ok' :
                     finalDataObj.automation_status === 'needs_review' ? 'needs_review' : 'failed',
