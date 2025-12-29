@@ -133,14 +133,8 @@ export const RECOMMENDED_MODELS = {
 
   // --- Free Models ---
   'google/gemini-2.0-flash-exp:free': {
-    name: 'Gemini 2.0 Flash Exp (Free)',
-    description: 'Free tier flash experiment',
-    recommended: true,
-    category: 'free'
-  },
-  'google/gemini-2.0-flash-thinking-exp:free': {
-    name: 'Gemini 2.0 Flash Thinking Exp (Free)',
-    description: 'Reasoning model free tier',
+    name: 'Gemini 2.0 Flash Experimental (Free)',
+    description: 'Free tier flash model with updated capabilities',
     recommended: true,
     category: 'free'
   },
@@ -238,6 +232,62 @@ class OpenRouterService {
     );
 
     if (!response.success) {
+      // Robustness: If model is invalid (400), try fallback to a known working free model
+      if (response.error && response.error.includes('400') && this.config.model !== 'google/gemini-2.0-flash-exp:free') {
+        console.warn(`[OpenRouter] Model ${this.config.model} failed (400). Falling back to google/gemini-2.0-flash-exp:free`);
+
+        // Recursive call with fallback model
+        // We create a temporary config overrides for this request? 
+        // Since makeCompletionRequest uses this.config.model, we'd need to change it or pass it.
+        // But currently makeCompletionRequest pulls from this.config.
+        // Let's create a temporary instance or just update config? Updating config might be persistent.
+        // Better: Recursive call with overridden model in options, BUT makeCompletionRequest reads this.config.model.
+        // Let's modify makeCompletionRequest to accept model override in options?
+        // It basically does: const requestBody = { model: this.config.model... }
+
+        // Let's try one more matching:
+        // We can't easily recurse without changing the method signature or state.
+        // SAFEST FIX: Temporary mutation of config (if instance is not shared concurrently? It is singleton).
+        // BETTER: Just run the fetch again here with new body.
+
+        const fallbackModel = 'google/gemini-2.0-flash-exp:free';
+        const fallbackBody = { ...requestBody, model: fallbackModel };
+
+        const fallbackResponse = await apiIntegrationService.makeRequest(
+          {
+            serviceId: 'openrouter',
+            operation: 'chat_completion_fallback',
+            priority: 'high',
+            retryable: false,
+            metadata: { model: fallbackModel, originalModel: this.config.model }
+          },
+          async () => {
+            const apiResponse = await fetch(`${this.config.baseUrl}/chat/completions`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${this.config.apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://enricherpro.com',
+                'X-Title': 'Consumable Enricher Pro'
+              },
+              body: JSON.stringify(fallbackBody)
+            });
+
+            if (!apiResponse.ok) {
+              const errorData = await apiResponse.json().catch(() => ({}));
+              throw new Error(`OpenRouter Fallback API error: ${apiResponse.status} - ${errorData.error?.message || apiResponse.statusText}`);
+            }
+
+            const data = await apiResponse.json();
+            return { success: true, data, responseTime: 0 };
+          }
+        );
+
+        if (fallbackResponse.success) {
+          return fallbackResponse.data;
+        }
+      }
+
       throw new Error(response.error || 'OpenRouter request failed');
     }
 
