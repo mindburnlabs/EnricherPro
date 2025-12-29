@@ -412,18 +412,20 @@ class OrchestrationService {
                         }
 
                         // FINAL RESORT: Deterministic Synthesis (Brainless)
-                        if (!synthesisResult && typeof structuredExtractionData === 'object') {
+                        // FINAL RESORT: Deterministic Synthesis (Brainless)
+                        if (!synthesisResult && Array.isArray(structuredExtractionData)) {
                             logs.push("CRITICAL: All LLMs failed. Using Deterministic Synthesis from Firecrawl Data.");
+                            const fallbackItem = structuredExtractionData[0] || {};
                             // Construct a basic result from what we scraped/parsed
                             synthesisResult = {
                                 data: {
-                                    brand: structuredExtractionData[0]?.brand || processedText.brand.brand || 'Unknown',
-                                    model: structuredExtractionData[0]?.model || processedText.model.model || rawQuery,
-                                    mpn: structuredExtractionData[0]?.mpn,
+                                    brand: fallbackItem.brand || processedText.brand.brand || 'Unknown',
+                                    model: fallbackItem.model || processedText.model.model || rawQuery,
+                                    mpn: fallbackItem.mpn,
                                     consumable_type: processedText.detectedType.value,
                                     color: processedText.detectedColor.value,
-                                    yield: structuredExtractionData[0]?.yield,
-                                    compatibility: structuredExtractionData[0]?.compatibility || [],
+                                    yield: fallbackItem.yield,
+                                    compatibility: fallbackItem.compatibility || [],
                                     sources: []
                                 },
                                 thinking: "LLM Systems Down. Generated via Deterministic Failover."
