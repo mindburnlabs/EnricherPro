@@ -905,7 +905,7 @@ export const DEFAULT_CONFIGS: Record<string, ApiServiceConfig> = {
       retryTimeout: 4000,
       maxRetries: 3
     },
-    healthCheckEndpoint: 'https://nix.ru',
+    // healthCheckEndpoint: 'https://nix.ru', // Disabled to prevent CORS errors in browser
     healthCheckInterval: 600000 // 10 minutes
   }
 };

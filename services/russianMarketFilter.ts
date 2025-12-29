@@ -60,7 +60,7 @@ export function verifyRussianMarketEligibility(
 } {
   const auditTrail: any[] = [];
   const verificationSources: DataSource[] = [];
-  
+
   auditTrail.push(createAuditTrailEntry(
     'validation',
     'russianMarketFilter.verifyRussianMarketEligibility',
@@ -73,13 +73,13 @@ export function verifyRussianMarketEligibility(
 
   // Find sources that match Russian market patterns
   const russianSources = sources.filter(source => {
-    const isRussianSource = config.russianSources.some(ruSource => 
-      ruSource.searchPatterns.some(pattern => 
-        source.url.toLowerCase().includes(pattern.toLowerCase()) ||
-        source.sourceType === 'compatibility_db' && ruSource.name.includes(source.url.split('.')[1])
+    const isRussianSource = config.russianSources.some(ruSource =>
+      ruSource.searchPatterns.some(pattern =>
+        (source.url && source.url.toLowerCase().includes(pattern.toLowerCase())) ||
+        (source.sourceType === 'compatibility_db' && source.url && ruSource.name.includes(source.url.split('.')[1]))
       )
     );
-    
+
     if (isRussianSource) {
       verificationSources.push(source);
       auditTrail.push(createAuditTrailEntry(
@@ -93,7 +93,7 @@ export function verifyRussianMarketEligibility(
         }
       ));
     }
-    
+
     return isRussianSource;
   });
 
@@ -117,16 +117,16 @@ export function verifyRussianMarketEligibility(
     // Calculate weighted confidence based on source quality and count
     const totalConfidence = russianSources.reduce((sum, source) => sum + source.confidence, 0);
     const avgConfidence = totalConfidence / russianSources.length;
-    
+
     // Bonus for multiple sources
     const multiSourceBonus = Math.min(0.2, (russianSources.length - 1) * 0.1);
-    
+
     // Bonus for official distributors
     const officialBonus = russianSources.some(s => s.sourceType === 'official') ? config.officialDistributorBonus : 0;
-    
+
     confidence = Math.min(1.0, avgConfidence + multiSourceBonus + officialBonus);
     reasoning = `Verified in ${russianSources.length} Russian sources with average confidence ${avgConfidence.toFixed(2)}`;
-    
+
     auditTrail.push(createAuditTrailEntry(
       'validation',
       'russianMarketFilter.verifyRussianMarketEligibility',
@@ -142,7 +142,7 @@ export function verifyRussianMarketEligibility(
     const totalConfidence = russianSources.reduce((sum, source) => sum + source.confidence, 0);
     confidence = Math.min(0.6, totalConfidence / russianSources.length); // Cap at 60% for insufficient sources
     reasoning = `Only ${russianSources.length} Russian source(s) found, below minimum of ${config.minSourcesForVerification}`;
-    
+
     auditTrail.push(createAuditTrailEntry(
       'validation',
       'russianMarketFilter.verifyRussianMarketEligibility',
@@ -157,7 +157,7 @@ export function verifyRussianMarketEligibility(
 
   // Determine final eligibility
   let eligibility: 'ru_verified' | 'ru_unknown' | 'ru_rejected';
-  
+
   if (confidence >= config.confidenceThreshold && russianSources.length >= config.minSourcesForVerification) {
     eligibility = 'ru_verified';
   } else if (russianSources.length > 0) {
@@ -223,7 +223,7 @@ export function filterPrintersForRussianMarket(
 
   printers.forEach(printer => {
     const verification = verifyRussianMarketEligibility(printer.model, printer.sources, config);
-    
+
     // Update printer with verification results
     const enhancedPrinter: PrinterCompatibility = {
       ...printer,
@@ -293,7 +293,7 @@ export function calculatePrinterEligibilityScore(
   auditTrail: any[];
 } {
   const auditTrail: any[] = [];
-  
+
   auditTrail.push(createAuditTrailEntry(
     'validation',
     'russianMarketFilter.calculatePrinterEligibilityScore',
@@ -306,20 +306,20 @@ export function calculatePrinterEligibilityScore(
 
   // Factor 1: Source count (more sources = higher confidence)
   const sourceCount = Math.min(1.0, printer.sources.length / 3); // Cap at 3 sources for full score
-  
+
   // Factor 2: Source quality (average confidence of sources)
-  const sourceQuality = printer.sources.length > 0 
+  const sourceQuality = printer.sources.length > 0
     ? printer.sources.reduce((sum, source) => sum + source.confidence, 0) / printer.sources.length
     : 0;
-  
+
   // Factor 3: Official distributor bonus
   const hasOfficialSource = printer.sources.some(s => s.sourceType === 'official');
   const officialBonus = hasOfficialSource ? config.officialDistributorBonus : 0;
-  
+
   // Factor 4: Russian market presence (based on Russian sources)
-  const russianSources = printer.sources.filter(source => 
-    config.russianSources.some(ruSource => 
-      ruSource.searchPatterns.some(pattern => 
+  const russianSources = printer.sources.filter(source =>
+    config.russianSources.some(ruSource =>
+      ruSource.searchPatterns.some(pattern =>
         source.url.toLowerCase().includes(pattern.toLowerCase())
       )
     )
@@ -327,10 +327,10 @@ export function calculatePrinterEligibilityScore(
   const marketPresence = Math.min(1.0, russianSources.length / config.minSourcesForVerification);
 
   // Calculate weighted score
-  const score = Math.min(1.0, 
-    sourceCount * 0.2 + 
-    sourceQuality * 0.4 + 
-    officialBonus + 
+  const score = Math.min(1.0,
+    sourceCount * 0.2 +
+    sourceQuality * 0.4 +
+    officialBonus +
     marketPresence * 0.4
   );
 

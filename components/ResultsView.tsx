@@ -276,7 +276,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         {batchProgress && (
           <div className="mt-6 p-5 glass-card rounded-2xl border-indigo-500/20 bg-indigo-500/5">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-bold text-white flex items-center gap-2">
+              <span className="text-sm font-bold text-primary flex items-center gap-2">
                 <Loader2 size={16} className="animate-spin text-indigo-400" />
                 Batch Processing
               </span>
@@ -307,7 +307,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
             <div className="grid grid-cols-3 gap-4 text-[10px] font-bold">
               <div className="flex flex-col">
                 <span className="text-slate-500 mb-1">TOTAL</span>
-                <span className="text-white text-lg">{errorSummary.totalErrors}</span>
+                <span className="text-primary text-lg">{errorSummary.totalErrors}</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-slate-500 mb-1">CRITICAL</span>
@@ -395,13 +395,13 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
         {/* Advanced Filters Row */}
         {showAdvancedFilters && (
-          <div className="flex flex-wrap gap-4 p-5 bg-white/5 rounded-2xl border border-white/5 animate-in">
+          <div className="flex flex-wrap gap-4 p-5 bg-card border border-border-subtle rounded-2xl animate-in shadow-lg">
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Confidence Level</label>
               <select
                 value={confidenceFilter}
                 onChange={(e) => setConfidenceFilter(e.target.value as any)}
-                className="px-3 py-1.5 text-xs bg-slate-900 border border-white/10 rounded-lg text-slate-300 focus:border-indigo-500 outline-none"
+                className="px-3 py-1.5 text-xs bg-surface border border-border-subtle rounded-lg text-primary focus:border-indigo-500 outline-none"
               >
                 <option value="all">All Levels</option>
                 <option value="high">High (85%+)</option>
@@ -415,7 +415,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               <select
                 value={brandFilter}
                 onChange={(e) => setBrandFilter(e.target.value)}
-                className="px-3 py-1.5 text-xs bg-slate-900 border border-white/10 rounded-lg text-slate-300 focus:border-indigo-500 outline-none"
+                className="px-3 py-1.5 text-xs bg-surface border border-border-subtle rounded-lg text-primary focus:border-indigo-500 outline-none"
               >
                 <option value="all">All Brands</option>
                 {uniqueBrands.map(brand => (
@@ -429,7 +429,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               <select
                 value={errorTypeFilter}
                 onChange={(e) => setErrorTypeFilter(e.target.value)}
-                className="px-3 py-1.5 text-xs bg-slate-900 border border-white/10 rounded-lg text-slate-300 focus:border-indigo-500 outline-none"
+                className="px-3 py-1.5 text-xs bg-surface border border-border-subtle rounded-lg text-primary focus:border-indigo-500 outline-none"
               >
                 <option value="all">No Exceptions</option>
                 {uniqueErrorCategories.map(category => (
@@ -446,7 +446,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-3 py-1.5 text-xs bg-slate-900 border border-white/10 rounded-lg text-slate-300 focus:border-indigo-500 outline-none"
+                  className="px-3 py-1.5 text-xs bg-surface border border-border-subtle rounded-lg text-primary focus:border-indigo-500 outline-none"
                 >
                   <option value="created_at">Timestamp</option>
                   <option value="quality_score">Quality Score</option>
@@ -455,7 +455,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                 </select>
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="p-2 bg-white/5 border border-white/10 rounded-lg text-slate-400 hover:text-white transition-all"
+                  className="p-2 bg-surface border border-border-subtle rounded-lg text-primary-subtle hover:text-primary transition-all"
                 >
                   {sortOrder === 'asc' ? <SortAsc size={16} /> : <SortDesc size={16} />}
                 </button>
@@ -465,7 +465,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
             <div className="flex items-end ml-auto gap-4">
               <div className="text-right">
                 <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">FILTERED SET</div>
-                <div className="text-lg font-bold text-white">{filteredAndSortedItems.length} <span className="text-slate-600 text-xs font-medium">/ {items.length} TOTAL</span></div>
+                <div className="text-lg font-bold text-primary">{filteredAndSortedItems.length} <span className="text-primary-subtle text-xs font-medium">/ {items.length} TOTAL</span></div>
               </div>
               <button
                 onClick={() => {

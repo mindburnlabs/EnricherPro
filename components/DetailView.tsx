@@ -321,16 +321,16 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                         {!editedData.related_consumables_categories && (
                           <div className="space-y-4">
                             {editedData.related_consumables_display.map((rel, i) => (
-                              <div key={i} className="flex items-center justify-between p-5 bg-white/5 rounded-[2rem] border border-white/5">
+                              <div key={i} className="flex items-center justify-between p-5 bg-card rounded-[2rem] border border-border-subtle hover:border-border-highlight transition-all">
                                 <div className="min-w-0 flex-1">
-                                  <div className="text-sm font-black text-white hover:text-indigo-400 transition-colors uppercase truncate tracking-tighter">{rel.model}</div>
+                                  <div className="text-sm font-black text-primary hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors uppercase truncate tracking-tighter">{rel.model}</div>
                                   <div className="flex items-center gap-3 mt-2">
                                     <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{rel.type}</span>
                                     <div className="w-1 h-1 rounded-full bg-slate-800"></div>
                                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Weight: {rel.priority}</span>
                                   </div>
                                 </div>
-                                <div className="text-right ml-4 px-3 py-1 bg-white/5 rounded-xl border border-white/10 self-start">
+                                <div className="text-right ml-4 px-3 py-1 bg-surface rounded-xl border border-border-subtle self-start">
                                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{rel.relationship.replace(/_/g, ' ')}</span>
                                 </div>
                               </div>
@@ -521,7 +521,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                           <h4 className="font-black text-slate-500 mb-2 text-[9px] uppercase tracking-widest">Verified Claims</h4>
                           <div className="flex flex-wrap gap-2">
                             {src.claims.map(claim => (
-                              <div key={claim} className="flex items-center gap-2 text-[10px] font-bold text-white bg-white/5 px-2 py-1 rounded-lg border border-white/5">
+                              <div key={claim} className="flex items-center gap-2 text-[10px] font-bold text-primary bg-surface px-2 py-1 rounded-lg border border-border-subtle">
                                 <Check size={10} className="text-emerald-400" /> {claim.toUpperCase()}
                               </div>
                             ))}
@@ -542,7 +542,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                           </div>
                         )}
 
-                        <div className="pt-4 border-t border-white/5">
+                        <div className="pt-4 border-t border-border-subtle">
                           <div className="flex justify-between items-center text-[9px] text-slate-500 font-mono uppercase tracking-widest">
                             <span>Method: {src.extraction_method || 'automated'}</span>
                             <span>{new Date(src.extracted_at).toLocaleDateString()}</span>
@@ -632,8 +632,8 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   <div className="mt-6">
                     <div className="flex justify-between items-center mb-4">
                       <div>
-                        <div className="text-[10px] font-black text-white uppercase tracking-widest">Image Audit</div>
-                        <div className="text-[9px] font-mono text-slate-500 mt-1">{img.width}x{img.height} • {Math.round(img.white_bg_score * 100)}% BG</div>
+                        <div className="text-[10px] font-black text-white uppercase tracking-widest drop-shadow-md">Image Audit</div>
+                        <div className="text-[9px] font-mono text-slate-200 mt-1 drop-shadow-md">{img.width}x{img.height} • {Math.round(img.white_bg_score * 100)}% BG</div>
                       </div>
                       <div className={`p-2 rounded-xl border ${img.passes_rules ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                         {img.passes_rules ? <Check size={16} /> : <AlertTriangle size={16} />}
@@ -659,7 +659,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                         <span className={!img.has_oem_logo ? 'text-emerald-400' : 'text-amber-400'}>{img.has_oem_logo ? 'OEM LOGO' : 'OK'}</span>
                       </div>
                       {img.reject_reasons && img.reject_reasons.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-white/5">
+                        <div className="mt-2 pt-2 border-t border-border-subtle">
                           <div className="text-[8px] font-black text-red-400 uppercase mb-1 tracking-widest">Rejection Reasons</div>
                           {img.reject_reasons.map((reason, idx) => (
                             <div key={idx} className="text-[9px] text-red-300/80 font-mono flex items-center gap-2">

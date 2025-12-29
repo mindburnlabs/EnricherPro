@@ -237,8 +237,9 @@ function evaluateRussianMarketCompliance(data: ConsumableData): number {
   }
 
   // Check for Russian source verification
-  const russianSources = ruPrinters.flatMap(p => p.sources)
-    .filter(s => s.sourceType === 'compatibility_db' || s.url.includes('.ru'));
+  // Fix: Add safe checks for printer sources and source existence
+  const russianSources = ruPrinters.flatMap(p => p.sources || [])
+    .filter(s => s && (s.sourceType === 'compatibility_db' || (s.url && s.url.includes('.ru'))));
 
   if (russianSources.length >= READINESS_THRESHOLDS.minimum_source_count) {
     score += 0.4; // 40% for sufficient Russian sources
@@ -309,11 +310,15 @@ function evaluateSourceReliability(item: EnrichedItem): number {
   let weightedSources = 0;
 
   sources.forEach(source => {
+    if (!source) return;
+
     let reliability = source.confidence || 0.5;
     let weight = 1;
 
-    // Adjust reliability based on source type
-    switch (source.source_type) {
+    // Adjust reliability based on source type - handle both camelCase and snake_case for safety
+    const type = (source as any).sourceType || source.source_type;
+
+    switch (type) {
       case 'nix_ru':
         reliability *= 1.2; // NIX.ru is highly reliable for packaging
         weight = 2;

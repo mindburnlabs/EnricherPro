@@ -337,7 +337,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
     <div className="space-y-6 animate-in">
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
-          <h3 className="text-xl font-bold text-white flex items-center gap-3">
+          <h3 className="text-xl font-bold text-primary flex items-center gap-3">
             <CheckCircle className="text-emerald-400" size={24} />
             Verified Readiness Queue
           </h3>
@@ -347,7 +347,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
         <div className="flex gap-3">
           <button
             onClick={() => handleSelectAll(readyItems)}
-            className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white border border-white/5 rounded-xl hover:bg-white/5 transition-all"
+            className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary-subtle hover:text-primary border border-border-subtle rounded-xl hover:bg-card transition-all"
           >
             {readyItems.every(item => selectedItems.includes(item.id)) ? 'Wipe Selection' : 'Select All'}
           </button>
@@ -552,7 +552,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
   const renderBulkApproval = () => (
     <div className="space-y-8 animate-in">
       <div className="flex flex-col gap-1">
-        <h3 className="text-xl font-bold text-white flex items-center gap-3">
+        <h3 className="text-xl font-bold text-primary flex items-center gap-3">
           <Zap className="text-indigo-400" size={24} />
           Protocol Enforcement System
         </h3>
@@ -585,7 +585,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                   }))}
                   className="flex-1 accent-indigo-500"
                 />
-                <div className="text-2xl font-black text-white w-16 tabular-nums">
+                <div className="text-2xl font-black text-primary w-16 tabular-nums">
                   {Math.round(bulkCriteria.minimum_readiness_score * 100)}%
                 </div>
               </div>
@@ -601,7 +601,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                   ...prev,
                   required_confidence_level: e.target.value as 'high' | 'medium' | 'low'
                 }))}
-                className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-2xl text-slate-300 text-sm font-bold focus:border-indigo-500 outline-none transition-all"
+                className="w-full px-4 py-3 bg-card border border-border-subtle rounded-2xl text-primary text-sm font-bold focus:border-indigo-500 outline-none transition-all"
               >
                 <option value="low">LOW ACCURACY (40%+)</option>
                 <option value="medium">STANDARD OPS (60%+)</option>
@@ -611,7 +611,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
           </div>
 
           <div className="space-y-4">
-            <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5 space-y-4">
+            <div className="p-6 bg-card rounded-[2rem] border border-border-subtle space-y-4">
               <label className="flex items-center gap-4 group cursor-pointer">
                 <div className="relative flex items-center">
                   <input
@@ -623,11 +623,11 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                     }))}
                     className="peer h-5 w-5 opacity-0 absolute cursor-pointer"
                   />
-                  <div className="h-5 w-5 bg-slate-800 rounded-md border border-white/10 peer-checked:bg-indigo-600 peer-checked:border-indigo-400 transition-all flex items-center justify-center">
+                  <div className="h-5 w-5 bg-surface rounded-md border border-border-subtle peer-checked:bg-indigo-600 peer-checked:border-indigo-400 transition-all flex items-center justify-center">
                     <div className="w-2 h-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-slate-400 group-hover:text-slate-200 transition-colors uppercase tracking-tight">Require RU Market Auth</span>
+                <span className="text-xs font-bold text-primary-subtle group-hover:text-primary transition-colors uppercase tracking-tight">Require RU Market Auth</span>
               </label>
 
               <label className="flex items-center gap-4 group cursor-pointer">
@@ -641,11 +641,11 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                     }))}
                     className="peer h-5 w-5 opacity-0 absolute cursor-pointer"
                   />
-                  <div className="h-5 w-5 bg-slate-800 rounded-md border border-white/10 peer-checked:bg-indigo-600 peer-checked:border-indigo-400 transition-all flex items-center justify-center">
+                  <div className="h-5 w-5 bg-surface rounded-md border border-border-subtle peer-checked:bg-indigo-600 peer-checked:border-indigo-400 transition-all flex items-center justify-center">
                     <div className="w-2 h-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-slate-400 group-hover:text-slate-200 transition-colors uppercase tracking-tight">Require Valid Image ID</span>
+                <span className="text-xs font-bold text-primary-subtle group-hover:text-primary transition-colors uppercase tracking-tight">Require Valid Image ID</span>
               </label>
 
               <label className="flex items-center gap-4 group cursor-pointer">
@@ -659,11 +659,11 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                     }))}
                     className="peer h-5 w-5 opacity-0 absolute cursor-pointer"
                   />
-                  <div className="h-5 w-5 bg-slate-800 rounded-md border border-white/10 peer-checked:bg-indigo-600 peer-checked:border-indigo-400 transition-all flex items-center justify-center">
+                  <div className="h-5 w-5 bg-surface rounded-md border border-border-subtle peer-checked:bg-indigo-600 peer-checked:border-indigo-400 transition-all flex items-center justify-center">
                     <div className="w-2 h-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-slate-400 group-hover:text-slate-200 transition-colors uppercase tracking-tight">Require Logistics Data</span>
+                <span className="text-xs font-bold text-primary-subtle group-hover:text-primary transition-colors uppercase tracking-tight">Require Logistics Data</span>
               </label>
             </div>
           </div>
