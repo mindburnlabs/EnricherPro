@@ -18,9 +18,115 @@ import { filterPrintersForRussianMarket } from './services/russianMarketFilter';
 import { validateProductImage } from './services/imageValidationService';
 import { evaluatePublicationReadiness } from './services/publicationReadinessService';
 import { processSupplierTitle } from './services/textProcessingService';
-import { convertToStandardUnits } from './services/nixService';
+
 import { EnrichedItem, ConsumableData, ValidationStatus, ProcessingStep } from './types';
 import { v4 as uuidv4 } from 'uuid';
+import { vi } from 'vitest';
+
+// Mock API Integration Service to prevent actual network calls and circuit breaker issues
+vi.mock('./services/apiIntegrationService', () => {
+  const mockMakeRequest = async (config: any, operation: any) => {
+    // Determine context from config
+    const { serviceId, operation: opName, metadata } = config;
+
+    // 1. Research phase (Gemini)
+    if (serviceId === 'gemini' && opName === 'researchProductContext') {
+      return {
+        success: true,
+        data: {
+          text: "Mock research summary found for " + (metadata?.query || "product"),
+          candidates: [{
+            groundingMetadata: {
+              groundingChunks: [
+                { web: { uri: "https://nix.ru/mock-product" } },
+                { web: { uri: "https://hp.com/mock-product" } }
+              ]
+            }
+          }]
+        }
+      };
+    }
+
+    // 2. Firecrawl Agent (NIX Fallback or Deep Research)
+    if (serviceId === 'firecrawl' && opName === 'agent') {
+      return {
+        success: true,
+        data: {
+          url: "https://nix.ru/mock-product",
+          answer: "https://nix.ru/mock-product",
+          nix_logistics: {
+            width_mm: 360, height_mm: 120, depth_mm: 110, weight_g: 800,
+            source_url: 'https://nix.ru/mock-product'
+          },
+          research_quality: { confidence_score: 0.95 }
+        }
+      };
+    }
+
+    // 3. Firecrawl Scrape (NIX Data)
+    if (serviceId === 'firecrawl' && opName === 'scrape') {
+      return {
+        success: true,
+        data: {
+          markdown: "Размеры упаковки: 36 x 12 x 11 см. Вес брутто: 0.8 кг"
+        }
+      };
+    }
+
+    // 4. Synthesize Data (Gemini)
+    if (serviceId === 'gemini' && opName === 'synthesizeConsumableData') {
+      const query = metadata?.query || "";
+      let brand = "Generic";
+      let model = "Model";
+      let type = "toner_cartridge";
+      let yieldVal = 1000;
+
+      if (query.includes("HP") || query.includes("CF234A")) { brand = "HP"; model = "CF234A"; yieldVal = 9200; }
+      if (query.includes("Brother") && query.includes("1150")) { brand = "Brother"; model = "TN-1150"; yieldVal = 2500; }
+      if (query.includes("Canon") && query.includes("045")) { brand = "Canon"; model = "CRG-045"; type = "toner_cartridge"; yieldVal = 1300; }
+      if (query.includes("Xerox")) { brand = "Xerox"; model = "106R03623"; yieldVal = 15000; }
+      if (query.includes("Drum")) { brand = "Brother"; model = "DR-1050"; type = "drum_unit"; yieldVal = 10000; }
+
+      const mockData = {
+        brand,
+        model,
+        consumable_type: type,
+        yield: { value: yieldVal, unit: 'pages', coverage_percent: 5 },
+        color: query.includes("Cyan") ? "Cyan" : (type === "toner_cartridge" ? "Black" : null),
+        printers_ru: [`${brand} Test Printer`],
+        packaging_from_nix: { width_mm: 360, height_mm: 120, depth_mm: 110, weight_g: 800 },
+        compatible_printers_ru: [{
+          model: `${brand} Test Printer`,
+          canonicalName: `${brand} Test Printer`,
+          ruMarketEligibility: 'ru_verified',
+          sources: [{ url: 'https://nix.ru', confidence: 0.9, dataConfirmed: ['compatibility'] }]
+        }],
+        images: [],
+        related_consumables: [],
+        confidence: { overall: 0.9, model_name: 0.9, brand: 0.9 },
+        model_alias_short: model.replace(/^[A-Z\-]+/, '')
+      };
+
+      return {
+        success: true,
+        data: {
+          text: JSON.stringify(mockData),
+          candidates: [{ content: { parts: [{ thought: true, text: "Mock thinking..." }] } }]
+        }
+      };
+    }
+
+    // Default success for others
+    return { success: true, data: {} };
+  };
+
+  return {
+    apiIntegrationService: {
+      makeRequest: vi.fn(mockMakeRequest),
+      registerService: vi.fn()
+    }
+  };
+});
 
 // Comprehensive test data representing real-world scenarios
 const END_TO_END_TEST_CASES = [
@@ -42,7 +148,7 @@ const END_TO_END_TEST_CASES = [
     input: "Brother TN-1150 для HL-1110/1112/DCP-1510/1512/MFC-1810/1815 2500стр",
     expectedResults: {
       model: "TN-1150",
-      brand: "Brother", 
+      brand: "Brother",
       type: "toner_cartridge",
       yield: 2500,
       hasRussianMarketPrinters: true,
@@ -114,10 +220,10 @@ async function testCompleteDataProcessingPipeline(): Promise<{ passed: boolean; 
       details.push(`   Input: "${testCase.input}"`);
 
       const startTime = Date.now();
-      
+
       // Process the item through the complete pipeline
       const result = await processItem(testCase.input, createMockStepCallback(testCase.name));
-      
+
       const processingTime = Date.now() - startTime;
       details.push(`   ⏱️ Processing time: ${processingTime}ms`);
 
@@ -334,7 +440,7 @@ async function testBatchProcessing(): Promise<{ passed: boolean; details: string
   try {
     const batchInputs = END_TO_END_TEST_CASES.map(tc => tc.input);
     const batchStartTime = Date.now();
-    
+
     details.push(`🚀 Processing batch of ${batchInputs.length} items...`);
 
     // Process items in parallel (simulating batch processing)
@@ -514,7 +620,7 @@ async function testExportFunctionality(): Promise<{ passed: boolean; details: st
     mockEnrichedItems.forEach((item, index) => {
       const requiredFields = ['brand', 'model', 'consumable_type'];
       const missingFields = requiredFields.filter(field => !item.data[field as keyof ConsumableData]);
-      
+
       if (missingFields.length === 0) {
         details.push(`   ✅ Item ${index + 1}: All required fields present`);
       } else {
@@ -529,8 +635,8 @@ async function testExportFunctionality(): Promise<{ passed: boolean; details: st
     }
 
     // Test enhanced data fields in export
-    const enhancedFieldsPresent = mockEnrichedItems.every(item => 
-      item.data.packaging_from_nix && 
+    const enhancedFieldsPresent = mockEnrichedItems.every(item =>
+      item.data.packaging_from_nix &&
       item.data.compatible_printers_ru &&
       item.data.confidence
     );
@@ -543,7 +649,7 @@ async function testExportFunctionality(): Promise<{ passed: boolean; details: st
     }
 
     // Test audit trail data for export
-    const auditTrailComplete = mockEnrichedItems.every(item => 
+    const auditTrailComplete = mockEnrichedItems.every(item =>
       item.evidence.sources.length > 0 &&
       item.job_run_id &&
       item.processed_at
@@ -581,7 +687,7 @@ async function testAuditTrailCompleteness(): Promise<{ passed: boolean; details:
     // Test 1: Source documentation
     if (result.evidence.sources.length > 0) {
       details.push(`✅ Source documentation: ${result.evidence.sources.length} sources recorded`);
-      
+
       result.evidence.sources.forEach((source, index) => {
         details.push(`   📄 Source ${index + 1}:`);
         details.push(`      - URL: ${source.url}`);
@@ -625,10 +731,10 @@ async function testAuditTrailCompleteness(): Promise<{ passed: boolean; details:
     }
 
     // Test 4: Data provenance chain
-    const hasDataProvenance = result.evidence.sources.every(source => 
-      source.url && 
-      source.source_type && 
-      source.extracted_at && 
+    const hasDataProvenance = result.evidence.sources.every(source =>
+      source.url &&
+      source.source_type &&
+      source.extracted_at &&
       source.confidence !== undefined
     );
 
@@ -869,12 +975,12 @@ async function runEndToEndTests(): Promise<void> {
   // Overall summary
   const allPassed = results.every(r => r.passed);
   const passedCount = results.filter(r => r.passed).length;
-  
+
   console.log("🎯 OVERALL END-TO-END TEST STATUS:");
   console.log(`   ${allPassed ? '✅ ALL TESTS PASSED' : '⚠️ SOME TESTS FAILED'}`);
   console.log(`   Test suite completion: ${passedCount}/${results.length} test categories passed`);
   console.log(`   Total execution time: ${(totalTime / 1000).toFixed(1)} seconds`);
-  
+
   if (!allPassed) {
     console.log("\n🔧 RECOMMENDED ACTIONS:");
     if (!pipelineResult.passed) console.log("   - Review complete data processing pipeline implementation");

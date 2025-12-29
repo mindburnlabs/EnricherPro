@@ -4,11 +4,11 @@
  * Requirements: 7.1, 7.2, 7.3, 7.4, 7.5
  */
 
-import { 
-  ProcessingHistoryEntry, 
-  QualityMetrics, 
-  AuditTrailEntry, 
-  EvidenceSource, 
+import {
+  ProcessingHistoryEntry,
+  QualityMetrics,
+  AuditTrailEntry,
+  EvidenceSource,
   ConfidenceScores,
   ProcessingStep,
   EnrichedItem,
@@ -27,13 +27,13 @@ export function createInputHash(input: string): string {
   // Simple hash function for browser environment
   let hash = 0;
   if (input.length === 0) return hash.toString(16);
-  
+
   for (let i = 0; i < input.length; i++) {
     const char = input.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
-  
+
   return Math.abs(hash).toString(16).padStart(8, '0');
 }
 
@@ -68,7 +68,7 @@ export function createProcessingHistoryEntry(
   const now = new Date().toISOString();
   const startTime = options.startTime || new Date();
   const endTime = options.endTime || new Date();
-  
+
   return {
     step,
     started_at: startTime.toISOString(),
@@ -159,8 +159,8 @@ export function calculateConfidenceScores(
 ): ConfidenceScores {
   // Base confidence from source reliability
   const sourceConfidences = evidenceSources.map(s => s.confidence);
-  const avgSourceConfidence = sourceConfidences.length > 0 
-    ? sourceConfidences.reduce((sum, conf) => sum + conf, 0) / sourceConfidences.length 
+  const avgSourceConfidence = sourceConfidences.length > 0
+    ? sourceConfidences.reduce((sum, conf) => sum + conf, 0) / sourceConfidences.length
     : 0;
 
   // Processing success rate impact
@@ -180,9 +180,9 @@ export function calculateConfidenceScores(
 
   const weightedSourceConfidence = evidenceSources.length > 0
     ? evidenceSources.reduce((sum, source) => {
-        const weight = sourceTypeWeights[source.source_type] || 0.5;
-        return sum + (source.confidence * weight);
-      }, 0) / evidenceSources.length
+      const weight = sourceTypeWeights[source.source_type] || 0.5;
+      return sum + (source.confidence * weight);
+    }, 0) / evidenceSources.length
     : 0;
 
   // Calculate field-specific confidences
@@ -220,8 +220,8 @@ function calculateFieldConfidence(
   processingHistory: ProcessingHistoryEntry[]
 ): number {
   // Find sources that provide evidence for this field
-  const relevantSources = evidenceSources.filter(source => 
-    source.claims.includes(field) || 
+  const relevantSources = evidenceSources.filter(source =>
+    source.claims.includes(field) ||
     Object.keys(source.evidence_snippets_by_claim).includes(field)
   );
 
@@ -235,10 +235,10 @@ function calculateFieldConfidence(
   const multiSourceBonus = relevantSources.length > 1 ? Math.min(0.1, (relevantSources.length - 1) * 0.05) : 0;
 
   // Check processing history for field-specific issues
-  const fieldProcessingIssues = processingHistory.filter(h => 
+  const fieldProcessingIssues = processingHistory.filter(h =>
     h.status === 'failed' && h.data_changes?.includes(field)
   ).length;
-  
+
   const processingPenalty = fieldProcessingIssues * 0.1;
 
   return Math.max(0, Math.min(1, avgConfidence + multiSourceBonus - processingPenalty));
@@ -278,12 +278,12 @@ export function calculateQualityMetrics(
   const avgProcessingTime = processingHistory
     .filter(h => h.duration_ms)
     .reduce((sum, h, _, arr) => sum + (h.duration_ms! / arr.length), 0);
-  
+
   // Lower retry count and faster processing = higher efficiency
   const processingEfficiency = Math.max(0, 1 - (totalRetries * 0.1) - Math.min(0.5, avgProcessingTime / 10000));
 
   // Audit completeness: percentage of processing steps with complete audit trail
-  const stepsWithAudit = processingHistory.filter(step => 
+  const stepsWithAudit = processingHistory.filter(step =>
     auditTrail.some(entry => entry.details.includes(step.step))
   ).length;
   const auditCompleteness = totalSteps > 0 ? stepsWithAudit / totalSteps : 0;
@@ -358,17 +358,19 @@ export function enhanceItemWithAuditTrail(
 ): EnrichedItem {
   const jobRunId = generateJobRunId();
   const inputHash = createInputHash(item.input_raw);
-  
+
   // Calculate processing duration
   const startTime = processingHistory.find(h => h.status === 'started')?.started_at;
   const endTime = processingHistory.find(h => h.status === 'completed' && h.completed_at)?.completed_at;
-  const processingDurationMs = startTime && endTime 
+  const processingDurationMs = startTime && endTime
     ? new Date(endTime).getTime() - new Date(startTime).getTime()
     : undefined;
 
   // Calculate retry count from evidence sources
+  // Calculate retry count from evidence sources
   const retryCount = item.evidence.sources.reduce((sum, source) => sum + (source.retry_count || 0), 0);
 
+  // Calculate overall quality score
   // Calculate overall quality score
   const confidenceScores = calculateConfidenceScores(
     item.evidence.sources,
@@ -376,6 +378,7 @@ export function enhanceItemWithAuditTrail(
     item.evidence.quality_metrics.data_completeness_score
   );
 
+  // Update evidence block with enhanced audit trail
   // Update evidence block with enhanced audit trail
   const enhancedEvidence: EvidenceBlock = {
     ...item.evidence,
@@ -395,6 +398,8 @@ export function enhanceItemWithAuditTrail(
     ...item.data,
     confidence: confidenceScores
   };
+
+
 
   return {
     ...item,
@@ -422,28 +427,28 @@ export function validateAuditTrailCompleteness(evidenceBlock: EvidenceBlock): {
   completenessScore: number;
 } {
   const missingElements: string[] = [];
-  
+
   // Check required audit trail elements
   if (!evidenceBlock.processing_history || evidenceBlock.processing_history.length === 0) {
     missingElements.push('processing_history');
   }
-  
+
   if (!evidenceBlock.audit_trail || evidenceBlock.audit_trail.length === 0) {
     missingElements.push('audit_trail');
   }
-  
+
   if (!evidenceBlock.quality_metrics) {
     missingElements.push('quality_metrics');
   }
-  
+
   if (!evidenceBlock.sources || evidenceBlock.sources.length === 0) {
     missingElements.push('evidence_sources');
   }
 
   // Check source completeness
-  const incompleteSources = evidenceBlock.sources?.filter(source => 
-    !source.extracted_at || 
-    !source.confidence || 
+  const incompleteSources = evidenceBlock.sources?.filter(source =>
+    !source.extracted_at ||
+    !source.confidence ||
     !source.extraction_method ||
     Object.keys(source.evidence_snippets_by_claim).length === 0
   ).length || 0;

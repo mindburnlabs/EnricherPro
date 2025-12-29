@@ -997,6 +997,7 @@ export const processItem = async (
     ));
 
     // Step 3.5: Enhanced Russian Market Filtering
+    console.log('[DEBUG] Starting Step 3.5: Russian Market Filtering');
     const russianFilterStart = new Date();
     processingHistory.push(createProcessingHistoryEntry('analyzing', 'started', { startTime: russianFilterStart }));
 
@@ -1024,7 +1025,7 @@ export const processItem = async (
 
       // Apply Russian market filtering with strict 2+ source verification
       const filterConfig = getRussianMarketFilterConfig('STANDARD'); // Use configurable profile
-
+      console.log('[DEBUG] Calling filterPrintersForRussianMarket');
       const filterResult = filterPrintersForRussianMarket(printerCompatibilityObjects, filterConfig);
 
       // Update the data with filtered results
@@ -1065,8 +1066,10 @@ export const processItem = async (
         }
       ));
     }
+    console.log('[DEBUG] Step 3.5 Completed');
 
     // Enhanced image validation step
+    console.log('[DEBUG] Starting Image Validation');
     const imageValidationStart = new Date();
     processingHistory.push(createProcessingHistoryEntry('auditing_images', 'started', { startTime: imageValidationStart }));
     onProgress('auditing_images');
@@ -1122,6 +1125,7 @@ export const processItem = async (
         processingTimeMs: imageValidationEnd.getTime() - imageValidationStart.getTime()
       }
     ));
+    console.log('[DEBUG] Image Validation Completed');
 
     // Step 3.7: Enhanced Related Products Discovery
     const relatedProductsStart = new Date();
@@ -1131,11 +1135,13 @@ export const processItem = async (
 
     // Only discover related products if we have compatible printers
     if (enhancedCompatibilityData.compatible_printers_ru && enhancedCompatibilityData.compatible_printers_ru.length > 0) {
+      console.log('[DEBUG] Discovering related products for printers:', enhancedCompatibilityData.compatible_printers_ru.length);
       try {
         relatedProductsResult = await discoverRelatedProducts(
           enhancedCompatibilityData,
           enhancedCompatibilityData.compatible_printers_ru
         );
+        console.log('[DEBUG] Related products discovered:', relatedProductsResult ? 'success' : 'null');
 
         const relatedProductsEnd = new Date();
         processingHistory[processingHistory.length - 1] = createProcessingHistoryEntry(
@@ -1166,6 +1172,7 @@ export const processItem = async (
           }
         ));
       } catch (relatedError) {
+        console.error('[DEBUG] Related products error:', relatedError);
         const relatedProductsEnd = new Date();
         processingHistory[processingHistory.length - 1] = createProcessingHistoryEntry(
           'analyzing',
@@ -1191,6 +1198,7 @@ export const processItem = async (
         ));
       }
     } else {
+      console.log('[DEBUG] Skipping related products (no compatible printers)');
       const relatedProductsEnd = new Date();
       processingHistory[processingHistory.length - 1] = createProcessingHistoryEntry(
         'analyzing',
@@ -1213,6 +1221,7 @@ export const processItem = async (
         }
       ));
     }
+    console.log('[DEBUG] Step 3.7 Completed');
 
     // Enhance the data with text processing results and NIX data
     const enhancedData: ConsumableData = {
@@ -1432,6 +1441,7 @@ export const processItem = async (
     }
 
     // Check for specific image validation failures
+    // Enhanced final validation with granular logging
     const imageIssues = validatedImages.flatMap(img => img.reject_reasons);
     if (imageIssues.length > 0) {
       const uniqueIssues = [...new Set(imageIssues)];
@@ -1506,6 +1516,7 @@ export const processItem = async (
       errors.push("No compatible printer models found.");
     }
 
+
     if (!enhancedData.model) {
       const errorDetail = createErrorDetail(
         'failed_parse_model',
@@ -1521,6 +1532,7 @@ export const processItem = async (
       failureReasons.push('failed_parse_model');
       errors.push("Could not extract consumable model from title.");
     }
+
 
     if (!enhancedData.brand) {
       const errorDetail = createErrorDetail(
