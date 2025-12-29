@@ -29,13 +29,15 @@ import { apiIntegrationService, createApiIntegrationError } from './apiIntegrati
 import { createOpenRouterService, OpenRouterService } from './openRouterService';
 
 const getAI = () => {
-  const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+  const apiKey = localStorage.getItem('gemini_api_key') || import.meta.env.VITE_GOOGLE_API_KEY;
   if (!apiKey) {
-    console.error("Missing VITE_GOOGLE_API_KEY");
-    // Throwing error here might be too aggressive if we want to handle it gracefully elsewhere,
-    // but the error "API Key must be set" suggests the library throws if it's missing anyway.
+    console.error("Missing Google API Key");
   }
   return new GoogleGenAI({ apiKey: apiKey || '' });
+};
+
+const getGeminiModel = () => {
+  return localStorage.getItem('gemini_model') || 'gemini-1.5-pro';
 };
 
 const LOGISTICS_EXTRACT_SCHEMA = {
@@ -69,7 +71,7 @@ async function researchProductContext(query: string) {
     },
     async () => {
       const geminiResponse = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: getGeminiModel(),
         contents: `Find technical specification pages for printer consumable: "${query}". 
         Focus on finding:
         1. nix.ru catalog page
@@ -185,7 +187,7 @@ export async function synthesizeConsumableData(
       },
       async () => {
         const geminiResponse = await ai.models.generateContent({
-          model: 'gemini-3-pro-preview',
+          model: getGeminiModel(),
           contents: enhancedPrompt,
           config: {
             thinkingConfig: { thinkingBudget: 32768 },

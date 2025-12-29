@@ -58,33 +58,27 @@ const DEFAULT_CONFIG: Partial<OpenRouterConfig> = {
 // Popular models for consumable enrichment
 export const RECOMMENDED_MODELS = {
   // --- Google / Gemini Models ---
-  'google/gemini-3-flash-preview': {
+  'google/gemini-3.0-flash-preview': {
     name: 'Gemini 3.0 Flash Preview',
-    description: 'Latest high-speed preview model',
+    description: 'Next-gen intelligence, ultra-fast',
     recommended: true,
     category: 'standard'
   },
-  'google/gemini-3-pro-preview': {
+  'google/gemini-3.0-pro-preview': {
     name: 'Gemini 3.0 Pro Preview',
-    description: 'Latest professional preview model',
+    description: 'Advanced reasoning & coding',
     recommended: true,
-    category: 'premium'
+    category: 'power'
   },
   'google/gemini-2.5-pro': {
     name: 'Gemini 2.5 Pro',
-    description: 'Next-gen reasoning model',
-    recommended: true,
-    category: 'premium'
+    description: 'Stable high-performance model',
+    recommended: false,
+    category: 'standard'
   },
   'google/gemini-2.5-flash': {
     name: 'Gemini 2.5 Flash',
-    description: 'Next-gen fast model',
-    recommended: true,
-    category: 'standard'
-  },
-  'google/gemini-2.5-flash-preview-09-2025': {
-    name: 'Gemini 2.5 Flash (Sep 2025)',
-    description: 'Preview checkpoint',
+    description: 'Cost-efficient & fast',
     recommended: false,
     category: 'standard'
   },
@@ -94,31 +88,27 @@ export const RECOMMENDED_MODELS = {
     recommended: true,
     category: 'standard'
   },
-  'google/gemini-2.0-flash-lite-001': {
-    name: 'Gemini 2.0 Flash Lite',
-    description: 'Lightweight efficient model',
-    recommended: true,
-    category: 'efficient'
-  },
-  'google/gemini-pro-1.5': {
-    name: 'Gemini 1.5 Pro',
-    description: 'Stable professional model',
-    recommended: false,
-    category: 'premium'
-  },
 
-  // --- Other Premium ---
-  'anthropic/claude-sonnet-4.5': {
-    name: 'Claude 4.5 Sonnet',
-    description: 'High intelligence and speed',
-    recommended: true,
-    category: 'premium'
-  },
+  // --- Anthropic ---
   'anthropic/claude-3.5-sonnet': {
     name: 'Claude 3.5 Sonnet',
     description: 'Reliable workhorse for structured data',
     recommended: true,
     category: 'premium'
+  },
+  'anthropic/claude-3-opus': {
+    name: 'Claude 3 Opus',
+    description: 'Legacy power model',
+    recommended: false,
+    category: 'power'
+  },
+
+  // --- OpenAI ---
+  'openai/gpt-5-preview': {
+    name: 'GPT-5 Preview',
+    description: 'Frontier reasoning model',
+    recommended: true,
+    category: 'power'
   },
   'openai/gpt-4o': {
     name: 'GPT-4o',
@@ -126,15 +116,17 @@ export const RECOMMENDED_MODELS = {
     recommended: true,
     category: 'premium'
   },
-  'openai/gpt-4o-mini': {
-    name: 'GPT-4o Mini',
-    description: 'Cost-effective standard model',
+
+  // --- Meta & Others ---
+  'meta-llama/llama-4-70b-instruct': {
+    name: 'Llama 4 Maverick (70B)',
+    description: 'Advanced open-weight model',
     recommended: true,
     category: 'standard'
   },
-  'deepseek/deepseek-v3.2': {
-    name: 'DeepSeek V3.2',
-    description: 'Strong coding and reasoning capabilities',
+  'deepseek/deepseek-r1': {
+    name: 'DeepSeek R1',
+    description: 'Strong reasoning model',
     recommended: true,
     category: 'standard'
   },
@@ -146,27 +138,9 @@ export const RECOMMENDED_MODELS = {
     recommended: true,
     category: 'free'
   },
-  'google/gemma-3n-e4b-it:free': {
-    name: 'Gemma 3N E4B (Free)',
-    description: 'Experimental free model',
-    recommended: false,
-    category: 'free'
-  },
-  'google/gemma-3-4b-it:free': {
-    name: 'Gemma 3 4B (Free)',
-    description: 'Lightweight free model',
-    recommended: false,
-    category: 'free'
-  },
-  'google/gemma-3-12b-it:free': {
-    name: 'Gemma 3 12B (Free)',
-    description: 'Balanced free model',
-    recommended: true,
-    category: 'free'
-  },
-  'google/gemma-3-27b-it:free': {
-    name: 'Gemma 3 27B (Free)',
-    description: 'Large free model',
+  'google/gemini-2.0-flash-thinking-exp:free': {
+    name: 'Gemini 2.0 Flash Thinking Exp (Free)',
+    description: 'Reasoning model free tier',
     recommended: true,
     category: 'free'
   },
@@ -179,6 +153,12 @@ export const RECOMMENDED_MODELS = {
   'deepseek/deepseek-r1:free': {
     name: 'DeepSeek R1 (Free)',
     description: 'Strong reasoning capabilities',
+    recommended: true,
+    category: 'free'
+  },
+  'deepseek/deepseek-v3:free': {
+    name: 'DeepSeek V3 (Free)',
+    description: 'Core V3 model free tier',
     recommended: true,
     category: 'free'
   }

@@ -176,11 +176,11 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                       Market Eligibility (RU)
                     </h3>
                     <div className="px-3 py-1 bg-surface border border-border-subtle rounded-xl text-[10px] font-black text-primary-subtle">
-                      {editedData.printers_ru.length} AGENTS VALIDATED
+                      {editedData.printers_ru?.length || 0} AGENTS VALIDATED
                     </div>
                   </div>
                   <textarea
-                    value={editedData.printers_ru.join('\n')}
+                    value={editedData.printers_ru?.join('\n') || ''}
                     onChange={e => setEditedData({ ...editedData, printers_ru: e.target.value.split('\n') })}
                     className="w-full bg-surface border border-border-subtle rounded-[2rem] p-8 font-mono text-primary focus:border-primary-accent outline-none h-80 leading-relaxed custom-scrollbar"
                     placeholder="Verified list of compatible terminal IDs..."
@@ -420,7 +420,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                       <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">Sources Used</div>
                     </div>
                   </div>
-                  {item.evidence.quality_metrics.failed_validations.length > 0 && (
+                  {item.evidence.quality_metrics.failed_validations?.length > 0 && (
                     <div className="mt-8 p-6 bg-red-500/10 border border-red-500/20 rounded-2xl">
                       <h4 className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-4">Failed Validations</h4>
                       <ul className="text-[10px] text-slate-400 space-y-2 font-mono">

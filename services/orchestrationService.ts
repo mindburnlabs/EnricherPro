@@ -139,9 +139,20 @@ export class OrchestrationService {
         return {
             id: jobId,
             input_raw: query,
-            data: state.data!,
+            // Ensure data is always an object to prevent UI crashes if processing failed
+            data: state.data || {
+                brand: 'Unknown',
+                model: query,
+                printers_ru: [],
+                compatible_printers_ru: [],
+                compatible_printers_all: [],
+                compatible_printers_unverified: [],
+                packaging_from_nix: {},
+                images: [],
+                validation_errors: []
+            } as any,
             evidence: {
-                sources: [], // TODO: extract from state.data._evidence or similar
+                sources: state.data?._evidence ? [] : [], // If we have evidence in data, we might want to extract it... but for now empty safe
                 processing_history: [],
                 quality_metrics: {} as any,
                 audit_trail: []
