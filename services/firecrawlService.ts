@@ -521,6 +521,133 @@ export const getCrawlJobStatus = async (jobId: string): Promise<any> => {
 };
 
 /**
+ * Map a website to find all URLs (v2 Map Endpoint)
+ * Useful for discovering product pages within a domain.
+ */
+export const mapWebsite = async (url: string, search?: string): Promise<string[]> => {
+  const apiKey = getFirecrawlApiKey();
+  if (!apiKey) throw new Error("Firecrawl API Key missing.");
+
+  // TEST KEY MOCK
+  if (apiKey.startsWith('fc-test-')) {
+    return [
+      `${url}/page1`,
+      `${url}/product/test-item`,
+      `${url}/category/consumables`
+    ];
+  }
+
+  const response = await apiIntegrationService.makeRequest(
+    {
+      serviceId: 'firecrawl',
+      operation: 'map',
+      priority: 'medium',
+      retryable: true,
+      creditsRequired: 1, // Map is cheap usually
+      metadata: { url, search }
+    },
+    async () => {
+      const httpResponse = await fetch(`${API_V2}/map`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey.trim()}`
+        },
+        body: JSON.stringify({
+          url,
+          search,
+          includeSubdomains: false,
+          limit: 50 // Safe default
+        })
+      });
+
+      const result = await httpResponse.json().catch(() => ({}));
+      return {
+        success: httpResponse.ok,
+        data: result,
+        error: httpResponse.ok ? undefined : result.message || `Map failed: ${httpResponse.status}`,
+        statusCode: httpResponse.status,
+        responseTime: 0
+      };
+    }
+  );
+
+  if (!response.success) {
+    // Non-critical, return empty array on failure logic usually handled by caller, but here we throw to be consistent
+    // Actually, for map, it might be better to return empty if 404, but let's throw for now.
+    throw new Error(response.error || "Map request failed");
+  }
+
+  return response.data?.links || []; // v2 returns { success: true, links: [] }
+};
+
+/**
+ * Intelligent Extraction (v2 Extract Endpoint)
+ * Extracts structured data from URLs using a prompt and schema.
+ * Replaces the need for Scrape -> Markdown -> LLM in many cases.
+ */
+export const extractData = async (urls: string[], prompt: string, schema: any): Promise<any> => {
+  const apiKey = getFirecrawlApiKey();
+  if (!apiKey) throw new Error("Firecrawl API Key missing.");
+
+  // TEST KEY MOCK
+  if (apiKey.startsWith('fc-test-')) {
+    console.log('Using Firecrawl TEST KEY - Returning mock EXTRACT response');
+    return {
+      success: true,
+      data: {
+        items: [{
+          brand: "MockBrand",
+          model: "TestModel",
+          specs: { yield: 1000 }
+        }]
+      }
+    };
+  }
+
+  const response = await apiIntegrationService.makeRequest(
+    {
+      serviceId: 'firecrawl',
+      operation: 'extract',
+      priority: 'high',
+      retryable: true,
+      creditsRequired: 5 * urls.length, // Extract is more expensive
+      metadata: { urlCount: urls.length }
+    },
+    async () => {
+      const httpResponse = await fetch(`${API_V2}/extract`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey.trim()}`
+        },
+        body: JSON.stringify({
+          urls,
+          prompt,
+          schema,
+          enableWebSearch: false // We provide URLs usually
+        })
+      });
+
+      const result = await httpResponse.json().catch(() => ({}));
+      return {
+        success: httpResponse.ok,
+        data: result,
+        error: httpResponse.ok ? undefined : result.message || `Extract failed: ${httpResponse.status}`,
+        statusCode: httpResponse.status,
+        responseTime: 0
+      };
+    }
+  );
+
+  if (!response.success) {
+    throw new Error(response.error || "Extract request failed");
+  }
+
+  return response.data;
+};
+
+/**
  * Utility to convert crawl results to a clean Markdown string for the Synthesizer
  */
 export const crawlResultToMarkdown = (crawlData: any): string => {

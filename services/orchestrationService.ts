@@ -12,7 +12,7 @@ import {
 import { processSupplierTitle } from './textProcessingService';
 import { nixService } from './nixService';
 import { perplexityService } from './perplexityService';
-import { startCrawlJob, getCrawlJobStatus, crawlResultToMarkdown, deepAgentResearch, firecrawlScrape } from './firecrawlService';
+import { startCrawlJob, getCrawlJobStatus, crawlResultToMarkdown, deepAgentResearch, firecrawlScrape, mapWebsite, extractData } from './firecrawlService';
 import { synthesizeConsumableData as synthesizeWithGemini } from './geminiService';
 import { getOpenRouterService } from './openRouterService';
 import { evaluateQualityGates } from './qualityGates';
@@ -209,6 +209,8 @@ export class OrchestrationService {
 
             // --- STEP 2.5: DEEP CONTENT EXTRACTION (Firecrawl Maximization) ---
             let deepScrapeContent = "";
+            let structuredExtractionData: any = null;
+
             if (researchUrls.length > 0) {
                 const highValueDomains = ['nix.ru', 'hp.com', 'canon', 'brother', 'epson', 'kyocera', 'xerox', 'ricoh', 'lexmark', 'cartridge.ru'];
                 // Prioritize unique high-value domains, limit to 2 to avoid latency spikes
@@ -217,27 +219,51 @@ export class OrchestrationService {
                     .slice(0, 2);
 
                 if (targetUrls.length > 0) {
-                    logs.push(`Deep Research: Scraping ${targetUrls.length} high-value URLs via Firecrawl...`);
+                    logs.push(`Deep Research: Targeted Extraction on ${targetUrls.length} high-value URLs via Firecrawl...`);
                     try {
-                        // Perform scrapes in parallel
-                        const scrapePromises = targetUrls.map(url => firecrawlScrape(url));
-                        const scrapeResults = await Promise.all(scrapePromises);
-
-                        deepScrapeContent = scrapeResults.map((res, idx) => {
-                            if (res.success && res.data.markdown) {
-                                const content = res.data.markdown.substring(0, 8000); // Limit context to 8k chars per page
-                                return `### DEEP SCRAPE OF: ${targetUrls[idx]}\n${content}\n\n`;
+                        // INTELLIGENT EXTRACTION (v2)
+                        // Instead of just scraping markdown, we ask Firecrawl to extract the JSON we need.
+                        const extractionSchema = {
+                            type: "object",
+                            properties: {
+                                brand: { type: "string" },
+                                model: { type: "string" },
+                                yield: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" } } },
+                                logistics: {
+                                    type: "object",
+                                    properties: {
+                                        weight_g: { type: "number" },
+                                        width_mm: { type: "number" },
+                                        height_mm: { type: "number" },
+                                        depth_mm: { type: "number" }
+                                    }
+                                }
                             }
-                            return "";
-                        }).join("\n");
+                        };
 
-                        if (deepScrapeContent.length > 0) {
-                            logs.push(`Deep Research: Successfully extracted ${deepScrapeContent.length} chars of raw content.`);
+                        const extractedData = await extractData(targetUrls, "Extract product specifications and package dimensions.", extractionSchema);
+
+                        if (extractedData && extractedData.success && extractedData.data && extractedData.data.items) {
+                            structuredExtractionData = extractedData.data.items;
+                            logs.push(`Deep Research: Successfully extracted structured data from ${extractedData.data.items.length} pages.`);
+                            deepScrapeContent = JSON.stringify(extractedData.data.items, null, 2);
                         } else {
-                            logs.push("Deep Research: Scrape returned no useful markdown.");
+                            // Falback to Scrape if Extract fails or returns empty (cost optimization or error)
+                            logs.push("Deep Research: Extraction yielded no items, falling back to scrape...");
+                            const scrapePromises = targetUrls.map(url => firecrawlScrape(url));
+                            const scrapeResults = await Promise.all(scrapePromises);
+
+                            deepScrapeContent = scrapeResults.map((res, idx) => {
+                                if (res.success && res.data.markdown) {
+                                    const content = res.data.markdown.substring(0, 8000);
+                                    return `### DEEP SCRAPE OF: ${targetUrls[idx]}\n${content}\n\n`;
+                                }
+                                return "";
+                            }).join("\n");
                         }
+
                     } catch (scrapeErr) {
-                        logs.push(`Deep Research Warning: Scrape failed - ${(scrapeErr as Error).message}`);
+                        logs.push(`Deep Research Warning: Extraction/Scrape failed - ${(scrapeErr as Error).message}`);
                     }
                 }
             }
