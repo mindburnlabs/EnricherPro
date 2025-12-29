@@ -15,14 +15,13 @@ export interface PerplexityConfig {
 export const DEFAULT_PERPLEXITY_CONFIG: PerplexityConfig = {
     provider: 'openrouter',
     apiKey: '',
-    model: 'perplexity/sonar-deep-research' // SOTA Deep Research
+    model: 'perplexity/sonar-reasoning-pro' // SOTA Deep Research
 };
 
 // Direct Perplexity Models map to OpenRouter IDs or distinct IDs
 export const PERPLEXITY_MODELS = {
     'sonar-deep-research': 'sonar-deep-research',
     'sonar-reasoning-pro': 'sonar-reasoning-pro',
-    'sonar-reasoning': 'sonar-reasoning',
     'sonar-pro': 'sonar-pro',
     'sonar': 'sonar'
 };

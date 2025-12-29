@@ -36,7 +36,7 @@ const ConfidenceIndicator: React.FC<ConfidenceIndicatorProps> = ({
   };
 
   const Icon = isHigh ? Shield : isMed ? Target : Zap;
-  const currentSize = sizeClasses[size];
+  const currentSize = sizeClasses[size] || sizeClasses.md;
 
   return (
     <div className={`flex items-center ${currentSize.gap} ${currentSize.padding} border rounded-xl backdrop-blur-sm transition-all duration-300 group hover:scale-105 ${colorClasses.bg} ${colorClasses.border} ${className}`}>
