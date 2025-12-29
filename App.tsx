@@ -511,7 +511,24 @@ const App: React.FC = () => {
               onUpdateItem={handleUpdateItem}
             />
           )}
-          {activeTab === 'settings' && <SettingsView theme={theme} onThemeChange={setTheme} />}
+          {activeTab === 'settings' && (
+            <SettingsView
+              theme={theme}
+              onThemeChange={setTheme}
+              onClearData={() => {
+                if (window.confirm('Are you sure you want to delete all history? This cannot be undone.')) {
+                  localStorage.removeItem(STORAGE_KEY);
+                  setItems([]);
+                  setQueue([]);
+                  setManualQueue([]);
+                  setRetryQueue([]);
+                  setBatchProgress(null);
+                  setSelectedItem(null);
+                  window.dispatchEvent(new Event('storage'));
+                }
+              }}
+            />
+          )}
         </>
       )}
     </Layout>

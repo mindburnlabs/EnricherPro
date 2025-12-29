@@ -15,9 +15,10 @@ const GEMINI_MODEL_STORAGE_KEY = 'gemini_model';
 interface SettingsViewProps {
   theme: 'light' | 'dark' | 'system';
   onThemeChange: (theme: 'light' | 'dark' | 'system') => void;
+  onClearData: () => void;
 }
 
-const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => {
+const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onClearData }) => {
   const [activeTab, setActiveTab] = useState<'general' | 'openrouter' | 'perplexity' | 'gemini' | 'firecrawl' | 'monitoring'>('general');
   const [systemHealth, setSystemHealth] = useState<any>(null);
 
@@ -261,6 +262,26 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
                     <div className="text-xs text-primary-subtle">{t.desc}</div>
                   </button>
                 ))}
+              </div>
+            </section>
+
+            <section className="mt-8 pt-8 border-t border-border-subtle">
+              <div className="flex items-center gap-2 mb-6 text-status-error">
+                <AlertCircle size={18} />
+                <h2 className="text-xs font-black uppercase tracking-widest">Danger Zone</h2>
+              </div>
+              <div className="bg-status-error/5 border border-status-error/20 rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-primary mb-1">Clear Application History</h3>
+                  <p className="text-sm text-primary-subtle">Permanently remove all enriched items, queues, and cached data. This action cannot be undone.</p>
+                </div>
+                <button
+                  onClick={onClearData}
+                  className="px-6 py-3 bg-white border-2 border-status-error text-status-error rounded-xl font-bold hover:bg-status-error hover:text-white transition-all shadow-sm flex items-center gap-2 whitespace-nowrap"
+                >
+                  <AlertCircle size={18} />
+                  Delete All History
+                </button>
               </div>
             </section>
           </div>

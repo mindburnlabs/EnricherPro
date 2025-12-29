@@ -907,6 +907,60 @@ export const DEFAULT_CONFIGS: Record<string, ApiServiceConfig> = {
     },
     // healthCheckEndpoint: 'https://nix.ru', // Disabled to prevent CORS errors in browser
     healthCheckInterval: 600000 // 10 minutes
+  },
+
+  'perplexity-direct': {
+    name: 'perplexity-direct',
+    baseUrl: 'https://api.perplexity.ai',
+    priority: 'high',
+    rateLimit: {
+      maxRequests: 10,
+      windowMs: 60000, // 1 minute
+      burstLimit: 2,
+      backoffMultiplier: 2,
+      maxBackoffMs: 60000
+    },
+    circuitBreaker: {
+      failureThreshold: 3,
+      recoveryTimeout: 30000,
+      monitoringWindow: 180000, // 3 minutes
+      halfOpenMaxCalls: 1,
+      successThreshold: 2
+    },
+    timeout: {
+      requestTimeout: 60000,
+      connectionTimeout: 10000,
+      retryTimeout: 3000,
+      maxRetries: 2
+    },
+    healthCheckInterval: 180000 // 3 minutes
+  },
+
+  'perplexity-openrouter': {
+    name: 'perplexity-openrouter',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    priority: 'high',
+    rateLimit: {
+      maxRequests: 50,
+      windowMs: 60000, // 1 minute
+      burstLimit: 10,
+      backoffMultiplier: 1.5,
+      maxBackoffMs: 30000
+    },
+    circuitBreaker: {
+      failureThreshold: 5,
+      recoveryTimeout: 30000,
+      monitoringWindow: 180000, // 3 minutes
+      halfOpenMaxCalls: 2,
+      successThreshold: 2
+    },
+    timeout: {
+      requestTimeout: 60000,
+      connectionTimeout: 10000,
+      retryTimeout: 3000,
+      maxRetries: 2
+    },
+    healthCheckInterval: 180000 // 3 minutes
   }
 };
 
