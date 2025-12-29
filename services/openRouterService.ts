@@ -56,41 +56,98 @@ const DEFAULT_CONFIG: Partial<OpenRouterConfig> = {
 
 // Popular models for consumable enrichment
 export const RECOMMENDED_MODELS = {
-  'anthropic/claude-3.5-sonnet': {
-    name: 'Claude 3.5 Sonnet',
-    description: 'Excellent for structured data extraction and analysis',
+  // --- Paid / Standard Models ---
+  'google/gemini-2.0-flash-001': {
+    name: 'Gemini 2.0 Flash',
+    description: 'Fast, efficient multimodal model (Standard)',
+    recommended: true,
+    category: 'standard'
+  },
+  'google/gemini-2.5-flash': {
+    name: 'Gemini 2.5 Flash',
+    description: 'Next-gen fast model',
+    recommended: true,
+    category: 'standard'
+  },
+  'google/gemini-2.5-pro': {
+    name: 'Gemini 2.5 Pro',
+    description: 'Next-gen reasoning model',
     recommended: true,
     category: 'premium'
   },
-  'anthropic/claude-3-haiku': {
-    name: 'Claude 3 Haiku',
-    description: 'Fast and cost-effective for basic enrichment',
+  'anthropic/claude-sonnet-4.5': {
+    name: 'Claude 4.5 Sonnet',
+    description: 'High intelligence and speed',
     recommended: true,
-    category: 'efficient'
+    category: 'premium'
+  },
+  'anthropic/claude-3.5-sonnet': {
+    name: 'Claude 3.5 Sonnet',
+    description: 'Reliable workhorse for structured data',
+    recommended: true,
+    category: 'premium'
   },
   'openai/gpt-4o': {
     name: 'GPT-4o',
-    description: 'High-quality reasoning and data extraction',
+    description: 'High-quality reasoning',
     recommended: true,
     category: 'premium'
   },
   'openai/gpt-4o-mini': {
     name: 'GPT-4o Mini',
-    description: 'Balanced performance and cost',
+    description: 'Cost-effective standard model',
     recommended: true,
-    category: 'balanced'
+    category: 'standard'
   },
-  'meta-llama/llama-3.1-70b-instruct': {
-    name: 'Llama 3.1 70B',
-    description: 'Open source alternative with good performance',
-    recommended: false,
-    category: 'open-source'
+  'deepseek/deepseek-v3.2': {
+    name: 'DeepSeek V3.2',
+    description: 'Strong coding and reasoning capabilities',
+    recommended: true,
+    category: 'standard'
   },
-  'google/gemini-pro-1.5': {
-    name: 'Gemini Pro 1.5',
-    description: 'Google\'s latest model with multimodal capabilities',
+  'x-ai/grok-code-fast-1': {
+    name: 'Grok Code Fast',
+    description: 'optimized for code generation',
     recommended: false,
-    category: 'premium'
+    category: 'efficient'
+  },
+  'minimax/minimax-m2': {
+    name: 'MiniMax M2',
+    description: 'Balanced performance',
+    recommended: false,
+    category: 'standard'
+  },
+
+  // --- Free Models ---
+  'google/gemini-2.0-flash-lite-preview-02-05:free': {
+    name: 'Gemini 2.0 Flash Lite (Free)',
+    description: 'Free tier flash model',
+    recommended: true,
+    category: 'free'
+  },
+  'google/gemma-3-27b:free': {
+    name: 'Gemma 3 27B (Free)',
+    description: 'Open weight model by Google',
+    recommended: false,
+    category: 'free'
+  },
+  'meta-llama/llama-3.3-70b-instruct:free': {
+    name: 'Llama 3.3 70B (Free)',
+    description: 'Powerful open source model',
+    recommended: true,
+    category: 'free'
+  },
+  'deepseek/deepseek-r1:free': {
+    name: 'DeepSeek R1 (Free)',
+    description: 'Strong reasoning capabilities',
+    recommended: true,
+    category: 'free'
+  },
+  'qwen/qwen3-coder-480b-a35b-instruct:free': {
+    name: 'Qwen 3 Coder (Free)',
+    description: 'Specialized for code',
+    recommended: false,
+    category: 'free'
   }
 };
 

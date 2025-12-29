@@ -21,13 +21,13 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
   const TabButton = ({ id, icon: Icon, label }: any) => (
     <button
       onClick={() => setActiveTab(id)}
-      className={`flex items-center gap-3 py-4 px-6 text-[10px] font-black uppercase tracking-widest transition-all relative whitespace-nowrap ${activeTab === id ? 'text-indigo-400' : 'text-slate-500 hover:text-slate-300'
+      className={`flex items-center gap-3 py-4 px-6 text-[10px] font-black uppercase tracking-widest transition-all relative whitespace-nowrap ${activeTab === id ? 'text-primary-accent' : 'text-primary-subtle hover:text-primary'
         }`}
     >
-      <Icon size={14} className={activeTab === id ? 'text-indigo-400' : 'text-slate-500'} />
+      <Icon size={14} className={activeTab === id ? 'text-primary-accent' : 'text-primary-subtle'} />
       {label}
       {activeTab === id && (
-        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>
+        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-accent shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>
       )}
     </button>
   );
@@ -49,41 +49,41 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#08090f] z-[100] flex flex-col h-full overflow-hidden animate-in fade-in duration-500">
+    <div className="fixed inset-0 bg-background z-[100] flex flex-col h-full overflow-hidden animate-in fade-in duration-500 transition-colors">
       {/* Header */}
-      <div className="h-24 border-b border-white/5 px-8 flex items-center justify-between bg-transparent flex-shrink-0 z-10">
+      <div className="h-24 border-b border-border-subtle px-8 flex items-center justify-between bg-transparent flex-shrink-0 z-10">
         <div className="flex items-center gap-6 min-w-0">
-          <button onClick={onClose} className="p-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all border border-transparent hover:border-white/5">
+          <button onClick={onClose} className="p-3 text-primary-subtle hover:text-primary hover:bg-primary/5 rounded-2xl transition-all border border-transparent hover:border-border-subtle">
             <ChevronLeft size={24} />
           </button>
           <div className="min-w-0">
-            <h2 className="text-xl font-black text-white truncate leading-tight tracking-tight">{item.input_raw}</h2>
+            <h2 className="text-xl font-black text-primary truncate leading-tight tracking-tight">{item.input_raw}</h2>
             <div className="flex items-center gap-4 mt-2 overflow-x-auto no-scrollbar pb-1">
-              <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-xl">
-                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Model</span>
-                <span className="text-sm font-bold text-white tracking-widest font-mono">{editedData.model || 'UNIDENTIFIED'}</span>
+              <div className="flex items-center gap-2 bg-primary-accent/10 border border-primary-accent/20 px-3 py-1 rounded-xl">
+                <span className="text-[10px] font-black text-primary-accent uppercase tracking-widest">Model</span>
+                <span className="text-sm font-bold text-primary tracking-widest font-mono">{editedData.model || 'UNIDENTIFIED'}</span>
               </div>
-              <div className="h-4 w-px bg-white/10 shrink-0"></div>
+              <div className="h-4 w-px bg-border-subtle shrink-0"></div>
               <ConfidenceIndicator value={item.data.confidence?.overall} label="System Confidence" />
               {item.quality_score && (
-                <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-xl">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Quality Matched</span>
-                  <span className="text-[10px] font-black text-white">{Math.round(item.quality_score * 100)}%</span>
+                <div className="flex items-center gap-2 px-3 py-1 bg-surface border border-border-subtle rounded-xl">
+                  <span className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">Quality Matched</span>
+                  <span className="text-[10px] font-black text-primary">{Math.round(item.quality_score * 100)}%</span>
                 </div>
               )}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button onClick={onClose} className="hidden sm:block px-6 py-3 text-slate-400 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all">Discard Changes</button>
-          <button onClick={handleSave} className="premium-button px-8 py-3 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-900/40 border border-indigo-500/20 hover:bg-indigo-500 flex items-center gap-2">
+          <button onClick={onClose} className="hidden sm:block px-6 py-3 text-primary-subtle hover:text-primary text-[10px] font-black uppercase tracking-widest transition-all">Discard Changes</button>
+          <button onClick={handleSave} className="premium-button px-8 py-3 bg-primary-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-900/40 border border-indigo-500/20 hover:bg-indigo-500 flex items-center gap-2">
             <Save size={16} /> Approve PIM Record
           </button>
         </div>
       </div>
 
       {/* Navigation */}
-      <div className="bg-transparent border-b border-white/5 px-8 flex gap-2 flex-shrink-0 overflow-x-auto no-scrollbar">
+      <div className="bg-transparent border-b border-border-subtle px-8 flex gap-2 flex-shrink-0 overflow-x-auto no-scrollbar">
         <TabButton id="specs" icon={Box} label="Technical Specs" />
         <TabButton id="faq" icon={HelpCircle} label="AI Support FAQ" />
         <TabButton id="evidence" icon={LinkIcon} label="Proof & Sources" />
@@ -110,7 +110,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   </div>
                 )}
 
-                <div className="glass-card p-10 rounded-[3rem] border-white/5 relative overflow-hidden group">
+                <div className="glass-card p-10 rounded-[3rem] border-border-subtle relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                     <FileText size={120} />
                   </div>
@@ -122,22 +122,22 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
                     <div className="space-y-4">
-                      <label className="text-[10px] font-black text-slate-500 px-1 uppercase tracking-widest">Brand Authority</label>
-                      <input value={editedData.brand || ''} onChange={e => setEditedData({ ...editedData, brand: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-5 font-black text-white hover:border-white/10 focus:border-indigo-500/50 outline-none transition-all placeholder:text-slate-700" />
+                      <label className="text-[10px] font-black text-primary-subtle px-1 uppercase tracking-widest">Brand Authority</label>
+                      <input value={editedData.brand || ''} onChange={e => setEditedData({ ...editedData, brand: e.target.value })} className="w-full bg-surface border border-border-subtle rounded-2xl p-5 font-black text-primary hover:border-primary-accent/50 focus:border-primary-accent outline-none transition-all placeholder:text-primary-subtle" />
                     </div>
                     <div className="space-y-4">
-                      <label className="text-[10px] font-black text-slate-500 px-1 uppercase tracking-widest">Entity Identification (MPN)</label>
-                      <input value={editedData.model || ''} onChange={e => setEditedData({ ...editedData, model: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-5 font-black text-indigo-400 hover:border-white/10 focus:border-indigo-500/50 outline-none transition-all placeholder:text-slate-700" />
+                      <label className="text-[10px] font-black text-primary-subtle px-1 uppercase tracking-widest">Entity Identification (MPN)</label>
+                      <input value={editedData.model || ''} onChange={e => setEditedData({ ...editedData, model: e.target.value })} className="w-full bg-surface border border-border-subtle rounded-2xl p-5 font-black text-primary-accent hover:border-primary-accent/50 focus:border-primary-accent outline-none transition-all placeholder:text-primary-subtle" />
                     </div>
                     <div className="space-y-4">
-                      <label className="text-[10px] font-black text-slate-500 px-1 uppercase tracking-widest">Semantic Alias</label>
-                      <input value={editedData.model_alias_short || ''} onChange={e => setEditedData({ ...editedData, model_alias_short: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-5 font-bold text-slate-200 hover:border-white/10 focus:border-indigo-500/50 outline-none transition-all" placeholder="short-hand identifier" />
+                      <label className="text-[10px] font-black text-primary-subtle px-1 uppercase tracking-widest">Semantic Alias</label>
+                      <input value={editedData.model_alias_short || ''} onChange={e => setEditedData({ ...editedData, model_alias_short: e.target.value })} className="w-full bg-surface border border-border-subtle rounded-2xl p-5 font-bold text-primary hover:border-primary-accent/50 focus:border-primary-accent outline-none transition-all" placeholder="short-hand identifier" />
                     </div>
                     <div className="space-y-4">
-                      <label className="text-[10px] font-black text-slate-500 px-1 uppercase tracking-widest">Resource Matrix (Yield)</label>
+                      <label className="text-[10px] font-black text-primary-subtle px-1 uppercase tracking-widest">Resource Matrix (Yield)</label>
                       <div className="flex gap-4">
-                        <input type="number" value={editedData.yield?.value || 0} onChange={e => setEditedData({ ...editedData, yield: { ...(editedData.yield || { unit: 'pages' }), value: parseInt(e.target.value) } })} className="w-[45%] bg-white/5 border border-white/5 rounded-2xl p-5 font-black text-white focus:border-indigo-500 outline-none" />
-                        <select value={editedData.yield?.unit || 'pages'} className="w-[55%] bg-slate-900 border border-white/5 rounded-2xl p-5 font-black text-slate-400 outline-none focus:border-indigo-500" onChange={e => setEditedData({ ...editedData, yield: { ...(editedData.yield || { value: 0 }), unit: e.target.value as any } })}>
+                        <input type="number" value={editedData.yield?.value || 0} onChange={e => setEditedData({ ...editedData, yield: { ...(editedData.yield || { unit: 'pages' }), value: parseInt(e.target.value) } })} className="w-[45%] bg-surface border border-border-subtle rounded-2xl p-5 font-black text-primary focus:border-primary-accent outline-none" />
+                        <select value={editedData.yield?.unit || 'pages'} className="w-[55%] bg-surface border border-border-subtle rounded-2xl p-5 font-black text-primary outline-none focus:border-primary-accent" onChange={e => setEditedData({ ...editedData, yield: { ...(editedData.yield || { value: 0 }), unit: e.target.value as any } })}>
                           <option value="pages">ISO/IEC PAGES (A4)</option>
                           <option value="ml">LIQUID VOLUME (ML)</option>
                           <option value="copies">DUPLICATION COPIES</option>
@@ -147,20 +147,20 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                     <div className="md:col-span-2 grid grid-cols-2 gap-6 pt-4">
                       <button
                         onClick={() => setEditedData({ ...editedData, has_chip: !editedData.has_chip })}
-                        className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${editedData.has_chip ? 'bg-indigo-500/10 border-indigo-500/30 text-white' : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/10'}`}
+                        className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${editedData.has_chip ? 'bg-indigo-500/10 border-indigo-500/30 text-primary-accent' : 'bg-surface border-border-subtle text-primary-subtle hover:border-primary-accent/30'}`}
                       >
-                        <span className="text-[10px] font-black flex items-center gap-3 uppercase tracking-widest"><Cpu size={16} className={editedData.has_chip ? 'text-indigo-400' : ''} /> IC Chip Architecture</span>
-                        <div className={`w-10 h-5 rounded-full relative transition-all ${editedData.has_chip ? 'bg-indigo-600' : 'bg-slate-800'}`}>
-                          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-[0_0_8px_rgba(255,255,255,0.4)] ${editedData.has_chip ? 'left-6' : 'left-1'}`} />
+                        <span className="text-[10px] font-black flex items-center gap-3 uppercase tracking-widest"><Cpu size={16} className={editedData.has_chip ? 'text-primary-accent' : ''} /> IC Chip Architecture</span>
+                        <div className={`w-10 h-5 rounded-full relative transition-all ${editedData.has_chip ? 'bg-primary-accent' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${editedData.has_chip ? 'left-6' : 'left-1'}`} />
                         </div>
                       </button>
                       <button
                         onClick={() => setEditedData({ ...editedData, has_page_counter: !editedData.has_page_counter })}
-                        className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${editedData.has_page_counter ? 'bg-emerald-500/10 border-emerald-500/30 text-white' : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/10'}`}
+                        className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${editedData.has_page_counter ? 'bg-emerald-500/10 border-emerald-500/30 text-white' : 'bg-surface border-border-subtle text-primary-subtle hover:border-primary-accent/30'}`}
                       >
                         <span className="text-[10px] font-black flex items-center gap-3 uppercase tracking-widest"><Layers size={16} className={editedData.has_page_counter ? 'text-emerald-400' : ''} /> Logic Counter FW</span>
-                        <div className={`w-10 h-5 rounded-full relative transition-all ${editedData.has_page_counter ? 'bg-emerald-600' : 'bg-slate-800'}`}>
-                          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-[0_0_8px_rgba(255,255,255,0.4)] ${editedData.has_page_counter ? 'left-6' : 'left-1'}`} />
+                        <div className={`w-10 h-5 rounded-full relative transition-all ${editedData.has_page_counter ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${editedData.has_page_counter ? 'left-6' : 'left-1'}`} />
                         </div>
                       </button>
                     </div>
@@ -182,7 +182,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   <textarea
                     value={editedData.printers_ru.join('\n')}
                     onChange={e => setEditedData({ ...editedData, printers_ru: e.target.value.split('\n') })}
-                    className="w-full bg-white/5 border border-white/5 rounded-[2rem] p-8 font-mono text-slate-300 focus:border-indigo-500/50 outline-none h-80 leading-relaxed custom-scrollbar"
+                    className="w-full bg-surface border border-border-subtle rounded-[2rem] p-8 font-mono text-primary focus:border-primary-accent outline-none h-80 leading-relaxed custom-scrollbar"
                     placeholder="Verified list of compatible terminal IDs..."
                   />
                 </div>
@@ -355,31 +355,31 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
           {activeTab === 'faq' && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="glass-card p-10 rounded-[3rem] border-white/5">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
-                  <div className="p-2 bg-indigo-500/10 rounded-lg">
-                    <HelpCircle size={16} className="text-indigo-400" />
+                <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
+                  <div className="p-2 bg-primary-accent/10 rounded-lg">
+                    <HelpCircle size={16} className="text-primary-accent" />
                   </div>
                   AI Reasoning FAQ
                 </h3>
                 <div className="space-y-6">
                   {(item.data.faq && item.data.faq.length > 0) ? (
                     item.data.faq.map((qa: any, i: number) => (
-                      <div key={i} className="bg-white/5 rounded-2xl p-6 border border-white/5 hover:border-indigo-500/30 transition-all">
+                      <div key={i} className="bg-surface rounded-2xl p-6 border border-border-subtle hover:border-primary-accent/30 transition-all">
                         <div className="flex gap-4">
-                          <div className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] font-black shrink-0">Q</div>
-                          <h4 className="text-sm font-bold text-white leading-relaxed">{qa.question}</h4>
+                          <div className="w-6 h-6 rounded-full bg-primary-accent/20 text-primary-accent flex items-center justify-center text-[10px] font-black shrink-0">Q</div>
+                          <h4 className="text-sm font-bold text-primary leading-relaxed">{qa.question}</h4>
                         </div>
-                        <div className="flex gap-4 mt-4 pl-2 border-l-2 border-slate-800 ml-3">
+                        <div className="flex gap-4 mt-4 pl-2 border-l-2 border-border-subtle ml-3">
                           <div className="pl-4">
-                            <p className="text-xs text-slate-400 leading-relaxed">{qa.answer}</p>
+                            <p className="text-xs text-primary-subtle leading-relaxed">{qa.answer}</p>
                           </div>
                         </div>
                       </div>
                     ))
                   ) : (
                     <div className="text-center p-12 opacity-50">
-                      <Brain size={48} className="mx-auto text-slate-600 mb-4" />
-                      <span className="text-xs font-black text-slate-500 uppercase tracking-widest">No Automated FAQ Generated</span>
+                      <Brain size={48} className="mx-auto text-primary-subtle mb-4" />
+                      <span className="text-xs font-black text-primary-subtle uppercase tracking-widest">No Automated FAQ Generated</span>
                     </div>
                   )}
                 </div>
@@ -399,25 +399,25 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                     Quality Metrics Dashboard
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-                    <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5">
-                      <div className="text-3xl font-black text-indigo-400 shadow-indigo-500/20 drop-shadow-lg">{Math.round(item.evidence.quality_metrics.data_completeness_score * 100)}%</div>
-                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2">Data Complete</div>
+                    <div className="bg-surface p-6 rounded-[2rem] border border-border-subtle">
+                      <div className="text-3xl font-black text-primary-accent shadow-indigo-500/20 drop-shadow-lg">{Math.round(item.evidence.quality_metrics.data_completeness_score * 100)}%</div>
+                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">Data Complete</div>
                     </div>
-                    <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5">
+                    <div className="bg-surface p-6 rounded-[2rem] border border-border-subtle">
                       <div className="text-3xl font-black text-emerald-400 shadow-emerald-500/20 drop-shadow-lg">{Math.round(item.evidence.quality_metrics.source_reliability_score * 100)}%</div>
-                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2">Source Trust</div>
+                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">Source Trust</div>
                     </div>
-                    <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5">
+                    <div className="bg-surface p-6 rounded-[2rem] border border-border-subtle">
                       <div className="text-3xl font-black text-blue-400 shadow-blue-500/20 drop-shadow-lg">{Math.round(item.evidence.quality_metrics.validation_pass_rate * 100)}%</div>
-                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2">Validation Pass</div>
+                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">Validation Pass</div>
                     </div>
-                    <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5">
+                    <div className="bg-surface p-6 rounded-[2rem] border border-border-subtle">
                       <div className="text-3xl font-black text-purple-400 shadow-purple-500/20 drop-shadow-lg">{Math.round(item.evidence.quality_metrics.processing_efficiency * 100)}%</div>
-                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2">Efficiency</div>
+                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">Efficiency</div>
                     </div>
-                    <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5">
+                    <div className="bg-surface p-6 rounded-[2rem] border border-border-subtle">
                       <div className="text-3xl font-black text-amber-400 shadow-amber-500/20 drop-shadow-lg">{item.evidence.quality_metrics.total_sources_used}</div>
-                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2">Sources Used</div>
+                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">Sources Used</div>
                     </div>
                   </div>
                   {item.evidence.quality_metrics.failed_validations.length > 0 && (
@@ -452,10 +452,10 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                           step.status === 'failed' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' :
                             step.status === 'started' ? 'bg-blue-500 animate-pulse' : 'bg-slate-700'
                           }`}></div>
-                        <div className="flex-1 min-w-0 bg-white/5 p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
+                        <div className="flex-1 min-w-0 bg-surface p-6 rounded-2xl border border-border-subtle hover:border-primary-accent/30 transition-all">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-black text-white capitalize tracking-wide">{step.step.replace('_', ' ')}</span>
-                            <span className="text-[9px] font-mono text-slate-500">
+                            <span className="text-xs font-black text-primary capitalize tracking-wide">{step.step.replace('_', ' ')}</span>
+                            <span className="text-[9px] font-mono text-primary-subtle">
                               {step.duration_ms ? `${step.duration_ms}ms` : 'In progress'}
                             </span>
                           </div>
@@ -496,10 +496,10 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {item.evidence.sources.map((src, i) => (
-                    <div key={i} className="bg-white/5 p-8 rounded-[2rem] border border-white/5 hover:border-indigo-500/30 transition-all group">
+                    <div key={i} className="bg-surface p-8 rounded-[2rem] border border-border-subtle hover:border-primary-accent/30 transition-all group">
                       <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-3">
-                          <div className="px-3 py-1 bg-white/5 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-400 border border-white/5 group-hover:bg-indigo-500/10 group-hover:text-indigo-300 transition-colors">
+                          <div className="px-3 py-1 bg-background rounded-lg text-[9px] font-black uppercase tracking-widest text-primary-subtle border border-border-subtle group-hover:bg-primary-accent/10 group-hover:text-primary-accent transition-colors">
                             {src.source_type}
                           </div>
                           {src.confidence && (
@@ -602,18 +602,18 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
           )}
 
           {activeTab === 'thinking' && (
-            <div className="bg-[#0f111a] rounded-[2rem] p-1 shadow-2xl border border-white/5 overflow-hidden font-mono animate-in fade-in zoom-in-95 duration-300">
-              <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+            <div className="bg-surface rounded-[2rem] p-1 shadow-2xl border border-border-subtle overflow-hidden font-mono animate-in fade-in zoom-in-95 duration-300">
+              <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-background">
                 <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)] animate-pulse"></div>
-                  <span className="text-[10px] font-mono text-slate-400 uppercase font-bold tracking-widest">Thought_Process_Log.run</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-primary-accent shadow-[0_0_8px_rgba(99,102,241,0.8)] animate-pulse"></div>
+                  <span className="text-[10px] font-mono text-primary-subtle uppercase font-bold tracking-widest">Thought_Process_Log.run</span>
                 </div>
                 <div className="flex gap-2">
-                  <div className="w-2 h-2 rounded-full bg-slate-800"></div>
-                  <div className="w-2 h-2 rounded-full bg-slate-800"></div>
+                  <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-800"></div>
+                  <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-800"></div>
                 </div>
               </div>
-              <div className="bg-[#08090f] p-10 font-mono text-xs text-indigo-300/80 leading-relaxed overflow-auto max-h-[70vh] custom-scrollbar selection:bg-indigo-500/30 selection:text-white">
+              <div className="bg-background p-10 font-mono text-xs text-primary-accent/80 leading-relaxed overflow-auto max-h-[70vh] custom-scrollbar selection:bg-primary-accent/30 selection:text-white">
                 {item.thinking_process || "// Reasoning log empty for this process."}
               </div>
             </div>

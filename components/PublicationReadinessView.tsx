@@ -124,10 +124,10 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
   const ComponentScoreBar = ({ label, score, color }: { label: string, score: number, color: string }) => (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
-        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{label}</span>
-        <span className="text-[10px] font-black text-white">{Math.round(score * 100)}%</span>
+        <span className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">{label}</span>
+        <span className="text-[10px] font-black text-primary">{Math.round(score * 100)}%</span>
       </div>
-      <div className="w-full bg-white/5 rounded-full h-1 border border-white/5">
+      <div className="w-full bg-surface rounded-full h-1 border border-border-subtle">
         <div
           className={`h-1 rounded-full transition-all duration-700 ease-out ${color}`}
           style={{ width: `${score * 100}%` }}
@@ -147,8 +147,8 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
             </div>
             <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Stable</span>
           </div>
-          <div className="text-4xl font-black text-white">{report.ready_for_publication}</div>
-          <div className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-tighter">
+          <div className="text-4xl font-black text-primary">{report.ready_for_publication}</div>
+          <div className="text-[10px] font-bold text-primary-subtle mt-2 uppercase tracking-tighter">
             {items.length > 0 ? Math.round((report.ready_for_publication / items.length) * 100) : 0}% COMPLETION RATE
           </div>
         </div>
@@ -160,8 +160,8 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
             </div>
             <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Optimizable</span>
           </div>
-          <div className="text-4xl font-black text-white">{report.needs_minor_fixes}</div>
-          <div className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-tighter">MINOR GAPS DETECTED</div>
+          <div className="text-4xl font-black text-primary">{report.needs_minor_fixes}</div>
+          <div className="text-[10px] font-bold text-primary-subtle mt-2 uppercase tracking-tighter">MINOR GAPS DETECTED</div>
         </div>
 
         <div className="glass-card p-6 rounded-[2rem] border-orange-500/10">
@@ -171,8 +171,8 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
             </div>
             <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Critical</span>
           </div>
-          <div className="text-4xl font-black text-white">{report.needs_major_work}</div>
-          <div className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-tighter">STRUCTURAL WORK NEEDED</div>
+          <div className="text-4xl font-black text-primary">{report.needs_major_work}</div>
+          <div className="text-[10px] font-bold text-primary-subtle mt-2 uppercase tracking-tighter">STRUCTURAL WORK NEEDED</div>
         </div>
 
         <div className="glass-card p-6 rounded-[2rem] border-red-500/10">
@@ -182,22 +182,22 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
             </div>
             <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Blocked</span>
           </div>
-          <div className="text-4xl font-black text-white">{report.blocked_items}</div>
-          <div className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-tighter">IMMEDIATE ATTENTION</div>
+          <div className="text-4xl font-black text-primary">{report.blocked_items}</div>
+          <div className="text-[10px] font-bold text-primary-subtle mt-2 uppercase tracking-tighter">IMMEDIATE ATTENTION</div>
         </div>
       </div>
 
       {/* Quality Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Overall Quality Score */}
-        <div className="glass-card rounded-[2.5rem] border-white/5 p-8">
+        <div className="glass-card rounded-[2.5rem] border-border-subtle p-8">
           <div className="flex items-center justify-between mb-8">
             <div className="flex flex-col gap-1">
-              <h3 className="text-lg font-bold text-white flex items-center gap-3">
-                <Award className="text-indigo-400" size={24} />
+              <h3 className="text-lg font-bold text-primary flex items-center gap-3">
+                <Award className="text-primary-accent" size={24} />
                 Integrity Matrix
               </h3>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Aggregate Verification Score</p>
+              <p className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">Aggregate Verification Score</p>
             </div>
             <ReadinessScoreDisplay score={report.average_readiness_score} size="lg" />
           </div>
@@ -232,32 +232,32 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
         </div>
 
         {/* Top Blocking Issues */}
-        <div className="glass-card rounded-[2.5rem] border-white/5 p-8">
+        <div className="glass-card rounded-[2.5rem] border-border-subtle p-8">
           <div className="flex flex-col gap-1 mb-8">
-            <h3 className="text-lg font-bold text-white flex items-center gap-3">
+            <h3 className="text-lg font-bold text-primary flex items-center gap-3">
               <AlertCircle className="text-red-400" size={24} />
               Issue Taxonomy
             </h3>
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Structural Deployment Blockers</p>
+            <p className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">Structural Deployment Blockers</p>
           </div>
 
           <div className="space-y-3">
             {report.top_blocking_issues.slice(0, 5).map((issue, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 group hover:border-white/10 transition-all">
+              <div key={index} className="flex items-center justify-between p-4 bg-surface rounded-2xl border border-border-subtle group hover:border-primary-accent/30 transition-all">
                 <div className="flex-1">
-                  <div className="text-sm font-bold text-slate-200 group-hover:text-white transition-colors uppercase tracking-tight">{issue.issue}</div>
+                  <div className="text-sm font-bold text-primary group-hover:text-primary-accent transition-colors uppercase tracking-tight">{issue.issue}</div>
                   <div className="flex items-center gap-3 mt-2">
                     <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded-md ${issue.severity === 'high' ? 'bg-red-500 text-white' :
                       issue.severity === 'medium' ? 'bg-amber-500 text-white' :
-                        'bg-slate-700 text-slate-300'
+                        'bg-surface text-primary-subtle border border-border-subtle'
                       }`}>
                       {issue.severity}
                     </span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{issue.count} INCIDENTS</span>
+                    <span className="text-[10px] font-bold text-primary-subtle uppercase tracking-widest">{issue.count} INCIDENTS</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-black text-white">{issue.count}</div>
+                  <div className="text-2xl font-black text-primary">{issue.count}</div>
                 </div>
               </div>
             ))}
@@ -266,32 +266,32 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
       </div>
 
       {/* Brand Performance */}
-      <div className="glass-card rounded-[2.5rem] border-white/5 p-8">
+      <div className="glass-card rounded-[2.5rem] border-border-subtle p-8">
         <div className="flex flex-col gap-1 mb-8">
-          <h3 className="text-lg font-bold text-white flex items-center gap-3">
-            <BarChart3 className="text-indigo-400" size={24} />
+          <h3 className="text-lg font-bold text-primary flex items-center gap-3">
+            <BarChart3 className="text-primary-accent" size={24} />
             Strategic Brand Readiness
           </h3>
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Cross-sectional Distribution</p>
+          <p className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">Cross-sectional Distribution</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {Object.entries(report.readiness_by_brand)
             .sort(([, a]: [string, any], [, b]: [string, any]) => b.avg_score - a.avg_score)
             .map(([brand, stats]: [string, any]) => (
-              <div key={brand} className="bg-white/5 rounded-[1.5rem] p-6 border border-white/5 hover:border-indigo-500/30 transition-all group">
+              <div key={brand} className="bg-surface rounded-[1.5rem] p-6 border border-border-subtle hover:border-primary-accent/30 transition-all group">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-bold text-white group-hover:text-indigo-400 transition-colors">{brand}</h3>
+                  <h3 className="font-bold text-primary group-hover:text-primary-accent transition-colors">{brand}</h3>
                   <ReadinessScoreDisplay score={stats.avg_score} size="sm" />
                 </div>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">VOLUME</span>
-                    <span className="text-sm font-bold text-slate-200">{stats.ready} <span className="text-slate-600">/ {stats.total}</span></span>
+                    <span className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">VOLUME</span>
+                    <span className="text-sm font-bold text-primary-subtle">{stats.ready} <span className="text-primary-subtle/70">/ {stats.total}</span></span>
                   </div>
-                  <div className="w-full bg-white/5 rounded-full h-1 border border-white/5 overflow-hidden">
+                  <div className="w-full bg-background rounded-full h-1 border border-border-subtle overflow-hidden">
                     <div
-                      className="bg-indigo-500 h-1 rounded-full transition-all duration-300"
+                      className="bg-primary-accent h-1 rounded-full transition-all duration-300"
                       style={{ width: `${(stats.ready / stats.total) * 100}%` }}
                     ></div>
                   </div>
@@ -308,7 +308,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
             <TrendingUp className="text-emerald-400" size={32} />
           </div>
           <div>
-            <div className="text-3xl font-black text-white">{report.quality_trends.improving}</div>
+            <div className="text-3xl font-black text-primary">{report.quality_trends.improving}</div>
             <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Positive Trajectory</div>
           </div>
         </div>
@@ -317,7 +317,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
             <Target className="text-blue-400" size={32} />
           </div>
           <div>
-            <div className="text-3xl font-black text-white">{report.quality_trends.stable}</div>
+            <div className="text-3xl font-black text-primary">{report.quality_trends.stable}</div>
             <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Stabilized State</div>
           </div>
         </div>
@@ -326,7 +326,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
             <TrendingDown className="text-red-400" size={32} />
           </div>
           <div>
-            <div className="text-3xl font-black text-white">{report.quality_trends.declining}</div>
+            <div className="text-3xl font-black text-primary">{report.quality_trends.declining}</div>
             <div className="text-[10px] font-black text-red-500 uppercase tracking-widest">Degradation Risks</div>
           </div>
         </div>
@@ -363,16 +363,16 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
         </div>
       </div>
 
-      <div className="glass-card rounded-[2rem] border-white/5 overflow-hidden">
+      <div className="glass-card rounded-[2rem] border-border-subtle overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
+            <tr className="text-[10px] font-black text-primary-subtle uppercase tracking-widest border-b border-border-subtle">
               <th className="px-6 py-4 text-left">
                 <input
                   type="checkbox"
                   onChange={() => handleSelectAll(readyItems)}
                   checked={readyItems.length > 0 && readyItems.every(item => selectedItems.includes(item.id))}
-                  className="rounded bg-slate-900 border-white/10 text-indigo-600 focus:ring-indigo-500/20"
+                  className="rounded bg-surface border-border-subtle text-primary-accent focus:ring-primary-accent/20"
                 />
               </th>
               <th className="px-6 py-4 text-left">Entity Architecture</th>
@@ -386,18 +386,18 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
             {readyItems.map(item => {
               const readiness = evaluatePublicationReadiness(item);
               return (
-                <tr key={item.id} className="hover:bg-white/[0.02] transition-all group">
+                <tr key={item.id} className="hover:bg-primary/5 transition-all group">
                   <td className="px-6 py-5">
                     <input
                       type="checkbox"
                       checked={selectedItems.includes(item.id)}
                       onChange={() => handleSelectItem(item.id)}
-                      className="rounded bg-slate-900 border-white/10 text-indigo-600 focus:ring-indigo-500/20"
+                      className="rounded bg-surface border-border-subtle text-primary-accent focus:ring-primary-accent/20"
                     />
                   </td>
                   <td className="px-6 py-5">
-                    <div className="text-sm font-bold text-slate-200 group-hover:text-white transition-colors">{item.data.model || item.input_raw}</div>
-                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-600 mt-1">{item.data.brand}</div>
+                    <div className="text-sm font-bold text-primary-subtle group-hover:text-primary transition-colors">{item.data.model || item.input_raw}</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-primary-subtle mt-1">{item.data.brand}</div>
                   </td>
                   <td className="px-6 py-5">
                     <ReadinessScoreDisplay score={readiness.overall_score} size="sm" />
@@ -411,8 +411,8 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary-accent"></div>
+                      <span className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">
                         {item.data.compatible_printers_ru?.filter(p => p.ruMarketEligibility === 'ru_verified').length || 0} VERIFIED SOURCES
                       </span>
                     </div>
@@ -420,7 +420,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                   <td className="px-6 py-5 text-right">
                     <button
                       onClick={() => onViewItem(item)}
-                      className="p-2 text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all border border-transparent hover:border-white/10"
+                      className="p-2 text-primary-subtle hover:text-primary hover:bg-primary/5 rounded-xl transition-all border border-transparent hover:border-border-subtle"
                     >
                       <Eye size={18} />
                     </button>
@@ -437,29 +437,29 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
   const renderNeedsWork = () => (
     <div className="space-y-8 animate-in">
       <div className="flex flex-col gap-1">
-        <h3 className="text-xl font-bold text-white flex items-center gap-3">
+        <h3 className="text-xl font-bold text-primary flex items-center gap-3">
           <AlertTriangle className="text-amber-400" size={24} />
           Structural Review Queue
         </h3>
-        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{itemsNeedingWork.length} ENTITIES REQUIRING MANUAL OVERRIDE</p>
+        <p className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">{itemsNeedingWork.length} ENTITIES REQUIRING MANUAL OVERRIDE</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
         {itemsNeedingWork.map(({ item, readiness, priority }) => (
-          <div key={item.id} className="glass-card rounded-[2.5rem] border-white/5 p-8 group hover:border-white/10 transition-all">
+          <div key={item.id} className="glass-card rounded-[2.5rem] border-border-subtle p-8 group hover:border-primary-accent/30 transition-all">
             <div className="flex items-start justify-between mb-8">
               <div className="flex-1">
                 <div className="flex items-center gap-4 mb-3">
-                  <h4 className="text-xl font-black text-white group-hover:text-amber-400 transition-colors">{item.data.model || item.input_raw}</h4>
+                  <h4 className="text-xl font-black text-primary group-hover:text-amber-400 transition-colors">{item.data.model || item.input_raw}</h4>
                   <ReadinessScoreDisplay score={readiness.overall_score} />
                   <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-xl border ${priority === 'high' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
                     priority === 'medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                      'bg-slate-800 text-slate-500 border-white/5'
+                      'bg-surface text-primary-subtle border-border-subtle'
                     }`}>
                     {priority} PRIORITY
                   </span>
                 </div>
-                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">{item.data.brand}</div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-primary-subtle">{item.data.brand}</div>
 
                 {/* Component Scores */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mt-8">
@@ -492,15 +492,15 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
               </div>
 
               <div className="flex flex-col items-end gap-3 ml-8">
-                <div className="px-3 py-1.5 bg-white/5 rounded-xl border border-white/5 flex items-center gap-2">
-                  <Clock size={12} className="text-slate-500" />
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <div className="px-3 py-1.5 bg-background rounded-xl border border-border-subtle flex items-center gap-2">
+                  <Clock size={12} className="text-primary-subtle" />
+                  <span className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">
                     EST. {readiness.estimated_manual_effort}M
                   </span>
                 </div>
                 <button
                   onClick={() => onViewItem(item)}
-                  className="p-3 bg-indigo-600/10 text-indigo-400 hover:text-white hover:bg-indigo-600 rounded-2xl transition-all border border-indigo-500/20 group-hover:scale-105"
+                  className="p-3 bg-primary-accent/10 text-primary-accent hover:text-white hover:bg-primary-accent rounded-2xl transition-all border border-primary-accent/20 group-hover:scale-105"
                 >
                   <Eye size={20} />
                 </button>
@@ -534,9 +534,9 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                   </h5>
                   <ul className="space-y-2">
                     {readiness.recommendations.slice(0, 3).map((rec, i) => (
-                      <li key={i} className="flex items-start gap-3 bg-white/5 p-3 rounded-2xl border border-white/5">
-                        <div className="w-1 h-1 rounded-full bg-indigo-500 mt-2"></div>
-                        <span className="text-[11px] font-bold text-slate-300 leading-relaxed">{rec}</span>
+                      <li key={i} className="flex items-start gap-3 bg-background p-3 rounded-2xl border border-border-subtle">
+                        <div className="w-1 h-1 rounded-full bg-primary-accent mt-2"></div>
+                        <span className="text-[11px] font-bold text-primary-subtle leading-relaxed">{rec}</span>
                       </li>
                     ))}
                   </ul>
@@ -560,9 +560,9 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
       </div>
 
       {/* Criteria Configuration */}
-      <div className="glass-card rounded-[2.5rem] border-white/5 p-8">
-        <h4 className="text-[10px] font-black text-slate-400 mb-8 flex items-center gap-3 uppercase tracking-widest">
-          <Settings className="text-indigo-400" size={16} />
+      <div className="glass-card rounded-[2.5rem] border-border-subtle p-8">
+        <h4 className="text-[10px] font-black text-primary-subtle mb-8 flex items-center gap-3 uppercase tracking-widest">
+          <Settings className="text-primary-accent" size={16} />
           Approval Parameters
         </h4>
 
@@ -669,16 +669,16 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-white/5 flex items-center justify-between">
+        <div className="mt-12 pt-8 border-t border-border-subtle flex items-center justify-between">
           <div className="flex flex-col gap-1">
-            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">SIMULATED OUTCOME</div>
-            <div className="text-sm font-bold text-slate-300">
-              Approximately <span className="text-indigo-400 tabular-nums">{performBulkApproval(items, bulkCriteria).summary.approved_count}</span> entities qualify for injection.
+            <div className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">SIMULATED OUTCOME</div>
+            <div className="text-sm font-bold text-primary-subtle">
+              Approximately <span className="text-primary-accent tabular-nums">{performBulkApproval(items, bulkCriteria).summary.approved_count}</span> entities qualify for injection.
             </div>
           </div>
           <button
             onClick={handleBulkApproval}
-            className="premium-button px-8 py-4 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-indigo-500 transition-all flex items-center gap-3 shadow-lg shadow-indigo-900/40 border border-indigo-500/20"
+            className="premium-button px-8 py-4 bg-primary-accent text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-indigo-500 transition-all flex items-center gap-3 shadow-lg shadow-indigo-900/40 border border-indigo-500/20"
           >
             <Zap size={18} />
             Execute Protocol
@@ -691,26 +691,26 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
   return (
     <div className="flex flex-col h-full bg-transparent animate-in">
       {/* Header */}
-      <div className="px-8 py-8 border-b border-white/5 bg-transparent">
+      <div className="px-8 py-8 border-b border-border-subtle bg-transparent">
         <div className="flex items-center justify-between mb-8">
           <div className="flex flex-col gap-1">
-            <h2 className="text-2xl font-black text-white flex items-center gap-3">
-              <Award className="text-indigo-400" size={28} />
+            <h2 className="text-2xl font-black text-primary flex items-center gap-3">
+              <Award className="text-primary-accent" size={28} />
               Readiness Protocol
             </h2>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Analytics & Publication Deployment</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-subtle">Analytics & Publication Deployment</p>
           </div>
 
           <div className="flex items-center gap-8">
             <div className="text-right">
-              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">NETWORK READY</div>
-              <div className="text-xl font-bold text-white tabular-nums">
-                {report.ready_for_publication} <span className="text-slate-600 font-medium text-xs">/ {items.length}</span>
+              <div className="text-[10px] font-black text-primary-subtle uppercase tracking-widest mb-1">NETWORK READY</div>
+              <div className="text-xl font-bold text-primary tabular-nums">
+                {report.ready_for_publication} <span className="text-primary-subtle/70 font-medium text-xs">/ {items.length}</span>
               </div>
             </div>
-            <div className="w-48 bg-white/5 rounded-full h-1.5 overflow-hidden border border-white/5">
+            <div className="w-48 bg-surface rounded-full h-1.5 overflow-hidden border border-border-subtle">
               <div
-                className="bg-indigo-500 h-1.5 rounded-full transition-all duration-1000 ease-in-out shadow-[0_0_12px_rgba(99,102,241,0.5)]"
+                className="bg-primary-accent h-1.5 rounded-full transition-all duration-1000 ease-in-out shadow-[0_0_12px_rgba(99,102,241,0.5)]"
                 style={{ width: `${items.length > 0 ? (report.ready_for_publication / items.length) * 100 : 0}%` }}
               ></div>
             </div>
@@ -718,7 +718,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 bg-white/5 p-1.5 rounded-2xl w-fit border border-white/5">
+        <div className="flex gap-2 bg-surface p-1.5 rounded-2xl w-fit border border-border-subtle">
           {[
             { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
             { key: 'ready', label: `Ready (${readyItems.length})`, icon: CheckCircle },
@@ -729,8 +729,8 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
               className={`px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2.5 ${activeTab === tab.key
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40'
-                : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                ? 'bg-primary-accent text-white shadow-lg shadow-indigo-900/40'
+                : 'text-primary-subtle hover:text-primary hover:bg-primary/5'
                 }`}
             >
               <tab.icon size={14} />

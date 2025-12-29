@@ -33,6 +33,28 @@ const App: React.FC = () => {
   const [processing, setProcessing] = useState(false);
   const [selectedItem, setSelectedItem] = useState<EnrichedItem | null>(null);
 
+  // Theme Management
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system';
+    }
+    return 'system';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+
+    if (theme === 'system') {
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.classList.add(systemTheme);
+    } else {
+      root.classList.add(theme);
+    }
+
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
   // Enhanced state management
   const [batchProgress, setBatchProgress] = useState<BatchProcessingProgress | null>(null);
   const [manualQueue, setManualQueue] = useState<ManualQueueEntry[]>([]);
@@ -479,7 +501,7 @@ const App: React.FC = () => {
               onUpdateItem={handleUpdateItem}
             />
           )}
-          {activeTab === 'settings' && <SettingsView />}
+          {activeTab === 'settings' && <SettingsView theme={theme} onThemeChange={setTheme} />}
         </>
       )}
     </Layout>
