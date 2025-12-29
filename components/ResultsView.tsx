@@ -5,6 +5,9 @@ import { Search, Edit, FileJson, FileSpreadsheet, Loader2, X, TrendingUp, AlertT
 import StatusBadge from './StatusBadge';
 import ConfidenceIndicator from './ConfidenceIndicator';
 import Papa from 'papaparse';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
+import { Card } from './ui/Card';
 
 interface ResultsViewProps {
   items: EnrichedItem[];
@@ -326,26 +329,25 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         {/* Primary Search and Filter Row */}
         <div className="flex flex-col md:flex-row justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-              <input
-                type="text"
+            <div className="relative w-full md:w-80">
+              <Input
                 placeholder="Search by model, brand, or title..."
-                className="w-full md:w-80 pl-11 pr-4 py-2.5 bg-card border border-border-subtle rounded-xl text-sm text-primary placeholder:text-primary-subtle focus:ring-4 focus:ring-primary-accent/10 focus:border-primary-accent/50 outline-none transition-all"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                leftIcon={<Search size={16} />}
+                className="w-full"
               />
             </div>
 
-            <button
+            <Button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className={`premium-button px-4 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center gap-2 ${showAdvancedFilters ? 'bg-primary-accent text-white' : 'bg-card text-primary-subtle hover:text-primary border border-border-subtle'
-                }`}
+              variant={showAdvancedFilters ? 'primary' : 'secondary'}
+              size="sm"
+              leftIcon={<Filter size={14} />}
+              rightIcon={showAdvancedFilters ? <EyeOff size={12} /> : <Eye size={12} />}
             >
-              <Filter size={14} />
               Filters
-              {showAdvancedFilters ? <EyeOff size={12} /> : <Eye size={12} />}
-            </button>
+            </Button>
           </div>
 
           <div className="flex gap-2 items-center">
@@ -365,37 +367,44 @@ const ResultsView: React.FC<ResultsViewProps> = ({
             <div className="w-px h-6 bg-slate-700 mx-2"></div>
 
             {selectedItems.length > 0 && (
-              <button
+              <Button
                 onClick={handleBulkRetrySelected}
-                className="premium-button px-4 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 flex items-center gap-2 shadow-lg shadow-blue-900/40 border border-blue-500/20"
+                variant="primary" // Was blue-600, mapping to primary or maybe add a specific style if needed, but primary is fine.
+                // The original had blue-600. Our primary is usually indigo-600. Close enough.
+                size="sm"
+                leftIcon={<RefreshCw size={14} />}
+                className="bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/40 border-blue-500/20"
               >
-                <RefreshCw size={14} />
                 Retry {selectedItems.length}
-              </button>
+              </Button>
             )}
 
             {manualQueue.length > 0 && (
-              <button
+              <Button
                 onClick={() => setShowManualQueue(!showManualQueue)}
-                className={`premium-button px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 ${showManualQueue
-                  ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/40 border border-amber-500/20'
-                  : 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/10'
-                  }`}
+                variant={showManualQueue ? 'warning' : 'ghost'} // Mapping amber to warning
+                size="sm"
+                leftIcon={<Users size={14} />}
+                className={!showManualQueue ? "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/10" : ""}
               >
-                <Users size={14} />
                 Review Pool ({manualQueue.length})
-              </button>
+              </Button>
             )}
 
-            <button onClick={handleExportCSV} className="p-2.5 text-primary-subtle hover:text-primary hover:bg-card rounded-xl transition-all border border-border-subtle" title="Export Enhanced CSV">
+            <Button
+              onClick={handleExportCSV}
+              variant="secondary"
+              size="icon"
+              title="Export Enhanced CSV"
+            >
               <FileSpreadsheet size={20} />
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Advanced Filters Row */}
         {showAdvancedFilters && (
-          <div className="flex flex-wrap gap-4 p-5 bg-card border border-border-subtle rounded-2xl animate-in shadow-lg">
+          <Card className="flex flex-wrap gap-4 p-5 animate-in shadow-lg">
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Confidence Level</label>
               <select
@@ -467,7 +476,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                 <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">FILTERED SET</div>
                 <div className="text-lg font-bold text-primary">{filteredAndSortedItems.length} <span className="text-primary-subtle text-xs font-medium">/ {items.length} TOTAL</span></div>
               </div>
-              <button
+              <Button
                 onClick={() => {
                   setSearch('');
                   setConfidenceFilter('all');
@@ -476,12 +485,14 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                   setSortBy('created_at');
                   setSortOrder('desc');
                 }}
-                className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 bg-indigo-400/10 rounded-xl border border-indigo-400/20 transition-all font-bold"
+                variant="ghost"
+                size="sm"
+                className="text-indigo-400 hover:text-indigo-300 bg-indigo-400/10 border-indigo-400/20"
               >
                 Wipe Filters
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         )}
       </div>
 
@@ -689,7 +700,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         )}
 
         {/* Enhanced Results Table */}
-        <div className="bg-card rounded-3xl shadow-sm border border-border-subtle overflow-hidden">
+        <Card className="overflow-hidden shadow-sm" padding="none">
           <table className="w-full text-left">
             <thead className="bg-surface border-b border-border-subtle text-[10px] uppercase font-black text-primary-subtle">
               <tr>
@@ -858,7 +869,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               <p className="text-sm text-slate-500 mb-8 max-w-sm mx-auto font-medium">
                 The current parameters returned zero matches. Adjust your filters or audit the original input data.
               </p>
-              <button
+              <Button
                 onClick={() => {
                   setSearch('');
                   setFilter('all');
@@ -866,15 +877,16 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                   setBrandFilter('all');
                   setErrorTypeFilter('all');
                 }}
-                className="premium-button px-6 py-3 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-900/40"
+                variant="primary"
+                className="bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/40"
               >
                 Clear All Constraints
-              </button>
+              </Button>
             </div>
           )}
-        </div>
+        </Card>
       </div>
-    </div>
+    </div >
   );
 };
 

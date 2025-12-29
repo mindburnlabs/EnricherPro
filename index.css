@@ -5,41 +5,26 @@
 @layer base {
   :root {
     /* Light Mode (Default) */
-    --bg-primary: 210 40% 98%;
-    /* Slate-50 */
-    --bg-secondary: 0 0% 100%;
-    /* White */
-    --bg-card: 0 0% 100%;
-    /* White */
-    --bg-card-glass: 255 255 255;
-    /* White for rgba */
-    --bg-sidebar: 255 255 255;
-    /* White for rgba */
+    --bg-primary: 210 40% 98%;    /* Slate-50 */
+    --bg-secondary: 0 0% 100%;    /* White */
+    --bg-card: 0 0% 100%;         /* White */
+    --bg-card-glass: 255 255 255; /* White for rgba */
+    --bg-sidebar: 255 255 255;    /* White for rgba */
 
-    --text-primary: 222 47% 11%;
-    /* Slate-900 */
-    --text-secondary: 215 16% 47%;
-    /* Slate-500 */
-    --text-accent: 250 89% 65%;
-    /* Indigo-500 */
+    --text-primary: 222 47% 11%;  /* Slate-900 */
+    --text-secondary: 215 16% 47%;/* Slate-500 */
+    --text-accent: 250 89% 65%;   /* Indigo-500 */
 
-    --border-subtle: 214 32% 91%;
-    /* Slate-200 */
-    --border-highlight: 250 89% 65%;
-    /* Indigo-500 */
+    --border-subtle: 214 32% 91%; /* Slate-200 */
+    --border-highlight: 250 89% 65%; /* Indigo-500 */
 
-    --shadow-color: 220 3% 15%;
-    /* Black-ish */
+    --shadow-color: 220 3% 15%;   /* Black-ish */
 
     /* Semantic Colors */
-    --color-success: 142 71% 45%;
-    /* Green-600 */
-    --color-warning: 38 92% 50%;
-    /* Amber-500 */
-    --color-error: 343 100% 50%;
-    /* Rose-600 */
-    --color-info: 217 91% 60%;
-    /* Blue-500 */
+    --color-success: 142 71% 45%; /* Green-600 */
+    --color-warning: 38 92% 50%;  /* Amber-500 */
+    --color-error: 343 100% 50%;  /* Rose-600 */
+    --color-info: 217 91% 60%;    /* Blue-500 */
 
     /* Chart Colors */
     --chart-1: 250 89% 65%;
@@ -53,41 +38,29 @@
 
   /* Dark Mode Overrides */
   .dark {
-    --bg-primary: 222 47% 11%;
-    /* Slate-900 (Main Background) */
-    --bg-secondary: 217 33% 17%;
-    /* Slate-800 (Secondary BG) */
-    --bg-card: 217 33% 17%;
-    /* Slate-800 (Card BG) */
-    --bg-card-glass: 15 23 42;
-    /* Slate-900 for rgba */
-    --bg-sidebar: 15 23 42;
-    /* Slate-900 for rgba */
+    --bg-primary: 222 47% 11%;    /* Slate-900 (Main Background) */
+    
+    /* Tweaked for better contrast vs Input fields */
+    --bg-secondary: 215 28% 17%;  /* Slate-800 - slightly lighter/bluer */ 
+    --bg-card: 215 28% 17%;       /* Slate-800 */
+    
+    --bg-card-glass: 15 23 42;    /* Slate-900 for rgba */
+    --bg-sidebar: 15 23 42;       /* Slate-900 for rgba */
 
-    --text-primary: 210 40% 98%;
-    /* Slate-50 */
-    --text-secondary: 215 20% 65%;
-    /* Slate-400 */
-    --text-accent: 250 89% 75%;
-    /* Indigo-400 (Lighter for dark mode) */
+    --text-primary: 210 40% 98%;  /* Slate-50 */
+    --text-secondary: 215 20% 65%;/* Slate-400 */
+    --text-accent: 250 89% 75%;   /* Indigo-400 */
 
-    --border-subtle: 217 33% 25%;
-    /* Slate-700 */
-    --border-highlight: 250 89% 65%;
-    /* Indigo-500 */
+    --border-subtle: 217 33% 25%; /* Slate-700 */
+    --border-highlight: 250 89% 65%; /* Indigo-500 */
 
-    --shadow-color: 0 0% 0%;
-    /* Pure Black */
+    --shadow-color: 0 0% 0%;      /* Pure Black */
 
-    /* Semantic Colors (Adjusted for Dark Mode contrast) */
-    --color-success: 142 70% 50%;
-    /* Green-500 */
-    --color-warning: 38 92% 60%;
-    /* Amber-400 */
-    --color-error: 343 100% 60%;
-    /* Rose-500 */
-    --color-info: 217 91% 70%;
-    /* Blue-400 */
+    /* Semantic Colors */
+    --color-success: 142 70% 50%; /* Green-500 */
+    --color-warning: 38 92% 60%;  /* Amber-400 */
+    --color-error: 343 100% 60%;  /* Rose-500 */
+    --color-info: 217 91% 70%;    /* Blue-400 */
 
     /* Overlay opacities */
     --glass-opacity: 0.4;
@@ -104,6 +77,11 @@ body {
 }
 
 @layer components {
+  /* Utility Classes */
+  .btn-primary {
+    @apply flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white shadow-lg transition-all active:scale-95 bg-primary-accent hover:bg-primary-accent/90 shadow-primary-accent/30 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
   .glass-card {
     @apply backdrop-blur-xl shadow-2xl;
     background-color: rgba(var(--bg-card-glass), var(--glass-opacity));
@@ -139,15 +117,8 @@ body {
 
 /* Animations */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-in {
@@ -155,14 +126,8 @@ body {
 }
 
 /* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   @apply bg-primary-subtle/20 rounded-full hover:bg-primary-subtle/40;
 }

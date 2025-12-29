@@ -6,6 +6,9 @@ import ApiStatusIndicator from './ApiStatusIndicator';
 import { apiHealthMonitoringService } from '../services/apiHealthMonitoringService';
 import { createOpenRouterService, RECOMMENDED_MODELS, OpenRouterConfig } from '../services/openRouterService';
 import { PerplexityService, DEFAULT_PERPLEXITY_CONFIG, PerplexityConfig, PERPLEXITY_MODELS } from '../services/perplexityService';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
+import { Card } from './ui/Card';
 
 const FIRECRAWL_STORAGE_KEY = 'firecrawl_api_key';
 const OPENROUTER_STORAGE_KEY = 'openrouter_config';
@@ -178,7 +181,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
     try {
       const service = createOpenRouterService(openRouterConfig);
       // Validate by fetching models if haven't already
-      if (availableModels.length === 0) {
+      if (availableModels?.length === 0) {
         await service.getAvailableModels();
       }
 
@@ -339,7 +342,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
 
         {/* === GENERAL TAB === */}
         {activeTab === 'general' && (
-          <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle p-8 animate-in fade-in slide-in-from-bottom-4">
+          <Card className="animate-in fade-in slide-in-from-bottom-4">
             <section>
               <div className="flex items-center gap-2 mb-6 text-primary-subtle">
                 <Monitor size={18} />
@@ -355,7 +358,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                     key={t.id}
                     onClick={() => onThemeChange(t.id as any)}
                     className={`p-4 rounded-2xl border-2 transition-all text-left group ${theme === t.id ? 'border-primary-accent bg-primary-accent/5' : 'border-border-subtle hover:border-primary-accent/50'
-                      }`}
+                      } hover:scale-[1.02] active:scale-95 duration-200`}
                   >
                     <div className={`w-10 h-10 rounded-full ${t.bg} shadow-md flex items-center justify-center mb-3 ${t.color}`}>
                       <t.icon size={20} />
@@ -375,7 +378,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <button
                   onClick={() => setEngine('gemini')}
-                  className={`p-3 rounded-xl border text-left transition-colors ${engine === 'gemini'
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] active:scale-95 ${engine === 'gemini'
                     ? 'bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10'
                     : 'bg-surface border-border-subtle hover:border-primary-accent/50 text-primary-subtle hover:bg-card'
                     }`}
@@ -386,7 +389,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
 
                 <button
                   onClick={() => setEngine('openrouter')}
-                  className={`p-3 rounded-xl border text-left transition-colors ${engine === 'openrouter'
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] active:scale-95 ${engine === 'openrouter'
                     ? 'bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10'
                     : 'bg-surface border-border-subtle hover:border-primary-accent/50 text-primary-subtle hover:bg-card'
                     }`}
@@ -397,7 +400,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
 
                 <button
                   onClick={() => setEngine('firecrawl')}
-                  className={`p-3 rounded-xl border text-left transition-colors ${engine === 'firecrawl'
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] active:scale-95 ${engine === 'firecrawl'
                     ? 'bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10'
                     : 'bg-surface border-border-subtle hover:border-primary-accent/50 text-primary-subtle hover:bg-card'
                     }`}
@@ -418,21 +421,21 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                   <h3 className="font-bold text-primary mb-1">Clear Application History</h3>
                   <p className="text-sm text-primary-subtle">Permanently remove all enriched items, queues, and cached data. This action cannot be undone.</p>
                 </div>
-                <button
+                <Button
                   onClick={onClearData}
-                  className="px-6 py-3 bg-white border-2 border-status-error text-status-error rounded-xl font-bold hover:bg-status-error hover:text-white transition-all shadow-sm flex items-center gap-2 whitespace-nowrap"
+                  variant="danger"
+                  leftIcon={<AlertCircle size={18} />}
                 >
-                  <AlertCircle size={18} />
                   Delete All History
-                </button>
+                </Button>
               </div>
             </section>
-          </div>
+          </Card>
         )}
 
         {/* === OPENROUTER TAB === */}
         {activeTab === 'openrouter' && (
-          <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
+          <Card className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="text-xl font-bold text-primary mb-2">OpenRouter Configuration</h2>
@@ -444,16 +447,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-primary-subtle mb-2 ml-1">API KEY</label>
-                <input
-                  type="password"
-                  value={openRouterConfig.apiKey}
-                  onChange={(e) => setOpenRouterConfig(prev => ({ ...prev, apiKey: e.target.value }))}
-                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-primary-accent focus:outline-none font-mono text-sm transition-all"
-                  placeholder="sk-or-v1-..."
-                />
-              </div>
+              <Input
+                type="password"
+                label="API KEY"
+                value={openRouterConfig.apiKey}
+                onChange={(e) => setOpenRouterConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+                placeholder="sk-or-v1-..."
+              />
 
               <div>
                 <div className="flex justify-between items-end mb-2 ml-1">
@@ -470,9 +470,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                 <select
                   value={openRouterConfig.model}
                   onChange={(e) => setOpenRouterConfig(prev => ({ ...prev, model: e.target.value }))}
-                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-primary-accent focus:outline-none text-sm"
+                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-xl focus:bg-card focus:border-primary-accent focus:outline-none text-sm transition-all text-primary"
                 >
-                  {availableModels.length > 0 ? (
+                  {availableModels?.length > 0 ? (
                     <optgroup label="Available Models (Fetched from OpenRouter)">
                       {availableModels.map((m: any) => (
                         <option key={m.id} value={m.id}>{m.name || m.id}</option>
@@ -502,21 +502,21 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
               )}
 
               <div className="flex justify-end pt-4">
-                <button
+                <Button
                   onClick={handleOpenRouterSave}
-                  disabled={openRouterStatus === 'validating'}
-                  className="btn-primary"
+                  isLoading={openRouterStatus === 'validating'}
+                  loadingText="Validating..."
                 >
-                  {openRouterStatus === 'validating' ? 'Validating...' : openRouterStatus === 'saved' ? 'Saved' : 'Save Configuration'}
-                </button>
+                  {openRouterStatus === 'saved' ? 'Saved' : 'Save Configuration'}
+                </Button>
               </div>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* === PERPLEXITY TAB === */}
         {activeTab === 'perplexity' && (
-          <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
+          <Card className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="text-xl font-bold text-primary mb-2">Perplexity Search Engine</h2>
@@ -526,36 +526,36 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
             </div>
 
             <div className="bg-surface p-1 rounded-xl flex w-fit border border-border-subtle">
-              <button
+              <Button
                 onClick={() => setPerplexityConfig(prev => ({ ...prev, provider: 'openrouter' }))}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${perplexityConfig.provider === 'openrouter' ? 'bg-card text-primary shadow-sm' : 'text-primary-subtle'}`}
+                variant={perplexityConfig.provider === 'openrouter' ? 'secondary' : 'ghost'}
+                size="sm"
+                className={perplexityConfig.provider === 'openrouter' ? 'bg-card shadow-sm' : ''}
               >
                 Use OpenRouter
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setPerplexityConfig(prev => ({ ...prev, provider: 'direct' }))}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${perplexityConfig.provider === 'direct' ? 'bg-card text-primary shadow-sm' : 'text-primary-subtle'}`}
+                variant={perplexityConfig.provider === 'direct' ? 'secondary' : 'ghost'}
+                size="sm"
+                className={perplexityConfig.provider === 'direct' ? 'bg-card shadow-sm' : ''}
               >
                 Use Direct API
-              </button>
+              </Button>
             </div>
 
             <div className="space-y-4">
               {perplexityConfig.provider === 'direct' && (
                 <div className="animate-in fade-in slide-in-from-top-2">
-                  <label className="block text-xs font-bold text-primary-subtle mb-2 ml-1">PERPLEXITY API KEY</label>
-                  <input
+                  <Input
                     type="password"
+                    label="PERPLEXITY API KEY"
                     value={perplexityConfig.apiKey}
                     onChange={(e) => setPerplexityConfig(prev => ({ ...prev, apiKey: e.target.value }))}
-                    className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-primary-accent focus:outline-none font-mono text-sm"
                     placeholder="pplx-..."
                   />
                 </div>
               )}
-
-
-
 
               <div>
                 <div className="flex justify-between items-end mb-2 ml-1">
@@ -572,9 +572,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                 <select
                   value={perplexityConfig.model}
                   onChange={(e) => setPerplexityConfig(prev => ({ ...prev, model: e.target.value }))}
-                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-primary-accent focus:outline-none text-sm"
+                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-xl focus:bg-card focus:border-primary-accent focus:outline-none text-sm transition-all text-primary"
                 >
-                  {availablePerplexityModels.length > 0 ? (
+                  {availablePerplexityModels?.length > 0 ? (
                     <optgroup label={`Available Models (${perplexityConfig.provider === 'openrouter' ? 'OpenRouter' : 'Inferred'})`}>
                       {availablePerplexityModels.map(m => (
                         <option key={m} value={m}>{m}</option>
@@ -597,36 +597,32 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
               )}
 
               <div className="flex justify-end pt-4">
-                <button
+                <Button
                   onClick={handleSavePerplexity}
-                  className="btn-primary"
                 >
                   {perplexityStatus === 'saved' ? 'Saved' : 'Save Perplexity Settings'}
-                </button>
+                </Button>
               </div>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* === GEMINI TAB === */}
         {activeTab === 'gemini' && (
-          <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
+          <Card className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div>
               <h2 className="text-xl font-bold text-primary mb-2">Google Gemini</h2>
               <p className="text-sm text-primary-subtle">Primary data synthesis and reasoning engine.</p>
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-primary-subtle mb-2 ml-1">API KEY</label>
-                <input
-                  type="password"
-                  value={geminiKey}
-                  onChange={(e) => setGeminiKey(e.target.value)}
-                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-primary-accent focus:outline-none font-mono text-sm"
-                  placeholder="AIza..."
-                />
-              </div>
+              <Input
+                type="password"
+                label="API KEY"
+                value={geminiKey}
+                onChange={(e) => setGeminiKey(e.target.value)}
+                placeholder="AIza..."
+              />
 
               <div>
                 <div className="flex justify-between items-end mb-2 ml-1">
@@ -643,9 +639,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                 <select
                   value={geminiModel}
                   onChange={(e) => setGeminiModel(e.target.value)}
-                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-primary-accent focus:outline-none text-sm"
+                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-xl focus:bg-card focus:border-primary-accent focus:outline-none text-sm transition-all text-primary"
                 >
-                  {availableGeminiModels.length > 0 ? (
+                  {availableGeminiModels?.length > 0 ? (
                     <optgroup label="Available Models (Fetched from Google)">
                       {availableGeminiModels.map((m) => (
                         <option key={m.id} value={m.id}>{m.name || m.id}</option>
@@ -663,24 +659,24 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
               </div>
 
               <div className="flex justify-end pt-4">
-                <button
+                <Button
                   onClick={() => {
                     handleSaveGemini();
                     window.dispatchEvent(new Event('settings-updated'));
                   }}
-                  className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg bg-primary-accent text-white hover:bg-primary-accent-hover shadow-blue-500/40"
+                  leftIcon={geminiStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
+                  variant={geminiStatus === 'saved' ? 'success' : 'primary'}
                 >
-                  {geminiStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
                   {geminiStatus === 'saved' ? 'Settings Saved' : 'Save Gemini Settings'}
-                </button>
+                </Button>
               </div>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* === FIRECRAWL TAB === */}
         {activeTab === 'firecrawl' && (
-          <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
+          <Card className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div>
               <h2 className="text-xl font-bold text-primary mb-2">Firecrawl Scraper</h2>
               <p className="text-sm text-primary-subtle">Advanced web scraping & agentic crawling.</p>
@@ -688,15 +684,14 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-primary-subtle mb-2 ml-1">API KEY (V2)</label>
-                <input
+                <Input
                   type="password"
+                  label="API KEY (V2)"
                   value={firecrawlKey}
                   onChange={(e) => setFirecrawlKey(e.target.value)}
-                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-status-warning focus:outline-none font-mono text-sm"
                   placeholder="fc-..."
                 />
-                <div className="mt-2 text-xs text-primary-subtle flex items-center gap-1">
+                <div className="mt-2 text-xs text-primary-subtle flex items-center gap-1 ml-1">
                   <CheckCircle2 size={12} className="text-status-success" /> Using API V2 (Latest)
                 </div>
               </div>
@@ -708,22 +703,24 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
               )}
 
               <div className="flex justify-end pt-4">
-                <button
+                <Button
                   onClick={handleSaveFirecrawl}
-                  disabled={firecrawlStatus === 'validating'}
-                  className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg bg-status-warning text-white hover:bg-status-warning/90 shadow-orange-500/40"
+                  isLoading={firecrawlStatus === 'validating'}
+                  loadingText="Verifying..."
+                  className="bg-status-warning hover:bg-status-warning/90 shadow-orange-500/40"
+                  variant="primary" // Custom styling overrides this but used for base props
+                  leftIcon={firecrawlStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
                 >
-                  {firecrawlStatus === 'validating' ? <Loader2 size={18} className="animate-spin" /> : firecrawlStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
-                  {firecrawlStatus === 'validating' ? 'Verifying...' : firecrawlStatus === 'saved' ? 'Verified & Saved' : 'Save Firecrawl Key'}
-                </button>
+                  {firecrawlStatus === 'saved' ? 'Verified & Saved' : 'Save Firecrawl Key'}
+                </Button>
               </div>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* === MONITORING TAB === */}
         {activeTab === 'monitoring' && (
-          <div className="bg-card rounded-[32px] shadow-xl shadow-shadow-color/5 border border-border-subtle p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
+          <Card className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div className="flex items-center gap-2 mb-6">
               <Activity size={18} className="text-primary-accent" />
               <h2 className="text-xs font-black text-primary-subtle uppercase tracking-[0.2em]">Live API Status</h2>
@@ -753,7 +750,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
             )}
 
             <ApiStatusIndicator showDetails={true} />
-          </div>
+          </Card>
         )}
 
       </div>

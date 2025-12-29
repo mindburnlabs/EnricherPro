@@ -48,7 +48,12 @@ export class PerplexityService {
         const saved = localStorage.getItem('perplexity_config');
         if (saved) {
             try {
-                return { ...DEFAULT_PERPLEXITY_CONFIG, ...JSON.parse(saved) };
+                const parsed = JSON.parse(saved);
+                // Migration for deprecated models
+                if (parsed.model === 'sonar-reasoning' || parsed.model === 'perplexity/sonar-reasoning') {
+                    parsed.model = 'perplexity/sonar-reasoning-pro';
+                }
+                return { ...DEFAULT_PERPLEXITY_CONFIG, ...parsed };
             } catch (e) {
                 console.error("Failed to parse Perplexity config", e);
             }

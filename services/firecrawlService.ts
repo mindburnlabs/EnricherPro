@@ -47,19 +47,21 @@ export interface ScrapeResponse {
 
 /**
  * Validates the API key.
- * Account and team management endpoints are most stable on v1.
+ * We use /v1/crawl/{id} endpoint to check auth.
+ * A 404 means the key is VALID (auth passed, but job not found).
+ * A 401 means the key is INVALID.
  */
 export const validateFirecrawlApiKey = async (key: string): Promise<boolean> => {
   // Basic format check
-  // Allow explicit test keys or standard format
   if (!key) return false;
   if (key === 'fc-test-key' || key.startsWith('fc-test-')) return true;
   if (!key.trim().startsWith('fc-')) return false;
 
   try {
-    // Attempt real validation against the API
-    // We use v1/team which is lightweight and standard for credit checks
-    const response = await fetch(`${API_V1}/team`, {
+    // Attempt validation by checking status of a non-existent job
+    // If we get 401 -> Invalid Key
+    // If we get 404 -> Valid Key (Auth passed, job just doesn't exist)
+    const response = await fetch(`${API_V1}/crawl/validation_check_dummy_id`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${key.trim()}`,
@@ -68,16 +70,22 @@ export const validateFirecrawlApiKey = async (key: string): Promise<boolean> => 
       signal: AbortSignal.timeout(5000) // 5s strict timeout
     });
 
+    // 200 OK is technically possible if we guessed a real ID, which counts as valid
     if (response.ok) return true;
 
-    // If explicit auth error, return false
+    // 404 means we are authenticated but the resource is missing -> VALID
+    if (response.status === 404) return true;
+
+    // 401/403 means auth failed -> INVALID
     if (response.status === 401 || response.status === 403) {
       console.warn("Firecrawl validation failed: Invalid credentials");
       return false;
     }
 
-    // For other errors (500s), we might be lenient, but usually false is safer
-    return false;
+    // For other errors (500s), we favor user experience and return true to allow saving
+    // This allows offline configuration or API downtime without blocking the user
+    console.warn(`Firecrawl validation got unexpected status ${response.status}, assuming valid for resilience.`);
+    return true;
   } catch (e) {
     console.error("Firecrawl validation network error:", e);
     // If network is completely down, we default to believing the format check
@@ -139,7 +147,7 @@ export const firecrawlAgent = async (prompt: string, schema?: any, urls?: string
       return {
         success: httpResponse.ok,
         data: result,
-        error: httpResponse.ok ? undefined : result.message || `Agent Error: ${httpResponse.status}`,
+        error: httpResponse.ok ? undefined : (httpResponse.status === 402 ? "Firecrawl Plan Limit Exceeded (Payment Required)" : result.message || `Agent Error: ${httpResponse.status}`),
         statusCode: httpResponse.status,
         responseTime: 0, // Will be set by API integration service
         creditsUsed: result.creditsUsed || 40
@@ -704,4 +712,97 @@ export const crawlResultToMarkdown = (crawlData: any): string => {
 
     return `### Source: [${title}](${url})\n\n${content}\n\n---\n`;
   }).join('\n');
+};
+/**
+ * Enhanced Firecrawl Search (v2)
+ * Supports search + scrape in one go, similar to Firesearch.
+ */
+export interface SearchOptions {
+  limit?: number;
+  tbs?: string; // Time-based search (e.g., 'qdr:w' for past week)
+  scrapeOptions?: {
+    formats?: ('markdown' | 'html' | 'rawHtml' | 'links' | 'screenshot' | 'extract')[];
+    onlyMainContent?: boolean;
+  };
+  location?: string; // e.g., 'ru' for Russian results
+  lang?: string;     // e.g., 'ru'
+  country?: string;  // e.g., 'ru'
+  is_news?: boolean; // search news
+  is_video?: boolean; // search video
+  is_image?: boolean; // search images (mapped to sources: ['images'] internally if API supports, or use specialized endpoint if needed)
+}
+
+export const firecrawlSearch = async (query: string, options: SearchOptions = {}): Promise<any> => {
+  const apiKey = getFirecrawlApiKey();
+  if (!apiKey) throw new Error("Firecrawl API Key missing.");
+
+  // TEST KEY MOCK
+  if (apiKey.startsWith('fc-test-')) {
+    console.log('Using Firecrawl TEST KEY - Returning mock SEARCH response');
+    return {
+      success: true,
+      data: {
+        data: [
+          {
+            url: "https://www.nix.ru/test-product",
+            title: "Test Product NIX",
+            description: "Test description including dimensions 10x10x10",
+            markdown: "## Specs\nWeight: 100g\nDimensions: 10x10x10mm"
+          }
+        ]
+      }
+    };
+  }
+
+  const response = await apiIntegrationService.makeRequest(
+    {
+      serviceId: 'firecrawl',
+      operation: 'search',
+      priority: 'high',
+      retryable: true,
+      creditsRequired: 1, // Basic search cost, scrape adds more
+      metadata: { query }
+    },
+    async () => {
+      // Construct V2 Search Body
+      const body: any = {
+        query,
+        limit: options.limit || 5,
+        lang: options.lang || 'ru',
+        location: options.location,
+        scrapeOptions: options.scrapeOptions
+      };
+
+      // Handle simple image "intent" if API allows 'sources' param not officially documented in method signature yet, 
+      // but strictly following standard v2 body. 
+      // Note: Firecrawl docs say `search` output contains generic results. 
+      // For images specifically, users often pass `sources: ['images']` if supported or rely on query keywords. 
+      // We will assume standard body for now.
+
+      const httpResponse = await fetch(`${API_V2}/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey.trim()}`
+        },
+        body: JSON.stringify(body)
+      });
+
+      const result = await httpResponse.json().catch(() => ({}));
+      return {
+        success: httpResponse.ok,
+        data: result,
+        error: httpResponse.ok ? undefined : result.message || `Search failed: ${httpResponse.status}`,
+        statusCode: httpResponse.status,
+        responseTime: 0,
+        creditsUsed: 1
+      };
+    }
+  );
+
+  if (!response.success) {
+    throw new Error(response.error || "Search request failed");
+  }
+
+  return response.data; // Expected { success: true, data: [ { url, markdown, ... } ] }
 };

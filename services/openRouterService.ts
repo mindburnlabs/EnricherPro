@@ -49,7 +49,7 @@ export interface OpenRouterModel {
 }
 
 const DEFAULT_CONFIG: Partial<OpenRouterConfig> = {
-  apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
+  apiKey: (import.meta as any).env?.VITE_OPENROUTER_API_KEY || (typeof process !== 'undefined' ? process.env.VITE_OPENROUTER_API_KEY : '') || '',
   baseUrl: 'https://openrouter.ai/api/v1',
   maxTokens: 4000,
   temperature: 0.1

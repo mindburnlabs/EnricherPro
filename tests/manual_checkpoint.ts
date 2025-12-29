@@ -9,19 +9,19 @@ import {
   extractConsumableModel,
   detectBrand,
   processSupplierTitle
-} from './services/textProcessingService';
+} from '../services/textProcessingService';
 
 import {
   verifyRussianMarketEligibility,
   filterPrintersForRussianMarket,
   calculatePrinterEligibilityScore
-} from './services/russianMarketFilter';
+} from '../services/russianMarketFilter';
 
 import {
   // fetchNIXPackageData,
   // validatePackageDimensions,
   // convertToStandardUnits 
-} from './services/nixService';
+} from '../services/nixService';
 
 import {
   validateProductImage,
@@ -29,9 +29,9 @@ import {
   analyzeBackground,
   detectTextAndLogos,
   detectWatermarks
-} from './services/imageValidationService';
+} from '../services/imageValidationService';
 
-import { PrinterCompatibility, DataSource } from './types';
+import { PrinterCompatibility, DataSource } from '../types';
 
 // Test data for validation
 const TEST_TITLES = [

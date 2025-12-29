@@ -1,6 +1,6 @@
-import { orchestrationService } from './services/orchestrationService';
+import { orchestrationService } from '../services/orchestrationService';
 
-import { ConsumableData } from './types';
+import { ConsumableData } from '../types';
 
 async function runTest() {
     const query = "CF244A"; // Popular HP toner

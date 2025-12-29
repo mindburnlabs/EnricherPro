@@ -173,7 +173,7 @@ export function standardizeYieldNotation(text: string): { converted: string; ext
   });
 
   // Pattern for explicit page/copy yields (including Russian terms)
-  const explicitYieldPattern = /(\d+(?:[.,]\d+)?)\s*(pages?|copies?|страниц|копий|мл|ml)\b/gi;
+  const explicitYieldPattern = /(\d+(?:[.,]\d+)?)\s*(pages?|copies?|страниц|жизней|стр\.?|копий|мл|ml)(?=\s|$|[.,!])/gi;
 
   result.replace(explicitYieldPattern, (match, number, unit) => {
     const normalizedNumber = number.replace(',', '.');

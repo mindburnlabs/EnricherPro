@@ -14,6 +14,7 @@ import { processSupplierTitle } from './textProcessingService';
 import { nixService } from './nixService';
 import { perplexityService } from './perplexityService';
 import { startCrawlJob, getCrawlJobStatus, crawlResultToMarkdown, deepAgentResearch, firecrawlScrape, mapWebsite, extractData } from './firecrawlService';
+import { deepResearchService } from './deepResearchService';
 import { synthesizeConsumableData as synthesizeWithGemini } from './geminiService';
 import { getOpenRouterService } from './openRouterService';
 import { evaluateQualityGates } from './qualityGates';
@@ -33,6 +34,14 @@ export interface WorkflowState {
 
 // Update ProcessingEngine type
 export type ProcessingEngine = 'gemini' | 'openrouter' | 'firecrawl';
+
+interface ResearchResult {
+    nixInfo: any;
+    researchSummary: string;
+    researchUrls: string[];
+    deepScrapeContent: string;
+    structuredExtractionData: any;
+}
 
 class OrchestrationService {
     private static instance: OrchestrationService;
@@ -80,134 +89,20 @@ class OrchestrationService {
         try {
             // --- STEP 1: NORMALIZATION & PARSING ---
             onProgress('parsing');
-            logs.push(`Step 1: Normalization & Parsing for "${rawQuery}"`);
-
-            // Use the comprehensive textProcessingService
-            const processedText = processSupplierTitle(rawQuery);
-
-            // Map parsed data to local context
-            if (processedText.brand.brand) data.brand = processedText.brand.brand;
-            if (processedText.model.model) data.model = processedText.model.model;
-            if (processedText.detectedType.value !== 'unknown') data.consumable_type = processedText.detectedType.value;
-            if (processedText.detectedColor.value) data.color = processedText.detectedColor.value;
-            if (processedText.yieldInfo.length > 0) {
-                data.yield = {
-                    value: processedText.yieldInfo[0].value,
-                    unit: processedText.yieldInfo[0].unit
-                };
-            }
-
-            // Provide initial evidence from parsing
-            data._evidence = {
-                brand: { value: data.brand || 'unknown', confidence: processedText.brand.confidence, extraction_method: processedText.brand.detectionMethod, urls: [] },
-                model: { value: data.model || 'unknown', confidence: processedText.model.confidence, extraction_method: processedText.model.extractionMethod, urls: [] }
-            };
+            const { processedText, partialData } = this.runNormalizationPhase(rawQuery, logs);
+            Object.assign(data, partialData);
 
             // --- STEP 2: AGENTIC RESEARCH (Parallel Consensus) ---
             onProgress('discovery');
-            logs.push(`Step 2: Agentic Research using ${options.engine === 'firecrawl' ? 'Firecrawl + Perplexity (SOTA Consensus)' : options.engine}`);
+            const researchResult = await this.runResearchPhase(data, rawQuery, options, logs);
 
-            const researchQuery = `${data.brand || ''} ${data.model || rawQuery} ${data.consumable_type !== 'unknown' && data.consumable_type ? data.consumable_type : ''}`;
-
-            // Define typed research results containers (Initialized to Error 'Not Run')
-            let nixResult: Result<any> = Err(new Error('Agent not scheduled'));
-            let firecrawlResult: Result<any> = Err(new Error('Agent not scheduled'));
-            let discoveryResult: Result<any> = Err(new Error('Agent not scheduled'));
-            let openRouterResult: Result<any> = Err(new Error('Agent not scheduled'));
-
-            // PARALLEL EXECUTION PLAN DAG
-            const tasks: Promise<void>[] = [];
-
-            // Task A: NIX.ru (Logistics Agent)
-            // Independent task, runs alongside discovery
-            tasks.push((async () => {
-                if (data.model) {
-                    const res = await this.executeAgent('NIX.ru', nixService.getPackagingInfo(data.model, data.brand || ''));
-                    nixResult = res;
-                    if (!res.success) logs.push(`Warning: NIX.ru agent failed: ${this.getError(res)}`);
-                } else {
-                    nixResult = Ok(null); // Explicit null for 'not applicable'
-                }
-            })());
-
-            // Task B: Market Discovery (Consensus or Single Mode)
-            if (options.engine === 'firecrawl') {
-                // SOTA CONSENSUS MODE: Firecrawl + Perplexity
-                logs.push("Executing Parallel Research Strategy: Deep Agent + Broad LLM Search");
-
-                // 1. Firecrawl (Deep Agent)
-                tasks.push((async () => {
-                    const res = await this.executeAgent('Firecrawl Deep Agent', deepAgentResearch(researchQuery, data.brand || undefined));
-                    firecrawlResult = res;
-                    if (!res.success) logs.push(`Warning: Firecrawl agent failed: ${this.getError(res)}`);
-                })());
-
-                // 2. Perplexity (Broad Context Augmentation)
-                tasks.push((async () => {
-                    const res = await this.executeAgent('Perplexity Broad Search', perplexityService.discoverSources(researchQuery));
-                    discoveryResult = res;
-                    if (!res.success) logs.push(`Warning: Perplexity agent failed: ${this.getError(res)}`);
-                })());
-
-            } else {
-                // Classic Single-Engine Mode
-                tasks.push((async () => {
-                    const promise = options.engine === 'openrouter'
-                        ? getOpenRouterService()?.researchProductContext(rawQuery)
-                        : perplexityService.discoverSources(researchQuery);
-
-                    if (options.engine === 'openrouter') {
-                        const res = await this.executeAgent('OpenRouter Agent', promise || Promise.resolve(null));
-                        openRouterResult = res;
-                        if (!res.success) logs.push(`Warning: OpenRouter agent failed: ${this.getError(res)}`);
-                        discoveryResult = openRouterResult; // alias
-                    } else {
-                        const res = await this.executeAgent('Perplexity Agent', promise || Promise.resolve(null));
-                        discoveryResult = res;
-                        if (!res.success) logs.push(`Warning: Perplexity agent failed: ${this.getError(res)}`);
-                    }
-                })());
-            }
-
-            // Await all parallel agents
-            await Promise.all(tasks);
-
-            // Synthesize Context from Successes (Result Unwrapping)
-            const nixInfo = nixResult.success ? nixResult.data : null;
-
-            // Resolve the best available discovery data
-            let effectiveDiscovery = discoveryResult.success ? discoveryResult.data : null;
-
-            // Fallback strategy: If Perplexity Failed, check if Firecrawl succeeded to provide basic context
-            if (!effectiveDiscovery && options.engine === 'firecrawl' && firecrawlResult.success) {
-                effectiveDiscovery = {
-                    summary: "Perplexity failed. Using Firecrawl data for synthesis context.",
-                    urls: []
-                };
-            } else if (!effectiveDiscovery) {
-                effectiveDiscovery = { summary: "Search Agent Failed completely.", urls: [] };
-            }
-
-            // Process Logistics Result
-            if (nixInfo) {
-                // ... (Existing NIX logic unchanged)
-                data.packaging_from_nix = nixInfo;
-                logs.push(`Logistics Agent: Found NIX data (${nixInfo.weight_g}g) at ${nixInfo.source_url}`);
-                // Add strict evidence
-                if (!data._evidence) data._evidence = {};
-                data._evidence.packaging_from_nix = {
-                    value: nixInfo,
-                    urls: nixInfo.source_url ? [nixInfo.source_url] : [],
-                    extraction_method: 'nix_logistics_agent',
-                    confidence: 1.0,
-                    source_type: 'nix_ru'
-                };
-
-                // Add to sources list
-                if (nixInfo.source_url) {
-                    if (!data.sources) data.sources = [];
+            // Merge logistics data immediately
+            if (researchResult.nixInfo) {
+                data.packaging_from_nix = researchResult.nixInfo;
+                if (!data.sources) data.sources = [];
+                if (researchResult.nixInfo.source_url) {
                     data.sources.push({
-                        url: nixInfo.source_url,
+                        url: researchResult.nixInfo.source_url,
                         sourceType: 'nix_ru',
                         timestamp: new Date(),
                         dataConfirmed: ['weight', 'dimensions'],
@@ -215,388 +110,577 @@ class OrchestrationService {
                         extractionMethod: 'nix_agent'
                     });
                 }
-            } else {
-                logs.push("Logistics Agent: NIX.ru data NOT found.");
-            }
-
-            // Normalize Discovery Result
-            let researchSummary = "";
-            let researchUrls: string[] = [];
-
-            // Restore consensus mode flag for logic
-            const isConsensusMode = options.engine === 'firecrawl';
-
-            try {
-                if (isConsensusMode) {
-                    // MERGE SUMMARY STRATEGY (Type-Safe Unwrapping)
-                    const fcData = firecrawlResult.success ? firecrawlResult.data : null;
-                    const pplxData = discoveryResult.success ? discoveryResult.data : null; // discoveryResult holds PPLX data in consensus
-
-                    const fcSummary = fcData ? `
-                     [FIRECRAWL_AGENT_FINDINGS]
-                     MPN: ${fcData.mpn || 'N/A'}
-                     Specifications: ${JSON.stringify(fcData.specifications || {}, null, 2)}
-                     Compatibility: ${JSON.stringify(fcData.compatibility || {}, null, 2)}
-                     ` : "Firecrawl Agent returned no data or failed.";
-
-                    const pplxSummary = pplxData ? `
-                     [PERPLEXITY_BROAD_SEARCH]
-                     ${pplxData.summary}
-                     ` : "Perplexity returned no data or failed.";
-
-                    researchSummary = `${fcSummary}\n\n${pplxSummary}`;
-
-                    // Merge URLs safely
-                    const fcUrls = fcData?.compatibility?.sources?.map((s: any) => s.url) || [];
-                    const pplxUrls = pplxData?.urls || [];
-                    researchUrls = [...new Set([...fcUrls, ...pplxUrls])].filter(u => !!u);
-
-                    logs.push(`Consensus: Merged ${fcUrls.length} Deep Agent URLs and ${pplxUrls.length} Broad Search URLs.`);
-
-                } else if (options.engine === 'openrouter') {
-                    if (openRouterResult.success && openRouterResult.data) {
-                        researchSummary = openRouterResult.data.researchSummary || openRouterResult.data.summary;
-                        researchUrls = openRouterResult.data.urls || [];
-                    }
-                } else { // Gemini / Default Perplexity
-                    if (discoveryResult.success && discoveryResult.data) {
-                        researchSummary = discoveryResult.data.summary;
-                        researchUrls = discoveryResult.data.urls || [];
-                    }
-                }
-            } catch (err) {
-                console.warn("Primary research normalization failed:", err);
-            }
-
-            // Fallback skipped in Consensus mode because we already ran the fallback (Perplexity) in parallel!
-            // But if BOTH failed, we might be in trouble.
-            if (!researchSummary || researchSummary.length < 50) {
-                if (isConsensusMode) {
-                    logs.push("CRITICAL: Both Firecrawl and Perplexity failed to return meaningful data.");
-                } else {
-                    // Standard fallback logic
-                    logs.push(`Primary Research (${options.engine}) yielded insufficient data. Attempting Switch-over...`);
-                    // ... (existing fallback logic if needed, but for brevity assume coverage)
-                }
-            }
-
-            logs.push(`Discovery Agent: Found ${researchUrls.length} sources.`);
-
-            // --- STEP 2.5: DEEP CONTENT EXTRACTION (Firecrawl Maximization) ---
-            let deepScrapeContent = "";
-            let structuredExtractionData: any = null;
-
-            if (researchUrls.length > 0) {
-                const highValueDomains = ['nix.ru', 'hp.com', 'canon', 'brother', 'epson', 'kyocera', 'xerox', 'ricoh', 'lexmark', 'cartridge.ru'];
-                // Prioritize unique high-value domains, limit to 2 to avoid latency spikes
-                const targetUrls = researchUrls
-                    .filter((url, index, self) => highValueDomains.some(d => url.toLowerCase().includes(d)) && self.indexOf(url) === index)
-                    .slice(0, 2);
-
-                if (targetUrls.length > 0) {
-                    logs.push(`Deep Research: Targeted Extraction on ${targetUrls.length} high-value URLs via Firecrawl...`);
-                    try {
-                        const extractionSchema = {
-                            type: "object",
-                            properties: {
-                                brand: { type: "string" },
-                                model: { type: "string" },
-                                yield: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" } } },
-                                logistics: {
-                                    type: "object",
-                                    properties: {
-                                        weight_g: { type: "number" },
-                                        width_mm: { type: "number" },
-                                        height_mm: { type: "number" },
-                                        depth_mm: { type: "number" }
-                                    }
-                                }
-                            }
-                        };
-
-                        const extractedData = await extractData(targetUrls, "Extract product specifications and package dimensions.", extractionSchema);
-
-                        if (extractedData && extractedData.success && extractedData.data && extractedData.data.items) {
-                            structuredExtractionData = extractedData.data.items;
-                            logs.push(`Deep Research: Successfully extracted structured data from ${extractedData.data.items.length} pages.`);
-                            deepScrapeContent = JSON.stringify(extractedData.data.items, null, 2);
-                        } else {
-                            logs.push("Deep Research: Extraction yielded no items, falling back to deep scrape with actions...");
-                            const scrapePromises = targetUrls.map(url => firecrawlScrape(url, {
-                                formats: ['markdown'],
-                                actions: [
-                                    { type: 'scroll', direction: 'down' },
-                                    { type: 'wait', milliseconds: 1500 }
-                                ],
-                                onlyMainContent: true
-                            }));
-                            const scrapeResults = await Promise.all(scrapePromises);
-                            deepScrapeContent = scrapeResults.map((res, idx) => {
-                                if (res.success && res.data.markdown) {
-                                    const content = res.data.markdown.substring(0, 8000);
-                                    return `### DEEP SCRAPE OF: ${targetUrls[idx]}\n${content}\n\n`;
-                                }
-                                return "";
-                            }).join("\n");
-                        }
-                    } catch (scrapeErr) {
-                        logs.push(`Deep Research Warning: Extraction/Scrape failed - ${(scrapeErr as Error).message}`);
-                    }
-                }
+                // Add strict evidence
+                if (!data._evidence) data._evidence = {};
+                data._evidence.packaging_from_nix = {
+                    value: researchResult.nixInfo,
+                    urls: researchResult.nixInfo.source_url ? [researchResult.nixInfo.source_url] : [],
+                    extraction_method: 'nix_logistics_agent',
+                    confidence: 1.0,
+                    source_type: 'nix_ru'
+                };
             }
 
             // --- STEP 3, 4, 5: SYNTHESIS, MERGE, GATE CHECK PROPER (Reactive Self-Correction Loop) ---
             onProgress('enrichment');
+            const { finalData: finalDataObj, thinking } = await this.runSynthesisLoop(
+                data,
+                processedText,
+                researchResult,
+                rawQuery,
+                options,
+                logs,
+                onProgress // Pass onProgress to update 'gate_check'
+            );
 
-            let attempts = 0;
-            const maxAttempts = 3; // Increased to 3 to allow for 1-2 reactive research rounds
-            let feedback = "";
-            let remedialResearchContext = ""; // Stores findings from reactive steps
-            let finalDataObj: ConsumableData;
-            let synthesisResult;
-            let gateResult;
-
-            do {
-                attempts++;
-                logs.push(`Step 3: Synthesis (${options.engine}) - Attempt ${attempts}/${maxAttempts}`);
-                if (feedback) logs.push(`Context: Applying Self-Correction & Reactive Research...`);
-
-                const synthesisContext = `
-                            [PARSED_IDENTITY]
-                            Brand: ${data.brand}
-                            Model: ${data.model}
-                            Type: ${data.consumable_type}
-                            
-                            [LOGISTICS_DATA]
-                            ${JSON.stringify(nixInfo || { status: 'missing' })}
-                            
-                            [RESEARCH_SUMMARY (CONSENSUS)]
-                            ${researchSummary}
-                            
-                            [DEEP_RESEARCH_CONTENT]
-                            ${deepScrapeContent}
-
-                            [REACTIVE_RESEARCH_FINDINGS]
-                            ${remedialResearchContext}
-
-                            [DISCOVERED_URLS]
-                            ${researchUrls.join('\n')}
-                            `;
-
-                if (options.engine === 'openrouter') {
-                    const orService = getOpenRouterService();
-                    if (!orService) throw new Error("OpenRouter service not initialized");
-                    synthesisResult = await orService.synthesizeConsumableData(synthesisContext, rawQuery, processedText);
-                } else {
-                    // Default Gemini
-                    try {
-                        synthesisResult = await synthesizeWithGemini(
-                            synthesisContext,
-                            researchQuery,
-                            processedText,
-                            structuredExtractionData, // Pass structured Firecrawl data explicitly
-                            feedback // Pass feedback to trigger self-correction
-                        );
-                    } catch (geminiError) {
-                        logs.push(`Gemini Synthesis Failed: ${(geminiError as Error).message}. Attempting Fallback...`);
-                        const orService = getOpenRouterService();
-
-                        if (orService) {
-                            try {
-                                synthesisResult = await orService.synthesizeConsumableData(synthesisContext, rawQuery, processedText);
-                            } catch (orError) {
-                                logs.push(`OpenRouter Fallback Failed: ${(orError as Error).message}.`);
-                            }
-                        } else {
-                            logs.push("OpenRouter fallback unavailable (No Key Configured).");
-                        }
-
-                        // FINAL RESORT: Deterministic Synthesis (Brainless)
-                        // FINAL RESORT: Deterministic Synthesis (Brainless)
-                        if (!synthesisResult) {
-                            logs.push("CRITICAL: All LLMs failed. Attempting Deterministic Synthesis...");
-
-                            let failoverSource = "Regex Parsing";
-                            const fallbackItem: any = {};
-
-                            if (Array.isArray(structuredExtractionData) && structuredExtractionData.length > 0) {
-                                logs.push("Using Firecrawl Structured Data for failover.");
-                                failoverSource = "Firecrawl Data";
-                                Object.assign(fallbackItem, structuredExtractionData[0]);
-                            } else {
-                                logs.push("No specific structured data found. Using basic Regex parsing.");
-                            }
-
-                            // Construct a basic result from what we scraped/parsed
-                            synthesisResult = {
-                                data: {
-                                    brand: fallbackItem.brand || processedText.brand.brand || 'Unknown',
-                                    model: fallbackItem.model || processedText.model.model || rawQuery,
-                                    mpn: fallbackItem.mpn || fallbackItem.model, // MPN fallback
-                                    consumable_type: processedText.detectedType.value,
-                                    color: processedText.detectedColor.value,
-                                    yield: fallbackItem.yield || (processedText.yieldInfo[0] ? { value: processedText.yieldInfo[0].value, unit: processedText.yieldInfo[0].unit } : null),
-                                    compatibility: fallbackItem.compatibility || [],
-                                    sources: []
-                                },
-                                thinking: `LLM Systems Down. Generated via Deterministic Failover using ${failoverSource}.`
-                            };
-                        }
-                    }
-                }
-
-                const synthesizedData = synthesisResult.data;
-                logs.push(`Synthesis Complete. Thinking: ${synthesisResult.thinking.substring(0, 50)}...`);
-
-                // --- STEP 4: MERGE & FINALIZE ---
-                // Merge strategy: Start with Synthesized (smartest), Overwrite with Deterministic Logic
-                const mergedData: ConsumableData = {
-                    ...synthesizedData,
-                    ...(data.brand ? { brand: data.brand } : {}),
-                    ...(data.model ? { model: data.model } : {}),
-                    ...(data.consumable_type && data.consumable_type !== 'unknown' ? { consumable_type: data.consumable_type } : {}),
-                    ...(data.yield ? { yield: data.yield } : {}),
-                    packaging_from_nix: nixInfo || synthesizedData.packaging_from_nix || null,
-                    _evidence: { ...data._evidence, ...synthesizedData._evidence },
-                    sources: [... (data.sources || []), ...(synthesizedData.sources || [])]
-                };
-
-                // --- STEP 5: QUALITY GATES ---
-                onProgress('gate_check');
-                finalDataObj = this.finalizeData(mergedData);
-                gateResult = evaluateQualityGates(finalDataObj);
-
-                logs.push(`Gate Result (Attempt ${attempts}): ${gateResult.passed ? 'PASS' : 'FAIL'}`);
-
-                if (!gateResult.passed) {
-                    const errors = [...gateResult.report.logistics.flags, ...gateResult.report.compatibility.flags];
-                    feedback = errors.join("; ");
-                    logs.push(`Gate Failures: ${feedback}`);
-
-                    // REACTIVE RESEARCH LOGIC
-                    // Identify what crucial info is missing and SEARCH for it specifically
-                    if (attempts < maxAttempts) {
-                        const remedialQueries: string[] = [];
-                        const baseQuery = `${finalDataObj.brand || ''} ${finalDataObj.model || rawQuery}`;
-
-                        if (errors.some(e => e.includes('Weight') || e.includes('Dimensions') || e.includes('Logistics'))) {
-                            remedialQueries.push(`${baseQuery} package shipping weight dimensions specification`);
-                            logs.push("Reactive: Detected missing Logistics. Scheduling remedial search...");
-                        }
-                        if (errors.some(e => e.includes('Yield'))) {
-                            remedialQueries.push(`${baseQuery} page yield capacity ISO/IEC`);
-                            logs.push("Reactive: Detected missing Yield. Scheduling remedial search...");
-                        }
-                        if (errors.some(e => e.includes('Printer') || e.includes('Compatibility'))) {
-                            remedialQueries.push(`${baseQuery} compatible printers series list`);
-                            logs.push("Reactive: Detected missing Compatibility. Scheduling remedial search...");
-                        }
-
-                        if (remedialQueries.length > 0) {
-                            logs.push(`Executing ${remedialQueries.length} Remedial Research Queries...`);
-                            // We use Perplexity for fast, targeted answers
-                            try {
-                                const remedialResults = await Promise.all(
-                                    remedialQueries.map(q => perplexityService.discoverSources(q))
-                                );
-
-                                remedialResults.forEach((res, idx) => {
-                                    if (res) {
-                                        remedialResearchContext += `\n\n[REMEDIAL_FINDING_ATTEMPT_${attempts}_QUERY_"${remedialQueries[idx]}"]\n${res.summary}`;
-                                        if (res.urls) researchUrls.push(...res.urls);
-                                    }
-                                });
-                                logs.push("Reactive: Remedial data acquired and added to context.");
-                            } catch (remedialErr) {
-                                logs.push(`Reactive Research Failed: ${(remedialErr as Error).message}`);
-                            }
-                        }
-                    }
-                } else {
-                    feedback = "";
-                }
-
-            } while (!gateResult.passed && attempts < maxAttempts);
-
-            // POST-LOOP STATUS SETTING
-            if (gateResult.passed) {
-                finalDataObj.automation_status = 'done';
-                finalDataObj.publish_ready = true;
-            } else {
-                finalDataObj.automation_status = 'needs_review';
-                finalDataObj.publish_ready = false;
-                finalDataObj.validation_errors = [
-                    ...(finalDataObj.validation_errors || []),
-                    ...gateResult.report.logistics.flags,
-                    ...gateResult.report.compatibility.flags
-                ];
-                if (attempts >= maxAttempts) logs.push("Max attempts reached. Marking for manual review.");
-            }
-
-            return {
-                id: jobId,
-                input_raw: rawQuery,
-                input_hash: btoa(unescape(encodeURIComponent(rawQuery))),
-                data: finalDataObj,
-                status: finalDataObj.automation_status === 'done' ? 'ok' :
-                    finalDataObj.automation_status === 'needs_review' ? 'needs_review' : 'failed',
-                ruleset_version: '2.5.0-SOTA', // Upgraded version
-                parser_version: '2.0.0',
-                created_at: Date.now(),
-                updated_at: Date.now(),
-                processed_at: new Date().toISOString(),
-                evidence: {
-                    logs,
-                    quality_metrics: this.calculateQualityMetrics(finalDataObj, gateResult),
-                    sources: (finalDataObj.sources || []).map(s => ({
-                        ...s,
-                        source_type: s.sourceType,
-                        extracted_at: s.timestamp ? new Date(s.timestamp).toISOString() : new Date().toISOString(),
-                        claims: s.dataConfirmed || [],
-                        evidence_snippets_by_claim: {},
-                        extraction_method: s.extractionMethod || 'unknown'
-                    })),
-                    thinking_process: synthesisResult!.thinking // Use thinking from final attempt
-                },
-                error_details: finalDataObj.validation_errors?.map(e => ({
-                    code: 'GATE_FAILURE',
-                    message: e,
-                    severity: 'medium',
-                    category: 'validation',
-                    timestamp: new Date().toISOString()
-                }))
-            };
+            // Construct Final Item
+            return this.constructEnrichedItem(jobId, rawQuery, finalDataObj, logs, researchResult.researchUrls, thinking);
 
         } catch (e) {
-            const err = e as Error;
-            console.error(`[OrchestrationService] Unified Job ${jobId} failed: `, err);
-            logs.push(`FATAL ERROR: ${err.message} `);
-            logs.push(`STACK: ${err.stack} `);
-            return {
-                id: jobId,
-                input_raw: rawQuery,
-                input_hash: '',
-                data: this.finalizeData(data),
-                status: 'failed',
-                validation_errors: [err.message],
-                ruleset_version: '2.0',
-                parser_version: '2.0',
-                created_at: Date.now(),
-                updated_at: Date.now(),
-                processed_at: new Date().toISOString(),
-                evidence: {
-                    logs,
-                    sources: []
-                },
-                error_details: [{
-                    code: 'SYSTEM_ERROR',
-                    message: err.message,
-                    severity: 'critical',
-                    category: 'system',
-                    timestamp: new Date().toISOString()
-                }]
+            return this.handleFatalError(jobId, rawQuery, data, logs, e as Error);
+        }
+    }
+
+    private runNormalizationPhase(rawQuery: string, logs: string[]) {
+        logs.push(`Step 1: Normalization & Parsing for "${rawQuery}"`);
+
+        // Use the comprehensive textProcessingService
+        const processedText = processSupplierTitle(rawQuery);
+
+        const data: Partial<ConsumableData> = {};
+
+        // Map parsed data to local context
+        if (processedText.brand.brand) data.brand = processedText.brand.brand;
+        if (processedText.model.model) data.model = processedText.model.model;
+        if (processedText.detectedType.value !== 'unknown') data.consumable_type = processedText.detectedType.value;
+        if (processedText.detectedColor.value) data.color = processedText.detectedColor.value;
+        if (processedText.yieldInfo.length > 0) {
+            data.yield = {
+                value: processedText.yieldInfo[0].value,
+                unit: processedText.yieldInfo[0].unit
             };
         }
+
+        // Provide initial evidence from parsing
+        data._evidence = {
+            brand: { value: data.brand || 'unknown', confidence: processedText.brand.confidence, extraction_method: processedText.brand.detectionMethod, urls: [] },
+            model: { value: data.model || 'unknown', confidence: processedText.model.confidence, extraction_method: processedText.model.extractionMethod, urls: [] }
+        };
+
+        return { processedText, partialData: data };
+    }
+
+    private async runResearchPhase(
+        data: Partial<ConsumableData>,
+        rawQuery: string,
+        options: { engine: ProcessingEngine },
+        logs: string[]
+    ): Promise<ResearchResult> {
+        logs.push(`Step 2: Agentic Research using ${options.engine === 'firecrawl' ? 'Firecrawl + Perplexity (SOTA Consensus)' : options.engine}`);
+
+        const researchQuery = `${data.brand || ''} ${data.model || rawQuery} ${data.consumable_type !== 'unknown' && data.consumable_type ? data.consumable_type : ''}`;
+
+        // Define typed research results containers (Initialized to Error 'Not Run')
+        let nixResult: Result<any> = Err(new Error('Agent not scheduled'));
+        let firecrawlResult: Result<any> = Err(new Error('Agent not scheduled'));
+        let discoveryResult: Result<any> = Err(new Error('Agent not scheduled'));
+        let openRouterResult: Result<any> = Err(new Error('Agent not scheduled'));
+
+        // PARALLEL EXECUTION PLAN DAG
+        const tasks: Promise<void>[] = [];
+
+        // Task A: NIX.ru (Logistics Agent)
+        tasks.push((async () => {
+            if (data.model) {
+                const res = await this.executeAgent('NIX.ru', nixService.getPackagingInfo(data.model, data.brand || ''));
+                nixResult = res;
+                if (!res.success) logs.push(`Warning: NIX.ru agent failed: ${this.getError(res)}`);
+            } else {
+                nixResult = Ok(null); // Explicit null for 'not applicable'
+            }
+        })());
+
+        // Task B: Market Discovery (Consensus or Single Mode)
+        if (options.engine === 'firecrawl') {
+            // SOTA CONSENSUS MODE: Firecrawl + Perplexity
+            logs.push("Executing Parallel Research Strategy: Deep Agent + Broad LLM Search");
+
+            // 1. Firecrawl (Deep Agent via DeepResearchService)
+            tasks.push((async () => {
+                // Use the new Firesearch-style workflow
+                const res = await this.executeAgent('Firecrawl Deep Research', deepResearchService.executeWorkflow(researchQuery));
+                firecrawlResult = res;
+                if (!res.success) {
+                    logs.push(`Warning: DeepResearchService failed: ${this.getError(res)}`);
+                } else {
+                    logs.push(`DeepResearchService finished with status: ${res.data.status}`);
+                    // Append logs from the deep research service
+                    if (res.data.logs) logs.push(...res.data.logs);
+                }
+            })());
+
+            // 2. Perplexity (Broad Context Augmentation)
+            tasks.push((async () => {
+                const res = await this.executeAgent('Perplexity Broad Search', perplexityService.discoverSources(researchQuery));
+                discoveryResult = res;
+                if (!res.success) logs.push(`Warning: Perplexity agent failed: ${this.getError(res)}`);
+            })());
+
+        } else {
+            // Classic Single-Engine Mode
+            tasks.push((async () => {
+                const promise = options.engine === 'openrouter'
+                    ? getOpenRouterService()?.researchProductContext(rawQuery)
+                    : perplexityService.discoverSources(researchQuery);
+
+                if (options.engine === 'openrouter') {
+                    const res = await this.executeAgent('OpenRouter Agent', promise || Promise.resolve(null));
+                    openRouterResult = res;
+                    if (!res.success) logs.push(`Warning: OpenRouter agent failed: ${this.getError(res)}`);
+                    discoveryResult = openRouterResult; // alias
+                } else {
+                    const res = await this.executeAgent('Perplexity Agent', promise || Promise.resolve(null));
+                    discoveryResult = res;
+                    if (!res.success) logs.push(`Warning: Perplexity agent failed: ${this.getError(res)}`);
+                }
+            })());
+        }
+
+        // Await all parallel agents
+        await Promise.all(tasks);
+
+        // Synthesize Context from Successes (Result Unwrapping)
+        const nixInfo = nixResult.success ? nixResult.data : null;
+
+        // Resolve the best available discovery data
+        let effectiveDiscovery = discoveryResult.success ? discoveryResult.data : null;
+
+        // Fallback strategy: If Perplexity Failed, check if Firecrawl succeeded to provide basic context
+        if (!effectiveDiscovery && options.engine === 'firecrawl' && firecrawlResult.success) {
+            effectiveDiscovery = {
+                summary: "Perplexity failed. Using Firecrawl data for synthesis context.",
+                urls: []
+            };
+        } else if (!effectiveDiscovery) {
+            effectiveDiscovery = { summary: "Search Agent Failed completely.", urls: [] };
+        }
+
+        // Process Logistics Result
+        if (nixInfo) {
+            logs.push(`Logistics Agent: Found NIX data (${nixInfo.weight_g}g) at ${nixInfo.source_url}`);
+        } else {
+            logs.push("Logistics Agent: NIX.ru data NOT found.");
+        }
+
+        // Normalize Discovery Result
+        let researchSummary = "";
+        let researchUrls: string[] = [];
+
+        // Restore consensus mode flag for logic
+        const isConsensusMode = options.engine === 'firecrawl';
+
+        try {
+            if (isConsensusMode) {
+                // MERGE SUMMARY STRATEGY (Type-Safe Unwrapping)
+                const fcData = firecrawlResult.success ? firecrawlResult.data : null;
+                const pplxData = discoveryResult.success ? discoveryResult.data : null; // discoveryResult holds PPLX data in consensus
+
+                const fcSummary = fcData ? `
+                 [FIRECRAWL_DEEP_RESEARCH_DATA]
+                 Status: ${fcData.status}
+                 Extracted Data: ${JSON.stringify(fcData.data || {}, null, 2)}
+                 ` : "Firecrawl Deep Research returned no data or failed.";
+
+                const pplxSummary = pplxData ? `
+                 [PERPLEXITY_BROAD_SEARCH]
+                 ${pplxData.summary}
+                 ` : "Perplexity returned no data or failed.";
+
+                researchSummary = `${fcSummary}\n\n${pplxSummary}`;
+
+                // Merge URLs safely
+                const fcUrls = fcData?.compatibility?.sources?.map((s: any) => s.url) || [];
+                const pplxUrls = pplxData?.urls || [];
+                researchUrls = [...new Set([...fcUrls, ...pplxUrls])].filter(u => !!u);
+
+                logs.push(`Consensus: Merged ${fcUrls.length} Deep Agent URLs and ${pplxUrls.length} Broad Search URLs.`);
+
+            } else if (options.engine === 'openrouter') {
+                if (openRouterResult.success && openRouterResult.data) {
+                    researchSummary = openRouterResult.data.researchSummary || openRouterResult.data.summary;
+                    researchUrls = openRouterResult.data.urls || [];
+                }
+            } else { // Gemini / Default Perplexity
+                if (discoveryResult.success && discoveryResult.data) {
+                    researchSummary = discoveryResult.data.summary;
+                    researchUrls = discoveryResult.data.urls || [];
+                }
+            }
+        } catch (err) {
+            console.warn("Primary research normalization failed:", err);
+        }
+
+        if (!researchSummary || researchSummary.length < 50) {
+            if (isConsensusMode) {
+                logs.push("CRITICAL: Both Firecrawl and Perplexity failed to return meaningful data.");
+            } else {
+                logs.push(`Primary Research (${options.engine}) yielded insufficient data.`);
+            }
+        }
+
+        logs.push(`Discovery Agent: Found ${researchUrls.length} sources.`);
+
+        // --- STEP 2.5: DEEP CONTENT EXTRACTION (Firecrawl Maximization) ---
+        let deepScrapeContent = "";
+        let structuredExtractionData: any = null;
+
+        if (researchUrls.length > 0) {
+            const highValueDomains = ['nix.ru', 'hp.com', 'canon', 'brother', 'epson', 'kyocera', 'xerox', 'ricoh', 'lexmark', 'cartridge.ru'];
+            // Prioritize unique high-value domains, limit to 2 to avoid latency spikes
+            const targetUrls = researchUrls
+                .filter((url, index, self) => highValueDomains.some(d => url.toLowerCase().includes(d)) && self.indexOf(url) === index)
+                .slice(0, 2);
+
+            if (targetUrls.length > 0) {
+                logs.push(`Deep Research: Targeted Extraction on ${targetUrls.length} high-value URLs via Firecrawl...`);
+                try {
+                    const extractionSchema = {
+                        type: "object",
+                        properties: {
+                            brand: { type: "string" },
+                            model: { type: "string" },
+                            yield: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" } } },
+                            logistics: {
+                                type: "object",
+                                properties: {
+                                    weight_g: { type: "number" },
+                                    width_mm: { type: "number" },
+                                    height_mm: { type: "number" },
+                                    depth_mm: { type: "number" }
+                                }
+                            }
+                        }
+                    };
+
+                    const extractedData = await extractData(targetUrls, "Extract product specifications and package dimensions.", extractionSchema);
+
+                    if (extractedData && extractedData.success && extractedData.data && extractedData.data.items) {
+                        structuredExtractionData = extractedData.data.items;
+                        logs.push(`Deep Research: Successfully extracted structured data from ${extractedData.data.items.length} pages.`);
+                        deepScrapeContent = JSON.stringify(extractedData.data.items, null, 2);
+                    } else {
+                        logs.push("Deep Research: Extraction yielded no items, falling back to deep scrape with actions...");
+                        const scrapePromises = targetUrls.map(url => firecrawlScrape(url, {
+                            formats: ['markdown'],
+                            actions: [
+                                { type: 'scroll', direction: 'down' },
+                                { type: 'wait', milliseconds: 1500 }
+                            ],
+                            onlyMainContent: true
+                        }));
+                        const scrapeResults = await Promise.all(scrapePromises);
+                        deepScrapeContent = scrapeResults.map((res, idx) => {
+                            if (res.success && res.data.markdown) {
+                                const content = res.data.markdown.substring(0, 8000);
+                                return `### DEEP SCRAPE OF: ${targetUrls[idx]}\n${content}\n\n`;
+                            }
+                            return "";
+                        }).join("\n");
+                    }
+                } catch (scrapeErr) {
+                    logs.push(`Deep Research Warning: Extraction/Scrape failed - ${(scrapeErr as Error).message}`);
+                }
+            }
+        }
+
+        return {
+            nixInfo,
+            researchSummary,
+            researchUrls,
+            deepScrapeContent,
+            structuredExtractionData
+        };
+    }
+
+    private async runSynthesisLoop(
+        data: Partial<ConsumableData>,
+        processedText: ReturnType<typeof processSupplierTitle>,
+        researchResult: ResearchResult,
+        rawQuery: string,
+        options: { engine: ProcessingEngine },
+        logs: string[],
+        onProgress: (stage: ProcessingStep) => void
+    ): Promise<{ finalData: ConsumableData; thinking: string }> {
+        let attempts = 0;
+        const maxAttempts = 3;
+        let feedback = "";
+        let remedialResearchContext = "";
+        let finalDataObj: ConsumableData;
+        let synthesisResult;
+        let gateResult;
+
+        do {
+            attempts++;
+            logs.push(`Step 3: Synthesis (${options.engine}) - Attempt ${attempts}/${maxAttempts}`);
+            if (feedback) logs.push(`Context: Applying Self-Correction & Reactive Research...`);
+
+            const synthesisContext = `
+                        [PARSED_IDENTITY]
+                        Brand: ${data.brand}
+                        Model: ${data.model}
+                        Type: ${data.consumable_type}
+                        
+                        [LOGISTICS_DATA]
+                        ${JSON.stringify(researchResult.nixInfo || { status: 'missing' })}
+                        
+                        [RESEARCH_SUMMARY (CONSENSUS)]
+                        ${researchResult.researchSummary}
+                        
+                        [DEEP_RESEARCH_CONTENT]
+                        ${researchResult.deepScrapeContent}
+
+                        [REACTIVE_RESEARCH_FINDINGS]
+                        ${remedialResearchContext}
+
+                        [DISCOVERED_URLS]
+                        ${researchResult.researchUrls.join('\n')}
+                        `;
+
+            if (options.engine === 'openrouter') {
+                const orService = getOpenRouterService();
+                if (!orService) throw new Error("OpenRouter service not initialized");
+                synthesisResult = await orService.synthesizeConsumableData(synthesisContext, rawQuery, processedText);
+            } else {
+                // Default Gemini
+                try {
+                    synthesisResult = await synthesizeWithGemini(
+                        synthesisContext,
+                        // Research Query can be reconstructed or passed down. Reconstructing for simplicity.
+                        `${data.brand || ''} ${data.model || rawQuery} ${data.consumable_type !== 'unknown' && data.consumable_type ? data.consumable_type : ''}`,
+                        processedText,
+                        researchResult.structuredExtractionData,
+                        feedback
+                    );
+                } catch (geminiError) {
+                    logs.push(`Gemini Synthesis Failed: ${(geminiError as Error).message}. Attempting Fallback...`);
+                    const orService = getOpenRouterService();
+
+                    if (orService) {
+                        try {
+                            synthesisResult = await orService.synthesizeConsumableData(synthesisContext, rawQuery, processedText);
+                        } catch (orError) {
+                            logs.push(`OpenRouter Fallback Failed: ${(orError as Error).message}.`);
+                        }
+                    } else {
+                        logs.push("OpenRouter fallback unavailable (No Key Configured).");
+                    }
+
+                    // FINAL RESORT: Deterministic Synthesis (Brainless)
+                    if (!synthesisResult) {
+                        logs.push("CRITICAL: All LLMs failed. Attempting Deterministic Synthesis...");
+
+                        let failoverSource = "Regex Parsing";
+                        const fallbackItem: any = {};
+
+                        if (Array.isArray(researchResult.structuredExtractionData) && researchResult.structuredExtractionData.length > 0) {
+                            logs.push("Using Firecrawl Structured Data for failover.");
+                            failoverSource = "Firecrawl Data";
+                            Object.assign(fallbackItem, researchResult.structuredExtractionData[0]);
+                        } else {
+                            logs.push("No specific structured data found. Using basic Regex parsing.");
+                        }
+
+                        // Construct a basic result from what we scraped/parsed
+                        synthesisResult = {
+                            data: {
+                                brand: fallbackItem.brand || processedText.brand.brand || 'Unknown',
+                                model: fallbackItem.model || processedText.model.model || rawQuery,
+                                mpn: fallbackItem.mpn || fallbackItem.model,
+                                consumable_type: processedText.detectedType.value,
+                                color: processedText.detectedColor.value,
+                                yield: fallbackItem.yield || (processedText.yieldInfo[0] ? { value: processedText.yieldInfo[0].value, unit: processedText.yieldInfo[0].unit } : null),
+                                compatibility: fallbackItem.compatibility || [],
+                                sources: []
+                            },
+                            thinking: `LLM Systems Down. Generated via Deterministic Failover using ${failoverSource}.`
+                        };
+                    }
+                }
+            }
+
+            const synthesizedData = synthesisResult.data;
+            logs.push(`Synthesis Complete. Thinking: ${synthesisResult.thinking.substring(0, 50)}...`);
+
+            // --- STEP 4: MERGE & FINALIZE ---
+            const mergedData: ConsumableData = {
+                ...synthesizedData,
+                ...(data.brand ? { brand: data.brand } : {}),
+                ...(data.model ? { model: data.model } : {}),
+                ...(data.consumable_type && data.consumable_type !== 'unknown' ? { consumable_type: data.consumable_type } : {}),
+                ...(data.yield ? { yield: data.yield } : {}),
+                packaging_from_nix: researchResult.nixInfo || synthesizedData.packaging_from_nix || null,
+                _evidence: { ...data._evidence, ...synthesizedData._evidence },
+                // Merge sources uniquely
+                sources: [...(data.sources || []), ...(synthesizedData.sources || [])].filter((s, index, self) =>
+                    index === self.findIndex((t) => (t.url === s.url))
+                )
+            };
+
+            // --- STEP 5: QUALITY GATES ---
+            onProgress('gate_check');
+            finalDataObj = this.finalizeData(mergedData);
+            gateResult = evaluateQualityGates(finalDataObj);
+
+            logs.push(`Gate Result (Attempt ${attempts}): ${gateResult.passed ? 'PASS' : 'FAIL'}`);
+
+            if (!gateResult.passed) {
+                const errors = [...gateResult.report.logistics.flags, ...gateResult.report.compatibility.flags];
+                feedback = errors.join("; ");
+                logs.push(`Gate Failures: ${feedback}`);
+
+                // REACTIVE RESEARCH LOGIC
+                if (attempts < maxAttempts) {
+                    const remedialQueries: string[] = [];
+                    const baseQuery = `${finalDataObj.brand || ''} ${finalDataObj.model || rawQuery}`;
+
+                    if (errors.some(e => e.includes('Weight') || e.includes('Dimensions') || e.includes('Logistics'))) {
+                        remedialQueries.push(`${baseQuery} package shipping weight dimensions specification`);
+                        logs.push("Reactive: Detected missing Logistics. Scheduling remedial search...");
+                    }
+                    if (errors.some(e => e.includes('Yield'))) {
+                        remedialQueries.push(`${baseQuery} page yield capacity ISO/IEC`);
+                        logs.push("Reactive: Detected missing Yield. Scheduling remedial search...");
+                    }
+                    if (errors.some(e => e.includes('Printer') || e.includes('Compatibility'))) {
+                        remedialQueries.push(`${baseQuery} compatible printers series list`);
+                        logs.push("Reactive: Detected missing Compatibility. Scheduling remedial search...");
+                    }
+
+                    if (remedialQueries.length > 0) {
+                        logs.push(`Executing ${remedialQueries.length} Remedial Research Queries...`);
+                        try {
+                            const remedialResults = await Promise.all(
+                                remedialQueries.map(q => perplexityService.discoverSources(q))
+                            );
+
+                            remedialResults.forEach((res, idx) => {
+                                if (res) {
+                                    remedialResearchContext += `\n\n[REMEDIAL_FINDING_ATTEMPT_${attempts}_QUERY_"${remedialQueries[idx]}"]\n${res.summary}`;
+                                    if (res.urls) researchResult.researchUrls.push(...res.urls);
+                                }
+                            });
+                            logs.push("Reactive: Remedial data acquired and added to context.");
+                        } catch (remedialErr) {
+                            logs.push(`Reactive Research Failed: ${(remedialErr as Error).message}`);
+                        }
+                    }
+                }
+            } else {
+                feedback = "";
+            }
+
+        } while (!gateResult.passed && attempts < maxAttempts);
+
+        // POST-LOOP STATUS SETTING
+        if (gateResult.passed) {
+            finalDataObj.automation_status = 'done';
+            finalDataObj.publish_ready = true;
+        } else {
+            finalDataObj.automation_status = 'needs_review';
+            finalDataObj.publish_ready = false;
+            finalDataObj.validation_errors = [
+                ...(finalDataObj.validation_errors || []),
+                ...gateResult.report.logistics.flags,
+                ...gateResult.report.compatibility.flags
+            ];
+            if (attempts >= maxAttempts) logs.push("Max attempts reached. Marking for manual review.");
+        }
+
+        return { finalData: finalDataObj, thinking: synthesisResult?.thinking || '' };
+    }
+
+    private constructEnrichedItem(
+        jobId: string,
+        rawQuery: string,
+        finalDataObj: ConsumableData,
+        logs: string[],
+        researchUrls: string[],
+        thinking: string
+    ): EnrichedItem {
+        return {
+            id: jobId,
+            input_raw: rawQuery,
+            input_hash: btoa(unescape(encodeURIComponent(rawQuery))),
+            data: finalDataObj,
+            status: finalDataObj.automation_status === 'done' ? 'ok' :
+                finalDataObj.automation_status === 'needs_review' ? 'needs_review' : 'failed',
+            ruleset_version: '2.5.0-SOTA',
+            parser_version: '2.0.0',
+            created_at: Date.now(),
+            updated_at: Date.now(),
+            processed_at: new Date().toISOString(),
+            evidence: {
+                logs,
+                // We don't have gateResult here easily available unless we return it from loop or calculate again.
+                // Calculating again is cheap but needs gateResult object.
+                // Or we can return gateResult from loop.
+                // For simplicity, let's recalculate metrics.
+                quality_metrics: this.calculateQualityMetrics(finalDataObj, evaluateQualityGates(finalDataObj)),
+                sources: (finalDataObj.sources || []).map(s => ({
+                    ...s,
+                    source_type: s.sourceType,
+                    extracted_at: s.timestamp ? new Date(s.timestamp).toISOString() : new Date().toISOString(),
+                    claims: s.dataConfirmed || [],
+                    evidence_snippets_by_claim: {},
+                    extraction_method: s.extractionMethod || 'unknown'
+                })),
+                thinking_process: thinking
+            },
+            // Logic to add error details based on status
+            error_details: finalDataObj.validation_errors?.map(e => ({
+                code: 'GATE_FAILURE',
+                message: e,
+                severity: 'medium',
+                category: 'validation',
+                timestamp: new Date().toISOString()
+            }))
+        };
+    }
+
+    private handleFatalError(
+        jobId: string,
+        rawQuery: string,
+        data: Partial<ConsumableData>,
+        logs: string[],
+        err: Error
+    ): EnrichedItem {
+        console.error(`[OrchestrationService] Unified Job ${jobId} failed: `, err);
+        logs.push(`FATAL ERROR: ${err.message} `);
+        logs.push(`STACK: ${err.stack} `);
+        return {
+            id: jobId,
+            input_raw: rawQuery,
+            input_hash: '',
+            data: this.finalizeData(data),
+            status: 'failed',
+            validation_errors: [err.message],
+            ruleset_version: '2.0', // Fallback version
+            parser_version: '2.0',
+            created_at: Date.now(),
+            updated_at: Date.now(),
+            processed_at: new Date().toISOString(),
+            evidence: {
+                logs,
+                sources: []
+            },
+            error_details: [{
+                code: 'SYSTEM_ERROR',
+                message: err.message,
+                severity: 'critical',
+                category: 'system',
+                timestamp: new Date().toISOString()
+            }]
+        };
     }
 
     private calculateQualityMetrics(data: ConsumableData, gateResult: any) {

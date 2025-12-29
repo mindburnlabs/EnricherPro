@@ -227,7 +227,7 @@ export async function synthesizeConsumableData(
           model: getGeminiModel(),
           contents: enhancedPrompt,
           config: {
-            thinkingConfig: { thinkingBudget: 32768 },
+            thinkingConfig: { thinkingBudget: 16000 },
             responseMimeType: "application/json",
             responseSchema: {
               type: Type.OBJECT,
@@ -356,7 +356,21 @@ export async function synthesizeConsumableData(
 
     try {
       // Fallback: Use OpenRouter
-      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
+      let apiKey = (import.meta as any).env?.VITE_OPENROUTER_API_KEY || '';
+
+      // Try local storage if env var is missing
+      if (!apiKey && typeof localStorage !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('openrouter_config');
+          if (stored) {
+            const config = JSON.parse(stored);
+            if (config.apiKey) apiKey = config.apiKey;
+          }
+        } catch (e) {
+          console.warn('Failed to read OpenRouter key from storage', e);
+        }
+      }
+
       if (!apiKey) throw new Error('OpenRouter API key missing for fallback');
 
       const openRouter = createOpenRouterService({
@@ -467,4 +481,27 @@ export const analyzeAndValidateConsumableImage = async (
     validationResult,
     imageCandidate
   };
+};
+
+/**
+ * Unified Gemini Service Object
+ * For usage in other services requiring a service object pattern (like DeepResearchService)
+ */
+export const geminiService = {
+  generateContent: async (prompt: string): Promise<string> => {
+    const ai = getAI();
+    try {
+      const response = await ai.models.generateContent({
+        model: getGeminiModel(),
+        contents: prompt
+      });
+      return response.text || '';
+    } catch (e) {
+      console.error("Gemini generateContent failed:", e);
+      throw e;
+    }
+  },
+  synthesizeConsumableData,
+  analyzeConsumableImage,
+  analyzeAndValidateConsumableImage
 };

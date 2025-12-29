@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { EnrichedItem } from '../types';
 import { ExternalLink, AlertTriangle, Check, Save, ChevronLeft, Brain, Link as LinkIcon, Box, Ruler, FileText, Image as ImageIcon, HelpCircle, ShieldCheck, AlertCircle, Cpu, Layers, Package, Target, Globe } from 'lucide-react';
 import ConfidenceIndicator from './ConfidenceIndicator';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
 
 interface DetailViewProps {
   item: EnrichedItem;
@@ -62,10 +64,17 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button onClick={onClose} className="hidden sm:block px-6 py-3 text-primary-subtle hover:text-primary text-[10px] font-black uppercase tracking-widest transition-all">Discard Changes</button>
-          <button onClick={handleSave} className="premium-button px-8 py-3 bg-primary-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-900/40 border border-indigo-500/20 hover:bg-indigo-500 flex items-center gap-2">
-            <Save size={16} /> Approve PIM Record
-          </button>
+          <Button onClick={onClose} variant="ghost" className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-primary-subtle hover:text-primary">
+            Discard Changes
+          </Button>
+          <Button
+            onClick={handleSave}
+            variant="primary"
+            className="text-[10px] font-black uppercase tracking-widest px-8 py-3 bg-primary-accent text-white shadow-lg shadow-indigo-900/40 border-indigo-500/20"
+            leftIcon={<Save size={16} />}
+          >
+            Approve PIM Record
+          </Button>
         </div>
       </div>
 
@@ -109,16 +118,29 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
                     <div className="space-y-4">
-                      <label className="text-[10px] font-black text-primary-subtle px-1 uppercase tracking-widest">Brand Authority</label>
-                      <input value={editedData.brand || ''} onChange={e => setEditedData({ ...editedData, brand: e.target.value })} className="w-full bg-surface border border-border-subtle rounded-2xl p-5 font-black text-primary hover:border-primary-accent/50 focus:border-primary-accent outline-none transition-all placeholder:text-primary-subtle" />
+                      <Input
+                        label="Brand Authority"
+                        value={editedData.brand || ''}
+                        onChange={e => setEditedData({ ...editedData, brand: e.target.value })}
+                        className="font-black text-primary p-5"
+                      />
                     </div>
                     <div className="space-y-4">
-                      <label className="text-[10px] font-black text-primary-subtle px-1 uppercase tracking-widest">Entity Identification (MPN)</label>
-                      <input value={editedData.model || ''} onChange={e => setEditedData({ ...editedData, model: e.target.value })} className="w-full bg-surface border border-border-subtle rounded-2xl p-5 font-black text-primary-accent hover:border-primary-accent/50 focus:border-primary-accent outline-none transition-all placeholder:text-primary-subtle" />
+                      <Input
+                        label="Entity Identification (MPN)"
+                        value={editedData.model || ''}
+                        onChange={e => setEditedData({ ...editedData, model: e.target.value })}
+                        className="font-black text-primary-accent p-5"
+                      />
                     </div>
                     <div className="space-y-4">
-                      <label className="text-[10px] font-black text-primary-subtle px-1 uppercase tracking-widest">Semantic Alias</label>
-                      <input value={editedData.model_alias_short || ''} onChange={e => setEditedData({ ...editedData, model_alias_short: e.target.value })} className="w-full bg-surface border border-border-subtle rounded-2xl p-5 font-bold text-primary hover:border-primary-accent/50 focus:border-primary-accent outline-none transition-all" placeholder="short-hand identifier" />
+                      <Input
+                        label="Semantic Alias"
+                        value={editedData.model_alias_short || ''}
+                        onChange={e => setEditedData({ ...editedData, model_alias_short: e.target.value })}
+                        placeholder="short-hand identifier"
+                        className="font-bold text-primary p-5"
+                      />
                     </div>
                     <div className="space-y-4">
                       <label className="text-[10px] font-black text-primary-subtle px-1 uppercase tracking-widest">Resource Matrix (Yield)</label>
