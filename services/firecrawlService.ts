@@ -11,10 +11,15 @@ const API_V1 = 'https://api.firecrawl.dev/v1';
 const API_V2 = 'https://api.firecrawl.dev/v2';
 const STORAGE_KEY = 'firecrawl_api_key';
 
+// Helper to get API key (simulated or real)
 export const getFirecrawlApiKey = () => {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) return saved;
-  return import.meta.env.VITE_FIRECRAWL_API_KEY || '';
+  if (typeof localStorage !== 'undefined') {
+    const key = localStorage.getItem(STORAGE_KEY);
+    if (key) return key;
+  }
+  // Safe access for test environment
+  const env = (import.meta as any).env || {};
+  return env.VITE_FIRECRAWL_API_KEY || (typeof process !== 'undefined' ? process.env.VITE_FIRECRAWL_API_KEY : '') || '';
 };
 
 export interface FirecrawlExtractSchema {

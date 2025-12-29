@@ -1,10 +1,10 @@
-import { 
-  ErrorDetail, 
-  FailureReason, 
-  ErrorCategory, 
-  ErrorSeverity, 
-  RetryConfig, 
-  ManualQueueEntry, 
+import {
+  ErrorDetail,
+  FailureReason,
+  ErrorCategory,
+  ErrorSeverity,
+  RetryConfig,
+  ManualQueueEntry,
   BatchProcessingProgress,
   EnrichedItem,
   ConsumableData,
@@ -38,7 +38,7 @@ const ERROR_CATEGORIZATION: Record<FailureReason, { category: ErrorCategory; sev
   'failed_parse_model': { category: 'parsing_error', severity: 'high', retryable: false },
   'failed_parse_type': { category: 'parsing_error', severity: 'high', retryable: false },
   'failed_parse_brand': { category: 'parsing_error', severity: 'medium', retryable: false },
-  
+
   // Data quality issues - may be retryable with different approach
   'missing_nix_dimensions_weight': { category: 'data_quality', severity: 'high', retryable: true },
   'nix_data_from_fallback': { category: 'data_quality', severity: 'medium', retryable: false },
@@ -49,15 +49,15 @@ const ERROR_CATEGORIZATION: Record<FailureReason, { category: ErrorCategory; sev
   'invalid_dimensions': { category: 'validation_failure', severity: 'medium', retryable: false },
   'invalid_weight': { category: 'validation_failure', severity: 'medium', retryable: false },
   'incomplete_data': { category: 'data_quality', severity: 'medium', retryable: true },
-  
+
   // Image validation issues
   'missing_valid_image': { category: 'validation_failure', severity: 'medium', retryable: true },
   'image_validation_issues': { category: 'validation_failure', severity: 'low', retryable: true },
-  
+
   // Russian market filtering
   'ru_eligibility_unknown': { category: 'data_quality', severity: 'medium', retryable: true },
   'compatibility_conflict': { category: 'data_quality', severity: 'high', retryable: false },
-  
+
   // External service errors - usually retryable
   'api_rate_limit_exceeded': { category: 'external_service', severity: 'medium', retryable: true },
   'external_service_timeout': { category: 'timeout_error', severity: 'medium', retryable: true },
@@ -78,7 +78,7 @@ export function createErrorDetail(
   technicalDetails?: string
 ): ErrorDetail {
   const categorization = ERROR_CATEGORIZATION[reason];
-  
+
   return {
     reason,
     category: categorization.category,
@@ -141,10 +141,10 @@ export function shouldRetryItem(item: EnrichedItem, config: RetryConfig = DEFAUL
   if (item.retry_count >= config.maxAttempts) {
     return false;
   }
-  
+
   // Check if any errors are retryable
   const hasRetryableErrors = item.error_details?.some(error => isRetryableError(error.reason, config)) || false;
-  
+
   return hasRetryableErrors;
 }
 
@@ -159,7 +159,7 @@ export function createManualQueueEntry(
 ): ManualQueueEntry {
   const recommendations = generateRecommendations(item.error_details || [], extractedData, missingFields);
   const estimatedTime = estimateResolutionTime(item.error_details || [], priority);
-  
+
   return {
     itemId: item.id,
     inputRaw: item.input_raw,
@@ -186,14 +186,14 @@ export function createManualQueueEntry(
  */
 function generateRecommendations(errors: ErrorDetail[], extractedData: Partial<ConsumableData>, missingFields: string[]): string[] {
   const recommendations: string[] = [];
-  
+
   // Group errors by category for targeted recommendations
   const errorsByCategory = errors.reduce((acc, error) => {
     if (!acc[error.category]) acc[error.category] = [];
     acc[error.category].push(error);
     return acc;
   }, {} as Record<ErrorCategory, ErrorDetail[]>);
-  
+
   // Parsing error recommendations
   if (errorsByCategory.parsing_error) {
     recommendations.push('Consider reformatting the supplier title to include clear model numbers');
@@ -202,7 +202,7 @@ function generateRecommendations(errors: ErrorDetail[], extractedData: Partial<C
       recommendations.push('Manually enter the consumable model number if visible in packaging');
     }
   }
-  
+
   // Data quality recommendations
   if (errorsByCategory.data_quality) {
     if (missingFields.includes('packaging_from_nix')) {
@@ -214,13 +214,13 @@ function generateRecommendations(errors: ErrorDetail[], extractedData: Partial<C
       recommendations.push('Check if printers are sold through official Russian distributors');
     }
   }
-  
+
   // External service recommendations
   if (errorsByCategory.external_service || errorsByCategory.network_error) {
     recommendations.push('Retry processing after checking service availability');
     recommendations.push('Verify API credentials and rate limits');
   }
-  
+
   // Validation failure recommendations
   if (errorsByCategory.validation_failure) {
     if (missingFields.includes('images') || errors.some(e => e.reason === 'missing_valid_image')) {
@@ -228,12 +228,12 @@ function generateRecommendations(errors: ErrorDetail[], extractedData: Partial<C
       recommendations.push('Ensure image shows only the consumable without packaging or watermarks');
     }
   }
-  
+
   // General recommendations based on missing fields
   if (missingFields.length > 0) {
     recommendations.push(`Complete missing required fields: ${missingFields.join(', ')}`);
   }
-  
+
   return recommendations;
 }
 
@@ -242,14 +242,14 @@ function generateRecommendations(errors: ErrorDetail[], extractedData: Partial<C
  */
 function estimateResolutionTime(errors: ErrorDetail[], priority: 'low' | 'medium' | 'high'): number {
   let baseTime = 15; // Base 15 minutes
-  
+
   // Adjust based on error complexity
   const complexErrors = errors.filter(e => e.severity === 'high' || e.severity === 'critical').length;
   const mediumErrors = errors.filter(e => e.severity === 'medium').length;
-  
+
   baseTime += complexErrors * 20; // 20 minutes per complex error
   baseTime += mediumErrors * 10;  // 10 minutes per medium error
-  
+
   // Adjust based on priority
   switch (priority) {
     case 'high':
@@ -292,9 +292,9 @@ export function updateBatchProgress(
 ): BatchProcessingProgress {
   const now = new Date();
   const updatedProgress = { ...progress };
-  
+
   updatedProgress.processedItems += 1;
-  
+
   // Update counters based on item status
   switch (item.status) {
     case 'ok':
@@ -307,26 +307,26 @@ export function updateBatchProgress(
       updatedProgress.failedItems += 1;
       break;
   }
-  
+
   // Update timing metrics
   const totalProcessingTime = (updatedProgress.averageProcessingTime * (updatedProgress.processedItems - 1)) + processingTimeMs;
   updatedProgress.averageProcessingTime = totalProcessingTime / updatedProgress.processedItems;
-  
+
   // Calculate throughput
   const elapsedMinutes = (now.getTime() - new Date(progress.startedAt).getTime()) / (1000 * 60);
   updatedProgress.throughputPerMinute = elapsedMinutes > 0 ? updatedProgress.processedItems / elapsedMinutes : 0;
-  
+
   // Calculate error rate
   updatedProgress.errorRate = (updatedProgress.failedItems / updatedProgress.processedItems) * 100;
-  
+
   // Estimate remaining time
   const remainingItems = updatedProgress.totalItems - updatedProgress.processedItems;
   updatedProgress.estimatedTimeRemaining = remainingItems * (updatedProgress.averageProcessingTime / 1000);
-  
+
   updatedProgress.lastUpdatedAt = now.toISOString();
   updatedProgress.currentItem = undefined;
   updatedProgress.currentStep = undefined;
-  
+
   return updatedProgress;
 }
 
@@ -360,7 +360,7 @@ export function categorizeErrors(items: EnrichedItem[]): Record<ErrorCategory, {
     timeout_error: { count: 0, examples: [] },
     configuration_error: { count: 0, examples: [] }
   };
-  
+
   items.forEach(item => {
     item.error_details?.forEach(error => {
       categories[error.category].count += 1;
@@ -369,7 +369,7 @@ export function categorizeErrors(items: EnrichedItem[]): Record<ErrorCategory, {
       }
     });
   });
-  
+
   return categories;
 }
 
@@ -385,20 +385,20 @@ export function generateErrorSummary(items: EnrichedItem[]): {
   topErrors: Array<{ reason: FailureReason; count: number; message: string }>;
 } {
   const allErrors = items.flatMap(item => item.error_details || []);
-  
+
   const errorsByCategory = allErrors.reduce((acc, error) => {
     acc[error.category] = (acc[error.category] || 0) + 1;
     return acc;
   }, {} as Record<ErrorCategory, number>);
-  
+
   const errorsBySeverity = allErrors.reduce((acc, error) => {
     acc[error.severity] = (acc[error.severity] || 0) + 1;
     return acc;
   }, {} as Record<ErrorSeverity, number>);
-  
+
   const retryableErrors = allErrors.filter(error => error.retryable).length;
   const criticalErrors = allErrors.filter(error => error.severity === 'critical').length;
-  
+
   // Count top error reasons
   const errorCounts = allErrors.reduce((acc, error) => {
     const key = error.reason;
@@ -408,12 +408,12 @@ export function generateErrorSummary(items: EnrichedItem[]): {
     acc[key].count += 1;
     return acc;
   }, {} as Record<FailureReason, { count: number; message: string }>);
-  
+
   const topErrors = Object.entries(errorCounts)
-    .map(([reason, data]) => ({ reason: reason as FailureReason, count: data.count, message: data.message }))
+    .map(([reason, data]: [string, { count: number, message: string }]) => ({ reason: reason as FailureReason, count: data.count, message: data.message }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
-  
+
   return {
     totalErrors: allErrors.length,
     errorsByCategory,
@@ -430,7 +430,7 @@ export function generateErrorSummary(items: EnrichedItem[]): {
 export function scheduleRetry(item: EnrichedItem, config: RetryConfig = DEFAULT_RETRY_CONFIG): EnrichedItem {
   const nextRetryDelay = calculateRetryDelay(item.retry_count + 1, config);
   const nextRetryAt = new Date(Date.now() + nextRetryDelay).toISOString();
-  
+
   return {
     ...item,
     retry_count: item.retry_count + 1,
@@ -448,7 +448,7 @@ export function isReadyForRetry(item: EnrichedItem): boolean {
   if (!item.is_retryable || !item.next_retry_at) {
     return false;
   }
-  
+
   return new Date() >= new Date(item.next_retry_at);
 }
 
@@ -456,9 +456,9 @@ export function isReadyForRetry(item: EnrichedItem): boolean {
  * Gets items that are ready for retry
  */
 export function getItemsReadyForRetry(items: EnrichedItem[]): EnrichedItem[] {
-  return items.filter(item => 
-    item.status === 'failed' && 
-    item.is_retryable && 
+  return items.filter(item =>
+    item.status === 'failed' &&
+    item.is_retryable &&
     isReadyForRetry(item)
   );
 }

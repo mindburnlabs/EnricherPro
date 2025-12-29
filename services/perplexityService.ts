@@ -15,7 +15,7 @@ export interface PerplexityConfig {
 export const DEFAULT_PERPLEXITY_CONFIG: PerplexityConfig = {
     provider: 'openrouter',
     apiKey: '',
-    model: 'perplexity/sonar-reasoning' // OpenRouter ID
+    model: 'perplexity/sonar-deep-research' // SOTA Deep Research
 };
 
 // Direct Perplexity Models map to OpenRouter IDs or distinct IDs
@@ -43,6 +43,9 @@ export class PerplexityService {
     }
 
     private loadConfig(): PerplexityConfig {
+        if (typeof localStorage === 'undefined') {
+            return DEFAULT_PERPLEXITY_CONFIG;
+        }
         const saved = localStorage.getItem('perplexity_config');
         if (saved) {
             try {
@@ -139,7 +142,7 @@ export class PerplexityService {
     }
 
     private async discoverSourcesOpenRouter(prompt: string): Promise<{ urls: string[], summary: string, raw_response: any }> {
-        const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
+        const apiKey = (import.meta as any).env?.VITE_OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || '';
         if (!apiKey) throw new Error('OpenRouter API key missing for Perplexity Service');
 
         // Use configured model or fallback

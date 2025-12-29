@@ -12,69 +12,93 @@ interface StatusBadgeProps {
   errorCount?: number;
 }
 
-const StatusBadge: React.FC<StatusBadgeProps> = ({ 
-  status, 
-  step, 
-  confidence, 
-  showProgress = false, 
+const StatusBadge: React.FC<StatusBadgeProps> = ({
+  status,
+  step,
+  confidence,
+  showProgress = false,
   processingTime,
-  errorCount 
+  errorCount
 }) => {
   const baseClasses = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-sm transition-all";
-  
+
   if (status === 'processing') {
     const stepLabels: Record<ProcessingStep, { label: string, icon: any, description: string, color: string }> = {
-      idle: { 
-        label: 'Initializing', 
-        icon: Clock, 
+      idle: {
+        label: 'Initializing',
+        icon: Clock,
         description: 'Preparing for processing',
         color: 'bg-slate-50 text-slate-700 border-slate-200'
       },
-      searching: { 
-        label: 'Research Phase', 
-        icon: Search, 
+      searching: {
+        label: 'Research Phase',
+        icon: Search,
         description: 'Conducting grounded search',
         color: 'bg-blue-50 text-blue-700 border-blue-200'
       },
-      scraping_nix: { 
-        label: 'NIX.ru Logistics', 
-        icon: Database, 
+      scraping_nix: {
+        label: 'NIX.ru Logistics',
+        icon: Database,
         description: 'Fetching package dimensions',
         color: 'bg-emerald-50 text-emerald-700 border-emerald-200'
       },
-      scraping_compat: { 
-        label: 'Compatibility Sync', 
-        icon: Shield, 
+      scraping_compat: {
+        label: 'Compatibility Sync',
+        icon: Shield,
         description: 'Verifying printer compatibility',
         color: 'bg-purple-50 text-purple-700 border-purple-200'
       },
-      analyzing: { 
-        label: 'AI Synthesis', 
-        icon: Brain, 
+      analyzing: {
+        label: 'AI Synthesis',
+        icon: Brain,
         description: 'Processing and analyzing data',
         color: 'bg-indigo-50 text-indigo-700 border-indigo-200'
       },
-      auditing_images: { 
-        label: 'Visual Audit', 
-        icon: Eye, 
+      filtering: {
+        label: 'Filtering',
+        icon: Search,
+        description: 'Filtering irrelevant data',
+        color: 'bg-yellow-50 text-yellow-700 border-yellow-200'
+      },
+      gate_check: {
+        label: 'Gate Check',
+        icon: Shield,
+        description: 'Quality gate verification',
+        color: 'bg-indigo-50 text-indigo-700 border-indigo-200'
+      },
+      complete: {
+        label: 'Complete',
+        icon: CheckCircle2,
+        description: 'Processing finished',
+        color: 'bg-green-50 text-green-700 border-green-200'
+      },
+      error: {
+        label: 'Error',
+        icon: AlertCircle,
+        description: 'Processing failed',
+        color: 'bg-red-50 text-red-700 border-red-200'
+      },
+      auditing_images: {
+        label: 'Visual Audit',
+        icon: Eye,
         description: 'Validating product images',
         color: 'bg-amber-50 text-amber-700 border-amber-200'
       },
-      finalizing: { 
-        label: 'Quality Check', 
-        icon: Target, 
+      finalizing: {
+        label: 'Quality Check',
+        icon: Target,
         description: 'Final validation and cleanup',
         color: 'bg-rose-50 text-rose-700 border-rose-200'
       },
     };
-    
+
     const config = stepLabels[step || 'searching'];
     const Icon = config.icon;
 
     return (
       <div className="flex items-center gap-2">
         <span className={`${baseClasses} ${config.color} animate-pulse relative`}>
-          <Icon size={12} className={Icon === Loader2 ? "animate-spin" : "animate-pulse"} strokeWidth={3} /> 
+          <Icon size={12} className={Icon === Loader2 ? "animate-spin" : "animate-pulse"} strokeWidth={3} />
           {config.label}
           {showProgress && (
             <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-current opacity-30 rounded-full">
@@ -100,10 +124,9 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
           </span>
           {confidence !== undefined && (
             <div className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full ${
-                confidence > 0.85 ? 'bg-emerald-500' : 
+              <div className={`w-2 h-2 rounded-full ${confidence > 0.85 ? 'bg-emerald-500' :
                 confidence > 0.6 ? 'bg-amber-500' : 'bg-rose-500'
-              }`}></div>
+                }`}></div>
               <span className="text-[9px] text-slate-400 font-mono">
                 {Math.round(confidence * 100)}%
               </span>

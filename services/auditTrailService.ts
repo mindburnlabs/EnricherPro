@@ -405,7 +405,7 @@ export function enhanceItemWithAuditTrail(
     ...item,
     data: enhancedData,
     evidence: enhancedEvidence,
-    job_run_id: jobRunId,
+    id: jobRunId,
     input_hash: inputHash,
     ruleset_version: RULESET_VERSION,
     parser_version: PARSER_VERSION,

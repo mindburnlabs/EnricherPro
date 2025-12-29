@@ -12,8 +12,8 @@
  * Requirements: All (comprehensive validation)
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { processItem } from './services/geminiService';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { orchestrationService } from './services/orchestrationService';
 import { filterPrintersForRussianMarket } from './services/russianMarketFilter';
 import { validateProductImage } from './services/imageValidationService';
 import { evaluatePublicationReadiness } from './services/publicationReadinessService';
@@ -21,13 +21,12 @@ import { processSupplierTitle } from './services/textProcessingService';
 
 import { EnrichedItem, ConsumableData, ValidationStatus, ProcessingStep } from './types';
 import { v4 as uuidv4 } from 'uuid';
-import { vi } from 'vitest';
 
-// Mock API Integration Service to prevent actual network calls and circuit breaker issues
 vi.mock('./services/apiIntegrationService', () => {
-  const mockMakeRequest = async (config: any, operation: any) => {
-    // Determine context from config
-    const { serviceId, operation: opName, metadata } = config;
+  const mockMakeRequest = async (context: any, operation: any) => {
+    const { serviceId, operation: opName, metadata } = context;
+
+
 
     // 1. Research phase (Gemini)
     if (serviceId === 'gemini' && opName === 'researchProductContext') {
@@ -47,8 +46,30 @@ vi.mock('./services/apiIntegrationService', () => {
       };
     }
 
+    // Perplexity (Discovery Agent) handling
+    if ((serviceId === 'perplexity-openrouter' || serviceId === 'perplexity-direct') && opName === 'discoverSources') {
+      return {
+        success: true,
+        data: {
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                summary: "Mock Perplexity Summary",
+                sources: ["https://nix.ru/mock-product", "https://hp.com/mock-product"]
+              })
+            }
+          }],
+          citations: ["https://nix.ru/mock-product"]
+        }
+      };
+    }
+
     // 2. Firecrawl Agent (NIX Fallback or Deep Research)
     if (serviceId === 'firecrawl' && opName === 'agent') {
+      // NOTE: nixService expects { nix_logistics: ... } in the data property of the response from firecrawlAgent
+      // firecrawlAgent calls apiIntegrationService.
+      // But firecrawlAgent implementation wraps the result?
+      // Let's ensure structure matches nixService expectations.
       return {
         success: true,
         data: {
@@ -101,10 +122,13 @@ vi.mock('./services/apiIntegrationService', () => {
           ruMarketEligibility: 'ru_verified',
           sources: [{ url: 'https://nix.ru', confidence: 0.9, dataConfirmed: ['compatibility'] }]
         }],
-        images: [],
         related_consumables: [],
         confidence: { overall: 0.9, model_name: 0.9, brand: 0.9 },
-        model_alias_short: model.replace(/^[A-Z\-]+/, '')
+        model_alias_short: model.replace(/^[A-Z\-]+/, ''),
+        sources: [
+          { url: 'https://nix.ru/mock-product', sourceType: 'nix_ru', confidence: 1.0, dataConfirmed: ['dimensions', 'weight'] },
+          { url: 'https://hp.com/mock-product', sourceType: 'official', confidence: 0.9, dataConfirmed: ['compatibility'] }
+        ]
       };
 
       return {
@@ -118,7 +142,7 @@ vi.mock('./services/apiIntegrationService', () => {
 
     // Default success for others
     return { success: true, data: {} };
-  };
+  }; // End of mockMakeRequest function
 
   return {
     apiIntegrationService: {
@@ -220,10 +244,7 @@ async function testCompleteDataProcessingPipeline(): Promise<{ passed: boolean; 
       details.push(`   Input: "${testCase.input}"`);
 
       const startTime = Date.now();
-
-      // Process the item through the complete pipeline
-      const result = await processItem(testCase.input, createMockStepCallback(testCase.name));
-
+      const result = await orchestrationService.processItem(testCase.input, (step) => { });
       const processingTime = Date.now() - startTime;
       details.push(`   ⏱️ Processing time: ${processingTime}ms`);
 
@@ -290,7 +311,7 @@ async function testCompleteDataProcessingPipeline(): Promise<{ passed: boolean; 
 
       // Validate related items discovery
       if (testCase.expectedResults.shouldHaveRelatedItems) {
-        const relatedCount = result.data.related_consumables_display?.length || result.data.related_consumables.length;
+        const relatedCount = result.data.related_consumables_display?.length || result.data.related_consumables_full.length;
         if (relatedCount > 0) {
           details.push(`   ✅ Related items: ${relatedCount} discovered`);
         } else {
@@ -315,11 +336,18 @@ async function testCompleteDataProcessingPipeline(): Promise<{ passed: boolean; 
           details.push(`   📋 Errors: ${result.validation_errors.slice(0, 2).join('; ')}`);
         }
         allPassed = false;
+
+        // Dump internal logs for debugging
+        if (result.evidence && result.evidence.logs) {
+          console.log(`\n🔍 INTERNAL LOGS for ${testCase.name}:`);
+          console.log(result.evidence.logs.join('\n   '));
+        }
       }
 
       details.push(`   ✅ Pipeline completed for: ${testCase.name}`);
 
     } catch (error) {
+      console.error(`[TEST ERROR] Pipeline error for "${testCase.name}":`, error);
       details.push(`   ❌ Pipeline error for "${testCase.name}": ${error}`);
       allPassed = false;
     }
@@ -447,7 +475,7 @@ async function testBatchProcessing(): Promise<{ passed: boolean; details: string
     const batchPromises = batchInputs.map(async (input, index) => {
       const testCase = END_TO_END_TEST_CASES[index];
       try {
-        const result = await processItem(input, createMockStepCallback(`Batch-${index + 1}`));
+        const result = await orchestrationService.processItem(testCase.input, (step) => { });
         return { success: true, result, testCase, index };
       } catch (error) {
         return { success: false, error, testCase, index };
@@ -538,7 +566,6 @@ async function testExportFunctionality(): Promise<{ passed: boolean; details: st
           ruMarketEligibility: 'ru_verified' as const,
           compatibilityConflict: false
         }],
-        related_consumables: [],
         related_consumables_full: [],
         related_consumables_display: [],
         related_consumables_categories: {
@@ -565,7 +592,14 @@ async function testExportFunctionality(): Promise<{ passed: boolean; details: st
           overall: 0.85,
           data_completeness: 0.9,
           source_reliability: 0.8
-        }
+        },
+        supplier_title_raw: 'Batch Test',
+        title_norm: 'Batch Test',
+        automation_status: 'needs_review',
+        publish_ready: false,
+        mpn_identity: { mpn: 'BATCH', variant_flags: { chip: false, counterless: false, high_yield: false, kit: false }, canonical_model_name: 'BATCH' },
+        compatible_printers_unverified: [],
+        sources: []
       },
       evidence: {
         sources: [{
@@ -596,8 +630,8 @@ async function testExportFunctionality(): Promise<{ passed: boolean; details: st
       retry_count: 0,
       created_at: Date.now(),
       updated_at: Date.now(),
-      job_run_id: `test-job-${index + 1}`,
-      input_hash: `hash-${index + 1}`,
+
+      input_hash: `hash - ${index + 1} `,
       ruleset_version: '2.1.0',
       parser_version: '1.5.0',
       processed_at: new Date().toISOString()
@@ -611,9 +645,9 @@ async function testExportFunctionality(): Promise<{ passed: boolean; details: st
       'related_consumables_count', 'confidence_overall', 'status', 'processed_at'
     ];
 
-    details.push(`✅ CSV export structure validation:`);
+    details.push(`✅ CSV export structure validation: `);
     details.push(`   - Headers defined: ${csvHeaders.length} columns`);
-    details.push(`   - Key fields: ${csvHeaders.slice(0, 6).join(', ')}`);
+    details.push(`   - Key fields: ${csvHeaders.slice(0, 6).join(', ')} `);
 
     // Test data completeness for export
     let exportDataComplete = true;
@@ -624,7 +658,7 @@ async function testExportFunctionality(): Promise<{ passed: boolean; details: st
       if (missingFields.length === 0) {
         details.push(`   ✅ Item ${index + 1}: All required fields present`);
       } else {
-        details.push(`   ❌ Item ${index + 1}: Missing fields: ${missingFields.join(', ')}`);
+        details.push(`   ❌ Item ${index + 1}: Missing fields: ${missingFields.join(', ')} `);
         exportDataComplete = false;
         allPassed = false;
       }
@@ -651,7 +685,7 @@ async function testExportFunctionality(): Promise<{ passed: boolean; details: st
     // Test audit trail data for export
     const auditTrailComplete = mockEnrichedItems.every(item =>
       item.evidence.sources.length > 0 &&
-      item.job_run_id &&
+      item.id &&
       item.processed_at
     );
 
@@ -663,7 +697,7 @@ async function testExportFunctionality(): Promise<{ passed: boolean; details: st
     }
 
   } catch (error) {
-    details.push(`❌ Export functionality test error: ${error}`);
+    details.push(`❌ Export functionality test error: ${error} `);
     allPassed = false;
   }
 
@@ -682,19 +716,23 @@ async function testAuditTrailCompleteness(): Promise<{ passed: boolean; details:
   try {
     // Process a sample item to test audit trail generation
     const testInput = "HP CF234A LaserJet Pro M106w Toner Cartridge 9200 pages";
-    const result = await processItem(testInput, createMockStepCallback("AuditTrail"));
+    const result = await orchestrationService.processItem(testInput, (step) => { });
 
     // Test 1: Source documentation
+    if (result.evidence && result.evidence.logs) {
+      // console.log("🔍 AUDIT TRAIL LOGS:\n" + result.evidence.logs.join("\n"));
+    }
+
     if (result.evidence.sources.length > 0) {
       details.push(`✅ Source documentation: ${result.evidence.sources.length} sources recorded`);
 
       result.evidence.sources.forEach((source, index) => {
-        details.push(`   📄 Source ${index + 1}:`);
-        details.push(`      - URL: ${source.url}`);
-        details.push(`      - Type: ${source.source_type}`);
-        details.push(`      - Claims: ${source.claims.join(', ')}`);
-        details.push(`      - Confidence: ${source.confidence.toFixed(3)}`);
-        details.push(`      - Extracted at: ${source.extracted_at}`);
+        details.push(`   📄 Source ${index + 1}: `);
+        details.push(`      - URL: ${source.url} `);
+        details.push(`      - Type: ${source.source_type} `);
+        details.push(`      - Claims: ${source.claims.join(', ')} `);
+        details.push(`      - Confidence: ${source.confidence.toFixed(3)} `);
+        details.push(`      - Extracted at: ${source.extracted_at} `);
       });
     } else {
       details.push(`❌ Source documentation: No sources recorded`);
@@ -702,29 +740,29 @@ async function testAuditTrailCompleteness(): Promise<{ passed: boolean; details:
     }
 
     // Test 2: Processing metadata
-    const requiredMetadata = ['job_run_id', 'input_hash', 'ruleset_version', 'parser_version', 'processed_at'];
+    const requiredMetadata = ['id', 'input_hash', 'ruleset_version', 'parser_version', 'processed_at'];
     const missingMetadata = requiredMetadata.filter(field => !result[field as keyof EnrichedItem]);
 
     if (missingMetadata.length === 0) {
       details.push(`✅ Processing metadata: All required fields present`);
-      details.push(`   - Job ID: ${result.job_run_id}`);
-      details.push(`   - Ruleset version: ${result.ruleset_version}`);
-      details.push(`   - Parser version: ${result.parser_version}`);
+      details.push(`   - Job ID: ${result.id} `);
+      details.push(`   - Ruleset version: ${result.ruleset_version} `);
+      details.push(`   - Parser version: ${result.parser_version} `);
     } else {
-      details.push(`❌ Processing metadata: Missing fields: ${missingMetadata.join(', ')}`);
+      details.push(`❌ Processing metadata: Missing fields: ${missingMetadata.join(', ')} `);
       allPassed = false;
     }
 
     // Test 3: Quality metrics tracking
     if (result.evidence.quality_metrics) {
       const qm = result.evidence.quality_metrics;
-      details.push(`✅ Quality metrics tracking:`);
-      details.push(`   - Data completeness: ${(qm.data_completeness_score * 100).toFixed(1)}%`);
-      details.push(`   - Source reliability: ${(qm.source_reliability_score * 100).toFixed(1)}%`);
-      details.push(`   - Validation pass rate: ${(qm.validation_pass_rate * 100).toFixed(1)}%`);
-      details.push(`   - Processing efficiency: ${(qm.processing_efficiency * 100).toFixed(1)}%`);
-      details.push(`   - Audit completeness: ${(qm.audit_completeness * 100).toFixed(1)}%`);
-      details.push(`   - Total sources used: ${qm.total_sources_used}`);
+      details.push(`✅ Quality metrics tracking: `);
+      details.push(`   - Data completeness: ${(qm.data_completeness_score * 100).toFixed(1)}% `);
+      details.push(`   - Source reliability: ${(qm.source_reliability_score * 100).toFixed(1)}% `);
+      details.push(`   - Validation pass rate: ${(qm.validation_pass_rate * 100).toFixed(1)}% `);
+      details.push(`   - Processing efficiency: ${(qm.processing_efficiency * 100).toFixed(1)}% `);
+      details.push(`   - Audit completeness: ${(qm.audit_completeness * 100).toFixed(1)}% `);
+      details.push(`   - Total sources used: ${qm.total_sources_used} `);
     } else {
       details.push(`❌ Quality metrics tracking: No quality metrics recorded`);
       allPassed = false;
@@ -748,18 +786,18 @@ async function testAuditTrailCompleteness(): Promise<{ passed: boolean; details:
     // Test 5: Confidence tracking
     if (result.data.confidence) {
       const conf = result.data.confidence;
-      details.push(`✅ Confidence tracking:`);
-      details.push(`   - Overall: ${(conf.overall * 100).toFixed(1)}%`);
-      details.push(`   - Model name: ${(conf.model_name * 100).toFixed(1)}%`);
-      details.push(`   - Logistics: ${(conf.logistics * 100).toFixed(1)}%`);
-      details.push(`   - Compatibility: ${(conf.compatibility * 100).toFixed(1)}%`);
+      details.push(`✅ Confidence tracking: `);
+      details.push(`   - Overall: ${(conf.overall * 100).toFixed(1)}% `);
+      details.push(`   - Model name: ${(conf.model_name * 100).toFixed(1)}% `);
+      details.push(`   - Logistics: ${(conf.logistics * 100).toFixed(1)}% `);
+      details.push(`   - Compatibility: ${(conf.compatibility * 100).toFixed(1)}% `);
     } else {
       details.push(`❌ Confidence tracking: No confidence scores recorded`);
       allPassed = false;
     }
 
   } catch (error) {
-    details.push(`❌ Audit trail test error: ${error}`);
+    details.push(`❌ Audit trail test error: ${error} `);
     allPassed = false;
   }
 
@@ -788,6 +826,14 @@ async function testPublicationReadinessEvaluation(): Promise<{ passed: boolean; 
         model_alias_short: '234A',
         yield: { value: 9200, unit: 'pages', coverage_percent: 5 },
         color: 'Black',
+        supplier_title_raw: 'Batch Test',
+        title_norm: 'Batch Test',
+        automation_status: 'needs_review',
+        publish_ready: false,
+        mpn_identity: { mpn: 'BATCH', variant_flags: { chip: false, counterless: false, high_yield: false, kit: false }, canonical_model_name: 'BATCH' },
+        compatible_printers_unverified: [],
+        sources: [],
+
         has_chip: true,
         has_page_counter: false,
         printers_ru: ['HP LaserJet Pro M106w'],
@@ -798,7 +844,6 @@ async function testPublicationReadinessEvaluation(): Promise<{ passed: boolean; 
           ruMarketEligibility: 'ru_verified',
           compatibilityConflict: false
         }],
-        related_consumables: [],
         related_consumables_full: [],
         related_consumables_display: [],
         related_consumables_categories: {
@@ -866,7 +911,7 @@ async function testPublicationReadinessEvaluation(): Promise<{ passed: boolean; 
       retry_count: 0,
       created_at: Date.now(),
       updated_at: Date.now(),
-      job_run_id: 'pub-test-job',
+
       input_hash: 'pub-test-hash',
       ruleset_version: '2.1.0',
       parser_version: '1.5.0',
@@ -876,39 +921,39 @@ async function testPublicationReadinessEvaluation(): Promise<{ passed: boolean; 
     // Evaluate publication readiness
     const readinessResult = evaluatePublicationReadiness(mockItem);
 
-    details.push(`✅ Publication readiness evaluation:`);
-    details.push(`   - Overall score: ${(readinessResult.overall_score * 100).toFixed(1)}%`);
-    details.push(`   - Is ready: ${readinessResult.is_ready ? 'Yes' : 'No'}`);
-    details.push(`   - Confidence level: ${readinessResult.confidence_level}`);
+    details.push(`✅ Publication readiness evaluation: `);
+    details.push(`   - Overall score: ${(readinessResult.overall_score * 100).toFixed(1)}% `);
+    details.push(`   - Is ready: ${readinessResult.is_ready ? 'Yes' : 'No'} `);
+    details.push(`   - Confidence level: ${readinessResult.confidence_level} `);
 
     // Test component scores
-    details.push(`   📊 Component scores:`);
+    details.push(`   📊 Component scores: `);
     Object.entries(readinessResult.component_scores).forEach(([component, score]) => {
-      details.push(`      - ${component}: ${(score * 100).toFixed(1)}%`);
+      details.push(`      - ${component}: ${(score * 100).toFixed(1)}% `);
     });
 
     // Test blocking issues
     if (readinessResult.blocking_issues.length === 0) {
       details.push(`   ✅ No blocking issues found`);
     } else {
-      details.push(`   ⚠️ Blocking issues: ${readinessResult.blocking_issues.join('; ')}`);
+      details.push(`   ⚠️ Blocking issues: ${readinessResult.blocking_issues.join('; ')} `);
     }
 
     // Test recommendations
     if (readinessResult.recommendations.length > 0) {
-      details.push(`   💡 Recommendations: ${readinessResult.recommendations.slice(0, 2).join('; ')}`);
+      details.push(`   💡 Recommendations: ${readinessResult.recommendations.slice(0, 2).join('; ')} `);
     }
 
     // Validate readiness criteria
     if (readinessResult.overall_score >= 0.7) {
       details.push(`   ✅ Meets minimum readiness threshold`);
     } else {
-      details.push(`   ❌ Below minimum readiness threshold (${(readinessResult.overall_score * 100).toFixed(1)}% < 70%)`);
+      details.push(`   ❌ Below minimum readiness threshold(${(readinessResult.overall_score * 100).toFixed(1)}% <70%)`);
       allPassed = false;
     }
 
   } catch (error) {
-    details.push(`❌ Publication readiness test error: ${error}`);
+    details.push(`❌ Publication readiness test error: ${error} `);
     allPassed = false;
   }
 
@@ -949,35 +994,35 @@ async function runEndToEndTests(): Promise<void> {
   console.log("\n📊 COMPREHENSIVE END-TO-END TEST RESULTS:\n");
 
   console.log("1. COMPLETE DATA PROCESSING PIPELINE:");
-  pipelineResult.details.forEach(detail => console.log(`   ${detail}`));
-  console.log(`   Status: ${pipelineResult.passed ? '✅ PASSED' : '❌ FAILED'}\n`);
+  pipelineResult.details.forEach(detail => console.log(`   ${detail} `));
+  console.log(`   Status: ${pipelineResult.passed ? '✅ PASSED' : '❌ FAILED'} \n`);
 
   console.log("2. RUSSIAN MARKET REQUIREMENTS COMPLIANCE:");
-  russianMarketResult.details.forEach(detail => console.log(`   ${detail}`));
-  console.log(`   Status: ${russianMarketResult.passed ? '✅ PASSED' : '❌ FAILED'}\n`);
+  russianMarketResult.details.forEach(detail => console.log(`   ${detail} `));
+  console.log(`   Status: ${russianMarketResult.passed ? '✅ PASSED' : '❌ FAILED'} \n`);
 
   console.log("3. BATCH PROCESSING WITH VARIOUS DATA SETS:");
-  batchResult.details.forEach(detail => console.log(`   ${detail}`));
-  console.log(`   Status: ${batchResult.passed ? '✅ PASSED' : '❌ FAILED'}\n`);
+  batchResult.details.forEach(detail => console.log(`   ${detail} `));
+  console.log(`   Status: ${batchResult.passed ? '✅ PASSED' : '❌ FAILED'} \n`);
 
   console.log("4. EXPORT FUNCTIONALITY WITH ENHANCED DATA:");
-  exportResult.details.forEach(detail => console.log(`   ${detail}`));
-  console.log(`   Status: ${exportResult.passed ? '✅ PASSED' : '❌ FAILED'}\n`);
+  exportResult.details.forEach(detail => console.log(`   ${detail} `));
+  console.log(`   Status: ${exportResult.passed ? '✅ PASSED' : '❌ FAILED'} \n`);
 
   console.log("5. AUDIT TRAIL COMPLETENESS AND DATA PROVENANCE:");
-  auditResult.details.forEach(detail => console.log(`   ${detail}`));
-  console.log(`   Status: ${auditResult.passed ? '✅ PASSED' : '❌ FAILED'}\n`);
+  auditResult.details.forEach(detail => console.log(`   ${detail} `));
+  console.log(`   Status: ${auditResult.passed ? '✅ PASSED' : '❌ FAILED'} \n`);
 
   console.log("6. PUBLICATION READINESS EVALUATION:");
-  publicationResult.details.forEach(detail => console.log(`   ${detail}`));
-  console.log(`   Status: ${publicationResult.passed ? '✅ PASSED' : '❌ FAILED'}\n`);
+  publicationResult.details.forEach(detail => console.log(`   ${detail} `));
+  console.log(`   Status: ${publicationResult.passed ? '✅ PASSED' : '❌ FAILED'} \n`);
 
   // Overall summary
   const allPassed = results.every(r => r.passed);
   const passedCount = results.filter(r => r.passed).length;
 
   console.log("🎯 OVERALL END-TO-END TEST STATUS:");
-  console.log(`   ${allPassed ? '✅ ALL TESTS PASSED' : '⚠️ SOME TESTS FAILED'}`);
+  console.log(`   ${allPassed ? '✅ ALL TESTS PASSED' : '⚠️ SOME TESTS FAILED'} `);
   console.log(`   Test suite completion: ${passedCount}/${results.length} test categories passed`);
   console.log(`   Total execution time: ${(totalTime / 1000).toFixed(1)} seconds`);
 

@@ -1,55 +1,6 @@
-import { ConsumableData, ConfidenceScores } from './domain';
-import { EvidenceBlock, ProcessingHistoryEntry, EvidenceSource, QualityMetrics } from './audit';
-import { ErrorDetail, FailureReason, ErrorCategory, ErrorSeverity, ProcessingStep } from './error';
+import { ConsumableData, ConfidenceScores, EnrichedItem, ProcessingStep, ValidationStatus, ManualQueueEntry } from './domain';
+import { ErrorCategory, ErrorSeverity, FailureReason } from './error';
 
-export type ValidationStatus = 'pending' | 'processing' | 'ok' | 'needs_review' | 'failed';
-
-export interface EnrichedItem {
-    id: string;
-    input_raw: string;
-    data: ConsumableData;
-    evidence: EvidenceBlock;
-    status: ValidationStatus;
-    current_step?: ProcessingStep;
-    validation_errors: string[];
-    error_details?: ErrorDetail[];
-    failure_reasons?: FailureReason[];
-    retry_count: number;
-    last_retry_at?: string;
-    next_retry_at?: string;
-    is_retryable?: boolean;
-    manual_queue_entry?: ManualQueueEntry;
-    thinking_process?: string;
-    created_at: number;
-    updated_at: number;
-    job_run_id: string;
-    input_hash: string;
-    ruleset_version: string;
-    parser_version: string;
-    processed_at: string;
-    processing_duration_ms?: number;
-    quality_score?: number;
-}
-
-export interface ManualQueueEntry {
-    itemId: string;
-    inputRaw: string;
-    failureReasons: ErrorDetail[];
-    extractedData: Partial<ConsumableData>;
-    missingFields: string[];
-    recommendations: string[];
-    context: {
-        processingHistory: ProcessingHistoryEntry[];
-        evidenceSources: EvidenceSource[];
-        confidenceScores?: ConfidenceScores;
-        qualityMetrics?: QualityMetrics;
-    };
-    priority: 'low' | 'medium' | 'high';
-    estimatedResolutionTime: number; // minutes
-    queuedAt: string;
-    lastAttemptAt?: string;
-    attemptCount: number;
-}
 
 export interface BatchProcessingProgress {
     totalItems: number;

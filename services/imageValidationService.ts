@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { ImageCandidate } from "../types";
 
-const getAI = () => new GoogleGenAI({ apiKey: import.meta.env.VITE_GOOGLE_API_KEY });
+const getAI = () => new GoogleGenAI({ apiKey: (import.meta as any).env?.VITE_GOOGLE_API_KEY || process.env.VITE_GOOGLE_API_KEY || '' });
 
 export interface ImageValidationConfig {
   minResolution: number; // 800x800 minimum
@@ -375,7 +375,7 @@ export async function validateProductImage(
   try {
     // Run all validation checks
     // Determine policy from environment
-    const policy = import.meta.env.VITE_IMAGE_POLICY || 'approved_library_only';
+    const policy = (import.meta as any).env?.VITE_IMAGE_POLICY || process.env.VITE_IMAGE_POLICY || 'approved_library_only';
 
     // Prepare checks
     const checksToRun = [

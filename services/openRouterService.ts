@@ -590,7 +590,7 @@ Nix.ru Data: ${nixData ? JSON.stringify(nixData) : 'Not found'}
 
       // Create enriched item
       const enrichedItem: EnrichedItem = {
-        id: uuidv4(),
+
         input_raw: inputRaw,
         data: synthesisResult.data,
         evidence: {
@@ -628,7 +628,7 @@ Nix.ru Data: ${nixData ? JSON.stringify(nixData) : 'Not found'}
         is_retryable: false,
         created_at: Date.now(),
         updated_at: Date.now(),
-        job_run_id: jobRunId,
+        id: jobRunId,
         input_hash: inputHash,
         ruleset_version: RULESET_VERSION,
         parser_version: PARSER_VERSION,
@@ -643,7 +643,7 @@ Nix.ru Data: ${nixData ? JSON.stringify(nixData) : 'Not found'}
 
       // Create error item
       const errorItem: EnrichedItem = {
-        id: uuidv4(),
+
         input_raw: inputRaw,
         data: {} as ConsumableData,
         evidence: {
@@ -677,7 +677,7 @@ Nix.ru Data: ${nixData ? JSON.stringify(nixData) : 'Not found'}
         is_retryable: true,
         created_at: Date.now(),
         updated_at: Date.now(),
-        job_run_id: jobRunId,
+        id: jobRunId,
         input_hash: inputHash,
         ruleset_version: RULESET_VERSION,
         parser_version: PARSER_VERSION,

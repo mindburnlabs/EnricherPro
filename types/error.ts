@@ -34,7 +34,7 @@ export type ErrorCategory =
     | 'timeout_error'
     | 'configuration_error';
 
-export type ProcessingStep = 'idle' | 'searching' | 'scraping_nix' | 'scraping_compat' | 'analyzing' | 'auditing_images' | 'finalizing';
+import { ProcessingStep } from './domain';
 
 export interface ErrorDetail {
     reason: FailureReason;

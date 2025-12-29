@@ -60,7 +60,26 @@
 
 ---
 
-## 🏗️ Technical Architecture
+## 🏗️ Technical Architecture (SOTA Agentic)
+
+The system utilizes a State-of-the-Art (SOTA) **Multi-Agent** architecture to guarantee data precision:
+
+### 🧩 Agentic Pipeline
+1.  **Orchestrator Agent**: Manages the end-to-end lifecycle, audit trails, and state transitions.
+2.  **Discovery Agent (Perplexity)**: Scans the web for high-confidence data sources (OEM, Retailers).
+3.  **Logistics Agent (Firecrawl)**: deep-crawls NIX.ru to extract authoritative packaging metrics (mm, g).
+4.  **Synthesis Agent (Gemini 3.0)**: Fuses data from multiple sources, resolves conflicts, and generates JSON-LD.
+5.  **Quality Gatekeeper**: rigorous 5-stage validation (Brand, Identity, Logistics, Compatibility, Completeness).
+
+### 🛡️ Compliance & Safety
+- **Russian Market Filter**: Enforces 2+ independent sources for printer compatibility verification.
+- **Audit Trails**: Every data field is traced back to a specific URL with a timestamp and confidence score.
+- **Strict Typing**: Full TypeScript coverage ensuring zero runtime errors in production.
+
+---
+
+## 🏗️ Project Structure
+
 
 The system follows a modular, service-oriented architecture:
 

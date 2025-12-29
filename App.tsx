@@ -7,7 +7,11 @@ import DetailView from './components/DetailView';
 import SettingsView from './components/SettingsView';
 import PublicationReadinessView from './components/PublicationReadinessView';
 import { EnrichedItem, ProcessingStats, ProcessingStep, BatchProcessingProgress, ManualQueueEntry } from './types';
-import { processItem } from './services/geminiService';
+
+import { orchestrationService } from './services/orchestrationService';
+// remove import { processItem } from './services/geminiService'; -- handled by Replacement
+
+
 import { createOpenRouterService, getOpenRouterService, OpenRouterConfig } from './services/openRouterService';
 import {
   createErrorDetail,
@@ -160,21 +164,24 @@ const App: React.FC = () => {
         id: tempId,
         input_raw: input,
         data: {
-          brand: null, consumable_type: null, model: null, short_model: null,
+          brand: null, consumable_type: 'unknown', model: null, short_model: null,
           yield: null, color: null, printers_ru: [],
-          related_consumables: [],
-          related_consumables_full: [],
-          related_consumables_display: [],
-          related_consumables_categories: {
-            companions: [],
-            alternatives: [],
-            colorVariants: [],
-            replacements: []
-          },
+          supplier_title_raw: input,
+          title_norm: input,
+          automation_status: 'needs_review',
+          publish_ready: false,
+          mpn_identity: { mpn: '', variant_flags: { chip: false, counterless: false, high_yield: false, kit: false }, canonical_model_name: '' },
+          compatible_printers_ru: [],
+          compatible_printers_unverified: [],
+          sources: [],
+          images: [],
+          packaging_from_nix: null,
           model_alias_short: null,
           has_chip: 'unknown',
           has_page_counter: 'unknown',
-          packaging_from_nix: null, images: [], faq: []
+          related_consumables_full: [],
+          related_consumables_display: [],
+          faq: []
         },
         evidence: {
           sources: [],
@@ -192,7 +199,7 @@ const App: React.FC = () => {
           },
           audit_trail: []
         },
-        status: 'processing',
+        status: 'needs_review', // Temporary status during processing
         current_step: 'searching',
         validation_errors: [],
         error_details: [],
@@ -201,7 +208,6 @@ const App: React.FC = () => {
         is_retryable: false,
         created_at: Date.now(),
         updated_at: Date.now(),
-        job_run_id: `temp_${tempId}`,
         input_hash: '',
         ruleset_version: '2.1.0',
         parser_version: '1.5.0',
@@ -232,10 +238,14 @@ const App: React.FC = () => {
           });
         } else {
           console.log('Processing with Gemini service (fallback)');
-          result = await processItem(input, (step: ProcessingStep) => {
-            setItems(prev => prev.map(item => item.id === tempId ? { ...item, current_step: step } : item));
+          // Use Orchestration Service (SOTA Pipeline)
+          result = await orchestrationService.processItem(input, (step: ProcessingStep) => {
+            setItems(prev => prev.map(item =>
+              item.id === tempId
+                ? { ...item, current_step: step }
+                : item
+            ));
 
-            // Update batch progress with current step
             if (batchProgress) {
               setBatchProgress(prev => prev ? updateCurrentProcessing(prev, tempId, step) : null);
             }

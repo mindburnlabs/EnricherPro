@@ -1,4 +1,4 @@
-import { ProcessingStep } from './error';
+import { ProcessingStep } from './domain';
 
 export interface ProcessingHistoryEntry {
     step: ProcessingStep;
