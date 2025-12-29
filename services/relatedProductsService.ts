@@ -301,6 +301,18 @@ export function createDisplayList(
     }
   }
   
+  // Re-sort the final selection to ensure best items are shown first
+  // regardless of which selection loop added them
+  display.sort((a, b) => {
+    if (a.priority !== b.priority) {
+      return b.priority - a.priority;
+    }
+    if (a.confidence !== b.confidence) {
+      return b.confidence - a.confidence;
+    }
+    return a.model.localeCompare(b.model);
+  });
+  
   return display.slice(0, maxItems);
 }
 

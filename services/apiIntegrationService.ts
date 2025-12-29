@@ -89,47 +89,47 @@ export interface ApiResponse<T = any> {
 class RateLimiter {
   private requests: number[] = [];
   private burstRequests: number[] = [];
-  
-  constructor(private config: RateLimitConfig) {}
-  
+
+  constructor(private config: RateLimitConfig) { }
+
   async checkLimit(): Promise<{ allowed: boolean; retryAfter?: number }> {
     const now = Date.now();
     const windowStart = now - this.config.windowMs;
-    
+
     // Clean old requests
     this.requests = this.requests.filter(time => time > windowStart);
-    
+
     // Check regular rate limit
     if (this.requests.length >= this.config.maxRequests) {
       const oldestRequest = Math.min(...this.requests);
       const retryAfter = oldestRequest + this.config.windowMs - now;
       return { allowed: false, retryAfter };
     }
-    
+
     // Check burst limit if configured
     if (this.config.burstLimit) {
       const burstWindowStart = now - 1000; // 1 second burst window
       this.burstRequests = this.burstRequests.filter(time => time > burstWindowStart);
-      
+
       if (this.burstRequests.length >= this.config.burstLimit) {
         return { allowed: false, retryAfter: 1000 };
       }
-      
+
       this.burstRequests.push(now);
     }
-    
+
     this.requests.push(now);
     return { allowed: true };
   }
-  
+
   getStats(): { currentRequests: number; maxRequests: number; resetTime: number } {
     const now = Date.now();
     const windowStart = now - this.config.windowMs;
     this.requests = this.requests.filter(time => time > windowStart);
-    
-    const resetTime = this.requests.length > 0 ? 
+
+    const resetTime = this.requests.length > 0 ?
       Math.min(...this.requests) + this.config.windowMs : now;
-    
+
     return {
       currentRequests: this.requests.length,
       maxRequests: this.config.maxRequests,
@@ -145,9 +145,9 @@ class CircuitBreaker {
   private successes: number[] = [];
   private lastFailureTime = 0;
   private halfOpenCalls = 0;
-  
-  constructor(private config: CircuitBreakerConfig) {}
-  
+
+  constructor(private config: CircuitBreakerConfig) { }
+
   async execute<T>(operation: () => Promise<T>): Promise<T> {
     if (this.state === 'OPEN') {
       if (Date.now() - this.lastFailureTime < this.config.recoveryTimeout) {
@@ -156,11 +156,11 @@ class CircuitBreaker {
       this.state = 'HALF_OPEN';
       this.halfOpenCalls = 0;
     }
-    
+
     if (this.state === 'HALF_OPEN' && this.halfOpenCalls >= this.config.halfOpenMaxCalls) {
       throw new Error('Circuit breaker HALF_OPEN call limit exceeded');
     }
-    
+
     try {
       const result = await operation();
       this.onSuccess();
@@ -170,11 +170,11 @@ class CircuitBreaker {
       throw error;
     }
   }
-  
+
   private onSuccess(): void {
     const now = Date.now();
     this.successes.push(now);
-    
+
     if (this.state === 'HALF_OPEN') {
       this.halfOpenCalls++;
       if (this.halfOpenCalls >= this.config.successThreshold) {
@@ -183,57 +183,57 @@ class CircuitBreaker {
         this.successes = [];
       }
     }
-    
+
     // Clean old successes
     const windowStart = now - this.config.monitoringWindow;
     this.successes = this.successes.filter(time => time > windowStart);
   }
-  
+
   private onFailure(): void {
     const now = Date.now();
     this.failures.push(now);
     this.lastFailureTime = now;
-    
+
     if (this.state === 'HALF_OPEN') {
       this.state = 'OPEN';
       return;
     }
-    
+
     // Clean old failures
     const windowStart = now - this.config.monitoringWindow;
     this.failures = this.failures.filter(time => time > windowStart);
-    
+
     // Check if we should open the circuit
     if (this.failures.length >= this.config.failureThreshold) {
       this.state = 'OPEN';
     }
   }
-  
+
   getState(): CircuitBreakerState {
     return this.state;
   }
-  
-  getStats(): { 
-    state: CircuitBreakerState; 
-    failures: number; 
-    successes: number; 
-    nextRetryTime?: number 
+
+  getStats(): {
+    state: CircuitBreakerState;
+    failures: number;
+    successes: number;
+    nextRetryTime?: number
   } {
     const now = Date.now();
     const windowStart = now - this.config.monitoringWindow;
-    
+
     this.failures = this.failures.filter(time => time > windowStart);
     this.successes = this.successes.filter(time => time > windowStart);
-    
+
     return {
       state: this.state,
       failures: this.failures.length,
       successes: this.successes.length,
-      nextRetryTime: this.state === 'OPEN' ? 
+      nextRetryTime: this.state === 'OPEN' ?
         this.lastFailureTime + this.config.recoveryTimeout : undefined
     };
   }
-  
+
   reset(): void {
     this.state = 'CLOSED';
     this.failures = [];
@@ -246,61 +246,61 @@ class CircuitBreaker {
 class CreditManager {
   private credits: number;
   private lastRefill = Date.now();
-  
+
   constructor(private config: CreditConfig) {
     this.credits = config.maxCredits;
   }
-  
+
   async checkCredits(required: number): Promise<{ available: boolean; current: number; refillTime?: number }> {
     this.refillCredits();
-    
+
     if (this.credits >= required) {
       return { available: true, current: this.credits };
     }
-    
+
     // Calculate when enough credits will be available
     const creditsNeeded = required - this.credits;
     const refillTime = Math.ceil(creditsNeeded / this.config.creditRefillRate) * this.config.creditRefillInterval;
-    
-    return { 
-      available: false, 
-      current: this.credits, 
-      refillTime: Date.now() + refillTime 
+
+    return {
+      available: false,
+      current: this.credits,
+      refillTime: Date.now() + refillTime
     };
   }
-  
+
   consumeCredits(amount: number): boolean {
     this.refillCredits();
-    
+
     if (this.credits >= amount) {
       this.credits -= amount;
       return true;
     }
-    
+
     return false;
   }
-  
+
   private refillCredits(): void {
     const now = Date.now();
     const timeSinceRefill = now - this.lastRefill;
     const refillCycles = Math.floor(timeSinceRefill / this.config.creditRefillInterval);
-    
+
     if (refillCycles > 0) {
       const creditsToAdd = refillCycles * this.config.creditRefillRate;
       this.credits = Math.min(this.config.maxCredits, this.credits + creditsToAdd);
       this.lastRefill = now;
     }
   }
-  
-  getStats(): { 
-    current: number; 
-    max: number; 
-    percentage: number; 
-    isLow: boolean; 
-    nextRefillTime: number 
+
+  getStats(): {
+    current: number;
+    max: number;
+    percentage: number;
+    isLow: boolean;
+    nextRefillTime: number
   } {
     this.refillCredits();
-    
+
     return {
       current: this.credits,
       max: this.config.maxCredits,
@@ -309,7 +309,7 @@ class CreditManager {
       nextRefillTime: this.lastRefill + this.config.creditRefillInterval
     };
   }
-  
+
   hasEmergencyReserve(): boolean {
     return this.credits >= this.config.emergencyReserve;
   }
@@ -321,32 +321,32 @@ class ApiHealthMonitor {
   private lastHealthCheck = 0;
   private responseTimeHistory: number[] = [];
   private errorHistory: { timestamp: number; error: string }[] = [];
-  
+
   constructor(
     private config: ApiServiceConfig,
     private makeRequest: (url: string, options?: any) => Promise<ApiResponse>
-  ) {}
-  
+  ) { }
+
   async checkHealth(): Promise<ApiHealthStatus> {
     if (!this.config.healthCheckEndpoint) {
       return this.healthStatus;
     }
-    
+
     const now = Date.now();
     if (now - this.lastHealthCheck < this.config.healthCheckInterval) {
       return this.healthStatus;
     }
-    
+
     try {
       const startTime = Date.now();
       const response = await this.makeRequest(this.config.healthCheckEndpoint, {
         timeout: this.config.timeout.connectionTimeout
       });
       const responseTime = Date.now() - startTime;
-      
+
       this.responseTimeHistory.push(responseTime);
       this.responseTimeHistory = this.responseTimeHistory.slice(-10); // Keep last 10
-      
+
       if (response.success) {
         this.healthStatus = this.calculateHealthStatus(responseTime);
       } else {
@@ -355,21 +355,21 @@ class ApiHealthMonitor {
       }
     } catch (error) {
       this.healthStatus = 'unhealthy';
-      this.errorHistory.push({ 
-        timestamp: now, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      this.errorHistory.push({
+        timestamp: now,
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
-    
+
     this.lastHealthCheck = now;
     this.cleanOldErrors();
-    
+
     return this.healthStatus;
   }
-  
+
   private calculateHealthStatus(responseTime: number): ApiHealthStatus {
     const avgResponseTime = this.responseTimeHistory.reduce((a, b) => a + b, 0) / this.responseTimeHistory.length;
-    
+
     if (avgResponseTime < 1000) {
       return 'healthy';
     } else if (avgResponseTime < 3000) {
@@ -378,12 +378,12 @@ class ApiHealthMonitor {
       return 'unhealthy';
     }
   }
-  
+
   private cleanOldErrors(): void {
     const oneHourAgo = Date.now() - (60 * 60 * 1000);
     this.errorHistory = this.errorHistory.filter(error => error.timestamp > oneHourAgo);
   }
-  
+
   getHealthStats(): {
     status: ApiHealthStatus;
     averageResponseTime: number;
@@ -392,7 +392,7 @@ class ApiHealthMonitor {
   } {
     const avgResponseTime = this.responseTimeHistory.length > 0 ?
       this.responseTimeHistory.reduce((a, b) => a + b, 0) / this.responseTimeHistory.length : 0;
-    
+
     return {
       status: this.healthStatus,
       averageResponseTime: avgResponseTime,
@@ -411,7 +411,7 @@ export class ApiIntegrationService {
     creditManager?: CreditManager;
     healthMonitor: ApiHealthMonitor;
   }>();
-  
+
   private requestQueue: Array<{
     context: RequestContext;
     resolve: (value: ApiResponse) => void;
@@ -419,17 +419,17 @@ export class ApiIntegrationService {
     operation: () => Promise<ApiResponse>;
     queuedAt: number;
   }> = [];
-  
+
   private processing = false;
-  
+
   constructor() {
     // Start queue processor
     this.processQueue();
-    
+
     // Start health monitoring
     setInterval(() => this.monitorAllServices(), 30000); // Every 30 seconds
   }
-  
+
   /**
    * Register an API service with its configuration
    */
@@ -437,13 +437,13 @@ export class ApiIntegrationService {
     const rateLimiter = new RateLimiter(config.rateLimit);
     const circuitBreaker = new CircuitBreaker(config.circuitBreaker);
     const creditManager = config.credits ? new CreditManager(config.credits) : undefined;
-    
+
     const makeRequest = async (url: string, options?: any): Promise<ApiResponse> => {
       return this.makeHttpRequest(url, options);
     };
-    
+
     const healthMonitor = new ApiHealthMonitor(config, makeRequest);
-    
+
     this.services.set(config.name, {
       config,
       rateLimiter,
@@ -451,10 +451,10 @@ export class ApiIntegrationService {
       creditManager,
       healthMonitor
     });
-    
+
     console.log(`Registered API service: ${config.name}`);
   }
-  
+
   /**
    * Make an API request with full optimization features
    */
@@ -470,13 +470,13 @@ export class ApiIntegrationService {
         operation: operation as () => Promise<ApiResponse>,
         queuedAt: Date.now()
       });
-      
+
       if (!this.processing) {
         this.processQueue();
       }
     });
   }
-  
+
   /**
    * Process the request queue with priority handling
    */
@@ -484,9 +484,9 @@ export class ApiIntegrationService {
     if (this.processing || this.requestQueue.length === 0) {
       return;
     }
-    
+
     this.processing = true;
-    
+
     try {
       // Sort queue by priority and queue time
       this.requestQueue.sort((a, b) => {
@@ -495,17 +495,17 @@ export class ApiIntegrationService {
         if (priorityDiff !== 0) return priorityDiff;
         return a.queuedAt - b.queuedAt; // FIFO for same priority
       });
-      
+
       while (this.requestQueue.length > 0) {
         const request = this.requestQueue.shift()!;
-        
+
         try {
           const response = await this.executeRequest(request);
           request.resolve(response);
         } catch (error) {
           request.reject(error as Error);
         }
-        
+
         // Small delay to prevent overwhelming
         await new Promise(resolve => setTimeout(resolve, 10));
       }
@@ -513,32 +513,32 @@ export class ApiIntegrationService {
       this.processing = false;
     }
   }
-  
+
   /**
    * Execute a single request with all optimizations
    */
   private async executeRequest(request: {
     context: RequestContext;
     operation: () => Promise<ApiResponse>;
-  }): Promise<ApiResponse> {
+  }, retryCount: number = 0): Promise<ApiResponse> {
     const service = this.services.get(request.context.serviceId);
     if (!service) {
       throw new Error(`Service not found: ${request.context.serviceId}`);
     }
-    
+
     const startTime = Date.now();
-    
+
     try {
       // Check rate limiting
       const rateLimitCheck = await service.rateLimiter.checkLimit();
       if (!rateLimitCheck.allowed) {
         if (rateLimitCheck.retryAfter) {
           await this.exponentialBackoff(rateLimitCheck.retryAfter);
-          return this.executeRequest(request); // Retry after backoff
+          return this.executeRequest(request, retryCount); // Retry after backoff
         }
         throw new Error('Rate limit exceeded');
       }
-      
+
       // Check credit availability
       if (service.creditManager && request.context.creditsRequired) {
         const creditCheck = await service.creditManager.checkCredits(request.context.creditsRequired);
@@ -547,46 +547,50 @@ export class ApiIntegrationService {
             const waitTime = creditCheck.refillTime - Date.now();
             if (waitTime > 0 && waitTime < 60000) { // Wait up to 1 minute
               await new Promise(resolve => setTimeout(resolve, waitTime));
-              return this.executeRequest(request); // Retry after credits refill
+              return this.executeRequest(request, retryCount); // Retry after credits refill
             }
           }
           throw new Error('Insufficient credits');
         }
       }
-      
+
       // Execute through circuit breaker
       const response = await service.circuitBreaker.execute(async () => {
         const result = await this.executeWithTimeout(request.operation, service.config.timeout);
-        
+
         // Consume credits if successful
         if (service.creditManager && request.context.creditsRequired && result.success) {
           service.creditManager.consumeCredits(request.context.creditsRequired);
         }
-        
+
         return result;
       });
-      
+
       response.responseTime = Date.now() - startTime;
       return response;
-      
+
     } catch (error) {
       const errorResponse: ApiResponse = {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         responseTime: Date.now() - startTime
       };
-      
+
       // Handle retryable errors with exponential backoff
-      if (request.context.retryable && this.isRetryableError(error)) {
-        const backoffTime = this.calculateBackoffTime(service.config.rateLimit);
+      // Check if we haven't exceeded retry limit
+      const maxRetries = service.config.timeout.maxRetries;
+
+      if (request.context.retryable && this.isRetryableError(error) && retryCount < maxRetries) {
+        const backoffTime = this.calculateBackoffTime(service.config.rateLimit, retryCount + 1);
+        console.warn(`Request failed for ${request.context.serviceId}, retrying (attempt ${retryCount + 1}/${maxRetries}) in ${backoffTime}ms... Error: ${errorResponse.error}`);
         await this.exponentialBackoff(backoffTime);
-        return this.executeRequest(request); // Retry
+        return this.executeRequest(request, retryCount + 1); // Retry with incremented count
       }
-      
+
       return errorResponse;
     }
   }
-  
+
   /**
    * Execute operation with timeout handling
    */
@@ -598,7 +602,7 @@ export class ApiIntegrationService {
       const timeout = setTimeout(() => {
         reject(new Error(`Request timeout after ${timeoutConfig.requestTimeout}ms`));
       }, timeoutConfig.requestTimeout);
-      
+
       operation()
         .then(result => {
           clearTimeout(timeout);
@@ -610,7 +614,7 @@ export class ApiIntegrationService {
         });
     });
   }
-  
+
   /**
    * Exponential backoff implementation
    */
@@ -619,17 +623,19 @@ export class ApiIntegrationService {
     const delay = baseDelay * (1 + jitter);
     await new Promise(resolve => setTimeout(resolve, delay));
   }
-  
+
   /**
    * Calculate backoff time based on rate limit configuration
    */
-  private calculateBackoffTime(rateLimitConfig: RateLimitConfig): number {
+  private calculateBackoffTime(rateLimitConfig: RateLimitConfig, retryCount: number): number {
+    const baseDelay = 1000;
+    const exponentialDelay = baseDelay * Math.pow(rateLimitConfig.backoffMultiplier, retryCount);
     return Math.min(
-      1000 * rateLimitConfig.backoffMultiplier,
+      exponentialDelay,
       rateLimitConfig.maxBackoffMs
     );
   }
-  
+
   /**
    * Check if error is retryable
    */
@@ -637,15 +643,15 @@ export class ApiIntegrationService {
     if (error instanceof Error) {
       const message = error.message.toLowerCase();
       return message.includes('timeout') ||
-             message.includes('network') ||
-             message.includes('rate limit') ||
-             message.includes('503') ||
-             message.includes('502') ||
-             message.includes('504');
+        message.includes('network') ||
+        message.includes('rate limit') ||
+        message.includes('503') ||
+        message.includes('502') ||
+        message.includes('504');
     }
     return false;
   }
-  
+
   /**
    * Make HTTP request (to be implemented based on your HTTP client)
    */
@@ -657,7 +663,7 @@ export class ApiIntegrationService {
         ...options,
         signal: AbortSignal.timeout(options?.timeout || 10000)
       });
-      
+
       return {
         success: response.ok,
         data: response.ok ? await response.json() : undefined,
@@ -673,7 +679,7 @@ export class ApiIntegrationService {
       };
     }
   }
-  
+
   /**
    * Monitor all registered services
    */
@@ -686,7 +692,7 @@ export class ApiIntegrationService {
       }
     }
   }
-  
+
   /**
    * Get comprehensive service statistics
    */
@@ -698,7 +704,7 @@ export class ApiIntegrationService {
   } | null {
     const service = this.services.get(serviceName);
     if (!service) return null;
-    
+
     return {
       rateLimit: service.rateLimiter.getStats(),
       circuitBreaker: service.circuitBreaker.getStats(),
@@ -706,7 +712,7 @@ export class ApiIntegrationService {
       health: service.healthMonitor.getHealthStats()
     };
   }
-  
+
   /**
    * Get all services status for monitoring dashboard
    */
@@ -720,13 +726,13 @@ export class ApiIntegrationService {
     queueLength: number;
   }> {
     const status: Record<string, any> = {};
-    
+
     for (const [serviceName, service] of this.services) {
       const rateLimitStats = service.rateLimiter.getStats();
       const circuitBreakerStats = service.circuitBreaker.getStats();
       const creditStats = service.creditManager?.getStats();
       const healthStats = service.healthMonitor.getHealthStats();
-      
+
       status[serviceName] = {
         name: serviceName,
         priority: service.config.priority,
@@ -737,22 +743,22 @@ export class ApiIntegrationService {
         queueLength: this.requestQueue.filter(r => r.context.serviceId === serviceName).length
       };
     }
-    
+
     return status;
   }
-  
+
   /**
    * Reset circuit breaker for a service (emergency recovery)
    */
   resetCircuitBreaker(serviceName: string): boolean {
     const service = this.services.get(serviceName);
     if (!service) return false;
-    
+
     service.circuitBreaker.reset();
     console.log(`Circuit breaker reset for service: ${serviceName}`);
     return true;
   }
-  
+
   /**
    * Get queue statistics
    */
@@ -766,7 +772,7 @@ export class ApiIntegrationService {
     const byPriority = { high: 0, medium: 0, low: 0 };
     let totalWaitTime = 0;
     let oldestRequest = 0;
-    
+
     for (const request of this.requestQueue) {
       byPriority[request.context.priority]++;
       const waitTime = now - request.queuedAt;
@@ -775,7 +781,7 @@ export class ApiIntegrationService {
         oldestRequest = waitTime;
       }
     }
-    
+
     return {
       totalQueued: this.requestQueue.length,
       byPriority,
@@ -847,34 +853,34 @@ export const DEFAULT_CONFIGS: Record<string, ApiServiceConfig> = {
     },
     healthCheckInterval: 300000 // 5 minutes
   },
-  
+
   gemini: {
     name: 'gemini',
     baseUrl: 'https://generativelanguage.googleapis.com',
     priority: 'high',
     rateLimit: {
-      maxRequests: 60,
+      maxRequests: 15, // Reduced from 60 to avoid 429s
       windowMs: 60000, // 1 minute
-      burstLimit: 10,
-      backoffMultiplier: 1.5,
-      maxBackoffMs: 20000
+      burstLimit: 2,   // Reduced from 10 to strictly throttle bursts
+      backoffMultiplier: 2, // Increased backoff multiplier
+      maxBackoffMs: 60000 // Increased max backoff to 1 minute
     },
     circuitBreaker: {
       failureThreshold: 3,
       recoveryTimeout: 30000,
       monitoringWindow: 180000, // 3 minutes
-      halfOpenMaxCalls: 2,
+      halfOpenMaxCalls: 1, // Reduced to be more cautious during recovery
       successThreshold: 2
     },
     timeout: {
       requestTimeout: 60000,
       connectionTimeout: 10000,
       retryTimeout: 3000,
-      maxRetries: 2
+      maxRetries: 3 // Allow one more retry with proper backoff
     },
     healthCheckInterval: 180000 // 3 minutes
   },
-  
+
   nix: {
     name: 'nix',
     baseUrl: 'https://nix.ru',
@@ -922,7 +928,7 @@ export function createApiIntegrationError(
   step: ProcessingStep
 ): ErrorDetail {
   let reason: FailureReason = 'external_service_timeout';
-  
+
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
     if (message.includes('rate limit')) {
@@ -935,7 +941,7 @@ export function createApiIntegrationError(
       reason = 'authentication_failed';
     }
   }
-  
+
   return createErrorDetail(
     reason,
     `API integration error in ${serviceName}.${operation}: ${error instanceof Error ? error.message : 'Unknown error'}`,

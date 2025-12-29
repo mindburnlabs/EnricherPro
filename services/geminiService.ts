@@ -27,7 +27,15 @@ import { discoverRelatedProducts } from './relatedProductsService';
 import { apiIntegrationService, createApiIntegrationError } from './apiIntegrationService';
 import { createOpenRouterService, OpenRouterService } from './openRouterService';
 
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getAI = () => {
+  const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+  if (!apiKey) {
+    console.error("Missing VITE_GOOGLE_API_KEY");
+    // Throwing error here might be too aggressive if we want to handle it gracefully elsewhere,
+    // but the error "API Key must be set" suggests the library throws if it's missing anyway.
+  }
+  return new GoogleGenAI({ apiKey: apiKey || '' });
+};
 
 const LOGISTICS_EXTRACT_SCHEMA = {
   type: 'object',
