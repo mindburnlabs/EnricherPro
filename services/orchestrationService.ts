@@ -249,8 +249,18 @@ export class OrchestrationService {
                             deepScrapeContent = JSON.stringify(extractedData.data.items, null, 2);
                         } else {
                             // Falback to Scrape if Extract fails or returns empty (cost optimization or error)
-                            logs.push("Deep Research: Extraction yielded no items, falling back to scrape...");
-                            const scrapePromises = targetUrls.map(url => firecrawlScrape(url));
+                            logs.push("Deep Research: Extraction yielded no items, falling back to deep scrape with actions...");
+
+                            // Use advanced scrape options to scroll down and capture lazy content
+                            const scrapePromises = targetUrls.map(url => firecrawlScrape(url, {
+                                formats: ['markdown'],
+                                actions: [
+                                    { type: 'scroll', direction: 'down' },
+                                    { type: 'wait', milliseconds: 1500 }
+                                ],
+                                onlyMainContent: true
+                            }));
+
                             const scrapeResults = await Promise.all(scrapePromises);
 
                             deepScrapeContent = scrapeResults.map((res, idx) => {

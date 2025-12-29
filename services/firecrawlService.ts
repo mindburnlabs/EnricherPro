@@ -365,25 +365,62 @@ CRITICAL: If NIX.ru data unavailable, mark as needs_review - do not use alternat
     dataKeys: Object.keys(status.data || {}),
     attempts
   });
-
   return status.data;
 }
 
 /**
- * Enhanced scraping with optimized API integration
- * Uses the new formats array for extraction and markdown with rate limiting protection
+ * Advanced Scrape Options for Firecrawl v2
+ * Enables interactions, detailed formatting, and precise content targeting.
  */
-export const firecrawlScrape = async (url: string, extractPrompt?: string, schema?: any): Promise<ScrapeResponse> => {
+export interface ScrapeOptions {
+  formats?: ('markdown' | 'html' | 'rawHtml' | 'links' | 'screenshot' | 'extract' | 'screenshot-full-page')[];
+  headers?: Record<string, string>;
+  includeTags?: string[];
+  excludeTags?: string[];
+  onlyMainContent?: boolean;
+  timeout?: number;
+  waitFor?: number;
+  mobile?: boolean;
+  actions?: Array<{
+    type: 'wait' | 'click' | 'write' | 'press' | 'scroll' | 'screenshot' | 'scrape';
+    milliseconds?: number;
+    selector?: string;
+    text?: string;
+    key?: string;
+    direction?: 'up' | 'down';
+  }>;
+  extract?: { // For JSON extraction via scrape format
+    schema?: any;
+    prompt?: string;
+  };
+}
+
+/**
+ * Enhanced scraping with optimized API integration and full v2 options support
+ */
+export const firecrawlScrape = async (url: string, options: ScrapeOptions = {}): Promise<ScrapeResponse> => {
   const apiKey = getFirecrawlApiKey();
   if (!apiKey) throw new Error("Firecrawl API Key missing.");
 
-  const formats: any[] = ['markdown', 'images'];
-  if (extractPrompt && schema) {
+  // Construct formats array
+  const formats: any[] = options.formats || ['markdown'];
+
+  // Handle Special Extract/JSON format via options.extract helper
+  if (options.extract) {
     formats.push({
       type: 'json',
-      prompt: extractPrompt,
-      schema: schema
+      prompt: options.extract.prompt,
+      schema: options.extract.schema
     });
+  }
+
+  // Handle "screenshot-full-page" convenience
+  if (formats.includes('screenshot-full-page')) {
+    const idx = formats.indexOf('screenshot-full-page');
+    formats[idx] = { type: 'screenshot', fullPage: true };
+  } else if (formats.includes('screenshot')) {
+    // Ensure it's object if needed or just string if API supports string 'screenshot'
+    // API v2 supports 'screenshot' string or object.
   }
 
   // TEST KEY MOCK RESPONSE
@@ -405,7 +442,7 @@ export const firecrawlScrape = async (url: string, extractPrompt?: string, schem
       priority: 'medium',
       retryable: true,
       creditsRequired: 1,
-      metadata: { url, hasExtraction: !!extractPrompt }
+      metadata: { url, hasActions: !!(options.actions && options.actions.length > 0) }
     },
     async () => {
       const httpResponse = await fetch(`${API_V2}/scrape`, {
@@ -417,13 +454,18 @@ export const firecrawlScrape = async (url: string, extractPrompt?: string, schem
         body: JSON.stringify({
           url,
           formats,
-          onlyMainContent: true,
-          maxAge: 172800000 // Use cache if < 2 days old
+          onlyMainContent: options.onlyMainContent !== undefined ? options.onlyMainContent : true,
+          includeTags: options.includeTags,
+          excludeTags: options.excludeTags,
+          waitFor: options.waitFor || 0,
+          timeout: options.timeout || 30000,
+          actions: options.actions,
+          headers: options.headers,
+          maxAge: 172800000 // default 2 days
         })
       });
 
       const result = await httpResponse.json().catch(() => ({}));
-
       return {
         success: httpResponse.ok,
         data: result,
@@ -435,7 +477,6 @@ export const firecrawlScrape = async (url: string, extractPrompt?: string, schem
     }
   );
 
-  // Return in the expected ScrapeResponse format
   return {
     success: response.success,
     data: response.data || {},
