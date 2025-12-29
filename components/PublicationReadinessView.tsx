@@ -341,7 +341,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
             <CheckCircle className="text-emerald-400" size={24} />
             Verified Readiness Queue
           </h3>
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{readyItems.length} ITEMS PASSING ALL PROTOCOLS</p>
+          <p className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">{readyItems.length} ITEMS PASSING ALL PROTOCOLS</p>
         </div>
 
         <div className="flex gap-3">
@@ -354,7 +354,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
           {selectedItems.length > 0 && (
             <button
               onClick={() => onBulkApprove(selectedItems.filter(id => readyItems.some(item => item.id === id)))}
-              className="premium-button px-5 py-2.5 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 flex items-center gap-2 shadow-lg shadow-emerald-900/40 border border-emerald-500/20"
+              className="premium-button px-5 py-2.5 bg-status-success text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-status-success/90 flex items-center gap-2 shadow-lg shadow-emerald-900/40 border border-status-success/20"
             >
               <Zap size={14} />
               Approve Set ({selectedItems.filter(id => readyItems.some(item => item.id === id)).length})
@@ -553,10 +553,10 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
     <div className="space-y-8 animate-in">
       <div className="flex flex-col gap-1">
         <h3 className="text-xl font-bold text-primary flex items-center gap-3">
-          <Zap className="text-indigo-400" size={24} />
+          <Zap className="text-primary-accent" size={24} />
           Protocol Enforcement System
         </h3>
-        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">MASS APPROVAL & DEPLOYMENT AUTOMATION</p>
+        <p className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">MASS APPROVAL & DEPLOYMENT AUTOMATION</p>
       </div>
 
       {/* Criteria Configuration */}
@@ -569,7 +569,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           <div className="space-y-8">
             <div className="group">
-              <label className="block text-[10px] font-black text-slate-500 mb-4 uppercase tracking-[0.2em] group-focus-within:text-indigo-400 transition-colors">
+              <label className="block text-[10px] font-black text-primary-subtle mb-4 uppercase tracking-[0.2em] group-focus-within:text-primary-accent transition-colors">
                 Minimum Readiness Threshold
               </label>
               <div className="flex items-center gap-6">
@@ -583,7 +583,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                     ...prev,
                     minimum_readiness_score: parseFloat(e.target.value)
                   }))}
-                  className="flex-1 accent-indigo-500"
+                  className="flex-1 accent-primary-accent"
                 />
                 <div className="text-2xl font-black text-primary w-16 tabular-nums">
                   {Math.round(bulkCriteria.minimum_readiness_score * 100)}%
@@ -592,7 +592,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
             </div>
 
             <div className="group">
-              <label className="block text-[10px] font-black text-slate-500 mb-4 uppercase tracking-[0.2em] group-focus-within:text-indigo-400 transition-colors">
+              <label className="block text-[10px] font-black text-primary-subtle mb-4 uppercase tracking-[0.2em] group-focus-within:text-primary-accent transition-colors">
                 Required Confidence Protocol
               </label>
               <select
@@ -601,7 +601,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                   ...prev,
                   required_confidence_level: e.target.value as 'high' | 'medium' | 'low'
                 }))}
-                className="w-full px-4 py-3 bg-card border border-border-subtle rounded-2xl text-primary text-sm font-bold focus:border-indigo-500 outline-none transition-all"
+                className="w-full px-4 py-3 bg-card border border-border-subtle rounded-2xl text-primary text-sm font-bold focus:border-primary-accent outline-none transition-all"
               >
                 <option value="low">LOW ACCURACY (40%+)</option>
                 <option value="medium">STANDARD OPS (60%+)</option>
@@ -623,7 +623,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                     }))}
                     className="peer h-5 w-5 opacity-0 absolute cursor-pointer"
                   />
-                  <div className="h-5 w-5 bg-surface rounded-md border border-border-subtle peer-checked:bg-indigo-600 peer-checked:border-indigo-400 transition-all flex items-center justify-center">
+                  <div className="h-5 w-5 bg-surface rounded-md border border-border-subtle peer-checked:bg-primary-accent peer-checked:border-primary-accent transition-all flex items-center justify-center">
                     <div className="w-2 h-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
                   </div>
                 </div>
@@ -641,7 +641,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                     }))}
                     className="peer h-5 w-5 opacity-0 absolute cursor-pointer"
                   />
-                  <div className="h-5 w-5 bg-surface rounded-md border border-border-subtle peer-checked:bg-indigo-600 peer-checked:border-indigo-400 transition-all flex items-center justify-center">
+                  <div className="h-5 w-5 bg-surface rounded-md border border-border-subtle peer-checked:bg-primary-accent peer-checked:border-primary-accent transition-all flex items-center justify-center">
                     <div className="w-2 h-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
                   </div>
                 </div>
@@ -659,7 +659,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
                     }))}
                     className="peer h-5 w-5 opacity-0 absolute cursor-pointer"
                   />
-                  <div className="h-5 w-5 bg-surface rounded-md border border-border-subtle peer-checked:bg-indigo-600 peer-checked:border-indigo-400 transition-all flex items-center justify-center">
+                  <div className="h-5 w-5 bg-surface rounded-md border border-border-subtle peer-checked:bg-primary-accent peer-checked:border-primary-accent transition-all flex items-center justify-center">
                     <div className="w-2 h-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
                   </div>
                 </div>
@@ -678,7 +678,7 @@ const PublicationReadinessView: React.FC<PublicationReadinessViewProps> = ({
           </div>
           <button
             onClick={handleBulkApproval}
-            className="premium-button px-8 py-4 bg-primary-accent text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-indigo-500 transition-all flex items-center gap-3 shadow-lg shadow-indigo-900/40 border border-indigo-500/20"
+            className="premium-button px-8 py-4 bg-primary-accent text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-primary-accent-hover transition-all flex items-center gap-3 shadow-lg shadow-indigo-900/40 border border-primary-accent/20"
           >
             <Zap size={18} />
             Execute Protocol

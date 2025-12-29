@@ -227,15 +227,15 @@ const ResultsView: React.FC<ResultsViewProps> = ({
             <div className="text-[10px] font-bold text-primary-accent uppercase mb-2 tracking-widest">Total Queue</div>
             <div className="text-3xl font-black text-primary">{stats.total}</div>
           </div>
-          <div className="bg-card p-5 rounded-[1.5rem] border border-status-success/10 shadow-sm">
+          <div className="bg-card p-5 rounded-[1.5rem] border border-status-success/20 shadow-sm">
             <div className="text-[10px] font-bold text-status-success uppercase mb-2 tracking-widest">Approved</div>
             <div className="text-3xl font-black text-primary">{stats.ok}</div>
           </div>
-          <div className="bg-card p-5 rounded-[1.5rem] border border-status-warning/10 shadow-sm">
+          <div className="bg-card p-5 rounded-[1.5rem] border border-status-warning/20 shadow-sm">
             <div className="text-[10px] font-bold text-status-warning uppercase mb-2 tracking-widest">Review</div>
             <div className="text-3xl font-black text-primary">{stats.needs_review}</div>
           </div>
-          <div className="bg-card p-5 rounded-[1.5rem] border border-status-error/10 shadow-sm">
+          <div className="bg-card p-5 rounded-[1.5rem] border border-status-error/20 shadow-sm">
             <div className="text-[10px] font-bold text-status-error uppercase mb-2 tracking-widest">Failed</div>
             <div className="text-3xl font-black text-primary">{stats.failed}</div>
           </div>
@@ -490,7 +490,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         {(queue.length > 0 || processingItem) && (
           <div className="bg-surface rounded-3xl shadow-xl shadow-indigo-100/20 border border-indigo-100 overflow-hidden animate-pulse-subtle p-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
             {processingItem && (
-              <div className="px-4 py-2 bg-indigo-600 text-white rounded-2xl flex items-center justify-between text-xs font-bold">
+              <div className="px-4 py-2 bg-primary-accent text-white rounded-2xl flex items-center justify-between text-xs font-bold">
                 <span className="truncate pr-4">{processingItem.input_raw}</span>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] opacity-75">{processingItem.current_step}</span>
@@ -499,9 +499,9 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               </div>
             )}
             {queue.map((q, i) => (
-              <div key={i} className="px-4 py-2 bg-slate-50 border border-slate-100 text-slate-600 rounded-2xl flex items-center justify-between text-xs group">
+              <div key={i} className="px-4 py-2 bg-surface border border-border-subtle text-primary-subtle rounded-2xl flex items-center justify-between text-xs group">
                 <span className="truncate pr-4">{q}</span>
-                <button onClick={() => onCancelQueueItem(i)} className="opacity-0 group-hover:opacity-100 text-red-400"><X size={14} /></button>
+                <button onClick={() => onCancelQueueItem(i)} className="opacity-0 group-hover:opacity-100 text-status-error"><X size={14} /></button>
               </div>
             ))}
           </div>
@@ -738,7 +738,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2 mt-1">
                       {item.data.brand || 'CALCULATING...'}
                       {item.retry_count > 0 && (
-                        <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-400 rounded-md text-[8px] border border-blue-500/20">
+                        <span className="px-1.5 py-0.5 bg-status-info/10 text-status-info rounded-md text-[8px] border border-status-info/20">
                           RETRY {item.retry_count}
                         </span>
                       )}
@@ -779,16 +779,16 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                   <td className="px-6 py-5">
                     {item.quality_score ? (
                       <div className="flex items-center gap-2.5">
-                        <div className={`w-2 h-2 rounded-full shadow-lg ${item.quality_score > 0.8 ? 'bg-emerald-500 shadow-emerald-500/20' :
-                          item.quality_score > 0.6 ? 'bg-amber-500 shadow-amber-500/20' :
-                            'bg-red-500 shadow-red-500/20'
+                        <div className={`w-2 h-2 rounded-full shadow-lg ${item.quality_score > 0.8 ? 'bg-status-success shadow-status-success/20' :
+                          item.quality_score > 0.6 ? 'bg-status-warning shadow-status-warning/20' :
+                            'bg-status-error shadow-status-error/20'
                           }`}></div>
-                        <span className="text-xs font-black text-slate-300">
+                        <span className="text-xs font-black text-primary-subtle">
                           {(item.quality_score * 100).toFixed(0)}%
                         </span>
                       </div>
                     ) : (
-                      <span className="text-xs text-slate-600 font-bold">--</span>
+                      <span className="text-xs text-primary-subtle/50 font-bold">--</span>
                     )}
                   </td>
                   <td className="px-6 py-5">

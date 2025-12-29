@@ -61,14 +61,14 @@ const ImportView: React.FC<ImportViewProps> = ({ onImport }) => {
           <div className="glass-card rounded-[2rem] overflow-hidden flex flex-col transition-all bg-card border border-border-subtle">
             <div className="px-8 py-6 bg-surface border-b border-border-subtle flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-3 font-bold text-primary">
-                <FileText size={20} className="text-indigo-400" />
+                <FileText size={20} className="text-primary-accent" />
                 <span>Input Queue</span>
-                <span className="ml-2 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded-lg text-[10px] uppercase tracking-wider">{itemCount} items detected</span>
+                <span className="ml-2 px-2 py-0.5 bg-primary-accent/20 text-primary-accent rounded-lg text-[10px] uppercase tracking-wider">{itemCount} items detected</span>
               </div>
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={analyzing}
-                className="premium-button flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-indigo-600 rounded-xl disabled:opacity-50 shadow-lg shadow-indigo-900/40"
+                className="premium-button flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-primary-accent rounded-xl disabled:opacity-50 shadow-lg shadow-indigo-900/40"
               >
                 {analyzing ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
                 {analyzing ? "AI Analysis..." : "Identify from Photo"}
@@ -88,7 +88,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImport }) => {
             <div className="px-8 py-6 bg-surface border-t border-border-subtle flex flex-col sm:flex-row justify-between items-center gap-4">
               <button
                 onClick={() => setText("Kyocera DK-7105 Drum Unit\nHP W1331X High Yield Black Toner\nHP 34A (CF234A) Set")}
-                className="text-sm text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-2 transition-colors"
+                className="text-sm text-primary-accent hover:text-primary-accent-hover font-bold flex items-center gap-2 transition-colors"
               >
                 <Wand2 size={16} /> Load Magic Sample
               </button>
@@ -96,7 +96,7 @@ const ImportView: React.FC<ImportViewProps> = ({ onImport }) => {
               <button
                 onClick={handleImport}
                 disabled={!text.trim() || analyzing}
-                className="premium-button w-full sm:w-auto px-10 py-4 bg-indigo-600 text-white rounded-2xl text-sm font-bold hover:bg-indigo-500 disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl shadow-indigo-900/40"
+                className="premium-button w-full sm:w-auto px-10 py-4 bg-primary-accent text-white rounded-2xl text-sm font-bold hover:bg-primary-accent-hover disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl shadow-indigo-900/40"
               >
                 <Play size={18} fill="currentColor" /> Run Enrichment Agent
               </button>
@@ -108,31 +108,31 @@ const ImportView: React.FC<ImportViewProps> = ({ onImport }) => {
           <div className="glass-card rounded-[2rem] p-8 relative overflow-hidden group bg-card border border-border-subtle">
             <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-indigo-600/10 rounded-full blur-3xl transition-all group-hover:bg-indigo-600/20"></div>
             <h3 className="font-bold text-xl text-primary mb-6 flex items-center gap-3">
-              <Sparkles size={22} className="text-indigo-400" /> How it works
+              <Sparkles size={22} className="text-primary-accent" /> How it works
             </h3>
             <div className="space-y-6 text-sm">
               <div className="flex gap-4">
-                <div className="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/20 flex items-center justify-center shrink-0 font-bold text-indigo-400">1</div>
+                <div className="w-8 h-8 rounded-xl bg-primary-accent/20 border border-primary-accent/20 flex items-center justify-center shrink-0 font-bold text-primary-accent">1</div>
                 <div>
                   <p className="text-primary font-bold mb-1">Search</p>
                   <p className="text-primary-subtle leading-relaxed uppercase text-[10px] tracking-widest font-bold">Gemini 3 Flash</p>
-                  <p className="text-xs text-slate-500 mt-1">Locates official source URLs for precision.</p>
+                  <p className="text-xs text-primary-subtle mt-1">Locates official source URLs for precision.</p>
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/20 flex items-center justify-center shrink-0 font-bold text-indigo-400">2</div>
+                <div className="w-8 h-8 rounded-xl bg-primary-accent/20 border border-primary-accent/20 flex items-center justify-center shrink-0 font-bold text-primary-accent">2</div>
                 <div>
                   <p className="text-primary font-bold mb-1">Scrape</p>
                   <p className="text-primary-subtle leading-relaxed uppercase text-[10px] tracking-widest font-bold">Firecrawl v2</p>
-                  <p className="text-xs text-slate-500 mt-1">Deep markdown extraction from raw web sources.</p>
+                  <p className="text-xs text-primary-subtle mt-1">Deep markdown extraction from raw web sources.</p>
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/20 flex items-center justify-center shrink-0 font-bold text-indigo-400">3</div>
+                <div className="w-8 h-8 rounded-xl bg-primary-accent/20 border border-primary-accent/20 flex items-center justify-center shrink-0 font-bold text-primary-accent">3</div>
                 <div>
                   <p className="text-primary font-bold mb-1">Think</p>
                   <p className="text-primary-subtle leading-relaxed uppercase text-[10px] tracking-widest font-bold">Gemini 3 Pro</p>
-                  <p className="text-xs text-slate-500 mt-1">Logic-driven synthesis for global compatibility.</p>
+                  <p className="text-xs text-primary-subtle mt-1">Logic-driven synthesis for global compatibility.</p>
                 </div>
               </div>
             </div>

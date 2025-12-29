@@ -105,8 +105,8 @@ vi.mock('./services/apiIntegrationService', () => {
       if (query.includes("HP") || query.includes("CF234A")) { brand = "HP"; model = "CF234A"; yieldVal = 9200; }
       if (query.includes("Brother") && query.includes("1150")) { brand = "Brother"; model = "TN-1150"; yieldVal = 2500; }
       if (query.includes("Canon") && query.includes("045")) { brand = "Canon"; model = "CRG-045"; type = "toner_cartridge"; yieldVal = 1300; }
-      if (query.includes("Xerox")) { brand = "Xerox"; model = "106R03623"; yieldVal = 15000; }
-      if (query.includes("Drum")) { brand = "Brother"; model = "DR-1050"; type = "drum_unit"; yieldVal = 10000; }
+      if (query.match(/Xerox/i)) { brand = "Xerox"; model = "106R03623"; yieldVal = 15000; }
+      if (query.match(/Drum/i)) { brand = "Brother"; model = "DR-1050"; type = "drum_unit"; yieldVal = 10000; }
 
       const mockData = {
         brand,

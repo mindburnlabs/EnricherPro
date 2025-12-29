@@ -25,6 +25,7 @@ import {
   generateErrorSummary,
   DEFAULT_RETRY_CONFIG
 } from './services/errorHandlingService';
+import { initializeApiServices } from './services/apiIntegrationService';
 import { v4 as uuidv4 } from 'uuid';
 
 const STORAGE_KEY = 'enricher_pro_db_v2';
@@ -68,6 +69,9 @@ const App: React.FC = () => {
 
   // Initialize OpenRouter service on component mount and config changes
   useEffect(() => {
+    // Initialize API services explicitly
+    initializeApiServices();
+
     const initializeOpenRouter = () => {
       const savedConfig = localStorage.getItem(OPENROUTER_STORAGE_KEY);
       if (savedConfig) {
@@ -222,35 +226,20 @@ const App: React.FC = () => {
       }
 
       try {
-        // Use OpenRouter service if available, fallback to Gemini
-        let result: EnrichedItem;
-        const openRouterService = getOpenRouterService();
-
-        if (processingEngine === 'openrouter' && openRouterService) {
-          console.log('Processing with OpenRouter service');
-          result = await openRouterService.processItem(input, (step: ProcessingStep) => {
+        // Unified Pipeline Call
+        // Unified Pipeline Call
+        const result = await orchestrationService.processItem(
+          input,
+          (step: ProcessingStep) => {
             setItems(prev => prev.map(item => item.id === tempId ? { ...item, current_step: step } : item));
 
             // Update batch progress with current step
             if (batchProgress) {
               setBatchProgress(prev => prev ? updateCurrentProcessing(prev, tempId, step) : null);
             }
-          });
-        } else {
-          console.log('Processing with Gemini service (fallback)');
-          // Use Orchestration Service (SOTA Pipeline)
-          result = await orchestrationService.processItem(input, (step: ProcessingStep) => {
-            setItems(prev => prev.map(item =>
-              item.id === tempId
-                ? { ...item, current_step: step }
-                : item
-            ));
-
-            if (batchProgress) {
-              setBatchProgress(prev => prev ? updateCurrentProcessing(prev, tempId, step) : null);
-            }
-          });
-        }
+          },
+          { engine: processingEngine }
+        );
 
         const processingEnd = Date.now();
         const processingTime = processingEnd - processingStart;

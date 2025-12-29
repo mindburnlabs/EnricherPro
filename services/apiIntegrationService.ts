@@ -968,9 +968,20 @@ export const DEFAULT_CONFIGS: Record<string, ApiServiceConfig> = {
 export const apiIntegrationService = new ApiIntegrationService();
 
 // Initialize default services
-Object.values(DEFAULT_CONFIGS).forEach(config => {
-  apiIntegrationService.registerService(config);
-});
+export const initializeApiServices = () => {
+  // Clear existing services to avoid duplicates if re-initialized
+  // (In a real scenario we might check existence, but here we just register defaults)
+  Object.values(DEFAULT_CONFIGS).forEach(config => {
+    // Only register if not already there to prevent overwriting runtime metrics
+    if (!apiIntegrationService.getServiceStats(config.name)) {
+      apiIntegrationService.registerService(config);
+    }
+  });
+  console.log('API Services Initialized');
+};
+
+// Auto-initialize for backward compatibility, but App.tsx should call this explicitly
+initializeApiServices();
 
 /**
  * Helper function to create error details for API integration failures

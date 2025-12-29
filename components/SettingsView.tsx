@@ -456,7 +456,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                   type="password"
                   value={geminiKey}
                   onChange={(e) => setGeminiKey(e.target.value)}
-                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-blue-500 focus:outline-none font-mono text-sm"
+                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-primary-accent focus:outline-none font-mono text-sm"
                   placeholder="AIza..."
                 />
               </div>
@@ -466,7 +466,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                 <select
                   value={geminiModel}
                   onChange={(e) => setGeminiModel(e.target.value)}
-                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-blue-500 focus:outline-none text-sm"
+                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-primary-accent focus:outline-none text-sm"
                 >
                   <option value="gemini-3-flash-preview">Gemini 3 Flash Preview (Latest)</option>
                   <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Powerful)</option>
@@ -483,7 +483,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                     handleSaveGemini();
                     window.dispatchEvent(new Event('settings-updated'));
                   }}
-                  className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/40"
+                  className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg bg-primary-accent text-white hover:bg-primary-accent-hover shadow-blue-500/40"
                 >
                   {geminiStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
                   {geminiStatus === 'saved' ? 'Settings Saved' : 'Save Gemini Settings'}
@@ -508,7 +508,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                   type="password"
                   value={firecrawlKey}
                   onChange={(e) => setFirecrawlKey(e.target.value)}
-                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-orange-500 focus:outline-none font-mono text-sm"
+                  className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-status-warning focus:outline-none font-mono text-sm"
                   placeholder="fc-..."
                 />
                 <div className="mt-2 text-xs text-primary-subtle flex items-center gap-1">
@@ -526,7 +526,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                 <button
                   onClick={handleSaveFirecrawl}
                   disabled={firecrawlStatus === 'validating'}
-                  className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg bg-orange-600 text-white hover:bg-orange-700 shadow-orange-500/40"
+                  className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-lg bg-status-warning text-white hover:bg-status-warning/90 shadow-orange-500/40"
                 >
                   {firecrawlStatus === 'validating' ? <Loader2 size={18} className="animate-spin" /> : firecrawlStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
                   {firecrawlStatus === 'validating' ? 'Verifying...' : firecrawlStatus === 'saved' ? 'Verified & Saved' : 'Save Firecrawl Key'}

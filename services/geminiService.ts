@@ -115,7 +115,7 @@ async function researchProductContext(query: string) {
 export async function synthesizeConsumableData(
   context: string,
   query: string,
-  textProcessingResult: any, // Keeping loosely typed for now to minimize refactor impact
+  textProcessingResult: any,
   firecrawlData?: any
 ): Promise<{ data: ConsumableData, thinking: string }> {
   const ai = getAI();

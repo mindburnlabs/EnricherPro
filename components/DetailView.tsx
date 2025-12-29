@@ -255,7 +255,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                 </div>
 
                 <div className="glass-card rounded-[3rem] p-10 border-border-subtle">
-                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10">Cross-Entity Dynamics</h3>
+                  <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] mb-10">Cross-Entity Dynamics</h3>
                   <div className="space-y-6">
                     {editedData.related_consumables_display && editedData.related_consumables_display.length > 0 ? (
                       <div className="space-y-8">
@@ -323,15 +323,15 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                             {editedData.related_consumables_display.map((rel, i) => (
                               <div key={i} className="flex items-center justify-between p-5 bg-card rounded-[2rem] border border-border-subtle hover:border-border-highlight transition-all">
                                 <div className="min-w-0 flex-1">
-                                  <div className="text-sm font-black text-primary hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors uppercase truncate tracking-tighter">{rel.model}</div>
+                                  <div className="text-sm font-black text-primary hover:text-primary-accent transition-colors uppercase truncate tracking-tighter">{rel.model}</div>
                                   <div className="flex items-center gap-3 mt-2">
-                                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{rel.type}</span>
-                                    <div className="w-1 h-1 rounded-full bg-slate-800"></div>
-                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Weight: {rel.priority}</span>
+                                    <span className="text-[10px] font-black text-primary-accent uppercase tracking-widest">{rel.type}</span>
+                                    <div className="w-1 h-1 rounded-full bg-primary-subtle"></div>
+                                    <span className="text-[10px] font-bold text-primary-subtle uppercase tracking-widest">Weight: {rel.priority}</span>
                                   </div>
                                 </div>
                                 <div className="text-right ml-4 px-3 py-1 bg-surface rounded-xl border border-border-subtle self-start">
-                                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{rel.relationship.replace(/_/g, ' ')}</span>
+                                  <span className="text-[9px] font-black text-primary-subtle uppercase tracking-widest">{rel.relationship.replace(/_/g, ' ')}</span>
                                 </div>
                               </div>
                             ))}
@@ -392,9 +392,9 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
               {/* Quality Metrics Overview */}
               {item.evidence.quality_metrics && (
                 <div className="glass-card p-10 rounded-[3rem] border-border-subtle relative overflow-hidden">
-                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
+                  <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
                     <div className="p-2 bg-indigo-500/10 rounded-lg">
-                      <ShieldCheck size={16} className="text-indigo-400" />
+                      <ShieldCheck size={16} className="text-primary-accent" />
                     </div>
                     Quality Metrics Dashboard
                   </h3>
@@ -439,9 +439,9 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
               {/* Processing History Timeline */}
               {item.evidence.processing_history && item.evidence.processing_history.length > 0 && (
                 <div className="glass-card p-10 rounded-[3rem] border-border-subtle">
-                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
+                  <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
                     <div className="p-2 bg-indigo-500/10 rounded-lg">
-                      <Cpu size={16} className="text-indigo-400" />
+                      <Cpu size={16} className="text-primary-accent" />
                     </div>
                     Processing Timeline
                   </h3>
@@ -459,10 +459,10 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                               {step.duration_ms ? `${step.duration_ms}ms` : 'In progress'}
                             </span>
                           </div>
-                          <div className="text-[10px] text-slate-500 mb-2">
+                          <div className="text-[10px] text-primary-subtle mb-2">
                             Status: <span className={`font-black tracking-widest uppercase ${step.status === 'completed' ? 'text-emerald-400' :
-                              step.status === 'failed' ? 'text-red-400' :
-                                'text-blue-400'
+                              step.status === 'failed' ? 'text-status-error' :
+                                'text-status-info'
                               }`}>{step.status}</span>
                           </div>
                           {step.error_message && (
@@ -473,7 +473,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                           {step.data_changes && step.data_changes.length > 0 && (
                             <div className="mt-3 flex flex-wrap gap-2">
                               {step.data_changes.map((change, j) => (
-                                <span key={j} className="px-3 py-1 bg-indigo-500/10 text-indigo-300 text-[8px] font-black rounded-lg border border-indigo-500/20 uppercase tracking-wider">
+                                <span key={j} className="px-3 py-1 bg-primary-accent/10 text-primary-accent text-[8px] font-black rounded-lg border border-primary-accent/20 uppercase tracking-wider">
                                   {change}
                                 </span>
                               ))}
@@ -488,9 +488,9 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
 
               {/* Evidence Sources */}
               <div className="glass-card p-10 rounded-[3rem] border-border-subtle">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
+                <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
                   <div className="p-2 bg-indigo-500/10 rounded-lg">
-                    <LinkIcon size={16} className="text-indigo-400" />
+                    <LinkIcon size={16} className="text-primary-accent" />
                   </div>
                   Evidence Sources
                 </h3>
@@ -511,14 +511,14 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                             </div>
                           )}
                         </div>
-                        <a href={src.url} target="_blank" rel="noreferrer" className="text-slate-600 hover:text-white transition-all p-2 hover:bg-white/10 rounded-full">
+                        <a href={src.url} target="_blank" rel="noreferrer" className="text-primary-subtle hover:text-white transition-all p-2 hover:bg-white/10 rounded-full">
                           <ExternalLink size={14} />
                         </a>
                       </div>
 
                       <div className="space-y-4">
                         <div>
-                          <h4 className="font-black text-slate-500 mb-2 text-[9px] uppercase tracking-widest">Verified Claims</h4>
+                          <h4 className="font-black text-primary-subtle mb-2 text-[9px] uppercase tracking-widest">Verified Claims</h4>
                           <div className="flex flex-wrap gap-2">
                             {src.claims.map(claim => (
                               <div key={claim} className="flex items-center gap-2 text-[10px] font-bold text-primary bg-surface px-2 py-1 rounded-lg border border-border-subtle">
@@ -530,7 +530,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
 
                         {src.evidence_snippets_by_claim && Object.keys(src.evidence_snippets_by_claim).length > 0 && (
                           <div>
-                            <h4 className="font-black text-slate-500 mb-2 text-[9px] uppercase tracking-widest">Evidence Snippets</h4>
+                            <h4 className="font-black text-primary-subtle mb-2 text-[9px] uppercase tracking-widest">Evidence Snippets</h4>
                             <div className="space-y-2">
                               {Object.entries(src.evidence_snippets_by_claim).map(([claim, snippet]) => (
                                 <div key={claim} className="bg-background p-4 rounded-xl border border-border-subtle">
@@ -543,7 +543,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                         )}
 
                         <div className="pt-4 border-t border-border-subtle">
-                          <div className="flex justify-between items-center text-[9px] text-slate-500 font-mono uppercase tracking-widest">
+                          <div className="flex justify-between items-center text-[9px] text-primary-subtle font-mono uppercase tracking-widest">
                             <span>Method: {src.extraction_method || 'automated'}</span>
                             <span>{new Date(src.extracted_at).toLocaleDateString()}</span>
                           </div>
@@ -568,14 +568,14 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                     {item.evidence.audit_trail.map((entry, i) => (
                       <div key={i} className="mb-4 pb-4 border-b border-white/5 last:border-b-0 last:pb-0 last:mb-0">
                         <div className="flex items-center gap-3 mb-2 opacity-70">
-                          <span className="text-slate-500">[{new Date(entry.timestamp).toLocaleTimeString()}]</span>
-                          <span className="text-indigo-400 font-bold tracking-wider">{entry.action.toUpperCase()}</span>
-                          <span className="text-slate-600">@{entry.component}</span>
+                          <span className="text-primary-subtle">[{new Date(entry.timestamp).toLocaleTimeString()}]</span>
+                          <span className="text-primary-accent font-bold tracking-wider">{entry.action.toUpperCase()}</span>
+                          <span className="text-primary-subtle">@{entry.component}</span>
                         </div>
                         <div className="text-emerald-300 mb-2 pl-4 border-l border-emerald-500/20">{entry.details}</div>
                         {entry.data_fields_affected.length > 0 && (
-                          <div className="text-slate-500 text-[10px] pl-4">
-                            Fields: <span className="text-slate-400">{entry.data_fields_affected.join(', ')}</span>
+                          <div className="text-primary-subtle text-[10px] pl-4">
+                            Fields: <span className="text-primary-subtle/70">{entry.data_fields_affected.join(', ')}</span>
                           </div>
                         )}
                       </div>
@@ -587,9 +587,9 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
               {/* Field-Level Traceability (New) */}
               {item.data._evidence && Object.keys(item.data._evidence).length > 0 && (
                 <div className="glass-card p-10 rounded-[3rem] border-border-subtle">
-                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
+                  <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
                     <div className="p-2 bg-indigo-500/10 rounded-lg">
-                      <Target size={16} className="text-indigo-400" />
+                      <Target size={16} className="text-primary-accent" />
                     </div>
                     Field-Level Traceability
                   </h3>
@@ -607,7 +607,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                           {typeof evidence.value === 'object' ? JSON.stringify(evidence.value) : String(evidence.value)}
                         </div>
                         <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-[9px] text-slate-500">
+                          <div className="flex items-center gap-2 text-[9px] text-primary-subtle">
                             <span className="uppercase font-bold">Method:</span> {evidence.extraction_method}
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -627,10 +627,10 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
               {/* Search Grounding */}
               {item.evidence.grounding_metadata && (
                 <div className="glass-card p-10 rounded-[3rem] border-border-subtle">
-                  <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-6">Search Grounding Sources</h4>
+                  <h4 className="text-[10px] font-black text-primary-accent uppercase tracking-[0.3em] mb-6">Search Grounding Sources</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {item.evidence.grounding_metadata.map((g, i) => (
-                      <a key={i} href={g.uri} target="_blank" rel="noreferrer" className="bg-surface p-4 rounded-xl border border-border-subtle flex items-center justify-between text-[10px] font-bold text-primary-subtle hover:bg-indigo-500/10 hover:text-indigo-300 hover:border-indigo-500/30 transition-all group">
+                      <a key={i} href={g.uri} target="_blank" rel="noreferrer" className="bg-surface p-4 rounded-xl border border-border-subtle flex items-center justify-between text-[10px] font-bold text-primary-subtle hover:bg-primary-accent/10 hover:text-primary-accent hover:border-primary-accent/30 transition-all group">
                         <span className="truncate pr-4 font-mono">{g.uri}</span>
                         <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                       </a>
@@ -649,8 +649,8 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   <span className="text-[10px] font-mono text-primary-subtle uppercase font-bold tracking-widest">Thought_Process_Log.run</span>
                 </div>
                 <div className="flex gap-2">
-                  <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-800"></div>
-                  <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-800"></div>
+                  <div className="w-2 h-2 rounded-full bg-border-subtle"></div>
+                  <div className="w-2 h-2 rounded-full bg-border-subtle"></div>
                 </div>
               </div>
               <div className="bg-background p-10 font-mono text-xs text-primary-accent/80 leading-relaxed overflow-auto max-h-[70vh] custom-scrollbar selection:bg-primary-accent/30 selection:text-white">
@@ -672,8 +672,8 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   <div className="mt-6">
                     <div className="flex justify-between items-center mb-4">
                       <div>
-                        <div className="text-[10px] font-black text-white uppercase tracking-widest drop-shadow-md">Image Audit</div>
-                        <div className="text-[9px] font-mono text-slate-200 mt-1 drop-shadow-md">{img.width}x{img.height} • {Math.round(img.white_bg_score * 100)}% BG</div>
+                        <div className="text-[10px] font-black text-primary uppercase tracking-widest drop-shadow-md">Image Audit</div>
+                        <div className="text-[9px] font-mono text-primary-subtle/80 mt-1 drop-shadow-md">{img.width}x{img.height} • {Math.round(img.white_bg_score * 100)}% BG</div>
                       </div>
                       <div className={`p-2 rounded-xl border ${img.passes_rules ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                         {img.passes_rules ? <Check size={16} /> : <AlertTriangle size={16} />}
@@ -681,21 +681,21 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                     </div>
                     <div className="space-y-2 bg-background p-4 rounded-2xl border border-border-subtle">
                       <div className="flex items-center justify-between text-[9px] font-bold">
-                        <span className="text-slate-500">RESOLUTION (800x800+)</span>
+                        <span className="text-primary-subtle">RESOLUTION (800x800+)</span>
                         <span className={img.width >= 800 && img.height >= 800 ? 'text-emerald-400' : 'text-red-400 font-black'}>
                           {img.width >= 800 && img.height >= 800 ? 'PASS' : 'FAIL'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-[9px] font-bold">
-                        <span className="text-slate-500">NO PACKAGING</span>
+                        <span className="text-primary-subtle">NO PACKAGING</span>
                         <span className={!img.is_packaging ? 'text-emerald-400' : 'text-red-400 font-black'}>{img.is_packaging ? 'FAIL' : 'PASS'}</span>
                       </div>
                       <div className="flex items-center justify-between text-[9px] font-bold">
-                        <span className="text-slate-500">NO WATERMARK</span>
+                        <span className="text-primary-subtle">NO WATERMARK</span>
                         <span className={!img.has_watermark ? 'text-emerald-400' : 'text-red-400 font-black'}>{img.has_watermark ? 'FAIL' : 'PASS'}</span>
                       </div>
                       <div className="flex items-center justify-between text-[9px] font-bold">
-                        <span className="text-slate-500">COMPATIBLE LOOK</span>
+                        <span className="text-primary-subtle">COMPATIBLE LOOK</span>
                         <span className={!img.has_oem_logo ? 'text-emerald-400' : 'text-amber-400'}>{img.has_oem_logo ? 'OEM LOGO' : 'OK'}</span>
                       </div>
                       {img.reject_reasons && img.reject_reasons.length > 0 && (
@@ -712,7 +712,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   </div>
                 </div>
               ))}
-              <div className="aspect-[3/4] border-2 border-dashed border-border-subtle rounded-[32px] flex flex-col items-center justify-center text-primary-subtle hover:border-indigo-500/50 hover:text-indigo-400 transition-all cursor-pointer hover:bg-surface gap-4 group">
+              <div className="aspect-[3/4] border-2 border-dashed border-border-subtle rounded-[32px] flex flex-col items-center justify-center text-primary-subtle hover:border-primary-accent/50 hover:text-primary-accent transition-all cursor-pointer hover:bg-surface gap-4 group">
                 <div className="p-4 bg-surface rounded-2xl group-hover:scale-110 transition-transform duration-300">
                   <ImageIcon size={32} className="opacity-50 group-hover:opacity-100" />
                 </div>

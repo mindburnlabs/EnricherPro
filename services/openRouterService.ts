@@ -352,6 +352,10 @@ class OpenRouterService {
   /**
    * Synthesize consumable data from research context
    */
+  /**
+   * Synthesize consumable data from research context
+   * Publicly exposed for Orchestrator usage
+   */
   async synthesizeConsumableData(
     context: string,
     query: string,
@@ -491,7 +495,7 @@ IMPORTANT: Return ONLY the JSON object. No markdown, no explanations, no additio
 
       return {
         data: { ...data, images: [imageCandidate] },
-        thinking: `OpenRouter model ${this.config.model} processed consumable data with structured analysis`
+        thinking: `OpenRouter model ${this.config.model} processed consumable data with structured analysis. Response length: ${content.length} chars.`
       };
     } catch (error) {
       console.error('Failed to parse OpenRouter response:', error);
@@ -501,16 +505,22 @@ IMPORTANT: Return ONLY the JSON object. No markdown, no explanations, no additio
 
   /**
    * Process a consumable item through the complete pipeline
+   * @deprecated logic should now move to OrchestrationService, but kept for legacy/direct usage
    */
   async processItem(
     inputRaw: string,
     onProgress: (step: ProcessingStep) => void
   ): Promise<EnrichedItem> {
+    // ... Legacy Implementation or Wrapper to OrchestrationService ...
+    // For now we keep it but it might be bypassed by OrchestrationService calling synthesize directly.
+    return this._legacyProcessItem(inputRaw, onProgress);
+  }
+
+  private async _legacyProcessItem(inputRaw: string, onProgress: (step: ProcessingStep) => void): Promise<EnrichedItem> {
     const processingHistory: any[] = [];
     const auditTrail: any[] = [];
     const jobRunId = generateJobRunId();
     const inputHash = createInputHash(inputRaw);
-    const processingStartTime = new Date();
 
     // Add initial audit trail entry
     auditTrail.push(createAuditTrailEntry(
@@ -560,7 +570,6 @@ IMPORTANT: Return ONLY the JSON object. No markdown, no explanations, no additio
       } else {
         // Fallback: Use Deep Agent Research if Nix service failed
         console.log('[OpenRouter] NixService failed, triggering Deep Agent Research fallback...');
-        const agentStart = new Date();
 
         try {
           const firecrawlAgentData = await deepAgentResearch(textProcessingResult.model.model, textProcessingResult.brand.brand);
@@ -620,18 +629,6 @@ Nix.ru Data: ${nixData ? JSON.stringify(nixData) : 'Not found'}
         };
       }
 
-      // 2. Filter printers for Russian market
-      if (synthesisResult.data.compatible_printers_ru) {
-        // Convert string[] to PrinterCompatibility[] for the filter if needed, 
-        // or if synthesized data structure already has objects, use them.
-        // The LLM prompt asks for object structure in compatible_printers_ru.
-        // Let's assume LLM follows schema.
-
-        // Actually, we should map the LLM output to our internal types first
-        // For now, let's just validate what we have.
-        // If the LLM returned strings in printers_ru (legacy), we might need to convert.
-      }
-
       processingHistory.push(createProcessingHistoryEntry('analyzing', 'completed', {
         startTime: synthesisStart,
         endTime: new Date(),
@@ -640,7 +637,6 @@ Nix.ru Data: ${nixData ? JSON.stringify(nixData) : 'Not found'}
 
       // Create enriched item
       const enrichedItem: EnrichedItem = {
-
         input_raw: inputRaw,
         data: synthesisResult.data,
         evidence: {
@@ -670,7 +666,7 @@ Nix.ru Data: ${nixData ? JSON.stringify(nixData) : 'Not found'}
           },
           audit_trail: auditTrail
         },
-        status: 'ok',
+        status: synthesisResult.data.automation_status === 'done' ? 'ok' : (synthesisResult.data.automation_status as any) || 'ok',
         validation_errors: [],
         error_details: [],
         failure_reasons: [],
@@ -690,10 +686,8 @@ Nix.ru Data: ${nixData ? JSON.stringify(nixData) : 'Not found'}
 
     } catch (error) {
       console.error('OpenRouter processing failed:', error);
-
-      // Create error item
+      // ... Error Handling Structure kept same as original ...
       const errorItem: EnrichedItem = {
-
         input_raw: inputRaw,
         data: {} as ConsumableData,
         evidence: {
@@ -704,11 +698,11 @@ Nix.ru Data: ${nixData ? JSON.stringify(nixData) : 'Not found'}
             source_reliability_score: 0,
             validation_pass_rate: 0,
             processing_efficiency: 0,
-            audit_completeness: 0.5,
+            audit_completeness: 0,
             last_calculated: new Date().toISOString(),
             total_sources_used: 0,
             failed_validations: [error.toString()],
-            missing_required_fields: ['all']
+            missing_required_fields: []
           },
           audit_trail: auditTrail
         },
@@ -716,7 +710,7 @@ Nix.ru Data: ${nixData ? JSON.stringify(nixData) : 'Not found'}
         validation_errors: [error.toString()],
         error_details: [{
           reason: 'processing_error' as any,
-          category: 'external_service',
+          category: 'system',
           severity: 'high',
           message: error.toString(),
           timestamp: new Date().toISOString(),
