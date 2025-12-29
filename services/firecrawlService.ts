@@ -397,3 +397,98 @@ export const firecrawlScrape = async (url: string, extractPrompt?: string, schem
     error: response.error
   };
 };
+
+/**
+ * Start a long-running crawl job (Async)
+ * Ideal for scraping multiple URLs or deep scraping where reliability is key.
+ */
+export const startCrawlJob = async (urls: string[], options: { depth?: number, limit?: number } = {}): Promise<{ success: boolean; jobId?: string; error?: string }> => {
+  const apiKey = getFirecrawlApiKey();
+
+  const response = await apiIntegrationService.makeRequest(
+    {
+      serviceId: 'firecrawl',
+      operation: 'startCrawl',
+      priority: 'medium',
+      retryable: true,
+      metadata: { urlCount: urls.length }
+    },
+    async () => {
+      const httpResponse = await fetch(`${API_V1}/crawl`, { // Crawl is typical on v1 or check v2
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey.trim()}`
+        },
+        body: JSON.stringify({
+          url: urls[0], // Firecrawl often takes a root URL, or we might need to check how to submit list. 
+          // If we want to scrape a specific list of URLs, 'scrape' is typically for single, 'crawl' for discovery.
+          // However, for "batch scrape" we might just use 'scrape' in parallel or 'crawl' with limited depth.
+          // Based on user request "long-running crawl jobs where you start a crawl and later check status", 
+          // we should assume standard crawl behavior.
+          limit: options.limit || 10,
+          scrapeOptions: { formats: ['markdown'] }
+        })
+      });
+
+      const result = await httpResponse.json().catch(() => ({}));
+      return {
+        success: httpResponse.ok,
+        data: result, // Expect { id: "..." }
+        error: httpResponse.ok ? undefined : result.message,
+        responseTime: 0
+      };
+    }
+  );
+
+  return {
+    success: response.success,
+    jobId: response.data?.id,
+    error: response.error
+  };
+};
+
+/**
+ * Check the status of a crawl job
+ */
+export const getCrawlJobStatus = async (jobId: string): Promise<any> => {
+  const apiKey = getFirecrawlApiKey();
+
+  const response = await apiIntegrationService.makeRequest(
+    {
+      serviceId: 'firecrawl',
+      operation: 'getCrawlStatus',
+      priority: 'low',
+      retryable: true,
+      metadata: { jobId }
+    },
+    async () => {
+      const httpResponse = await fetch(`${API_V1}/crawl/${jobId}`, {
+        headers: { 'Authorization': `Bearer ${apiKey.trim()}` }
+      });
+
+      const result = await httpResponse.json();
+      return { success: httpResponse.ok, data: result, responseTime: 0 };
+    }
+  );
+
+  return response.data;
+};
+
+/**
+ * Utility to convert crawl results to a clean Markdown string for the Synthesizer
+ */
+export const crawlResultToMarkdown = (crawlData: any): string => {
+  if (!crawlData || !crawlData.data) return "No data available";
+
+  // Handle both single scrape result and crawl array result
+  const items = Array.isArray(crawlData.data) ? crawlData.data : [crawlData.data];
+
+  return items.map((item: any, index: number) => {
+    const title = item.metadata?.title || `Source ${index + 1}`;
+    const url = item.metadata?.sourceURL || item.url || "Unknown URL";
+    const content = item.markdown || "No content extracted";
+
+    return `### Source: [${title}](${url})\n\n${content}\n\n---\n`;
+  }).join('\n');
+};

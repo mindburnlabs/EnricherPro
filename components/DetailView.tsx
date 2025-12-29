@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { EnrichedItem } from '../types';
-import { ExternalLink, AlertTriangle, Check, Save, ChevronLeft, Brain, Link as LinkIcon, Box, Ruler, FileText, Image as ImageIcon, HelpCircle, ShieldCheck, AlertCircle, Cpu, Layers, Package } from 'lucide-react';
+import { ExternalLink, AlertTriangle, Check, Save, ChevronLeft, Brain, Link as LinkIcon, Box, Ruler, FileText, Image as ImageIcon, HelpCircle, ShieldCheck, AlertCircle, Cpu, Layers, Package, Target } from 'lucide-react';
 
 interface DetailViewProps {
   item: EnrichedItem;
@@ -578,6 +578,46 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                             Fields: <span className="text-slate-400">{entry.data_fields_affected.join(', ')}</span>
                           </div>
                         )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Field-Level Traceability (New) */}
+              {item.data._evidence && Object.keys(item.data._evidence).length > 0 && (
+                <div className="glass-card p-10 rounded-[3rem] border-border-subtle">
+                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
+                    <div className="p-2 bg-indigo-500/10 rounded-lg">
+                      <Target size={16} className="text-indigo-400" />
+                    </div>
+                    Field-Level Traceability
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Object.entries(item.data._evidence).map(([field, evidence]: [string, any]) => evidence && (
+                      <div key={field} className="bg-surface p-6 rounded-2xl border border-border-subtle hover:border-primary-accent/30 transition-all">
+                        <div className="flex justify-between items-start mb-3">
+                          <span className="text-[9px] font-black text-primary-subtle uppercase tracking-widest">{field.replace(/_/g, ' ')}</span>
+                          <span className={`text-[8px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest border ${evidence.confidence > 0.8 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                            evidence.confidence > 0.6 ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                              'bg-red-500/10 text-red-400 border-red-500/20'
+                            }`}>{Math.round(evidence.confidence * 100)}%</span>
+                        </div>
+                        <div className="font-mono text-xs text-primary font-bold mb-3 truncate" title={String(evidence.value)}>
+                          {typeof evidence.value === 'object' ? JSON.stringify(evidence.value) : String(evidence.value)}
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-[9px] text-slate-500">
+                            <span className="uppercase font-bold">Method:</span> {evidence.extraction_method}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {evidence.urls && evidence.urls.slice(0, 2).map((url: string, idx: number) => (
+                              <a key={idx} href={url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[8px] bg-background px-2 py-1 rounded-lg border border-border-subtle hover:border-primary-accent/30 hover:text-primary-accent transition-colors truncate max-w-full">
+                                <LinkIcon size={8} /> {new URL(url).hostname}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>

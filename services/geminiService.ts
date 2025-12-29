@@ -4,6 +4,7 @@ import { EnrichedItem, ConsumableData, ProcessingStep, ImageCandidate, RuMarketF
 import { v4 as uuidv4 } from 'uuid';
 import { firecrawlScrape, firecrawlAgent, getAgentStatus, deepAgentResearch } from './firecrawlService';
 import { processSupplierTitle, NormalizationLog } from './textProcessingService';
+export { processSupplierTitle }; // Export for Orchestrator usage
 import { nixService, NixPackagingInfo } from './nixService';
 import { validateProductImage, createImageCandidate, ImageValidationConfig } from './imageValidationService';
 import {
@@ -104,10 +105,13 @@ async function researchProductContext(query: string) {
 /**
  * Enhanced synthesis phase with optimized API integration and reliable sources integration
  */
-async function synthesizeConsumableData(
+/**
+ * Enhanced synthesis phase with optimized API integration and reliable sources integration
+ */
+export async function synthesizeConsumableData(
   context: string,
   query: string,
-  textProcessingResult: any,
+  textProcessingResult: any, // Keeping loosely typed for now to minimize refactor impact
   firecrawlData?: any
 ): Promise<{ data: ConsumableData, thinking: string }> {
   const ai = getAI();
