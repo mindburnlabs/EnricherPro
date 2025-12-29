@@ -302,8 +302,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                 <button
                   onClick={() => setEngine('gemini')}
                   className={`p-3 rounded-lg border text-left transition-colors ${engine === 'gemini'
-                    ? 'bg-blue-500/10 border-blue-500 text-blue-400'
-                    : 'bg-[#1e1e1e] border-[#333] hover:border-[#444] text-gray-400'
+                    ? 'bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10'
+                    : 'bg-surface border-border-subtle hover:border-primary-accent/50 text-primary-subtle hover:bg-card'
                     }`}
                 >
                   <div className="font-medium mb-1">Gemini 2.0 (Default)</div>
@@ -313,8 +313,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                 <button
                   onClick={() => setEngine('openrouter')}
                   className={`p-3 rounded-lg border text-left transition-colors ${engine === 'openrouter'
-                    ? 'bg-blue-500/10 border-blue-500 text-blue-400'
-                    : 'bg-[#1e1e1e] border-[#333] hover:border-[#444] text-gray-400'
+                    ? 'bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10'
+                    : 'bg-surface border-border-subtle hover:border-primary-accent/50 text-primary-subtle hover:bg-card'
                     }`}
                 >
                   <div className="font-medium mb-1">OpenRouter</div>
@@ -324,8 +324,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                 <button
                   onClick={() => setEngine('firecrawl')}
                   className={`p-3 rounded-lg border text-left transition-colors ${engine === 'firecrawl'
-                    ? 'bg-orange-500/10 border-orange-500 text-orange-400'
-                    : 'bg-[#1e1e1e] border-[#333] hover:border-[#444] text-gray-400'
+                    ? 'bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10'
+                    : 'bg-surface border-border-subtle hover:border-primary-accent/50 text-primary-subtle hover:bg-card'
                     }`}
                 >
                   <div className="font-medium mb-1">Firecrawl Agent</div>

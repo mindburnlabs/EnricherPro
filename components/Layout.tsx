@@ -29,17 +29,20 @@ const NavItem = ({ icon: Icon, label, id, active, onClick, mobile = false }: any
 );
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => {
-  const [isFirecrawlReady, setIsFirecrawlReady] = useState(false);
-  const [modelName, setModelName] = useState('Gemini 1.5 Pro');
+  const [activeEngineFormatted, setActiveEngineFormatted] = useState('Gemini 2.0 (Default)');
 
   const checkKeys = () => {
-    const fcKey = getFirecrawlApiKey();
-    setIsFirecrawlReady(!!fcKey && fcKey.startsWith('fc-'));
+    // Determine active engine
+    const engine = localStorage.getItem('primary_engine_preference') || 'gemini';
+    const geminiModel = localStorage.getItem('gemini_model') || 'gemini-1.5-pro';
+    const geminiDisplay = geminiModel.replace('google/', '').replace('gemini-', 'Gemini ').replace('-preview', '');
 
-    // Update model name dynamically
-    const storedModel = localStorage.getItem('gemini_model') || 'gemini-1.5-pro';
-    const display = storedModel.replace('google/', '').replace('gemini-', 'Gemini ');
-    setModelName(display);
+    let display = 'Gemini 2.0 (Default)';
+    if (engine === 'firecrawl') display = 'Firecrawl Agent';
+    else if (engine === 'openrouter') display = 'OpenRouter AI';
+    else display = geminiDisplay;
+
+    setActiveEngineFormatted(display);
   };
 
   useEffect(() => {
@@ -115,14 +118,13 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-primary-subtle font-medium truncate max-w-[120px]" title={localStorage.getItem('gemini_model') || 'gemini-1.5-pro'}>
-                  {modelName}
+                <span className="text-primary font-bold truncate max-w-[140px]" title={activeEngineFormatted}>
+                  {activeEngineFormatted}
                 </span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                <span className="w-2 h-2 rounded-full bg-status-success shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse"></span>
               </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-primary-subtle font-medium">Firecrawl v2</span>
-                <span className={`w-2 h-2 rounded-full transition-all duration-500 ${isFirecrawlReady ? 'bg-status-success shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-primary-subtle'}`}></span>
+              <div className="text-[10px] text-primary-subtle font-medium uppercase tracking-wider">
+                Active Orchestrator
               </div>
             </div>
           </div>
