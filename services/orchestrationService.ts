@@ -398,10 +398,39 @@ class OrchestrationService {
                             feedback // Pass feedback to trigger self-correction
                         );
                     } catch (geminiError) {
-                        logs.push(`Gemini Synthesis Failed: ${(geminiError as Error).message}. Switching to OpenRouter.`);
+                        logs.push(`Gemini Synthesis Failed: ${(geminiError as Error).message}. Attempting Fallback...`);
                         const orService = getOpenRouterService();
-                        if (!orService) throw new Error("OpenRouter service not initialized for fallback");
-                        synthesisResult = await orService.synthesizeConsumableData(synthesisContext, rawQuery, processedText);
+
+                        if (orService) {
+                            try {
+                                synthesisResult = await orService.synthesizeConsumableData(synthesisContext, rawQuery, processedText);
+                            } catch (orError) {
+                                logs.push(`OpenRouter Fallback Failed: ${(orError as Error).message}.`);
+                            }
+                        } else {
+                            logs.push("OpenRouter fallback unavailable (No Key Configured).");
+                        }
+
+                        // FINAL RESORT: Deterministic Synthesis (Brainless)
+                        if (!synthesisResult && typeof structuredExtractionData === 'object') {
+                            logs.push("CRITICAL: All LLMs failed. Using Deterministic Synthesis from Firecrawl Data.");
+                            // Construct a basic result from what we scraped/parsed
+                            synthesisResult = {
+                                data: {
+                                    brand: structuredExtractionData[0]?.brand || processedText.brand.brand || 'Unknown',
+                                    model: structuredExtractionData[0]?.model || processedText.model.model || rawQuery,
+                                    mpn: structuredExtractionData[0]?.mpn,
+                                    consumable_type: processedText.detectedType.value,
+                                    color: processedText.detectedColor.value,
+                                    yield: structuredExtractionData[0]?.yield,
+                                    compatibility: structuredExtractionData[0]?.compatibility || [],
+                                    sources: []
+                                },
+                                thinking: "LLM Systems Down. Generated via Deterministic Failover."
+                            };
+                        } else if (!synthesisResult) {
+                            throw new Error(`Synthesis Failed: Gemini Quota Exceeded & OpenRouter not configured. Please switch to Gemini 1.5/2.0 Flash or add OpenRouter Key.`);
+                        }
                     }
                 }
 
