@@ -447,8 +447,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange }) => 
                   onChange={(e) => setGeminiModel(e.target.value)}
                   className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-blue-500 focus:outline-none text-sm"
                 >
-                  <option value="gemini-3.0-flash-preview">Gemini 3.0 Flash Preview (Latest)</option>
-                  <option value="gemini-3.0-pro-preview">Gemini 3.0 Pro Preview (Powerful)</option>
+                  <option value="gemini-3-flash-preview">Gemini 3 Flash Preview (Latest)</option>
+                  <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Powerful)</option>
                   <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fast & Stable)</option>
                   <option value="gemini-2.5-pro">Gemini 2.5 Pro (Reasoning)</option>
                   <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>

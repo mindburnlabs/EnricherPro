@@ -58,14 +58,14 @@ const DEFAULT_CONFIG: Partial<OpenRouterConfig> = {
 // Popular models for consumable enrichment
 export const RECOMMENDED_MODELS = {
   // --- Google / Gemini Models ---
-  'google/gemini-3.0-flash-preview': {
-    name: 'Gemini 3.0 Flash Preview',
-    description: 'Next-gen intelligence, ultra-fast',
+  'google/gemini-3-flash-preview': {
+    name: 'Gemini 3 Flash Preview',
+    description: 'Latest high-speed preview model',
     recommended: true,
     category: 'standard'
   },
-  'google/gemini-3.0-pro-preview': {
-    name: 'Gemini 3.0 Pro Preview',
+  'google/gemini-3-pro-preview': {
+    name: 'Gemini 3 Pro Preview',
     description: 'Advanced reasoning & coding',
     recommended: true,
     category: 'power'
@@ -104,8 +104,8 @@ export const RECOMMENDED_MODELS = {
   },
 
   // --- OpenAI ---
-  'openai/gpt-5-preview': {
-    name: 'GPT-5 Preview',
+  'openai/gpt-5.2': {
+    name: 'GPT-5.2',
     description: 'Frontier reasoning model',
     recommended: true,
     category: 'power'
@@ -118,8 +118,8 @@ export const RECOMMENDED_MODELS = {
   },
 
   // --- Meta & Others ---
-  'meta-llama/llama-4-70b-instruct': {
-    name: 'Llama 4 Maverick (70B)',
+  'meta-llama/llama-3.3-70b-instruct': {
+    name: 'Llama 3.3 70B',
     description: 'Advanced open-weight model',
     recommended: true,
     category: 'standard'
