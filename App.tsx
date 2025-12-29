@@ -30,6 +30,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const STORAGE_KEY = 'enricher_pro_db_v2';
 const OPENROUTER_STORAGE_KEY = 'openrouter_config';
+const PRIMARY_ENGINE_KEY = 'primary_engine_preference';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('import');
@@ -65,43 +66,55 @@ const App: React.FC = () => {
   const [manualQueue, setManualQueue] = useState<ManualQueueEntry[]>([]);
   const [retryQueue, setRetryQueue] = useState<string[]>([]);
   const [processingStartTime, setProcessingStartTime] = useState<number | null>(null);
-  const [processingEngine, setProcessingEngine] = useState<'gemini' | 'openrouter'>('openrouter');
+  const [processingEngine, setProcessingEngine] = useState<'gemini' | 'openrouter' | 'firecrawl'>('gemini');
 
-  // Initialize OpenRouter service on component mount and config changes
+  // Initialize Engine Preference
   useEffect(() => {
     // Initialize API services explicitly
     initializeApiServices();
 
-    const initializeOpenRouter = () => {
-      const savedConfig = localStorage.getItem(OPENROUTER_STORAGE_KEY);
-      if (savedConfig) {
+    const loadEnginePreference = () => {
+      const savedEngine = localStorage.getItem(PRIMARY_ENGINE_KEY);
+      if (savedEngine && ['gemini', 'openrouter', 'firecrawl'].includes(savedEngine)) {
+        setProcessingEngine(savedEngine as any);
+        console.log('Processing Engine set to:', savedEngine);
+        return;
+      }
+
+      // Fallback to legacy check (if user had OpenRouter set up but no explicit engine pref)
+      const savedOrConfig = localStorage.getItem(OPENROUTER_STORAGE_KEY);
+      if (savedOrConfig) {
         try {
-          const config: OpenRouterConfig = JSON.parse(savedConfig);
-          if (config.apiKey && config.model) {
-            createOpenRouterService(config);
-            setProcessingEngine('openrouter');
-            console.log('OpenRouter service initialized with model:', config.model);
-          } else {
+          const config = JSON.parse(savedOrConfig);
+          if (config.apiKey) {
+            // If they have OpenRouter configured but didn't explicitly choose an engine, we default to Gemini for safety unless they set it.
+            // But let's check if they intended OpenRouter? 
+            // Actually, unified default is Gemini.
             setProcessingEngine('gemini');
           }
-        } catch (error) {
-          console.warn('Failed to initialize OpenRouter service:', error);
-          setProcessingEngine('gemini');
-        }
-      } else {
-        setProcessingEngine('gemini');
+        } catch (e) { }
       }
     };
 
-    initializeOpenRouter();
+    loadEnginePreference();
 
-    // Listen for storage changes to reinitialize service
+    // Listen for storage changes to reinitialize service or engine changes
     const handleStorageChange = () => {
-      initializeOpenRouter();
+      loadEnginePreference();
+    };
+
+    // Listen for explicit engine change event from SettingsView
+    const handleEngineChange = () => {
+      loadEnginePreference();
     };
 
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('engine-preference-changed', handleEngineChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('engine-preference-changed', handleEngineChange);
+    };
   }, []);
 
   useEffect(() => {

@@ -116,7 +116,8 @@ export async function synthesizeConsumableData(
   context: string,
   query: string,
   textProcessingResult: any,
-  firecrawlData?: any
+  firecrawlData?: any,
+  feedback?: string
 ): Promise<{ data: ConsumableData, thinking: string }> {
   const ai = getAI();
 
@@ -125,11 +126,20 @@ export async function synthesizeConsumableData(
     const enhancedPrompt = `You are a World-Class PIM Architect specializing in Printer Consumables.
       Analyze the provided research data to create a high-precision record for "${query}".
       
+      ${feedback ? `
+      🚨 CRITICAL SELF-CORRECTION MODE 🚨
+      Your previous attempt failed Quality Gates with these errors:
+      ${feedback}
+      
+      YOU MUST FIX THESE SPECIFIC ISSUES. Review the research data again. 
+      The data IS likely there, you just missed it. Look closer at the "Deep Scrape" sections.
+      ` : ''}
+
       CRITICAL INTEGRATION RULES (per reliable_sources.md and complete_specification.md):
       
       1. DATA SOURCE PRIORITIZATION:
          - OEM sources (HP, Canon, Epson, Kyocera, Brother) = HIGHEST priority
-         - Russian market sources (cartridge.ru, rashodnika.net) = HIGH priority  
+         - Russian market sources (cartridge.ru, rashodnika.net, dns-shop.ru) = HIGH priority  
          - NIX.ru = EXCLUSIVE for logistics (dimensions/weight)
          - Firecrawl agent data = Enhanced fallback with source verification
       
@@ -143,14 +153,15 @@ export async function synthesizeConsumableData(
          - Package weight: ONLY from NIX.ru sources (convert kg→g)
          - If NIX.ru unavailable → needs_review status
       
-      4. ENHANCED FIRECRAWL INTEGRATION:
+      4. ENHANCED FIRECRAWL & CONSENSUS INTEGRATION:
          ${firecrawlData ? `
          - Firecrawl agent provided enhanced research data
          - Prioritize OEM sources found by agent
          - Use agent's source verification for compatibility
          - Trust agent's NIX.ru logistics extraction if available
          ` : ''}
-      
+         - If Firecrawl and Perplexity data conflict, prefer Firecrawl for Technical Specs (Yield/Weight) and Perplexity for Market Context (Compatibility).
+
       5. COMPATIBILITY VALIDATION:
          - Cross-reference multiple sources
          - Flag conflicts for manual review
@@ -268,9 +279,21 @@ export async function synthesizeConsumableData(
                       answer: { type: Type.STRING }
                     }
                   }
+                },
+                sources: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      url: { type: Type.STRING },
+                      sourceType: { type: Type.STRING },
+                      confidence: { type: Type.NUMBER },
+                      dataConfirmed: { type: Type.ARRAY, items: { type: Type.STRING } } // simplified for schema
+                    }
+                  }
                 }
               },
-              required: ['brand', 'model', 'printers_ru', 'packaging_from_nix']
+              required: ['brand', 'model', 'printers_ru', 'packaging_from_nix', 'sources']
             }
           }
         });

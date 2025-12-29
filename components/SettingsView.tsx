@@ -11,6 +11,7 @@ const FIRECRAWL_STORAGE_KEY = 'firecrawl_api_key';
 const OPENROUTER_STORAGE_KEY = 'openrouter_config';
 const GEMINI_STORAGE_KEY = 'gemini_api_key';
 const GEMINI_MODEL_STORAGE_KEY = 'gemini_model';
+const PRIMARY_ENGINE_KEY = 'primary_engine_preference';
 
 interface SettingsViewProps {
   theme: 'light' | 'dark' | 'system';
@@ -50,10 +51,24 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
   const [perplexityStatus, setPerplexityStatus] = useState<'idle' | 'validating' | 'saved' | 'error'>('idle');
   const [perplexityError, setPerplexityError] = useState('');
 
+  // Engine
+  const [engine, setEngine] = useState<'gemini' | 'openrouter' | 'firecrawl'>('gemini');
+
   // --- End: Configuration States ---
 
   useEffect(() => {
     loadSettings();
+
+    // Load available OpenRouter models if key exists
+    const savedOrKey = localStorage.getItem(OPENROUTER_STORAGE_KEY);
+    if (savedOrKey) {
+      try {
+        const config = JSON.parse(savedOrKey);
+        if (config.apiKey) {
+          // Initial fetch could go here if we wanted to auto-load models
+        }
+      } catch (e) { }
+    }
 
     // Load system health data
     const updateHealth = () => {
@@ -92,7 +107,20 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
     // Perplexity
     const perplexityService = PerplexityService.getInstance();
     setPerplexityConfig(perplexityService.getConfig());
+
+    // Engine
+    const savedEngine = localStorage.getItem(PRIMARY_ENGINE_KEY) as any;
+    if (savedEngine && ['gemini', 'openrouter', 'firecrawl'].includes(savedEngine)) {
+      setEngine(savedEngine);
+    }
   };
+
+  // Save engine preference when it changes
+  useEffect(() => {
+    localStorage.setItem(PRIMARY_ENGINE_KEY, engine);
+    // Dispatch event so other components (like App.tsx) can react immediately if they listen
+    window.dispatchEvent(new Event('engine-preference-changed'));
+  }, [engine]);
 
   // --- Handlers ---
 
@@ -262,6 +290,47 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                     <div className="text-xs text-primary-subtle">{t.desc}</div>
                   </button>
                 ))}
+              </div>
+            </section>
+
+            <section className="mt-8 pt-8 border-t border-border-subtle">
+              <div className="flex items-center gap-2 mb-6 text-primary-subtle">
+                <Brain size={18} />
+                <h2 className="text-xs font-black uppercase tracking-widest">Primary Engine</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <button
+                  onClick={() => setEngine('gemini')}
+                  className={`p-3 rounded-lg border text-left transition-colors ${engine === 'gemini'
+                    ? 'bg-blue-500/10 border-blue-500 text-blue-400'
+                    : 'bg-[#1e1e1e] border-[#333] hover:border-[#444] text-gray-400'
+                    }`}
+                >
+                  <div className="font-medium mb-1">Gemini 2.0 (Default)</div>
+                  <div className="text-xs opacity-70">Best overall reasoning & synthesis</div>
+                </button>
+
+                <button
+                  onClick={() => setEngine('openrouter')}
+                  className={`p-3 rounded-lg border text-left transition-colors ${engine === 'openrouter'
+                    ? 'bg-blue-500/10 border-blue-500 text-blue-400'
+                    : 'bg-[#1e1e1e] border-[#333] hover:border-[#444] text-gray-400'
+                    }`}
+                >
+                  <div className="font-medium mb-1">OpenRouter</div>
+                  <div className="text-xs opacity-70">Access to GPT-4o, Claude 3.5, etc.</div>
+                </button>
+
+                <button
+                  onClick={() => setEngine('firecrawl')}
+                  className={`p-3 rounded-lg border text-left transition-colors ${engine === 'firecrawl'
+                    ? 'bg-orange-500/10 border-orange-500 text-orange-400'
+                    : 'bg-[#1e1e1e] border-[#333] hover:border-[#444] text-gray-400'
+                    }`}
+                >
+                  <div className="font-medium mb-1">Firecrawl Agent</div>
+                  <div className="text-xs opacity-70">Advanced Autonomous Web Research</div>
+                </button>
               </div>
             </section>
 
