@@ -163,12 +163,17 @@ export class DeepResearchService {
                     });
 
                     if (searchRes && searchRes.data) {
-                        searchRes.data.forEach((item: any) => {
-                            if (item.url) {
-                                urls.add(item.url);
-                                logs.push(`[DeepResearch] ${category}: Found URL ${item.url}`);
-                            }
-                        });
+                        // Handle Firecrawl v2 structure: body is in searchRes.data, items are in searchRes.data.data
+                        const items = Array.isArray(searchRes.data) ? searchRes.data : (searchRes.data.data || []);
+
+                        if (Array.isArray(items)) {
+                            items.forEach((item: any) => {
+                                if (item.url) {
+                                    urls.add(item.url);
+                                    logs.push(`[DeepResearch] ${category}: Found URL ${item.url}`);
+                                }
+                            });
+                        }
                     }
                 } catch (e) {
                     const errMsg = (e as Error).message;

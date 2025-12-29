@@ -159,7 +159,8 @@ export const firecrawlAgent = async (prompt: string, schema?: any, urls?: string
     throw new Error(response.error || 'Firecrawl agent request failed');
   }
 
-  return response.data;
+  // Unwrap the data from the response body (v2 API format: { success: true, data: { ... } })
+  return response.data?.data || response.data;
 };
 
 /**
@@ -487,7 +488,7 @@ export const firecrawlScrape = async (url: string, options: ScrapeOptions = {}):
 
   return {
     success: response.success,
-    data: response.data || {},
+    data: response.data?.data || {},
     error: response.error
   };
 };
@@ -804,5 +805,6 @@ export const firecrawlSearch = async (query: string, options: SearchOptions = {}
     throw new Error(response.error || "Search request failed");
   }
 
-  return response.data; // Expected { success: true, data: [ { url, markdown, ... } ] }
+  // Unwrap the data array from v2 response body
+  return response.data?.data || [];
 };
