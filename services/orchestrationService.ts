@@ -413,25 +413,34 @@ class OrchestrationService {
 
                         // FINAL RESORT: Deterministic Synthesis (Brainless)
                         // FINAL RESORT: Deterministic Synthesis (Brainless)
-                        if (!synthesisResult && Array.isArray(structuredExtractionData)) {
-                            logs.push("CRITICAL: All LLMs failed. Using Deterministic Synthesis from Firecrawl Data.");
-                            const fallbackItem = structuredExtractionData[0] || {};
+                        if (!synthesisResult) {
+                            logs.push("CRITICAL: All LLMs failed. Attempting Deterministic Synthesis...");
+
+                            let failoverSource = "Regex Parsing";
+                            const fallbackItem: any = {};
+
+                            if (Array.isArray(structuredExtractionData) && structuredExtractionData.length > 0) {
+                                logs.push("Using Firecrawl Structured Data for failover.");
+                                failoverSource = "Firecrawl Data";
+                                Object.assign(fallbackItem, structuredExtractionData[0]);
+                            } else {
+                                logs.push("No specific structured data found. Using basic Regex parsing.");
+                            }
+
                             // Construct a basic result from what we scraped/parsed
                             synthesisResult = {
                                 data: {
                                     brand: fallbackItem.brand || processedText.brand.brand || 'Unknown',
                                     model: fallbackItem.model || processedText.model.model || rawQuery,
-                                    mpn: fallbackItem.mpn,
+                                    mpn: fallbackItem.mpn || fallbackItem.model, // MPN fallback
                                     consumable_type: processedText.detectedType.value,
                                     color: processedText.detectedColor.value,
-                                    yield: fallbackItem.yield,
+                                    yield: fallbackItem.yield || (processedText.yieldInfo[0] ? { value: processedText.yieldInfo[0].value, unit: processedText.yieldInfo[0].unit } : null),
                                     compatibility: fallbackItem.compatibility || [],
                                     sources: []
                                 },
-                                thinking: "LLM Systems Down. Generated via Deterministic Failover."
+                                thinking: `LLM Systems Down. Generated via Deterministic Failover using ${failoverSource}.`
                             };
-                        } else if (!synthesisResult) {
-                            throw new Error(`Synthesis Failed: Gemini Quota Exceeded & OpenRouter not configured. Please switch to Gemini 1.5/2.0 Flash or add OpenRouter Key.`);
                         }
                     }
                 }

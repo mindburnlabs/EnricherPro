@@ -210,6 +210,79 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
     }
   };
 
+  // Gemini Dynamic Fetch
+  const [availableGeminiModels, setAvailableGeminiModels] = useState<{ id: string; name: string }[]>([]);
+  const [isFetchingGeminiModels, setIsFetchingGeminiModels] = useState(false);
+
+  const fetchGeminiModels = async () => {
+    if (!geminiKey) {
+      setGeminiError("Enter API Key first.");
+      return;
+    }
+    setIsFetchingGeminiModels(true);
+    setGeminiError('');
+    try {
+      const { getAvailableModels } = await import('../services/geminiService');
+      const models = await getAvailableModels(geminiKey);
+      // Sort: newer (higher version numbers) first roughly, or just alphabetical
+      models.sort((a, b) => b.id.localeCompare(a.id));
+      setAvailableGeminiModels(models);
+    } catch (e) {
+      setGeminiError(`Failed to fetch models: ${e}`);
+    } finally {
+      setIsFetchingGeminiModels(false);
+    }
+  };
+
+  // Perplexity Dynamic Fetch
+  const [availablePerplexityModels, setAvailablePerplexityModels] = useState<string[]>([]);
+  const [isFetchingPerplexityModels, setIsFetchingPerplexityModels] = useState(false);
+
+  const fetchPerplexityModels = async () => {
+    if (perplexityConfig.provider === 'direct') {
+      if (openRouterConfig.apiKey) {
+        setIsFetchingPerplexityModels(true);
+        try {
+          const service = createOpenRouterService(openRouterConfig);
+          const models = await service.getAvailableModels();
+          const pplxModels = models
+            .filter((m: any) => m.id.startsWith('perplexity/'))
+            .map((m: any) => m.id.replace('perplexity/', ''));
+          setAvailablePerplexityModels(pplxModels.length > 0 ? pplxModels : []);
+        } catch (e) {
+          setPerplexityError("Could not fetch models via OpenRouter proxy: " + e);
+        } finally {
+          setIsFetchingPerplexityModels(false);
+        }
+      } else {
+        setPerplexityError("Dynamic fetch requires OpenRouter Key (used as directory). Using static list.");
+      }
+      return;
+    }
+
+    // OpenRouter Provider Mode
+    if (!openRouterConfig.apiKey) {
+      setPerplexityError("Enter OpenRouter API Key in OpenRouter tab first.");
+      return;
+    }
+    setIsFetchingPerplexityModels(true);
+    setPerplexityError('');
+    try {
+      const service = createOpenRouterService(openRouterConfig);
+      const models = await service.getAvailableModels();
+      const pplxModels = models
+        .filter((m: any) => m.id.startsWith('perplexity/'))
+        .map((m: any) => m.id);
+      setAvailablePerplexityModels(pplxModels);
+    } catch (e) {
+      setPerplexityError(`Failed to fetch models: ${e}`);
+    } finally {
+      setIsFetchingPerplexityModels(false);
+    }
+  };
+
+
+
   const handleSavePerplexity = async () => {
     if (perplexityConfig.provider === 'direct' && !perplexityConfig.apiKey) {
       setPerplexityError("Direct API requires an API Key.");
@@ -227,6 +300,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
     setPerplexityStatus('saved');
     setTimeout(() => setPerplexityStatus('idle'), 3000);
   };
+
 
   return (
     <div className="p-4 md:p-12 max-w-6xl mx-auto w-full h-full overflow-y-auto">
@@ -480,18 +554,39 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                 </div>
               )}
 
+
+
+
               <div>
-                <label className="block text-xs font-bold text-primary-subtle mb-2 ml-1">MODEL</label>
+                <div className="flex justify-between items-end mb-2 ml-1">
+                  <label className="block text-xs font-bold text-primary-subtle">MODEL</label>
+                  <button
+                    onClick={fetchPerplexityModels}
+                    disabled={isFetchingPerplexityModels}
+                    className="text-xs font-bold text-primary-accent hover:text-primary-accent-hover flex items-center gap-1 disabled:opacity-50"
+                  >
+                    {isFetchingPerplexityModels ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                    {isFetchingPerplexityModels ? 'Fetching...' : 'Refresh Models'}
+                  </button>
+                </div>
                 <select
                   value={perplexityConfig.model}
                   onChange={(e) => setPerplexityConfig(prev => ({ ...prev, model: e.target.value }))}
                   className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-primary-accent focus:outline-none text-sm"
                 >
-                  {Object.entries(PERPLEXITY_MODELS).map(([k, v]) => (
-                    <option key={v} value={perplexityConfig.provider === 'openrouter' ? `perplexity/${v}` : v}>
-                      {k.replace(/-/g, ' ').toUpperCase()} ({perplexityConfig.provider === 'openrouter' ? 'Via OpenRouter' : 'Direct'})
-                    </option>
-                  ))}
+                  {availablePerplexityModels.length > 0 ? (
+                    <optgroup label={`Available Models (${perplexityConfig.provider === 'openrouter' ? 'OpenRouter' : 'Inferred'})`}>
+                      {availablePerplexityModels.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </optgroup>
+                  ) : (
+                    Object.entries(PERPLEXITY_MODELS).map(([k, v]) => (
+                      <option key={v} value={perplexityConfig.provider === 'openrouter' ? `perplexity/${v}` : v}>
+                        {k.replace(/-/g, ' ').toUpperCase()} ({perplexityConfig.provider === 'openrouter' ? 'Via OpenRouter' : 'Direct'})
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -534,18 +629,36 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-primary-subtle mb-2 ml-1">MODEL</label>
+                <div className="flex justify-between items-end mb-2 ml-1">
+                  <label className="block text-xs font-bold text-primary-subtle">MODEL</label>
+                  <button
+                    onClick={fetchGeminiModels}
+                    disabled={isFetchingGeminiModels || !geminiKey}
+                    className="text-xs font-bold text-primary-accent hover:text-primary-accent-hover flex items-center gap-1 disabled:opacity-50"
+                  >
+                    {isFetchingGeminiModels ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                    {isFetchingGeminiModels ? 'Fetching...' : 'Refresh Models'}
+                  </button>
+                </div>
                 <select
                   value={geminiModel}
                   onChange={(e) => setGeminiModel(e.target.value)}
                   className="w-full px-5 py-4 bg-surface border-2 border-border-subtle rounded-2xl focus:bg-card focus:border-primary-accent focus:outline-none text-sm"
                 >
-                  <option value="gemini-3-flash-preview">Gemini 3 Flash Preview (Latest)</option>
-                  <option value="gemini-3-pro-preview">Gemini 3 Pro Preview (Powerful)</option>
-                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fast & Stable)</option>
-                  <option value="gemini-2.5-pro">Gemini 2.5 Pro (Reasoning)</option>
-                  <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
-                  <option value="gemini-1.5-pro">Gemini 1.5 Pro (Legacy Stable)</option>
+                  {availableGeminiModels.length > 0 ? (
+                    <optgroup label="Available Models (Fetched from Google)">
+                      {availableGeminiModels.map((m) => (
+                        <option key={m.id} value={m.id}>{m.name || m.id}</option>
+                      ))}
+                    </optgroup>
+                  ) : (
+                    <optgroup label="Recommended Models">
+                      <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Latest)</option>
+                      <option value="gemini-1.5-pro">Gemini 1.5 Pro (Stable)</option>
+                      <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
+                      <option value="gemini-pro">Gemini Pro 1.0 (Legacy)</option>
+                    </optgroup>
+                  )}
                 </select>
               </div>
 

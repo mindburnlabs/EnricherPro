@@ -12,9 +12,33 @@ import {
   verifyRussianMarketEligibility,
   calculatePrinterEligibilityScore
 } from './russianMarketFilter';
-import { getRussianMarketFilterConfig } from './russianMarketConfig';
+/**
+ * Fetch available models from Gemini API
+ */
+export async function getAvailableModels(apiKey?: string): Promise<{ id: string; name: string }[]> {
+  const key = apiKey || (typeof localStorage !== 'undefined' ? localStorage.getItem('gemini_api_key') : null);
+  if (!key) throw new Error("No API Key provided");
+
+  // Gemini API list endpoint
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error?.message || 'Failed to fetch Gemini models');
+  }
+
+  const data = await response.json();
+  if (data.models && Array.isArray(data.models)) {
+    return data.models
+      .filter((m: any) => m.name.includes('gemini')) // Filter ensure it's a Gemini model
+      .map((m: any) => ({
+        id: m.name.replace('models/', ''),
+        name: m.displayName || m.name.replace('models/', '')
+      }));
+  }
+  return [];
+}
 import {
-  createProcessingHistoryEntry,
   createAuditTrailEntry,
   createEvidenceSource,
   enhanceItemWithAuditTrail,
