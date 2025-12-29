@@ -39,7 +39,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
   // OpenRouter
   const [openRouterConfig, setOpenRouterConfig] = useState<OpenRouterConfig>({
     apiKey: '',
-    model: 'google/gemini-2.0-flash-001'
+    model: 'nvidia/nemotron-3-nano-30b-a3b:free'
   });
   const [openRouterStatus, setOpenRouterStatus] = useState<'idle' | 'validating' | 'saved' | 'error'>('idle');
   const [openRouterError, setOpenRouterError] = useState('');

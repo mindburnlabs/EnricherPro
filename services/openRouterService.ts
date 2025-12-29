@@ -155,6 +155,12 @@ export const RECOMMENDED_MODELS = {
     description: 'Core V3 model free tier',
     recommended: true,
     category: 'free'
+  },
+  'nvidia/nemotron-3-nano-30b-a3b:free': {
+    name: 'NVIDIA Nemotron 3 Nano (Free)',
+    description: 'Efficient 30B parameter model by NVIDIA',
+    recommended: true,
+    category: 'free'
   }
 };
 
