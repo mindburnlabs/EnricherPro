@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       proxy: {
         '/api': {
-          target: 'http://localhost:3000', // Self-target if using Vercel Dev, or different port if separate backend
+          target: 'http://localhost:3002', // Self-target if using Vercel Dev, or different port if separate backend
           changeOrigin: true,
           rewrite: (path) => path // Vercel dev handles /api
         }
