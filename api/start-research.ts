@@ -14,16 +14,22 @@ export default async function handler(request: VercelRequest, response: VercelRe
             return response.status(400).json({ error: 'Missing input' });
         }
 
-        const jobId = crypto.randomUUID();
+        const { v4 }: { v4: () => string } = require('uuid');
+        const jobId = v4();
 
         // Send event to Inngest
-        await inngest.send({
-            name: "app/research.started",
-            data: {
-                jobId,
-                inputRaw: input,
-            },
-        });
+        try {
+            await inngest.send({
+                name: "app/research.started",
+                data: {
+                    jobId,
+                    inputRaw: input,
+                },
+            });
+        } catch (inngestError) {
+            console.error("Inngest Send Error:", inngestError);
+            return response.status(500).json({ error: 'Failed to trigger workflow', details: String(inngestError) });
+        }
 
         return response.status(200).json({ success: true, jobId });
     } catch (error) {
