@@ -190,8 +190,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
               <p className="text-sm text-primary-subtle">Advanced web scraping & agentic crawling.</p>
             </div>
 
-            <div className="space-y-4">
-              <div>
+            <div className="space-y-6">
+              {/* API Key Section */}
+              <div className="p-6 bg-surface rounded-2xl border border-border-subtle">
                 <Input
                   type="password"
                   label="API KEY (V2)"
@@ -199,29 +200,130 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                   onChange={(e) => setFirecrawlKey(e.target.value)}
                   placeholder="fc-..."
                 />
-                <div className="mt-2 text-xs text-primary-subtle flex items-center gap-1 ml-1">
-                  <CheckCircle2 size={12} className="text-status-success" /> Using API V2 (Latest)
+                <div className="mt-3 flex justify-between items-center">
+                  <div className="text-xs text-primary-subtle flex items-center gap-1">
+                    <CheckCircle2 size={12} className="text-status-success" /> Using API V2 (Latest)
+                  </div>
+                  <Button
+                    onClick={handleSaveFirecrawl}
+                    isLoading={firecrawlStatus === 'validating'}
+                    loadingText="Verifying..."
+                    className="bg-primary text-white hover:bg-primary/90"
+                    size="sm"
+                    variant="primary"
+                    leftIcon={firecrawlStatus === 'saved' ? <CheckCircle2 size={14} /> : <Save size={14} />}
+                  >
+                    {firecrawlStatus === 'saved' ? 'Verified' : 'Save Key'}
+                  </Button>
+                </div>
+                {firecrawlStatus === 'error' && (
+                  <div className="mt-3 p-3 bg-status-error/10 border border-status-error/20 rounded-xl text-xs font-bold text-status-error flex items-center gap-2">
+                    <XCircle size={14} /> {firecrawlError}
+                  </div>
+                )}
+              </div>
+
+              {/* Research Protocol Configuration */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <SettingsIcon className="text-primary-accent" size={18} />
+                  <h3 className="text-sm font-black text-primary uppercase tracking-widest">Research Protocol</h3>
+                </div>
+
+                {/* Mode Selector */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { id: 'fast', label: 'Fast Audit', desc: 'Quick check (2m)', icon: Zap, color: 'text-amber-500' },
+                    { id: 'standard', label: 'Standard', desc: 'Deep verify (5m)', icon: Search, color: 'text-indigo-500' },
+                    { id: 'exhaustive', label: 'Deep Context', desc: 'Max depth (12m)', icon: Brain, color: 'text-purple-500' }
+                  ].map((m) => {
+                    const currentMode = localStorage.getItem('firesearch_mode') || 'standard';
+                    const isActive = currentMode === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => {
+                          localStorage.setItem('firesearch_mode', m.id);
+                          window.dispatchEvent(new Event('storage')); // Trigger update
+                          // Force re-render locally for instant feedback
+                          setActiveTab('firecrawl');
+                        }}
+                        className={`p-4 rounded-2xl border transition-all text-left relative overflow-hidden group ${isActive
+                            ? 'bg-primary-accent/5 border-primary-accent shadow-lg shadow-primary-accent/10'
+                            : 'bg-surface border-border-subtle hover:border-primary-accent/50'
+                          }`}
+                      >
+                        <div className={`p-2 rounded-lg w-fit mb-3 ${isActive ? 'bg-primary-accent text-white' : 'bg-background ' + m.color}`}>
+                          <m.icon size={18} />
+                        </div>
+                        <div className="font-bold text-primary text-sm mb-1">{m.label}</div>
+                        <div className="text-xs text-primary-subtle font-medium">{m.desc}</div>
+                        {isActive && <div className="absolute top-2 right-2 text-primary-accent"><CheckCircle2 size={14} /></div>}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Toggles */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  {/* Strict Sources */}
+                  {(() => {
+                    const isStrict = localStorage.getItem('firesearch_strict') === 'true';
+                    return (
+                      <button
+                        onClick={() => {
+                          localStorage.setItem('firesearch_strict', String(!isStrict));
+                          setActiveTab('firecrawl');
+                        }}
+                        className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${isStrict
+                            ? 'bg-emerald-500/5 border-emerald-500/30'
+                            : 'bg-surface border-border-subtle hover:border-border-highlight'
+                          }`}
+                      >
+                        <div className={`p-2 rounded-full ${isStrict ? 'bg-emerald-500 text-white' : 'bg-border-subtle text-primary-subtle'}`}>
+                          <Shield size={16} />
+                        </div>
+                        <div className="text-left">
+                          <div className="text-sm font-bold text-primary">Strict Sources Only</div>
+                          <div className="text-[10px] text-primary-subtle">Limit to OEM & Verified Whitelists</div>
+                        </div>
+                        <div className={`ml-auto w-10 h-6 rounded-full p-1 transition-colors ${isStrict ? 'bg-emerald-500' : 'bg-border-subtle'}`}>
+                          <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${isStrict ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
+                      </button>
+                    );
+                  })()}
+
+                  {/* Image Audit */}
+                  {(() => {
+                    const isImages = localStorage.getItem('firesearch_images') !== 'false'; // Default true
+                    return (
+                      <button
+                        onClick={() => {
+                          localStorage.setItem('firesearch_images', String(!isImages));
+                          setActiveTab('firecrawl');
+                        }}
+                        className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${isImages
+                            ? 'bg-indigo-500/5 border-indigo-500/30'
+                            : 'bg-surface border-border-subtle hover:border-border-highlight'
+                          }`}
+                      >
+                        <div className={`p-2 rounded-full ${isImages ? 'bg-indigo-500 text-white' : 'bg-border-subtle text-primary-subtle'}`}>
+                          <SettingsIcon size={16} />
+                        </div>
+                        <div className="text-left">
+                          <div className="text-sm font-bold text-primary">Visual Validation</div>
+                          <div className="text-[10px] text-primary-subtle">Audit images for white BG & size</div>
+                        </div>
+                        <div className={`ml-auto w-10 h-6 rounded-full p-1 transition-colors ${isImages ? 'bg-indigo-500' : 'bg-border-subtle'}`}>
+                          <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${isImages ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
 
-              {firecrawlStatus === 'error' && (
-                <div className="p-4 bg-status-error/10 border border-status-error/20 rounded-xl text-xs font-bold text-status-error flex items-center gap-2">
-                  <XCircle size={16} /> {firecrawlError}
-                </div>
-              )}
-
-              <div className="flex justify-end pt-4">
-                <Button
-                  onClick={handleSaveFirecrawl}
-                  isLoading={firecrawlStatus === 'validating'}
-                  loadingText="Verifying..."
-                  className="bg-status-warning hover:bg-status-warning/90 shadow-orange-500/40"
-                  variant="primary" // Custom styling overrides this but used for base props
-                  leftIcon={firecrawlStatus === 'saved' ? <CheckCircle2 size={18} /> : <Save size={18} />}
-                >
-                  {firecrawlStatus === 'saved' ? 'Verified & Saved' : 'Save Firecrawl Key'}
-                </Button>
-              </div>
             </div>
           </Card>
         )}

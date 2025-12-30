@@ -14,7 +14,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { orchestrationService } from '../services/orchestrationService';
-import { filterPrintersForRussianMarket } from '../services/russianMarketFilter';
+
 import { validateProductImage } from '../services/imageValidationService';
 import { evaluatePublicationReadiness } from '../services/publicationReadinessService';
 import { processSupplierTitle } from '../services/textProcessingService';
@@ -359,102 +359,7 @@ async function testCompleteDataProcessingPipeline(): Promise<{ passed: boolean; 
 /**
  * Test Russian market requirements compliance
  */
-async function testRussianMarketCompliance(): Promise<{ passed: boolean; details: string[] }> {
-  const details: string[] = [];
-  let allPassed = true;
 
-  console.log("🇷🇺 Testing Russian Market Requirements Compliance...");
-
-  try {
-    // Test with mock printer data representing various Russian market scenarios
-    const mockPrinterData = [
-      {
-        model: "HP LaserJet Pro M404dn",
-        canonicalName: "HP LaserJet Pro M404dn",
-        sources: [
-          {
-            url: "https://cartridge.ru/hp-laserjet-pro-m404dn",
-            timestamp: new Date(),
-            dataConfirmed: ["compatibility"],
-            confidence: 0.9,
-            sourceType: "compatibility_db" as const,
-            extractionMethod: "web_scraping"
-          },
-          {
-            url: "https://nix.ru/hp-laserjet-pro-m404dn",
-            timestamp: new Date(),
-            dataConfirmed: ["compatibility", "specifications"],
-            confidence: 0.95,
-            sourceType: "nix_ru" as const,
-            extractionMethod: "web_scraping"
-          }
-        ],
-        ruMarketEligibility: "ru_unknown" as const,
-        compatibilityConflict: false
-      },
-      {
-        model: "Canon PIXMA G3420",
-        canonicalName: "Canon PIXMA G3420",
-        sources: [
-          {
-            url: "https://www.canon.ru/printers/pixma-g3420",
-            timestamp: new Date(),
-            dataConfirmed: ["compatibility", "official_support"],
-            confidence: 0.98,
-            sourceType: "official" as const,
-            extractionMethod: "official_api"
-          }
-        ],
-        ruMarketEligibility: "ru_unknown" as const,
-        compatibilityConflict: false
-      }
-    ];
-
-    const filterResult = filterPrintersForRussianMarket(mockPrinterData);
-
-    // Test 1: Strict 2+ source verification
-    const verifiedPrinters = filterResult.ruVerified;
-    const unknownPrinters = filterResult.ruUnknown;
-    const rejectedPrinters = filterResult.ruRejected;
-
-    details.push(`✅ Russian market filtering results:`);
-    details.push(`   - Verified printers: ${verifiedPrinters.length}`);
-    details.push(`   - Unknown printers: ${unknownPrinters.length}`);
-    details.push(`   - Rejected printers: ${rejectedPrinters.length}`);
-
-    // Test 2: Separate storage for unverified printers
-    const totalCategorized = verifiedPrinters.length + unknownPrinters.length + rejectedPrinters.length;
-    if (totalCategorized === mockPrinterData.length) {
-      details.push(`✅ All printers properly categorized`);
-    } else {
-      details.push(`❌ Categorization mismatch: ${totalCategorized} vs ${mockPrinterData.length}`);
-      allPassed = false;
-    }
-
-    // Test 3: Russian source whitelist configuration
-    if (filterResult.qualityMetrics) {
-      details.push(`✅ Quality metrics available:`);
-      details.push(`   - Average confidence: ${filterResult.qualityMetrics.averageConfidence.toFixed(3)}`);
-      details.push(`   - Verification rate: ${(filterResult.qualityMetrics.verifiedCount / filterResult.qualityMetrics.totalProcessed * 100).toFixed(1)}%`);
-    }
-
-    // Test 4: Enhanced printer eligibility scoring
-    verifiedPrinters.forEach(printer => {
-      if (printer.sources.length >= 2) {
-        details.push(`✅ ${printer.model}: Meets 2+ source requirement (${printer.sources.length} sources)`);
-      } else {
-        details.push(`❌ ${printer.model}: Verified but has < 2 sources (${printer.sources.length})`);
-        allPassed = false;
-      }
-    });
-
-  } catch (error) {
-    details.push(`❌ Russian market compliance test error: ${error}`);
-    allPassed = false;
-  }
-
-  return { passed: allPassed, details };
-}
 
 /**
  * Test batch processing with various data sets

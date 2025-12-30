@@ -4,130 +4,204 @@
 
 @layer base {
   :root {
-    /* Light Mode (Default) */
-    --bg-primary: 210 40% 98%;    /* Slate-50 */
-    --bg-secondary: 0 0% 100%;    /* White */
-    --bg-card: 0 0% 100%;         /* White */
-    --bg-card-glass: 255 255 255; /* White for rgba */
-    --bg-sidebar: 255 255 255;    /* White for rgba */
+    /* Light Mode (Default) - Clean, Airy, Premium */
+    --bg-primary: 210 40% 98%;
+    /* Slate-50 */
+    --bg-secondary: 0 0% 100%;
+    /* White */
+    --bg-card: 0 0% 100%;
+    /* White */
+    --bg-glass: 255 255 255;
+    /* White base for glass */
 
-    --text-primary: 222 47% 11%;  /* Slate-900 */
-    --text-secondary: 215 16% 47%;/* Slate-500 */
-    --text-accent: 250 89% 65%;   /* Indigo-500 */
+    --text-primary: 222 47% 11%;
+    /* Slate-900 */
+    --text-secondary: 215 16% 47%;
+    /* Slate-500 */
+    --text-accent: 250 89% 65%;
+    /* Indigo-500 */
 
-    --border-subtle: 214 32% 91%; /* Slate-200 */
-    --border-highlight: 250 89% 65%; /* Indigo-500 */
+    --border-subtle: 214 32% 91%;
+    /* Slate-200 */
+    --border-highlight: 250 89% 65%;
+    /* Indigo-500 */
 
-    --shadow-color: 220 3% 15%;   /* Black-ish */
+    --shadow-color: 220 3% 15%;
+    /* Black-ish */
 
-    /* Semantic Colors */
-    --color-success: 142 71% 45%; /* Green-600 */
-    --color-warning: 38 92% 50%;  /* Amber-500 */
-    --color-error: 343 100% 50%;  /* Rose-600 */
-    --color-info: 217 91% 60%;    /* Blue-500 */
+    /* Semantic Colors - Vibrant but Professional */
+    --color-success: 150 100% 38%;
+    /* Emerald-500 */
+    --color-warning: 35 100% 55%;
+    /* Amber-500 */
+    --color-error: 345 100% 60%;
+    /* Rose-500 */
+    --color-info: 217 91% 60%;
+    /* Blue-500 */
 
-    /* Chart Colors */
-    --chart-1: 250 89% 65%;
-    --chart-2: 142 71% 45%;
-    --chart-3: 38 92% 50%;
-
-    /* Overlay opacities */
-    --glass-opacity: 0.7;
-    --glass-border-opacity: 0.2;
+    /* Glass Effects */
+    --glass-opacity: 0.85;
+    --glass-blur: 16px;
+    --glass-border: 255 255 255;
+    --glass-border-opacity: 0.5;
   }
 
-  /* Dark Mode Overrides */
+  /* Dark Mode - Deep, Rich, Cyber-Physical */
   .dark {
-    --bg-primary: 222 47% 11%;    /* Slate-900 (Main Background) */
-    
-    /* Tweaked for better contrast vs Input fields */
-    --bg-secondary: 215 28% 17%;  /* Slate-800 - slightly lighter/bluer */ 
-    --bg-card: 215 28% 17%;       /* Slate-800 */
-    
-    --bg-card-glass: 15 23 42;    /* Slate-900 for rgba */
-    --bg-sidebar: 15 23 42;       /* Slate-900 for rgba */
+    --bg-primary: 224 71% 4%;
+    /* Very Dark Blue/Black */
+    --bg-secondary: 222 47% 11%;
+    /* Slate-900 */
+    --bg-card: 222 47% 11%;
+    /* Slate-900 */
+    --bg-glass: 15 23 42;
+    /* Dark Slate base for glass */
 
-    --text-primary: 210 40% 98%;  /* Slate-50 */
-    --text-secondary: 215 20% 65%;/* Slate-400 */
-    --text-accent: 250 89% 75%;   /* Indigo-400 */
+    --text-primary: 210 40% 98%;
+    /* Slate-50 */
+    --text-secondary: 215 20% 65%;
+    /* Slate-400 */
+    --text-accent: 250 89% 75%;
+    /* Indigo-400 */
 
-    --border-subtle: 217 33% 25%; /* Slate-700 */
-    --border-highlight: 250 89% 65%; /* Indigo-500 */
+    --border-subtle: 217 33% 20%;
+    /* Slate-800 */
+    --border-highlight: 250 89% 65%;
+    /* Indigo-500 */
 
-    --shadow-color: 0 0% 0%;      /* Pure Black */
+    --shadow-color: 0 0% 0%;
+    /* Pure Black */
 
-    /* Semantic Colors */
-    --color-success: 142 70% 50%; /* Green-500 */
-    --color-warning: 38 92% 60%;  /* Amber-400 */
-    --color-error: 343 100% 60%;  /* Rose-500 */
-    --color-info: 217 91% 70%;    /* Blue-400 */
+    --color-success: 150 100% 45%;
+    /* Emerald-400 */
+    --color-warning: 35 100% 60%;
+    /* Amber-400 */
+    --color-error: 345 100% 65%;
+    /* Rose-400 */
+    --color-info: 217 91% 70%;
+    /* Blue-400 */
 
-    /* Overlay opacities */
-    --glass-opacity: 0.4;
-    --glass-border-opacity: 0.1;
+    --glass-opacity: 0.6;
+    --glass-border: 255 255 255;
+    --glass-border-opacity: 0.08;
   }
 }
 
 body {
-  @apply bg-background text-primary antialiased;
+  @apply bg-background text-primary antialiased selection:bg-primary-accent/30 selection:text-primary-accent;
   font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+
+  /* Subtle ambient background mesh */
   background-image:
-    radial-gradient(at 0% 0%, hsla(var(--text-accent), 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(190, 89%, 65%, 0.05) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, hsla(var(--text-accent), 0.08) 0px, transparent 40%),
+    radial-gradient(at 100% 0%, hsla(190, 89%, 65%, 0.08) 0px, transparent 40%),
+    radial-gradient(at 100% 100%, hsla(300, 100%, 65%, 0.03) 0px, transparent 40%);
 }
 
 @layer components {
-  /* Utility Classes */
-  .btn-primary {
-    @apply flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white shadow-lg transition-all active:scale-95 bg-primary-accent hover:bg-primary-accent/90 shadow-primary-accent/30 disabled:opacity-50 disabled:pointer-events-none;
-  }
 
+  /* Ultra-Premium Glass Cards */
   .glass-card {
-    @apply backdrop-blur-xl shadow-2xl;
-    background-color: rgba(var(--bg-card-glass), var(--glass-opacity));
-    border: 1px solid rgba(var(--text-primary), var(--glass-border-opacity));
-  }
-
-  .glass-sidebar {
-    @apply backdrop-blur-2xl border-r;
-    background-color: rgba(var(--bg-sidebar), var(--glass-opacity));
-    border-color: rgba(var(--text-primary), var(--glass-border-opacity));
-  }
-
-  .premium-shadow {
+    @apply shadow-xl transition-all duration-300;
+    backdrop-filter: blur(var(--glass-blur));
+    background-color: rgba(var(--bg-glass), var(--glass-opacity));
+    border: 1px solid rgba(var(--glass-border), var(--glass-border-opacity));
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.05),
-      0 10px 15px -3px rgba(0, 0, 0, 0.3),
-      0 4px 6px -4px rgba(0, 0, 0, 0.3);
+      0 4px 6px -1px rgba(0, 0, 0, 0.05),
+      0 2px 4px -1px rgba(0, 0, 0, 0.03),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    /* Inner light */
   }
 
-  .premium-button {
-    @apply relative overflow-hidden transition-all duration-300 active:scale-95;
+  .glass-card:hover {
+    box-shadow:
+      0 20px 25px -5px rgba(0, 0, 0, 0.05),
+      0 10px 10px -5px rgba(0, 0, 0, 0.02),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
 
-  .premium-button::after {
+  /* Frosted Sidebar */
+  .glass-sidebar {
+    @apply border-r;
+    backdrop-filter: blur(20px);
+    background-color: rgba(var(--bg-glass), 0.7);
+    border-color: rgba(var(--border-subtle), 0.5);
+  }
+
+  /* Gradient Borde/Glow Utility */
+  .glow-border {
+    position: relative;
+  }
+
+  .glow-border::before {
     content: '';
-    @apply absolute inset-0 bg-white/10 opacity-0 transition-opacity duration-300;
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(45deg, rgba(var(--text-accent), 0.5), transparent, rgba(var(--text-accent), 0.2));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.5;
+    pointer-events: none;
   }
 
-  .premium-button:hover::after {
-    @apply opacity-100;
+  /* SOTA Button Interaction */
+  .btn-premium {
+    @apply relative overflow-hidden transition-all duration-300 active:scale-95 shadow-lg shadow-primary-accent/20 hover:shadow-primary-accent/40;
+    background-size: 200% auto;
+    background-image: linear-gradient(to right, rgb(var(--text-accent)) 0%, #818cf8 51%, rgb(var(--text-accent)) 100%);
+  }
+
+  .btn-premium:hover {
+    background-position: right center;
   }
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Sophisticated Animations */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulse-subtle {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
 }
 
 .animate-in {
-  animation: fadeIn 0.5s ease-out forwards;
+  animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
+.animate-pulse-subtle {
+  animation: pulse-subtle 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Scrollbar refinement */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 ::-webkit-scrollbar-thumb {
-  @apply bg-primary-subtle/20 rounded-full hover:bg-primary-subtle/40;
+  @apply bg-primary-subtle/20 rounded-full hover:bg-primary-subtle/40 transition-colors;
 }

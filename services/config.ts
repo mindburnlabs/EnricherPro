@@ -59,5 +59,22 @@ export const APP_CONFIG = {
 };
 
 export const getModeConfig = (mode: AppMode = 'standard'): SearchConfig => {
+    // Browser-side override
+    if (typeof window !== 'undefined') {
+        const storedMode = localStorage.getItem('firesearch_mode') as AppMode;
+        if (storedMode && APP_CONFIG.modes[storedMode]) {
+            return APP_CONFIG.modes[storedMode];
+        }
+    }
     return APP_CONFIG.modes[mode] || APP_CONFIG.modes.standard;
+};
+
+export const getFiresearchOptions = () => {
+    if (typeof window !== 'undefined') {
+        return {
+            strictSources: localStorage.getItem('firesearch_strict') === 'true',
+            visualValidation: localStorage.getItem('firesearch_images') !== 'false'
+        };
+    }
+    return { strictSources: false, visualValidation: true };
 };

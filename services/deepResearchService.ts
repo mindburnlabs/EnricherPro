@@ -48,10 +48,17 @@ export class DeepResearchService {
      */
     public async executeWorkflow(query: string, mode: AppMode = 'standard', locale: string = 'RU', strictSources: boolean = true): Promise<DeepResearchResult> {
         const startTime = Date.now();
-        const logs: string[] = [];
-        logs.push(`[DeepResearch] Starting workflow for: "${query}" in mode "${mode}" (Strict: ${strictSources})`);
+        // Dynamic Config Loading
+        const { getModeConfig, getFiresearchOptions } = await import('./config');
 
-        const config = getModeConfig(mode);
+        // Resolve Settings (User Pref > Props > Default)
+        const firesearchOpts = getFiresearchOptions();
+        const effectiveStrict = strictSources || firesearchOpts.strictSources;
+        const config = getModeConfig(mode); // Will look up localStorage override for mode if active
+
+        const logs: string[] = [];
+        logs.push(`[DeepResearch] Starting workflow for: "${query}" in mode "${mode}" (Strict: ${effectiveStrict})`);
+
         const stats = {
             iterations: 0,
             sources_collected: 0,
@@ -61,15 +68,38 @@ export class DeepResearchService {
 
         // 1. Initial Parse
         const initialParse = processSupplierTitle(query);
+
+        // Helper: Extract short model (aliases)
+        // e.g. "CF217A" -> "17A", "Q2612A" -> "12A"
+        const extractShortModel = (mpn: string): string[] => {
+            const aliases: string[] = [];
+            // Common pattern: 2-3 digits + 1-2 letters at end (standard HP/Canon style)
+            const match = mpn.match(/(\d{2,4}[A-Z]{1,2})$/);
+            if (match) aliases.push(match[1]);
+            // Remove common prefixes 'CF', 'Q', 'CE', 'CB' if followed by digits
+            const clean = mpn.replace(/^(CF|Q|CE|CB|CC|TN)/i, '');
+            if (clean !== mpn && clean.length >= 2) aliases.push(clean);
+            return [...new Set(aliases)];
+        };
+        const modelShort = initialParse.model.model ? extractShortModel(initialParse.model.model) : [];
+
+        // Helper: Normalize Yield Unit
+        const normalizeYieldUnit = (u: string): 'pages' | 'copies' | 'unknown' => {
+            const lower = u.toLowerCase();
+            if (lower.includes('page') || lower.includes('стр') || lower === 'p') return 'pages';
+            if (lower.includes('cop') || lower.includes('коп')) return 'copies';
+            return 'unknown'; // strictly unknown if not pages/copies
+        };
+
         const parsed: FiresearchParsed = {
             brand: initialParse.brand.brand || 'Unknown',
             consumable_type: initialParse.detectedType.value,
             model_oem: initialParse.model.model || '',
-            model_short: [],
+            model_short: modelShort,
             printer_models_from_title: [],
             yield: {
                 value: initialParse.yieldInfo[0]?.value || 'unknown',
-                unit: (initialParse.yieldInfo[0]?.unit === 'ml' ? 'unknown' : initialParse.yieldInfo[0]?.unit) as any || 'unknown'
+                unit: normalizeYieldUnit(initialParse.yieldInfo[0]?.unit || '')
             },
             color: (initialParse.detectedColor.value as any) || 'unknown',
             notes: []
@@ -116,7 +146,7 @@ export class DeepResearchService {
         };
 
         let iteration = 0;
-        const missingFields = new Set<string>(['logistics', 'compatibility', 'related', 'images', 'faq']);
+        const missingFields = this.identifyMissingFields(currentData, effectiveStrict);
         let noProgressCount = 0;
 
         while (true) {
@@ -142,7 +172,7 @@ export class DeepResearchService {
                 break;
             }
 
-            const { findings, calls, sources } = await this.collector(plan, config, logs);
+            const { findings, calls, sources } = await this.collector(plan, config, logs, stats);
             stats.calls_made += calls;
             stats.sources_collected += sources;
 
@@ -281,18 +311,21 @@ export class DeepResearchService {
         return plan;
     }
 
-    private async collector(plan: ResearchPlan, config: SearchConfig, logs: string[]): Promise<{ findings: { type: string, urls: string[] }[], calls: number, sources: number }> {
+    private async collector(plan: ResearchPlan, config: SearchConfig, logs: string[], stats: { iterations: number }): Promise<{ findings: { type: string, urls: string[] }[], calls: number, sources: number }> {
         const findings: { type: string, urls: string[] }[] = [];
         let calls = 0;
         let sourcesCount = 0;
 
         const executeBatch = async (queries: string[], type: string, searchOptions: SearchOptions = {}) => {
             const urls = new Set<string>();
+            // Adaptive Limit: Increase limit by 1 for each iteration after the first
+            const adaptiveLimit = config.searchLimitPerStep + Math.max(0, stats.iterations - 1);
+
             for (const q of queries) {
-                if (calls >= config.searchLimitPerStep) break;
+                if (calls >= adaptiveLimit) break;
 
                 try {
-                    logs.push(`[DeepResearch] Searching (${type}): ${q}`);
+                    logs.push(`[DeepResearch] Searching (${type}): ${q} (Limit: ${adaptiveLimit})`);
                     const res = await firecrawlSearch(q, {
                         limit: 3,
                         scrapeOptions: { formats: ['markdown'] },
@@ -491,6 +524,28 @@ export class DeepResearchService {
         const hasFaq = !!data.faq && data.faq.length > 0;
         const hasRelated = !!data.related_consumables;
         return hasLogistics && hasCompat && hasFaq && hasRelated;
+    }
+    private identifyMissingFields(data: StrictConsumableData, strict: boolean): Set<string> {
+        const missing = new Set<string>();
+
+        // Logistics is core
+        if (!data.packaging_from_nix) missing.add('logistics');
+
+        // Compatibility is core
+        if (!data.compatible_printers_ru || data.compatible_printers_ru.length === 0) missing.add('compatibility');
+
+        // Related is core for network effect
+        if (!data.related_consumables || !data.related_consumables.for_similar_products_block || data.related_consumables.for_similar_products_block.length === 0) {
+            missing.add('related');
+        }
+
+        // Images are core
+        if (!data.images || data.images.length === 0) missing.add('images');
+
+        // FAQ is core
+        if (!data.faq || data.faq.length === 0) missing.add('faq');
+
+        return missing;
     }
 }
 

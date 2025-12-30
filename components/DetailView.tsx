@@ -13,7 +13,7 @@ interface DetailViewProps {
 }
 
 const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
-  const [activeTab, setActiveTab] = useState<'specs' | 'evidence' | 'thinking' | 'images' | 'faq'>('specs');
+  const [activeTab, setActiveTab] = useState<'specs' | 'evidence' | 'intelligence' | 'images' | 'faq' | 'network'>('specs');
   const [editedData, setEditedData] = useState(item.data);
 
   const handleSave = () => {
@@ -80,11 +80,12 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
 
       {/* Navigation */}
       <div className="bg-transparent border-b border-border-subtle px-8 flex gap-2 flex-shrink-0 overflow-x-auto no-scrollbar">
-        <TabButton id="specs" icon={Box} label="Technical Specs" />
-        <TabButton id="faq" icon={HelpCircle} label="AI Support FAQ" />
-        <TabButton id="evidence" icon={LinkIcon} label="Proof & Sources" />
-        <TabButton id="thinking" icon={Brain} label="Thinking Engine" />
+        <TabButton id="specs" icon={Box} label="Identity & Specs" />
+        <TabButton id="network" icon={Layers} label="Network" />
         <TabButton id="images" icon={ImageIcon} label="Visual Audit" />
+        <TabButton id="evidence" icon={LinkIcon} label="Proof & Sources" />
+        <TabButton id="intelligence" icon={Brain} label="Intelligence" />
+        <TabButton id="faq" icon={HelpCircle} label="AI Support FAQ" />
       </div>
 
       {/* Main Content Area */}
@@ -263,98 +264,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   </div>
                 </div>
 
-                <div className="glass-card rounded-[3rem] p-10 border-border-subtle">
-                  <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] mb-10">Cross-Entity Dynamics</h3>
-                  <div className="space-y-6">
-                    {editedData.related_consumables_display && editedData.related_consumables_display.length > 0 ? (
-                      <div className="space-y-8">
-                        {editedData.related_consumables_categories && (
-                          <div className="space-y-8">
-                            {/* Companions */}
-                            {editedData.related_consumables_categories.companions.length > 0 && (
-                              <div>
-                                <h4 className="text-[10px] font-black text-primary-accent uppercase tracking-[0.2em] mb-4">Core Companions</h4>
-                                <div className="space-y-3">
-                                  {editedData.related_consumables_categories.companions.slice(0, 3).map((rel, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 bg-surface rounded-2xl border border-border-subtle hover:border-primary-accent/30 transition-all group">
-                                      <div className="min-w-0 flex-1">
-                                        <div className="text-xs font-black text-primary group-hover:text-primary-accent transition-colors uppercase tracking-tight truncate">{rel.model}</div>
-                                        <div className="flex items-center gap-2 mt-2">
-                                          <span className="text-[9px] font-black text-primary-accent uppercase tracking-widest">{rel.type}</span>
-                                          <div className="w-1 h-1 rounded-full bg-border-subtle"></div>
-                                          <span className="text-[9px] font-bold text-primary-subtle uppercase tracking-widest">{Math.round(rel.confidence * 100)}% Match</span>
-                                        </div>
-                                      </div>
-                                      <div className="text-right ml-4">
-                                        <span className="text-[9px] font-black text-primary-subtle uppercase tracking-widest block mb-1">{rel.relationship.replace(/_/g, ' ')}</span>
-                                        {rel.isOEM && <span className="text-[8px] bg-status-success/10 text-status-success border border-status-success/20 px-2 py-0.5 rounded-md font-black uppercase tracking-widest">OEM</span>}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
 
-                            {/* Alternatives */}
-                            {editedData.related_consumables_categories.alternatives.length > 0 && (
-                              <div>
-                                <h4 className="text-[10px] font-black text-status-warning uppercase tracking-[0.2em] mb-4">Functional Alternatives</h4>
-                                <div className="space-y-3">
-                                  {editedData.related_consumables_categories.alternatives.slice(0, 3).map((rel, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 bg-surface rounded-2xl border border-border-subtle hover:border-border-highlight transition-all group">
-                                      <div className="min-w-0 flex-1">
-                                        <div className="text-xs font-black text-primary group-hover:text-primary-subtle transition-colors uppercase tracking-tight truncate">{rel.model}</div>
-                                        <div className="flex items-center gap-2 mt-2">
-                                          {rel.yieldComparison && (
-                                            <span className={`text-[8px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest border ${rel.yieldComparison === 'higher' ? 'bg-status-success/10 text-status-success border-status-success/20' :
-                                              rel.yieldComparison === 'lower' ? 'bg-status-error/10 text-status-error border-status-error/20' :
-                                                'bg-surface text-primary-subtle border-border-subtle'
-                                              }`}>
-                                              {rel.yieldComparison} Capacity
-                                            </span>
-                                          )}
-                                          <span className="text-[9px] font-bold text-primary-subtle uppercase tracking-widest">{Math.round(rel.confidence * 100)}% Reliability</span>
-                                        </div>
-                                      </div>
-                                      <div className="text-right ml-4">
-                                        <span className="text-[9px] font-black text-primary-subtle uppercase tracking-widest block">{rel.relationship.replace(/_/g, ' ')}</span>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {!editedData.related_consumables_categories && (
-                          <div className="space-y-4">
-                            {editedData.related_consumables_display.map((rel, i) => (
-                              <div key={i} className="flex items-center justify-between p-5 bg-card rounded-[2rem] border border-border-subtle hover:border-border-highlight transition-all">
-                                <div className="min-w-0 flex-1">
-                                  <div className="text-sm font-black text-primary hover:text-primary-accent transition-colors uppercase truncate tracking-tighter">{rel.model}</div>
-                                  <div className="flex items-center gap-3 mt-2">
-                                    <span className="text-[10px] font-black text-primary-accent uppercase tracking-widest">{rel.type}</span>
-                                    <div className="w-1 h-1 rounded-full bg-primary-subtle"></div>
-                                    <span className="text-[10px] font-bold text-primary-subtle uppercase tracking-widest">Weight: {rel.priority}</span>
-                                  </div>
-                                </div>
-                                <div className="text-right ml-4 px-3 py-1 bg-surface rounded-xl border border-border-subtle self-start">
-                                  <span className="text-[9px] font-black text-primary-subtle uppercase tracking-widest">{rel.relationship.replace(/_/g, ' ')}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="p-8 border-2 border-dashed border-border-subtle rounded-[2rem] flex flex-col items-center justify-center text-center opacity-30 grayscale">
-                        <Layers size={32} className="mb-4 text-primary-subtle" />
-                        <span className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">No relational data identified</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -684,20 +594,138 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
             </div>
           )}
 
-          {activeTab === 'thinking' && (
+          {activeTab === 'network' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="glass-card rounded-[3rem] p-10 border-border-subtle relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <Layers size={140} className="text-primary-accent" />
+                </div>
+                <h3 className="text-[10px] font-black text-primary-subtle uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
+                  <div className="p-2 bg-primary-accent/10 rounded-lg">
+                    <Layers size={14} className="text-primary-accent" />
+                  </div>
+                  Consumable Network Graph
+                </h3>
+
+                <div className="space-y-6 relative z-10">
+                  {editedData.related_consumables_display && editedData.related_consumables_display.length > 0 ? (
+                    <div className="space-y-12">
+                      {/* Summary Stats */}
+                      <div className="grid grid-cols-3 gap-6">
+                        <div className="p-6 bg-surface rounded-2xl border border-border-subtle text-center">
+                          <div className="text-2xl font-black text-primary">{editedData.related_consumables_categories?.companions.length || 0}</div>
+                          <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-1">Companions</div>
+                        </div>
+                        <div className="p-6 bg-surface rounded-2xl border border-border-subtle text-center">
+                          <div className="text-2xl font-black text-primary">{editedData.related_consumables_categories?.alternatives.length || 0}</div>
+                          <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-1">Alternatives</div>
+                        </div>
+                        <div className="p-6 bg-surface rounded-2xl border border-border-subtle text-center">
+                          <div className="text-2xl font-black text-primary">{Math.round(editedData.confidence?.network || 0.85 * 100)}%</div>
+                          <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-1">Network Conf.</div>
+                        </div>
+                      </div>
+
+                      {editedData.related_consumables_categories && (
+                        <div className="space-y-12">
+                          {/* Companions */}
+                          {editedData.related_consumables_categories.companions.length > 0 && (
+                            <div>
+                              <div className="flex items-center gap-4 mb-6">
+                                <h4 className="text-[10px] font-black text-primary-accent uppercase tracking-[0.2em]">Core Companions</h4>
+                                <div className="h-px bg-primary-accent/20 flex-1"></div>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {editedData.related_consumables_categories.companions.map((rel, i) => (
+                                  <div key={i} className="flex flex-col justify-between p-5 bg-surface rounded-2xl border border-border-subtle hover:border-primary-accent/30 hover:bg-primary-accent/5 transition-all group">
+                                    <div className="min-w-0 flex-1 mb-3">
+                                      <div className="text-sm font-black text-primary group-hover:text-primary-accent transition-colors uppercase tracking-tight truncate">{rel.model}</div>
+                                      <div className="text-[10px] text-primary-subtle mt-1">{rel.name_guess || 'Standard Consumable Unit'}</div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-3 border-t border-border-subtle group-hover:border-primary-accent/10">
+                                      <div className="flex items-center gap-2">
+                                        <span className="px-2 py-0.5 rounded-md bg-border-subtle/50 text-[9px] font-bold text-primary uppercase tracking-widest">{rel.type}</span>
+                                        {rel.isOEM && <span className="text-[8px] bg-status-success/10 text-status-success border border-status-success/20 px-2 py-0.5 rounded-md font-black uppercase tracking-widest">OEM</span>}
+                                      </div>
+                                      <span className="text-[9px] font-black text-primary-subtle uppercase tracking-widest">{Math.round(rel.confidence * 100)}% Match</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Alternatives */}
+                          {editedData.related_consumables_categories.alternatives.length > 0 && (
+                            <div>
+                              <div className="flex items-center gap-4 mb-6">
+                                <h4 className="text-[10px] font-black text-status-warning uppercase tracking-[0.2em]">Functional Alternatives</h4>
+                                <div className="h-px bg-status-warning/20 flex-1"></div>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {editedData.related_consumables_categories.alternatives.map((rel, i) => (
+                                  <div key={i} className="flex flex-col justify-between p-5 bg-surface rounded-2xl border border-border-subtle hover:border-status-warning/30 hover:bg-status-warning/5 transition-all group">
+                                    <div className="min-w-0 flex-1 mb-3">
+                                      <div className="text-sm font-black text-primary group-hover:text-status-warning transition-colors uppercase tracking-tight truncate">{rel.model}</div>
+                                      <div className="text-[10px] text-primary-subtle mt-1">{rel.name_guess || 'Alternative Option'}</div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-3 border-t border-border-subtle group-hover:border-status-warning/10">
+                                      <div className="flex items-center gap-2">
+                                        {rel.yieldComparison && (
+                                          <span className={`text-[8px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest border ${rel.yieldComparison === 'higher' ? 'bg-status-success/10 text-status-success border-status-success/20' :
+                                            rel.yieldComparison === 'lower' ? 'bg-status-error/10 text-status-error border-status-error/20' :
+                                              'bg-surface text-primary-subtle border-border-subtle'
+                                            }`}>
+                                            {rel.yieldComparison} Cap
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="text-[9px] font-black text-primary-subtle uppercase tracking-widest">{Math.round(rel.confidence * 100)}% REL</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-12 border-2 border-dashed border-border-subtle rounded-[2rem] flex flex-col items-center justify-center text-center opacity-30 grayscale">
+                      <Layers size={48} className="mb-6 text-primary-subtle" />
+                      <span className="text-xs font-black text-primary-subtle uppercase tracking-widest">No relational data identified in this run</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'intelligence' && (
             <div className="bg-surface rounded-[2rem] p-1 shadow-2xl border border-border-subtle overflow-hidden font-mono animate-in fade-in zoom-in-95 duration-300">
               <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-background">
                 <div className="flex items-center gap-3">
                   <div className="w-2.5 h-2.5 rounded-full bg-primary-accent shadow-[0_0_8px_rgba(99,102,241,0.8)] animate-pulse"></div>
-                  <span className="text-[10px] font-mono text-primary-subtle uppercase font-bold tracking-widest">Thought_Process_Log.run</span>
+                  <span className="text-[10px] font-mono text-primary-subtle uppercase font-bold tracking-widest">Firesearch_Chain_of_Thought.log</span>
                 </div>
                 <div className="flex gap-2">
                   <div className="w-2 h-2 rounded-full bg-border-subtle"></div>
                   <div className="w-2 h-2 rounded-full bg-border-subtle"></div>
                 </div>
               </div>
-              <div className="bg-background p-10 font-mono text-xs text-primary-accent/80 leading-relaxed overflow-auto max-h-[70vh] custom-scrollbar selection:bg-primary-accent/30 selection:text-white">
-                {item.thinking_process || "// Reasoning log empty for this process."}
+              <div className="bg-background p-10 font-mono text-xs text-primary-subtle leading-relaxed overflow-auto max-h-[70vh] custom-scrollbar selection:bg-primary-accent/30 selection:text-white whitespace-pre-wrap">
+                {item.thinking_process ? (
+                  item.thinking_process.split('\n').map((line, i) => {
+                    if (line.startsWith('Step')) return <div key={i} className="text-primary-accent font-bold mt-4 mb-2">{line}</div>;
+                    if (line.includes('Plan:')) return <div key={i} className="text-status-success font-bold mt-2">{line}</div>;
+                    if (line.includes('Error')) return <div key={i} className="text-status-error font-bold">{line}</div>;
+                    return <div key={i} className="opacity-80">{line}</div>;
+                  })
+                ) : (
+                  "// Reasoning log empty for this process."
+                )}
               </div>
             </div>
           )}

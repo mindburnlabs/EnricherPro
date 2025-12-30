@@ -140,8 +140,15 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       sku: item.data.model || 'UNKNOWN',
       brand: item.data.brand,
       short_model: item.data.short_model,
-      printers: item.data.printers_ru.join('; '),
-      weight: item.data.packaging_from_nix?.weight_g || 0,
+      model_alias_short: item.data.model_alias_short || '',
+      printers: item.data.printers_ru?.join('; ') || '',
+      yield_value: item.data.yield?.value || '',
+      yield_unit: item.data.yield?.unit || '',
+      weight_g: item.data.packaging_from_nix?.weight_g || '',
+      width_mm: item.data.packaging_from_nix?.width_mm || '',
+      height_mm: item.data.packaging_from_nix?.height_mm || '',
+      depth_mm: item.data.packaging_from_nix?.depth_mm || '',
+      packaging_source: item.data.packaging_from_nix?.source_url || '',
       status: item.status,
       error_count: item.error_details?.length || 0,
       retry_count: item.retry_count || 0,
@@ -149,6 +156,9 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       confidence_overall: item.data.confidence?.overall || 0,
       confidence_model: item.data.confidence?.model_name || 0,
       confidence_logistics: item.data.confidence?.logistics || 0,
+      related_companions_count: item.data.related_consumables_categories?.companions.length || 0,
+      related_alternatives_count: item.data.related_consumables_categories?.alternatives.length || 0,
+      image_count: item.data.images?.length || 0,
       processing_time_ms: item.processing_duration_ms || 0,
       created_at: new Date(item.created_at).toISOString()
     }));
@@ -157,7 +167,31 @@ const ResultsView: React.FC<ResultsViewProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `consumables_enhanced_${Date.now()}.csv`);
+    link.setAttribute('download', `enricher_firesearch_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+  };
+
+  const handleExportJSON = () => {
+    const jsonData = filteredAndSortedItems.map(item => ({
+      id: item.id,
+      input: item.input_raw,
+      status: item.status,
+      enriched_data: item.data, // Exports full nested structure
+      quality_metrics: item.evidence.quality_metrics,
+      processing_history: item.evidence.processing_history,
+      metadata: {
+        processed_at: item.created_at,
+        processing_time_ms: item.processing_duration_ms,
+        mode: item.data.mode_used
+      }
+    }));
+
+    const jsonString = JSON.stringify(jsonData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `enricher_firesearch_full_${new Date().toISOString().split('T')[0]}.json`);
     link.click();
   };
 
@@ -391,14 +425,24 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               </Button>
             )}
 
-            <Button
-              onClick={handleExportCSV}
-              variant="secondary"
-              size="icon"
-              title="Export Enhanced CSV"
-            >
-              <FileSpreadsheet size={20} />
-            </Button>
+            <div className="flex gap-1">
+              <Button
+                onClick={handleExportCSV}
+                variant="secondary"
+                size="icon"
+                title="Export Reduced CSV"
+              >
+                <FileSpreadsheet size={20} />
+              </Button>
+              <Button
+                onClick={handleExportJSON}
+                variant="secondary"
+                size="icon"
+                title="Export Full JSON (StrictFiresearch)"
+              >
+                <FileJson size={20} />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -802,26 +846,30 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                     )}
                   </td>
                   <td className="px-6 py-5">
-                    {item.error_details && item.error_details.length > 0 ? (
-                      <div className="space-y-2">
+                    <div className="space-y-1.5">
+                      {item.error_details && item.error_details.length > 0 ? (
                         <div className="flex items-center gap-2">
                           <AlertTriangle size={14} className="text-red-400" />
-                          <span className="text-xs text-red-400 font-black">{item.error_details.length}</span>
+                          <span className="text-xs text-red-400 font-black">{item.error_details.length} Issues</span>
                         </div>
-                        <div className="flex flex-wrap gap-1">
-                          {item.error_details.slice(0, 2).map((error, i) => (
-                            <span key={i} className={`px-1.5 py-0.5 text-[8px] font-black uppercase rounded-md border ${error.severity === 'critical' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                              error.severity === 'high' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                                'bg-white/5 text-slate-500 border-white/5'
-                              }`}>
-                              {error.category.split('_')[0]}
-                            </span>
+                      ) : (
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-600/30"></span>
+                          <span className="text-xs font-bold opacity-50">Clean</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-1.5 opacity-80">
+                        <span className="text-[8px] uppercase font-black text-primary-subtle tracking-widest">
+                          DEPTH
+                        </span>
+                        <div className="flex gap-0.5">
+                          {[...Array(Math.min(5, (item.retry_count || 0) + 1))].map((_, i) => (
+                            <div key={i} className={`w-1 h-2.5 rounded-sm ${i === 0 ? 'bg-indigo-500' : 'bg-indigo-400/40'}`}></div>
                           ))}
                         </div>
                       </div>
-                    ) : (
-                      <span className="text-xs text-slate-600 font-bold">--</span>
-                    )}
+                    </div>
                   </td>
                   <td className="px-6 py-5">
                     <div className="text-xs font-black text-slate-400 space-y-1.5 uppercase tracking-widest">
