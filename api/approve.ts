@@ -1,22 +1,24 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { getDb } from './_lib/db';
 
-import { ItemsRepository } from '../src/repositories/itemsRepository';
+export default async function handler(request: VercelRequest, response: VercelResponse) {
+    if (request.method !== 'POST') {
+        return response.status(405).json({ error: 'Method Not Allowed' });
+    }
 
-export const POST = async (request: Request) => {
     try {
-        const body = await request.json();
-        const { itemId } = body;
+        const { itemId } = request.body;
 
         if (!itemId) {
-            return new Response(JSON.stringify({ error: 'Missing itemId' }), { status: 400 });
+            return response.status(400).json({ error: 'Missing itemId' });
         }
 
-        await ItemsRepository.setStatus(itemId, 'published');
+        const db = getDb();
+        await db.query(`UPDATE items SET status = 'published' WHERE id = $1`, [itemId]);
 
-        return new Response(JSON.stringify({ success: true }), {
-            headers: { 'Content-Type': 'application/json' }
-        });
-    } catch (e) {
-        console.error(e);
-        return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
+        return response.status(200).json({ success: true });
+    } catch (error) {
+        console.error("API Error:", error);
+        return response.status(500).json({ error: 'Internal Server Error', details: String(error) });
     }
-};
+}

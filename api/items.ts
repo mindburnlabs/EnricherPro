@@ -1,27 +1,24 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { getItemByJobId } from './_lib/db';
 
-import { ItemsRepository } from '../src/repositories/itemsRepository';
-
-export const GET = async (request: Request) => {
-    const url = new URL(request.url);
-    const jobId = url.searchParams.get('jobId');
-
-    if (!jobId) {
-        return new Response(JSON.stringify({ error: 'Missing jobId' }), { status: 400 });
+export default async function handler(request: VercelRequest, response: VercelResponse) {
+    if (request.method !== 'GET') {
+        return response.status(405).json({ error: 'Method Not Allowed' });
     }
 
     try {
-        // In a real app we might return multiple items.
-        // For MVP 1 job = 1 item mostly.
-        const item = await ItemsRepository.findByJobId(jobId);
+        const jobId = request.query.jobId as string;
 
-        // Wrap in array for ReviewQueue compatibility
+        if (!jobId) {
+            return response.status(400).json({ error: 'Missing jobId' });
+        }
+
+        const item = await getItemByJobId(jobId);
         const items = item ? [item] : [];
 
-        return new Response(JSON.stringify({ success: true, items }), {
-            headers: { 'Content-Type': 'application/json' }
-        });
-    } catch (e) {
-        console.error(e);
-        return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
+        return response.status(200).json({ success: true, items });
+    } catch (error) {
+        console.error("API Error:", error);
+        return response.status(500).json({ error: 'Internal Server Error', details: String(error) });
     }
-};
+}

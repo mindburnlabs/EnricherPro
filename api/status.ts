@@ -1,66 +1,44 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { getItemByJobId } from './_lib/db';
 
-import { ItemsRepository } from "../src/repositories/itemsRepository";
-
-export const GET = async (request: Request) => {
-    const url = new URL(request.url);
-    const jobId = url.searchParams.get("jobId");
-
-    if (!jobId) {
-        return new Response("Missing jobId", { status: 400 });
+export default async function handler(request: VercelRequest, response: VercelResponse) {
+    if (request.method !== 'GET') {
+        return response.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    // In a real Inngest app, we might query Inngest API for step status
-    // OR we just check our DB to see if the item was created/updated
-    // For this MVP, we check the DB item linked to the job
+    try {
+        const jobId = request.query.jobId as string;
 
-    // Note: ItemsRepository needs to find by Job ID. 
-    // We didn't explicitly make findByJobId, but we can query by job_id manually or add helper.
-    // For MVP, assuming 1 item per research job for now (from ResearchWorkflow).
+        if (!jobId) {
+            return response.status(400).json({ error: 'Missing jobId' });
+        }
 
-    // Actually, ItemsRepository.create returns the item. 
-    // Let's add a findByJobId to ItemsRepository first? 
-    // Or just SQL query here? Better to stick to Repo pattern if possible, 
-    // but let's check ItemsRepository content first.
+        const item = await getItemByJobId(jobId);
 
-    // Workaround: We don't have findByJobId in Repo yet.
-    // Let's assume the frontend polls with the JOB ID? 
-    // The 'triggerResearch' returns 'jobId'.
-    // The workflow creates an item with 'jobId'.
+        if (!item) {
+            return response.status(200).json({ status: "pending", steps: [] });
+        }
 
-    // Let's try to fetch the item by job_id. 
-    // We need to import 'db' and 'items' if Repo doesn't have it.
+        // Map DB status to UI steps
+        const steps = [];
 
-    const item = await ItemsRepository.findByJobId(jobId);
+        if (item.status === 'processing') {
+            steps.push({ id: 'research', label: 'status.searching', status: 'running' });
+        } else if (item.status === 'needs_review') {
+            steps.push({ id: 'research_done', label: 'status.complete', status: 'completed' });
+            steps.push({ id: 'review', label: 'status.review_required', status: 'running', message: item.review_reason });
+        } else if (item.status === 'published') {
+            steps.push({ id: 'research_done', label: 'status.complete', status: 'completed' });
+            steps.push({ id: 'published', label: 'status.published', status: 'completed' });
+        }
 
-    if (!item) {
-        // Job started but item not in DB yet (Workflow 'planning' phase maybe?)
-        // Or invalid ID.
-        return new Response(JSON.stringify({ status: "pending", steps: [] }), {
-            headers: { 'Content-Type': 'application/json' }
+        return response.status(200).json({
+            status: item.status,
+            steps,
+            result: item.data
         });
+    } catch (error) {
+        console.error("API Error:", error);
+        return response.status(500).json({ error: 'Internal Server Error', details: String(error) });
     }
-
-    // Map DB status to UI steps
-    // This is a simplification. Ideally Inngest sends events to client via SSE.
-    // Here we just infer progress from DB state.
-
-    const steps = [];
-
-    if (item.status === 'processing') {
-        steps.push({ id: 'research', label: 'status.searching', status: 'running' });
-    } else if (item.status === 'needs_review') {
-        steps.push({ id: 'research_done', label: 'status.complete', status: 'completed' });
-        steps.push({ id: 'review', label: 'status.review_required', status: 'running', message: item.reviewReason });
-    } else if (item.status === 'published') {
-        steps.push({ id: 'research_done', label: 'status.complete', status: 'completed' });
-        steps.push({ id: 'published', label: 'status.published', status: 'completed' });
-    }
-
-    return new Response(JSON.stringify({
-        status: item.status,
-        steps,
-        result: item.data // Return the enriched data!
-    }), {
-        headers: { 'Content-Type': 'application/json' }
-    });
-};
+}
