@@ -11,7 +11,6 @@ import {
 import { Result, Ok, Err } from '../types/sota';
 // Replacing ParserService with superior textProcessingService
 import { processSupplierTitle } from './textProcessingService';
-import { nixService } from './nixService';
 import { deepResearchService } from './deepResearchService';
 import { evaluateQualityGates } from './qualityGates';
 
@@ -74,64 +73,35 @@ class OrchestrationService {
     public async processItem(
         rawQuery: string,
         onProgress: (stage: ProcessingStep) => void = () => { },
-        options: { engine: ProcessingEngine } = { engine: 'firecrawl' }
+        options: { engine: ProcessingEngine, mode?: 'fast' | 'standard' | 'exhaustive', locale?: string, strictSources?: boolean } = { engine: 'firecrawl' }
     ): Promise<EnrichedItem> {
         const jobId = uuidv4();
         const logs: string[] = [];
         logs.push("Pivot: Enforcing Firecrawl-Only Architecture");
 
-        // Initialize data map
-        const data: Partial<ConsumableData> = {};
+        // Default mode
+        const mode = options.mode || 'standard';
+        const locale = options.locale || 'RU';
+        const strictSources = options.strictSources !== undefined ? options.strictSources : true;
 
         try {
-            // --- STEP 1: NORMALIZATION & PARSING ---
-            onProgress('parsing');
-            const { processedText, partialData } = this.runNormalizationPhase(rawQuery, logs);
-            Object.assign(data, partialData);
-
-            // --- STEP 2: AGENTIC RESEARCH (Firecrawl Only) ---
             onProgress('discovery');
-            const researchResult = await this.runResearchPhase(data, rawQuery, options, logs);
+            // Execute Deep Research (Firesearch Workflow)
+            // This handles Normalization -> Plan -> Collect -> Extract -> Validate Loop
+            const researchResult = await deepResearchService.executeWorkflow(rawQuery, mode, locale, strictSources);
 
-            // Merge logistics data immediately if available from NIX direct check OR DeepResearch
-            if (researchResult.nixInfo) {
-                // ... (Keep existing Nix merge logic)
-                data.packaging_from_nix = researchResult.nixInfo;
-                if (!data.sources) data.sources = [];
-                if (researchResult.nixInfo.source_url) {
-                    data.sources.push({
-                        url: researchResult.nixInfo.source_url,
-                        sourceType: 'nix_ru',
-                        timestamp: new Date(),
-                        dataConfirmed: ['weight', 'dimensions'],
-                        confidence: 1.0,
-                        extractionMethod: 'nix_agent'
-                    });
-                }
-            }
+            logs.push(...researchResult.logs);
 
-            // Merge deep research structured data (The Core Pivot)
-            if (researchResult.structuredExtractionData) {
-                logs.push("Merging Firecrawl structured extraction data...");
-                Object.assign(data, researchResult.structuredExtractionData);
-                // Ensure overwrite of partial data if extraction is better
-            }
-
-            // --- STEP 3: FINALIZATION (No more Gemini Synthesis) ---
+            // --- STEP 3: FINALIZATION ---
             onProgress('enrichment');
-            // We skip LLM synthesis (Gemini) and just prepare the final item
-            // Logic: Data is already structured from Firecrawl /extract
 
-            const finalDataObj = data as ConsumableData; // Assumption: extraction filled gaps
-
-            // Logic to ensure minimal fields
-            finalDataObj.automation_status = 'done'; // optimistic
+            const finalDataObj = researchResult.data;
 
             // Construct Final Item
-            return this.constructEnrichedItem(jobId, rawQuery, finalDataObj, logs, researchResult.researchUrls, "Firecrawl Deep Extraction");
+            return this.constructEnrichedItem(jobId, rawQuery, finalDataObj, logs, [], "Firesearch Native Optimization");
 
         } catch (e) {
-            return this.handleFatalError(jobId, rawQuery, data, logs, e as Error);
+            return this.handleFatalError(jobId, rawQuery, {}, logs, e as Error);
         }
     }
 
@@ -158,70 +128,8 @@ class OrchestrationService {
         return { processedText, partialData: data };
     }
 
-    private async runResearchPhase(
-        data: Partial<ConsumableData>,
-        rawQuery: string,
-        options: { engine: ProcessingEngine },
-        logs: string[]
-    ): Promise<ResearchResult> {
-        logs.push(`Step 2: Deep Agent Protocol (Firecrawl Native)`);
+    // runResearchPhase removed as part of Firesearch refactoring.
 
-        const researchQuery = `${data.brand || ''} ${data.model || rawQuery} ${data.consumable_type !== 'unknown' && data.consumable_type ? data.consumable_type : ''}`;
-
-        // Containers
-        let nixResult: Result<any> = Err(new Error('Agent not scheduled'));
-        let firecrawlResult: Result<any> = Err(new Error('Agent not scheduled'));
-
-        // PARALLEL EXECUTION PLAN
-        const tasks: Promise<void>[] = [];
-
-        // Task A: NIX.ru (Logistics Agent) - Keep this as it uses text processing specific logic, or move to DeepResearch?
-        // Let's keep it as is, NixService works well usually? 
-        // Pivot: Logic says "remove all... except Firecrawl". NixService scrapes NIX.ru internally or uses Firecrawl? 
-        // NixService uses Cheerio/Axios usually. Let's keep it as "Direct scraping" unless it breaks rules.
-        // User said "remove external services like gemini...". NIX is internal logic.
-        tasks.push((async () => {
-            // NixService logic
-            if (data.model) {
-                const res = await this.executeAgent('NIX.ru', nixService.getPackagingInfo(data.model, data.brand || ''));
-                nixResult = res;
-                if (!res.success) logs.push(`Warning: NIX.ru direct scrape failed: ${this.getError(res)}`);
-            }
-        })());
-
-        // Task B: Firecrawl Deep Research
-        tasks.push((async () => {
-            const res = await this.executeAgent('Firecrawl Deep Research', deepResearchService.executeWorkflow(researchQuery));
-            firecrawlResult = res;
-            if (!res.success) {
-                logs.push(`Warning: DeepResearchService failed: ${this.getError(res)}`);
-            } else {
-                logs.push(`DeepResearchService finished with status: ${res.data.status}`);
-                if (res.data.logs) logs.push(...res.data.logs);
-            }
-        })());
-
-        // Await all parallel agents
-        await Promise.all(tasks);
-
-        // Aggregate findings
-        let nixInfo = nixResult.success ? nixResult.data : null;
-        let deepData = firecrawlResult.success ? firecrawlResult.data.data : null;
-
-        // Merge DeepResearch NIX findings if Direct Scrape failed
-        if (!nixInfo && deepData && deepData.packaging_from_nix) {
-            nixInfo = deepData.packaging_from_nix;
-            logs.push("Recovered NIX data from Deep Research.");
-        }
-
-        return {
-            nixInfo,
-            researchSummary: "Firecrawl Native Extraction",
-            researchUrls: [], // TODO: extract URLs from logs or result
-            deepScrapeContent: "",
-            structuredExtractionData: deepData
-        };
-    }
 
 
 

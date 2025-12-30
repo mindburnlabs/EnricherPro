@@ -92,8 +92,8 @@ export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({
     const servicesList = Object.values(services) as any[];
     if (servicesList.length === 0) return 'unknown';
 
-    const unhealthyCount = servicesList.filter(s => s.health === 'unhealthy').length;
-    const degradedCount = servicesList.filter(s => s.health === 'degraded').length;
+    const unhealthyCount = servicesList.filter(s => s?.health === 'unhealthy').length;
+    const degradedCount = servicesList.filter(s => s?.health === 'degraded').length;
 
     if (unhealthyCount > 0) return 'unhealthy';
     if (degradedCount > 0) return 'degraded';
@@ -129,16 +129,16 @@ export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({
           <div className="absolute bottom-full left-0 mb-2 w-80 bg-card border border-border-subtle rounded-lg shadow-xl shadow-black/50 z-50 p-4 text-primary">
             <h3 className="font-semibold text-primary mb-3">API Services Status</h3>
 
-            {Object.entries(services).map(([serviceName, service]: [string, any]) => (
+            {Object.entries(services || {}).map(([serviceName, service]: [string, any]) => (
               <div key={serviceName} className="flex items-center justify-between py-2 border-b border-border-subtle last:border-b-0">
                 <div className="flex items-center gap-2">
-                  {getHealthIcon(service.health)}
+                  {getHealthIcon(service?.health || 'unknown')}
                   <span className="font-medium capitalize text-primary">{serviceName}</span>
-                  {getCircuitBreakerIcon(service.circuitBreakerState)}
+                  {getCircuitBreakerIcon(service?.circuitBreakerState || 'CLOSED')}
                 </div>
                 <div className="flex items-center gap-2 text-sm text-primary-subtle">
-                  <span>{Math.round(service.rateLimitUsage)}%</span>
-                  {service.creditsRemaining !== undefined && (
+                  <span>{Math.round(service?.rateLimitUsage || 0)}%</span>
+                  {service?.creditsRemaining !== undefined && (
                     <span className="text-blue-400">{service.creditsRemaining} credits</span>
                   )}
                 </div>

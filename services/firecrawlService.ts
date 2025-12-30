@@ -477,14 +477,20 @@ export const firecrawlScrape = async (url: string, options: ScrapeOptions = {}):
       const result = await httpResponse.json().catch(() => ({}));
       return {
         success: httpResponse.ok,
-        data: result,
-        error: httpResponse.ok ? undefined : result.message || `Scrape failed with status ${httpResponse.status}`,
         statusCode: httpResponse.status,
         responseTime: 0,
         creditsUsed: 1
       };
     }
   );
+
+  if (response.statusCode === 402) {
+    return {
+      success: false,
+      error: "Firecrawl Plan Limit Exceeded (Payment Required). Please upgrade your plan or top up credits.",
+      data: {}
+    };
+  }
 
   return {
     success: response.success,
@@ -614,13 +620,15 @@ export const mapWebsite = async (url: string, search?: string): Promise<string[]
       const result = await httpResponse.json().catch(() => ({}));
       return {
         success: httpResponse.ok,
-        data: result,
-        error: httpResponse.ok ? undefined : result.message || `Map failed: ${httpResponse.status}`,
         statusCode: httpResponse.status,
         responseTime: 0
       };
     }
   );
+
+  if (response.statusCode === 402) {
+    throw new Error("Firecrawl Plan Limit Exceeded (Payment Required). Please upgrade your plan or top up credits.");
+  }
 
   if (!response.success) {
     // Non-critical, return empty array on failure logic usually handled by caller, but here we throw to be consistent
@@ -682,13 +690,15 @@ export const extractData = async (urls: string[], prompt: string, schema: any): 
       const result = await httpResponse.json().catch(() => ({}));
       return {
         success: httpResponse.ok,
-        data: result,
-        error: httpResponse.ok ? undefined : result.message || `Extract failed: ${httpResponse.status}`,
         statusCode: httpResponse.status,
         responseTime: 0
       };
     }
   );
+
+  if (response.statusCode === 402) {
+    throw new Error("Firecrawl Plan Limit Exceeded (Payment Required). Please upgrade your plan or top up credits.");
+  }
 
   if (!response.success) {
     throw new Error(response.error || "Extract request failed");
@@ -730,7 +740,8 @@ export interface SearchOptions {
   country?: string;  // e.g., 'ru'
   is_news?: boolean; // search news
   is_video?: boolean; // search video
-  is_image?: boolean; // search images (mapped to sources: ['images'] internally if API supports, or use specialized endpoint if needed)
+  is_image?: boolean; // search images
+  sources?: string[]; // e.g. ['images', 'news', 'web']
 }
 
 export const firecrawlSearch = async (query: string, options: SearchOptions = {}): Promise<any> => {
@@ -761,11 +772,16 @@ export const firecrawlSearch = async (query: string, options: SearchOptions = {}
       operation: 'search',
       priority: 'high',
       retryable: true,
-      creditsRequired: 1, // Basic search cost, scrape adds more
+      creditsRequired: options.sources?.includes('images') ? 2 : 1, // Image search might cost more? Assuming 1 for now but defensive.
       metadata: { query }
     },
     async () => {
       // Construct V2 Search Body
+      // Resolving potential conflicts: if is_image is true, ensure 'images' is in sources
+      const finalSources = options.sources || [];
+      if (options.is_image && !finalSources.includes('images')) finalSources.push('images');
+      if (options.is_news && !finalSources.includes('news')) finalSources.push('news');
+
       const body: any = {
         query,
         limit: options.limit || 5,
@@ -774,11 +790,10 @@ export const firecrawlSearch = async (query: string, options: SearchOptions = {}
         scrapeOptions: options.scrapeOptions
       };
 
-      // Handle simple image "intent" if API allows 'sources' param not officially documented in method signature yet, 
-      // but strictly following standard v2 body. 
-      // Note: Firecrawl docs say `search` output contains generic results. 
-      // For images specifically, users often pass `sources: ['images']` if supported or rely on query keywords. 
-      // We will assume standard body for now.
+      // Only add sources if explicitly provided or inferred
+      if (finalSources.length > 0) {
+        body.sources = finalSources;
+      }
 
       const httpResponse = await fetch(`${API_V2}/search`, {
         method: 'POST',
@@ -800,6 +815,14 @@ export const firecrawlSearch = async (query: string, options: SearchOptions = {}
       };
     }
   );
+
+  if (response.statusCode === 402) {
+    return {
+      success: false,
+      error: "Firecrawl Plan Limit Exceeded (Payment Required). Please upgrade your plan or top up credits.",
+      data: { data: [] }
+    };
+  }
 
   if (!response.success) {
     throw new Error(response.error || "Search request failed");

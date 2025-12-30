@@ -47,6 +47,7 @@ export interface SystemHealthSummary {
   totalAlerts: number;
   criticalAlerts: number;
   averageResponseTime: number;
+  totalRequests: number;
   totalQueueLength: number;
   lastUpdated: string;
 }
@@ -182,7 +183,7 @@ export class ApiHealthMonitoringService {
 
     } catch (error) {
       console.error('Health check failed:', error);
-      
+
       if (this.config.enableAlerts) {
         this.createAlert({
           type: 'service_timeout',
@@ -199,9 +200,9 @@ export class ApiHealthMonitoringService {
    * Collect metrics for a service
    */
   private collectMetrics(
-    serviceName: string, 
-    serviceStatus: any, 
-    queueStats: any, 
+    serviceName: string,
+    serviceStatus: any,
+    queueStats: any,
     timestamp: string
   ): void {
     const serviceStats = apiIntegrationService.getServiceStats(serviceName);
@@ -213,7 +214,7 @@ export class ApiHealthMonitoringService {
       responseTime: serviceStats.health.averageResponseTime,
       success: serviceStatus.health === 'healthy',
       rateLimitUsage: serviceStatus.rateLimitUsage,
-      creditsUsed: serviceStatus.creditsRemaining ? 
+      creditsUsed: serviceStatus.creditsRemaining ?
         (100 - serviceStatus.creditsRemaining) : undefined,
       queueLength: serviceStatus.queueLength
     };
@@ -235,7 +236,7 @@ export class ApiHealthMonitoringService {
         severity: 'warning',
         serviceName,
         message: `Service ${serviceName} health is degraded`,
-        details: { 
+        details: {
           health: serviceStatus.health,
           averageResponseTime: serviceStats.health.averageResponseTime,
           recentErrors: serviceStats.health.recentErrors
@@ -249,7 +250,7 @@ export class ApiHealthMonitoringService {
         severity: 'error',
         serviceName,
         message: `Service ${serviceName} is unhealthy`,
-        details: { 
+        details: {
           health: serviceStatus.health,
           averageResponseTime: serviceStats.health.averageResponseTime,
           recentErrors: serviceStats.health.recentErrors
@@ -264,7 +265,7 @@ export class ApiHealthMonitoringService {
         severity: 'critical',
         serviceName,
         message: `Circuit breaker is OPEN for ${serviceName}`,
-        details: { 
+        details: {
           state: serviceStatus.circuitBreakerState,
           failures: serviceStats.circuitBreaker.failures,
           nextRetryTime: serviceStats.circuitBreaker.nextRetryTime
@@ -273,26 +274,26 @@ export class ApiHealthMonitoringService {
     }
 
     // Rate limit alerts
-    if (serviceStatus.rateLimitUsage >= this.config.alertThresholds.rateLimitCritical && 
-        !this.hasActiveAlert(serviceName, 'rate_limit_exceeded')) {
+    if (serviceStatus.rateLimitUsage >= this.config.alertThresholds.rateLimitCritical &&
+      !this.hasActiveAlert(serviceName, 'rate_limit_exceeded')) {
       this.createAlert({
         type: 'rate_limit_exceeded',
         severity: 'critical',
         serviceName,
         message: `Rate limit critically high for ${serviceName}: ${Math.round(serviceStatus.rateLimitUsage)}%`,
-        details: { 
+        details: {
           usage: serviceStatus.rateLimitUsage,
           threshold: this.config.alertThresholds.rateLimitCritical
         }
       });
-    } else if (serviceStatus.rateLimitUsage >= this.config.alertThresholds.rateLimitWarning && 
-               !this.hasActiveAlert(serviceName, 'rate_limit_exceeded')) {
+    } else if (serviceStatus.rateLimitUsage >= this.config.alertThresholds.rateLimitWarning &&
+      !this.hasActiveAlert(serviceName, 'rate_limit_exceeded')) {
       this.createAlert({
         type: 'rate_limit_exceeded',
         severity: 'warning',
         serviceName,
         message: `Rate limit high for ${serviceName}: ${Math.round(serviceStatus.rateLimitUsage)}%`,
-        details: { 
+        details: {
           usage: serviceStatus.rateLimitUsage,
           threshold: this.config.alertThresholds.rateLimitWarning
         }
@@ -301,26 +302,26 @@ export class ApiHealthMonitoringService {
 
     // Credits low alerts
     if (serviceStatus.creditsRemaining !== undefined) {
-      if (serviceStatus.creditsRemaining <= this.config.alertThresholds.creditsLowCritical && 
-          !this.hasActiveAlert(serviceName, 'credits_low')) {
+      if (serviceStatus.creditsRemaining <= this.config.alertThresholds.creditsLowCritical &&
+        !this.hasActiveAlert(serviceName, 'credits_low')) {
         this.createAlert({
           type: 'credits_low',
           severity: 'critical',
           serviceName,
           message: `Credits critically low for ${serviceName}: ${serviceStatus.creditsRemaining}`,
-          details: { 
+          details: {
             remaining: serviceStatus.creditsRemaining,
             threshold: this.config.alertThresholds.creditsLowCritical
           }
         });
-      } else if (serviceStatus.creditsRemaining <= this.config.alertThresholds.creditsLowWarning && 
-                 !this.hasActiveAlert(serviceName, 'credits_low')) {
+      } else if (serviceStatus.creditsRemaining <= this.config.alertThresholds.creditsLowWarning &&
+        !this.hasActiveAlert(serviceName, 'credits_low')) {
         this.createAlert({
           type: 'credits_low',
           severity: 'warning',
           serviceName,
           message: `Credits low for ${serviceName}: ${serviceStatus.creditsRemaining}`,
-          details: { 
+          details: {
             remaining: serviceStatus.creditsRemaining,
             threshold: this.config.alertThresholds.creditsLowWarning
           }
@@ -334,28 +335,28 @@ export class ApiHealthMonitoringService {
    */
   private checkSystemAlerts(servicesStatus: any, queueStats: any): void {
     // Queue backlog alerts
-    if (queueStats.totalQueued >= this.config.alertThresholds.queueLengthCritical && 
-        !this.hasActiveAlert('system', 'queue_backlog')) {
+    if (queueStats.totalQueued >= this.config.alertThresholds.queueLengthCritical &&
+      !this.hasActiveAlert('system', 'queue_backlog')) {
       this.createAlert({
         type: 'queue_backlog',
         severity: 'critical',
         serviceName: 'system',
         message: `Request queue critically backed up: ${queueStats.totalQueued} requests`,
-        details: { 
+        details: {
           totalQueued: queueStats.totalQueued,
           averageWaitTime: queueStats.averageWaitTime,
           oldestRequest: queueStats.oldestRequest,
           threshold: this.config.alertThresholds.queueLengthCritical
         }
       });
-    } else if (queueStats.totalQueued >= this.config.alertThresholds.queueLengthWarning && 
-               !this.hasActiveAlert('system', 'queue_backlog')) {
+    } else if (queueStats.totalQueued >= this.config.alertThresholds.queueLengthWarning &&
+      !this.hasActiveAlert('system', 'queue_backlog')) {
       this.createAlert({
         type: 'queue_backlog',
         severity: 'warning',
         serviceName: 'system',
         message: `Request queue backed up: ${queueStats.totalQueued} requests`,
-        details: { 
+        details: {
           totalQueued: queueStats.totalQueued,
           averageWaitTime: queueStats.averageWaitTime,
           threshold: this.config.alertThresholds.queueLengthWarning
@@ -398,10 +399,10 @@ export class ApiHealthMonitoringService {
    * Check if there's an active alert of a specific type for a service
    */
   private hasActiveAlert(serviceName: string, type: AlertType): boolean {
-    return this.alerts.some(alert => 
-      alert.serviceName === serviceName && 
-      alert.type === type && 
-      !alert.acknowledged && 
+    return this.alerts.some(alert =>
+      alert.serviceName === serviceName &&
+      alert.type === type &&
+      !alert.acknowledged &&
       !alert.resolvedAt
     );
   }
@@ -417,7 +418,7 @@ export class ApiHealthMonitoringService {
     this.metrics = this.metrics.filter(metric => metric.timestamp > cutoffDate);
 
     // Clean up old resolved alerts
-    this.alerts = this.alerts.filter(alert => 
+    this.alerts = this.alerts.filter(alert =>
       !alert.resolvedAt || alert.resolvedAt > cutoffDate
     );
 
@@ -431,11 +432,11 @@ export class ApiHealthMonitoringService {
     const servicesStatus = apiIntegrationService.getAllServicesStatus();
     const queueStats = apiIntegrationService.getQueueStats();
     const services = Object.values(servicesStatus);
-    
+
     const healthyCount = services.filter(s => s.health === 'healthy').length;
     const degradedCount = services.filter(s => s.health === 'degraded').length;
     const unhealthyCount = services.filter(s => s.health === 'unhealthy').length;
-    
+
     // Determine overall health
     let overallHealth: ApiHealthStatus = 'healthy';
     if (unhealthyCount > 0) {
@@ -448,7 +449,7 @@ export class ApiHealthMonitoringService {
     const criticalAlerts = activeAlerts.filter(a => a.severity === 'critical');
 
     // Calculate average response time
-    const recentMetrics = this.metrics.filter(m => 
+    const recentMetrics = this.metrics.filter(m =>
       Date.now() - new Date(m.timestamp).getTime() < 5 * 60 * 1000 // Last 5 minutes
     );
     const avgResponseTime = recentMetrics.length > 0 ?
@@ -463,6 +464,7 @@ export class ApiHealthMonitoringService {
       totalAlerts: activeAlerts.length,
       criticalAlerts: criticalAlerts.length,
       averageResponseTime: avgResponseTime,
+      totalRequests: this.metrics.length,
       totalQueueLength: queueStats.totalQueued,
       lastUpdated: new Date().toISOString()
     };
@@ -479,8 +481,8 @@ export class ApiHealthMonitoringService {
     if (!serviceStats) return null;
 
     const cutoffTime = Date.now() - timeRange;
-    const serviceMetrics = this.metrics.filter(m => 
-      m.serviceName === serviceName && 
+    const serviceMetrics = this.metrics.filter(m =>
+      m.serviceName === serviceName &&
       new Date(m.timestamp).getTime() > cutoffTime
     );
 
@@ -497,9 +499,9 @@ export class ApiHealthMonitoringService {
       serviceMetrics.reduce((sum, m) => sum + m.responseTime, 0) / serviceMetrics.length : 0;
 
     // Count active alerts for this service
-    const serviceAlerts = this.alerts.filter(a => 
-      a.serviceName === serviceName && 
-      !a.acknowledged && 
+    const serviceAlerts = this.alerts.filter(a =>
+      a.serviceName === serviceName &&
+      !a.acknowledged &&
       !a.resolvedAt
     ).length;
 
@@ -513,7 +515,7 @@ export class ApiHealthMonitoringService {
       circuitBreakerState: serviceStatus.circuitBreakerState,
       creditsRemaining: serviceStatus.creditsRemaining,
       queueLength: serviceStatus.queueLength,
-      lastHealthCheck: serviceStats.health.lastCheckTime ? 
+      lastHealthCheck: serviceStats.health.lastCheckTime ?
         new Date(serviceStats.health.lastCheckTime).toISOString() : new Date().toISOString(),
       alertsCount: serviceAlerts
     };
@@ -588,10 +590,10 @@ export class ApiHealthMonitoringService {
     if (format === 'prometheus') {
       return this.exportPrometheusMetrics();
     }
-    
+
     return JSON.stringify({
       summary: this.getSystemHealthSummary(),
-      services: Object.keys(apiIntegrationService.getAllServicesStatus()).map(name => 
+      services: Object.keys(apiIntegrationService.getAllServicesStatus()).map(name =>
         this.getServiceMetrics(name)
       ).filter(Boolean),
       alerts: this.getActiveAlerts(),
@@ -605,10 +607,10 @@ export class ApiHealthMonitoringService {
   private exportPrometheusMetrics(): string {
     const summary = this.getSystemHealthSummary();
     const services = Object.keys(apiIntegrationService.getAllServicesStatus());
-    
+
     let output = '# HELP api_health_status API service health status (0=unhealthy, 1=degraded, 2=healthy)\n';
     output += '# TYPE api_health_status gauge\n';
-    
+
     services.forEach(serviceName => {
       const metrics = this.getServiceMetrics(serviceName);
       if (metrics) {
@@ -619,11 +621,11 @@ export class ApiHealthMonitoringService {
         output += `api_uptime_percent{service="${serviceName}"} ${metrics.uptime}\n`;
       }
     });
-    
+
     output += `api_total_alerts ${summary.totalAlerts}\n`;
     output += `api_critical_alerts ${summary.criticalAlerts}\n`;
     output += `api_queue_length ${summary.totalQueueLength}\n`;
-    
+
     return output;
   }
 }
@@ -645,7 +647,7 @@ export function createApiHealthError(
 ): ErrorDetail {
   let reason: FailureReason = 'external_service_timeout';
   let severity: 'low' | 'medium' | 'high' | 'critical' = 'medium';
-  
+
   switch (healthStatus) {
     case 'unhealthy':
       reason = 'external_service_timeout';
@@ -659,7 +661,7 @@ export function createApiHealthError(
       reason = 'external_service_timeout';
       severity = 'low';
   }
-  
+
   return createErrorDetail(
     reason,
     `API service ${serviceName} health is ${healthStatus}`,

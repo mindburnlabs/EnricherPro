@@ -259,3 +259,87 @@ export interface EnrichedItem {
     manual_queue_entry?: ManualQueueEntry;
     thinking_process?: string;
 }
+
+// --- FIRESEARCH CONTRACT TYPES ---
+
+export interface FiresearchPackaging {
+    package_mm: {
+        length: number;
+        width: number;
+        height: number;
+    };
+    package_weight_g: number;
+    evidence_urls: string[];
+    not_found_on_nix: boolean;
+}
+
+export interface FiresearchCompatibility {
+    printers: string[]; // List of models
+    evidence_urls: string[];
+    needs_review: boolean;
+    exclusion_notes: string[];
+}
+
+export interface FiresearchRelated {
+    for_similar_products_block: string[]; // List of known compatible consumable models
+    evidence_urls: string[];
+    needs_review: boolean;
+}
+
+export interface FiresearchImage {
+    url: string;
+    imageWidth?: number;
+    imageHeight?: number;
+    no_watermark_likely: boolean;
+    no_trademark_likely: boolean;
+    notes?: string;
+}
+
+export interface FiresearchFAQ {
+    q: string;
+    a: string;
+    evidence_urls: string[];
+}
+
+export interface FiresearchMeta {
+    run_mode: 'fast' | 'standard' | 'exhaustive';
+    budgets: {
+        time_ms: number;
+        calls: number;
+        sources: number;
+    };
+    stats: {
+        iterations: number;
+        sources_collected: number;
+        calls_made: number;
+        duration_ms: number;
+    };
+    warnings: string[];
+}
+
+// Minimal Contract for Parsed Data (From Title)
+export interface FiresearchParsed {
+    brand: string;
+    consumable_type: string;
+    model_oem: string;
+    model_short: string[];
+    printer_models_from_title: string[];
+    yield: {
+        value: number | 'unknown';
+        unit: 'pages' | 'copies' | 'unknown';
+    };
+    color: 'black' | 'cyan' | 'magenta' | 'yellow' | 'unknown';
+    notes: string[];
+}
+
+// EXTEND ConsumableData to include these strict contract fields
+// We keep the old fields for backward compatibility if needed, but the new ones are primary for the output
+export type StrictConsumableData = ConsumableData & {
+    parsed?: FiresearchParsed;
+    packaging?: FiresearchPackaging;
+    compatibility_ru?: FiresearchCompatibility;
+    related_consumables?: FiresearchRelated;
+    image_candidates?: FiresearchImage[];
+    faq?: FiresearchFAQ[];
+    meta?: FiresearchMeta;
+};
