@@ -1,0 +1,66 @@
+{
+    "title": "Системные настройки",
+    "subtitle": "Настройка API ключей и параметров системы.",
+    "tabs": {
+        "general": "Общие",
+        "firecrawl": "Firecrawl",
+        "monitoring": "Мониторинг"
+    },
+    "appearance": {
+        "title": "Внешний вид",
+        "light": "Светлая",
+        "light_desc": "Чисто и ярко",
+        "dark": "Темная",
+        "dark_desc": "Комфорт для глаз",
+        "system": "Системная",
+        "system_desc": "Автообнаружение"
+    },
+    "engine": {
+        "title": "Основной движок",
+        "firecrawl_desc": "Автономный веб-поиск",
+        "exclusive_note": "* Enricher Pro использует исключительно Firecrawl для максимальной надежности."
+    },
+    "danger_zone": {
+        "title": "Опасная зона",
+        "clear_history": "Очистить историю",
+        "clear_desc": "Удалить все данные, очереди и кэш. Это действие нельзя отменить.",
+        "delete_btn": "Удалить всю историю"
+    },
+    "firecrawl": {
+        "title": "Скрапер Firecrawl",
+        "subtitle": "Продвинутый веб-скрейпинг и агентный поиск.",
+        "api_key_label": "API КЛЮЧ (V2)",
+        "using_v2": "Используется API V2 (Последняя)",
+        "save_btn": "Сохранить",
+        "verified_btn": "Подтверждено",
+        "validating_btn": "Проверка...",
+        "invalid_key": "Неверный ключ. Проверьте данные на firecrawl.dev",
+        "empty_key": "Ключ не может быть пустым",
+        "research_protocol": "Протокол исследования",
+        "modes": {
+            "fast": "Быстрый аудит",
+            "fast_desc": "Быстрая проверка (2м)",
+            "standard": "Стандарт",
+            "standard_desc": "Глубокая проверка (5м)",
+            "exhaustive": "Глубокий контекст",
+            "exhaustive_desc": "Макс. глубина (12м)"
+        },
+        "toggles": {
+            "strict_title": "Строгий отбор источников",
+            "strict_desc": "Только OEM и белые списки",
+            "images_title": "Визуальная валидация",
+            "images_desc": "Аудит фона и размеров"
+        }
+    },
+    "language": {
+        "title": "Язык / Language",
+        "select": "Выберите язык интерфейса"
+    },
+    "monitoring": {
+        "title": "Статус API",
+        "health": "ЗДОРОВЬЕ СИСТЕМЫ",
+        "latency": "СР. ЗАДЕРЖКА",
+        "total_inc": "ВСЕГО ЗАПРОСОВ",
+        "uptime": "АПТАЙМ"
+    }
+}

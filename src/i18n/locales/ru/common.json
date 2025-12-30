@@ -1,0 +1,50 @@
+{
+    "app": {
+        "title": "Consumable Enricher Pro",
+        "title_labs": "Enricher Labs",
+        "subtitle": "Автономный агент глубокого исследования расходных материалов.",
+        "loading": "Загрузка..."
+    },
+    "layout": {
+        "api_services": "API Сервисы",
+        "live_engine": "Активный движок",
+        "active_orchestrator": "Активный оркестратор"
+    },
+    "engines": {
+        "gemini_default": "Gemini 2.0 (По умолчанию)",
+        "firecrawl_agent": "Агент Firecrawl",
+        "openrouter": "OpenRouter AI"
+    },
+    "messages": {
+        "search_completed_placeholder": "Поиск завершен. Результаты появятся здесь."
+    },
+    "nav": {
+        "research": "Исследование",
+        "import": "Импорт",
+        "results": "Результаты",
+        "publication": "Готовы к публикации",
+        "settings": "Настройки"
+    },
+    "stats": {
+        "total": "Всего",
+        "ok": "Готово",
+        "needs_review": "На проверку",
+        "failed": "Ошибки",
+        "pending": "В очереди",
+        "retrying": "Повтор",
+        "manual_queue": "Ручная",
+        "error_rate": "Ошибки %",
+        "avg_time": "Ср. время",
+        "throughput": "Пропускная способность"
+    },
+    "actions": {
+        "run": "Запустить агент",
+        "retry": "Повторить",
+        "approve": "Утвердить",
+        "merge": "Объединить",
+        "cancel": "Отмена",
+        "save": "Сохранить",
+        "search": "Поиск",
+        "clear": "Очистить"
+    }
+}

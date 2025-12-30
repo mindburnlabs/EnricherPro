@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { EnrichedItem } from '../types';
 import { ExternalLink, AlertTriangle, Check, Save, ChevronLeft, Brain, Link as LinkIcon, Box, Ruler, FileText, Image as ImageIcon, HelpCircle, ShieldCheck, AlertCircle, Cpu, Layers, Package, Target, Globe } from 'lucide-react';
 import ConfidenceIndicator from './ConfidenceIndicator';
+import { useTranslation } from 'react-i18next';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 
@@ -13,6 +14,7 @@ interface DetailViewProps {
 }
 
 const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
+  const { t } = useTranslation('detail');
   const [activeTab, setActiveTab] = useState<'specs' | 'evidence' | 'intelligence' | 'images' | 'faq' | 'network'>('specs');
   const [editedData, setEditedData] = useState(item.data);
 
@@ -65,7 +67,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
         </div>
         <div className="flex items-center gap-4">
           <Button onClick={onClose} variant="ghost" className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-primary-subtle hover:text-primary">
-            Discard Changes
+            {t('header.discard')}
           </Button>
           <Button
             onClick={handleSave}
@@ -73,19 +75,19 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
             className="text-[10px] font-black uppercase tracking-widest px-8 py-3 bg-primary-accent text-white shadow-lg shadow-indigo-900/40 border-indigo-500/20"
             leftIcon={<Save size={16} />}
           >
-            Approve PIM Record
+            {t('header.approve')}
           </Button>
         </div>
       </div>
 
       {/* Navigation */}
       <div className="bg-transparent border-b border-border-subtle px-8 flex gap-2 flex-shrink-0 overflow-x-auto no-scrollbar">
-        <TabButton id="specs" icon={Box} label="Identity & Specs" />
-        <TabButton id="network" icon={Layers} label="Network" />
-        <TabButton id="images" icon={ImageIcon} label="Visual Audit" />
-        <TabButton id="evidence" icon={LinkIcon} label="Proof & Sources" />
-        <TabButton id="intelligence" icon={Brain} label="Intelligence" />
-        <TabButton id="faq" icon={HelpCircle} label="AI Support FAQ" />
+        <TabButton id="specs" icon={Box} label={t('tabs.specs')} />
+        <TabButton id="network" icon={Layers} label={t('tabs.network')} />
+        <TabButton id="images" icon={ImageIcon} label={t('tabs.images')} />
+        <TabButton id="evidence" icon={LinkIcon} label={t('tabs.evidence')} />
+        <TabButton id="intelligence" icon={Brain} label={t('tabs.intelligence')} />
+        <TabButton id="faq" icon={HelpCircle} label={t('tabs.faq')} />
       </div>
 
       {/* Main Content Area */}
@@ -99,7 +101,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   <div className="bg-status-error/10 border border-status-error/20 p-6 rounded-[2rem] flex gap-4">
                     <AlertCircle className="text-status-error shrink-0" size={24} />
                     <div>
-                      <h4 className="text-[10px] font-black text-status-error mb-1 uppercase tracking-widest">Structural Alert</h4>
+                      <h4 className="text-[10px] font-black text-status-error mb-1 uppercase tracking-widest">{t('alerts.structural')}</h4>
                       <ul className="text-xs text-primary-subtle list-disc list-inside space-y-1 font-medium">
                         {item.validation_errors.map((e, i) => <li key={i}>{e}</li>)}
                       </ul>
@@ -115,12 +117,12 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                     <div className="p-2 bg-primary-accent/10 rounded-lg">
                       <FileText size={16} className="text-primary-accent" />
                     </div>
-                    Identity Extraction
+                    {t('identity.title')}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
                     <div className="space-y-4">
                       <Input
-                        label="Brand Authority"
+                        label={t('identity.brand')}
                         value={editedData.brand || ''}
                         onChange={e => setEditedData({ ...editedData, brand: e.target.value })}
                         className="font-black text-primary p-5"
@@ -128,7 +130,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                     </div>
                     <div className="space-y-4">
                       <Input
-                        label="Entity Identification (MPN)"
+                        label={t('identity.mpn')}
                         value={editedData.model || ''}
                         onChange={e => setEditedData({ ...editedData, model: e.target.value })}
                         className="font-black text-primary-accent p-5"
@@ -136,21 +138,21 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                     </div>
                     <div className="space-y-4">
                       <Input
-                        label="Semantic Alias"
+                        label={t('identity.alias')}
                         value={editedData.model_alias_short || ''}
                         onChange={e => setEditedData({ ...editedData, model_alias_short: e.target.value })}
-                        placeholder="short-hand identifier"
+                        placeholder={t('identity.alias_placeholder')}
                         className="font-bold text-primary p-5"
                       />
                     </div>
                     <div className="space-y-4">
-                      <label className="text-[10px] font-black text-primary-subtle px-1 uppercase tracking-widest">Resource Matrix (Yield)</label>
+                      <label className="text-[10px] font-black text-primary-subtle px-1 uppercase tracking-widest">{t('identity.yield')}</label>
                       <div className="flex gap-4">
                         <input type="number" value={editedData.yield?.value || 0} onChange={e => setEditedData({ ...editedData, yield: { ...(editedData.yield || { unit: 'pages' }), value: parseInt(e.target.value) } })} className="w-[45%] bg-surface border border-border-subtle rounded-2xl p-5 font-black text-primary focus:border-primary-accent outline-none" />
                         <select value={editedData.yield?.unit || 'pages'} className="w-[55%] bg-surface border border-border-subtle rounded-2xl p-5 font-black text-primary outline-none focus:border-primary-accent" onChange={e => setEditedData({ ...editedData, yield: { ...(editedData.yield || { value: 0 }), unit: e.target.value as any } })}>
-                          <option value="pages">ISO/IEC PAGES (A4)</option>
-                          <option value="ml">LIQUID VOLUME (ML)</option>
-                          <option value="copies">DUPLICATION COPIES</option>
+                          <option value="pages">{t('identity.yield_units.pages')}</option>
+                          <option value="ml">{t('identity.yield_units.ml')}</option>
+                          <option value="copies">{t('identity.yield_units.copies')}</option>
                         </select>
                       </div>
                     </div>
@@ -159,7 +161,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                         onClick={() => setEditedData({ ...editedData, has_chip: !editedData.has_chip })}
                         className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${editedData.has_chip ? 'bg-primary-accent/10 border-primary-accent/30 text-primary-accent' : 'bg-surface border-border-subtle text-primary-subtle hover:border-primary-accent/30'}`}
                       >
-                        <span className="text-[10px] font-black flex items-center gap-3 uppercase tracking-widest"><Cpu size={16} className={editedData.has_chip ? 'text-primary-accent' : ''} /> IC Chip Architecture</span>
+                        <span className="text-[10px] font-black flex items-center gap-3 uppercase tracking-widest"><Cpu size={16} className={editedData.has_chip ? 'text-primary-accent' : ''} /> {t('identity.chip')}</span>
                         <div className={`w-10 h-5 rounded-full relative transition-all ${editedData.has_chip ? 'bg-primary-accent' : 'bg-border-subtle'}`}>
                           <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${editedData.has_chip ? 'left-6' : 'left-1'}`} />
                         </div>
@@ -168,7 +170,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                         onClick={() => setEditedData({ ...editedData, has_page_counter: !editedData.has_page_counter })}
                         className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${editedData.has_page_counter ? 'bg-status-success/10 border-status-success/30 text-white' : 'bg-surface border-border-subtle text-primary-subtle hover:border-primary-accent/30'}`}
                       >
-                        <span className="text-[10px] font-black flex items-center gap-3 uppercase tracking-widest"><Layers size={16} className={editedData.has_page_counter ? 'text-status-success' : ''} /> Logic Counter FW</span>
+                        <span className="text-[10px] font-black flex items-center gap-3 uppercase tracking-widest"><Layers size={16} className={editedData.has_page_counter ? 'text-status-success' : ''} /> {t('identity.counter')}</span>
                         <div className={`w-10 h-5 rounded-full relative transition-all ${editedData.has_page_counter ? 'bg-status-success' : 'bg-border-subtle'}`}>
                           <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${editedData.has_page_counter ? 'left-6' : 'left-1'}`} />
                         </div>
@@ -183,17 +185,17 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                       <div className="p-2 bg-status-success/10 rounded-lg">
                         <ShieldCheck size={16} className="text-status-success" />
                       </div>
-                      Market Eligibility (RU)
+                      {t('market.eligibility')}
                     </h3>
                     <div className="px-3 py-1 bg-surface border border-border-subtle rounded-xl text-[10px] font-black text-primary-subtle">
-                      {editedData.printers_ru?.length || 0} AGENTS VALIDATED
+                      {editedData.printers_ru?.length || 0} {t('market.agents_validated')}
                     </div>
                   </div>
                   <textarea
                     value={editedData.printers_ru?.join('\n') || ''}
                     onChange={e => setEditedData({ ...editedData, printers_ru: e.target.value.split('\n') })}
                     className="w-full bg-surface border border-border-subtle rounded-[2rem] p-8 font-mono text-primary focus:border-primary-accent outline-none h-80 leading-relaxed custom-scrollbar"
-                    placeholder="Verified list of compatible terminal IDs..."
+                    placeholder={t('market.placeholder')}
                   />
                 </div>
               </div>
@@ -207,32 +209,32 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                     <div className="p-2 bg-primary-accent/10 rounded-lg">
                       <Ruler size={14} className="text-primary-accent" />
                     </div>
-                    Logistics Protocol
+                    {t('logistics.title')}
                     {editedData.packaging_from_nix?.confidence && (
                       <span className={`text-[8px] px-2 py-1 rounded-lg font-black uppercase tracking-widest ${editedData.packaging_from_nix.confidence > 0.8 ? 'bg-status-success/10 text-status-success border border-status-success/20' :
                         editedData.packaging_from_nix.confidence > 0.5 ? 'bg-status-warning/10 text-status-warning border border-status-warning/20' :
                           'bg-status-error/10 text-status-error border border-status-error/20'
                         }`}>
-                        {Math.round(editedData.packaging_from_nix.confidence * 100)}% RELIABILITY
+                        {Math.round(editedData.packaging_from_nix.confidence * 100)}% {t('logistics.reliability')}
                       </span>
                     )}
                   </h3>
                   <div className="space-y-10 relative z-10">
                     <div className="flex justify-between items-center border-b border-border-subtle pb-6">
-                      <span className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">Gross Mass</span>
+                      <span className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">{t('logistics.mass')}</span>
                       <span className="text-xl font-black text-primary-accent font-mono tracking-widest">{editedData.packaging_from_nix?.weight_g || 0}<span className="text-xs ml-1 text-primary-subtle">G</span></span>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
                       <div className="text-center p-4 rounded-2xl bg-surface border border-border-subtle hover:border-primary-accent/30 transition-all">
-                        <div className="text-[9px] text-primary-subtle uppercase font-black mb-2 tracking-widest">Width</div>
+                        <div className="text-[9px] text-primary-subtle uppercase font-black mb-2 tracking-widest">{t('logistics.width')}</div>
                         <div className="text-xs font-black text-primary font-mono">{editedData.packaging_from_nix?.width_mm || '--'}</div>
                       </div>
                       <div className="text-center p-4 rounded-2xl bg-surface border border-border-subtle hover:border-primary-accent/30 transition-all">
-                        <div className="text-[9px] text-primary-subtle uppercase font-black mb-2 tracking-widest">Height</div>
+                        <div className="text-[9px] text-primary-subtle uppercase font-black mb-2 tracking-widest">{t('logistics.height')}</div>
                         <div className="text-xs font-black text-primary font-mono">{editedData.packaging_from_nix?.height_mm || '--'}</div>
                       </div>
                       <div className="text-center p-4 rounded-2xl bg-surface border border-border-subtle hover:border-primary-accent/30 transition-all">
-                        <div className="text-[9px] text-primary-subtle uppercase font-black mb-2 tracking-widest">Depth</div>
+                        <div className="text-[9px] text-primary-subtle uppercase font-black mb-2 tracking-widest">{t('logistics.depth')}</div>
                         <div className="text-xs font-black text-primary font-mono">{editedData.packaging_from_nix?.depth_mm || '--'}</div>
                       </div>
                     </div>
@@ -242,7 +244,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                       <div className="text-[10px] bg-status-success/5 p-4 rounded-2xl border border-status-success/10">
                         <div className="flex items-center gap-3 mb-3">
                           <div className="w-1.5 h-1.5 rounded-full bg-status-success shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
-                          <span className="font-black text-status-success uppercase tracking-widest">NIX.ru Authority Verified</span>
+                          <span className="font-black text-status-success uppercase tracking-widest">{t('logistics.nix_verified')}</span>
                         </div>
                         <div className="text-primary-subtle font-mono text-[9px] break-all leading-relaxed">
                           {editedData.packaging_from_nix.source_url}
@@ -258,7 +260,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
 
                     {!editedData.packaging_from_nix && (
                       <div className="text-[10px] text-amber-400 flex items-center gap-3 bg-amber-500/5 p-4 rounded-2xl border border-amber-500/20 font-black uppercase tracking-widest">
-                        <AlertTriangle size={14} /> Data Missing: Request Scan
+                        <AlertTriangle size={14} /> {t('logistics.missing')}
                       </div>
                     )}
                   </div>
@@ -315,28 +317,28 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                     <div className="p-2 bg-indigo-500/10 rounded-lg">
                       <ShieldCheck size={16} className="text-primary-accent" />
                     </div>
-                    Quality Metrics Dashboard
+                    {t('evidence.metrics_title')}
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
                     <div className="bg-surface p-6 rounded-[2rem] border border-border-subtle">
                       <div className="text-3xl font-black text-primary-accent shadow-indigo-500/20 drop-shadow-lg">{Math.round(item.evidence.quality_metrics.data_completeness_score * 100)}%</div>
-                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">Data Complete</div>
+                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">{t('evidence.data_complete')}</div>
                     </div>
                     <div className="bg-surface p-6 rounded-[2rem] border border-border-subtle">
                       <div className="text-3xl font-black text-emerald-400 shadow-emerald-500/20 drop-shadow-lg">{Math.round(item.evidence.quality_metrics.source_reliability_score * 100)}%</div>
-                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">Source Trust</div>
+                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">{t('evidence.source_trust')}</div>
                     </div>
                     <div className="bg-surface p-6 rounded-[2rem] border border-border-subtle">
                       <div className="text-3xl font-black text-blue-400 shadow-blue-500/20 drop-shadow-lg">{Math.round(item.evidence.quality_metrics.validation_pass_rate * 100)}%</div>
-                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">Validation Pass</div>
+                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">{t('evidence.validation_pass')}</div>
                     </div>
                     <div className="bg-surface p-6 rounded-[2rem] border border-border-subtle">
                       <div className="text-3xl font-black text-purple-400 shadow-purple-500/20 drop-shadow-lg">{Math.round(item.evidence.quality_metrics.processing_efficiency * 100)}%</div>
-                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">Efficiency</div>
+                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">{t('evidence.efficiency')}</div>
                     </div>
                     <div className="bg-surface p-6 rounded-[2rem] border border-border-subtle">
                       <div className="text-3xl font-black text-amber-400 shadow-amber-500/20 drop-shadow-lg">{item.evidence.quality_metrics.total_sources_used}</div>
-                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">Sources Used</div>
+                      <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-2">{t('evidence.sources_used')}</div>
                     </div>
                   </div>
                   {item.evidence.quality_metrics.failed_validations?.length > 0 && (
@@ -362,7 +364,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                     <div className="p-2 bg-indigo-500/10 rounded-lg">
                       <Cpu size={16} className="text-primary-accent" />
                     </div>
-                    Processing Timeline
+                    {t('evidence.timeline_title')}
                   </h3>
                   <div className="space-y-6 relative before:absolute before:inset-0 before:left-6 before:w-px before:bg-border-subtle">
                     {item.evidence.processing_history.map((step, i) => (
@@ -411,7 +413,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   <div className="p-2 bg-indigo-500/10 rounded-lg">
                     <LinkIcon size={16} className="text-primary-accent" />
                   </div>
-                  Parallel Consensus Evidence
+                  {t('evidence.consensus_title')}
                 </h3>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -419,10 +421,10 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   <div className="space-y-6">
                     <div className="flex items-center gap-3 border-b border-border-subtle pb-4 mb-2">
                       <div className="w-2 h-2 rounded-full bg-status-warning shadow-[0_0_8px_rgba(245,158,11,0.6)]"></div>
-                      <h4 className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">Firecrawl Scraper</h4>
+                      <h4 className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">{t('evidence.firecrawl')}</h4>
                     </div>
                     {item.evidence.sources.filter(s => ['search_result', 'direct_navigation'].includes(s.source_type)).length === 0 && (
-                      <div className="text-[9px] text-primary-subtle italic opacity-50">No direct scraping sources found.</div>
+                      <div className="text-[9px] text-primary-subtle italic opacity-50">{t('evidence.no_direct')}</div>
                     )}
                     {item.evidence.sources.filter(s => ['search_result', 'direct_navigation'].includes(s.source_type)).map((src, i) => (
                       <div key={i} className="bg-surface p-6 rounded-[2rem] border border-border-subtle hover:border-status-warning/30 transition-all group relative overflow-hidden">
@@ -463,10 +465,10 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   <div className="space-y-6">
                     <div className="flex items-center gap-3 border-b border-border-subtle pb-4 mb-2">
                       <div className="w-2 h-2 rounded-full bg-primary-accent shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>
-                      <h4 className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">Deep Research (Perplexity)</h4>
+                      <h4 className="text-[10px] font-black text-primary-subtle uppercase tracking-widest">{t('evidence.perplexity')}</h4>
                     </div>
                     {item.evidence.sources.filter(s => !['search_result', 'direct_navigation'].includes(s.source_type)).length === 0 && (
-                      <div className="text-[9px] text-primary-subtle italic opacity-50">No deep research sources found.</div>
+                      <div className="text-[9px] text-primary-subtle italic opacity-50">{t('evidence.no_deep')}</div>
                     )}
                     {item.evidence.sources.filter(s => !['search_result', 'direct_navigation'].includes(s.source_type)).map((src, i) => (
                       <div key={i} className="bg-surface p-6 rounded-[2rem] border border-border-subtle hover:border-primary-accent/30 transition-all group relative overflow-hidden">
@@ -513,9 +515,9 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-background/50">
                     <div className="flex items-center gap-3">
                       <div className="w-2.5 h-2.5 rounded-full bg-status-success shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></div>
-                      <span className="text-[10px] font-mono text-primary-subtle uppercase font-bold tracking-widest">Audit_Trail.log</span>
+                      <span className="text-[10px] font-mono text-primary-subtle uppercase font-bold tracking-widest">{t('evidence.audit_trail')}</span>
                     </div>
-                    <div className="text-[9px] font-mono text-primary-subtle uppercase tracking-widest">Read Only</div>
+                    <div className="text-[9px] font-mono text-primary-subtle uppercase tracking-widest">{t('evidence.read_only')}</div>
                   </div>
                   <div className="bg-background p-8 font-mono text-xs text-status-success/80 leading-relaxed overflow-auto max-h-[40vh] custom-scrollbar">
                     {item.evidence.audit_trail.map((entry, i) => (
@@ -544,7 +546,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                     <div className="p-2 bg-indigo-500/10 rounded-lg">
                       <Target size={16} className="text-primary-accent" />
                     </div>
-                    Field-Level Traceability
+                    {t('evidence.traceability')}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {Object.entries(item.data._evidence).map(([field, evidence]: [string, any]) => evidence && (
@@ -580,7 +582,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
               {/* Search Grounding */}
               {item.evidence.grounding_metadata && (
                 <div className="glass-card p-10 rounded-[3rem] border-border-subtle">
-                  <h4 className="text-[10px] font-black text-primary-accent uppercase tracking-[0.3em] mb-6">Search Grounding Sources</h4>
+                  <h4 className="text-[10px] font-black text-primary-accent uppercase tracking-[0.3em] mb-6">{t('evidence.grounding')}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {item.evidence.grounding_metadata.map((g, i) => (
                       <a key={i} href={g.uri} target="_blank" rel="noreferrer" className="bg-surface p-4 rounded-xl border border-border-subtle flex items-center justify-between text-[10px] font-bold text-primary-subtle hover:bg-primary-accent/10 hover:text-primary-accent hover:border-primary-accent/30 transition-all group">
@@ -604,7 +606,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   <div className="p-2 bg-primary-accent/10 rounded-lg">
                     <Layers size={14} className="text-primary-accent" />
                   </div>
-                  Consumable Network Graph
+                  {t('network.title')}
                 </h3>
 
                 <div className="space-y-6 relative z-10">
@@ -614,15 +616,15 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                       <div className="grid grid-cols-3 gap-6">
                         <div className="p-6 bg-surface rounded-2xl border border-border-subtle text-center">
                           <div className="text-2xl font-black text-primary">{editedData.related_consumables_categories?.companions.length || 0}</div>
-                          <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-1">Companions</div>
+                          <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-1">{t('network.companions')}</div>
                         </div>
                         <div className="p-6 bg-surface rounded-2xl border border-border-subtle text-center">
                           <div className="text-2xl font-black text-primary">{editedData.related_consumables_categories?.alternatives.length || 0}</div>
-                          <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-1">Alternatives</div>
+                          <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-1">{t('network.alternatives')}</div>
                         </div>
                         <div className="p-6 bg-surface rounded-2xl border border-border-subtle text-center">
                           <div className="text-2xl font-black text-primary">{Math.round(editedData.confidence?.network || 0.85 * 100)}%</div>
-                          <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-1">Network Conf.</div>
+                          <div className="text-[9px] font-black text-primary-subtle uppercase tracking-widest mt-1">{t('network.confidence')}</div>
                         </div>
                       </div>
 
@@ -632,7 +634,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                           {editedData.related_consumables_categories.companions.length > 0 && (
                             <div>
                               <div className="flex items-center gap-4 mb-6">
-                                <h4 className="text-[10px] font-black text-primary-accent uppercase tracking-[0.2em]">Core Companions</h4>
+                                <h4 className="text-[10px] font-black text-primary-accent uppercase tracking-[0.2em]">{t('network.core_companions')}</h4>
                                 <div className="h-px bg-primary-accent/20 flex-1"></div>
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -660,7 +662,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                           {editedData.related_consumables_categories.alternatives.length > 0 && (
                             <div>
                               <div className="flex items-center gap-4 mb-6">
-                                <h4 className="text-[10px] font-black text-status-warning uppercase tracking-[0.2em]">Functional Alternatives</h4>
+                                <h4 className="text-[10px] font-black text-status-warning uppercase tracking-[0.2em]">{t('network.functional_alternatives')}</h4>
                                 <div className="h-px bg-status-warning/20 flex-1"></div>
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -695,7 +697,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   ) : (
                     <div className="p-12 border-2 border-dashed border-border-subtle rounded-[2rem] flex flex-col items-center justify-center text-center opacity-30 grayscale">
                       <Layers size={48} className="mb-6 text-primary-subtle" />
-                      <span className="text-xs font-black text-primary-subtle uppercase tracking-widest">No relational data identified in this run</span>
+                      <span className="text-xs font-black text-primary-subtle uppercase tracking-widest">{t('network.no_data')}</span>
                     </div>
                   )}
                 </div>
@@ -743,7 +745,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                   <div className="mt-6">
                     <div className="flex justify-between items-center mb-4">
                       <div>
-                        <div className="text-[10px] font-black text-primary uppercase tracking-widest drop-shadow-md">Image Audit</div>
+                        <div className="text-[10px] font-black text-primary uppercase tracking-widest drop-shadow-md">{t('images.audit')}</div>
                         <div className="text-[9px] font-mono text-primary-subtle/80 mt-1 drop-shadow-md">{img.width}x{img.height} • {Math.round(img.white_bg_score * 100)}% BG</div>
                       </div>
                       <div className={`p-2 rounded-xl border ${img.passes_rules ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
@@ -771,7 +773,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                       </div>
                       {img.reject_reasons && img.reject_reasons.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-border-subtle">
-                          <div className="text-[8px] font-black text-red-400 uppercase mb-1 tracking-widest">Rejection Reasons</div>
+                          <div className="text-[8px] font-black text-red-400 uppercase mb-1 tracking-widest">{t('images.rejection_reasons')}</div>
                           {img.reject_reasons.map((reason, idx) => (
                             <div key={idx} className="text-[9px] text-red-300/80 font-mono flex items-center gap-2">
                               <div className="w-1 h-1 rounded-full bg-red-400"></div> {reason}
@@ -787,7 +789,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onClose, onUpdate }) => {
                 <div className="p-4 bg-surface rounded-2xl group-hover:scale-110 transition-transform duration-300">
                   <ImageIcon size={32} className="opacity-50 group-hover:opacity-100" />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-center px-8">Upload Manual Evidence</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-center px-8">{t('images.upload')}</span>
               </div>
             </div>
           )}

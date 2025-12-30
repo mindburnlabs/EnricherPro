@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileInput, List, Database, Settings, ShieldCheck, Award } from 'lucide-react';
+import { FileInput, List, Database, Settings, ShieldCheck, Award, Search } from 'lucide-react';
 import { getFirecrawlApiKey } from '../services/firecrawlService';
 import ApiStatusIndicator from './ApiStatusIndicator';
 import { useTranslation } from 'react-i18next';
@@ -39,9 +39,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
     const geminiModel = localStorage.getItem('gemini_model') || 'gemini-1.5-pro';
     const geminiDisplay = geminiModel.replace('google/', '').replace('gemini-', 'Gemini ').replace('-preview', '');
 
-    let display = 'Gemini 2.0 (Default)';
-    if (engine === 'firecrawl') display = 'Firecrawl Agent';
-    else if (engine === 'openrouter') display = 'OpenRouter AI';
+    let display = t('engines.gemini_default');
+    if (engine === 'firecrawl') display = t('engines.firecrawl_agent');
+    else if (engine === 'openrouter') display = t('engines.openrouter');
     else display = geminiDisplay;
 
     setActiveEngineFormatted(display);
@@ -70,6 +70,13 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
         </div>
 
         <nav className="flex-1 space-y-2">
+          <NavItem
+            icon={Search}
+            label={t('nav.research')}
+            id="research"
+            active={activeTab === 'research'}
+            onClick={onTabChange}
+          />
           <NavItem
             icon={FileInput}
             label={t('nav.import')}
@@ -106,7 +113,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
           <div className="bg-card glass-card rounded-2xl p-4 border border-border-subtle">
             <div className="flex items-center gap-2 mb-3">
               <ShieldCheck size={16} className="text-primary-accent" />
-              <span className="text-[10px] text-primary-subtle uppercase font-bold tracking-widest">API Services</span>
+              <span className="text-[10px] text-primary-subtle uppercase font-bold tracking-widest">{t('layout.api_services')}</span>
             </div>
             <div className="text-primary">
               <ApiStatusIndicator compact={true} />
@@ -116,7 +123,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
           <div className="bg-card glass-card rounded-2xl p-4 border border-border-subtle">
             <div className="flex items-center gap-2 mb-3">
               <ShieldCheck size={16} className="text-primary-accent" />
-              <span className="text-[10px] text-primary-subtle uppercase font-bold tracking-widest">Live Engine</span>
+              <span className="text-[10px] text-primary-subtle uppercase font-bold tracking-widest">{t('layout.live_engine')}</span>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
@@ -126,7 +133,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
                 <span className="w-2 h-2 rounded-full bg-status-success shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse"></span>
               </div>
               <div className="text-[10px] text-primary-subtle font-medium uppercase tracking-wider">
-                Active Orchestrator
+                {t('layout.active_orchestrator')}
               </div>
             </div>
           </div>
@@ -142,6 +149,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
 
       {/* Mobile Nav */}
       <div className="md:hidden bg-card/80 backdrop-blur-xl border-t border-border-subtle flex justify-around shrink-0 py-2 px-4 z-20">
+        <NavItem icon={Search} label={t('nav.research')} id="research" active={activeTab === 'research'} onClick={onTabChange} mobile />
         <NavItem icon={FileInput} label={t('nav.import')} id="import" active={activeTab === 'import'} onClick={onTabChange} mobile />
         <NavItem icon={List} label={t('nav.results')} id="results" active={activeTab === 'results'} onClick={onTabChange} mobile />
         <NavItem icon={Award} label={t('nav.publication')} id="publication" active={activeTab === 'publication'} onClick={onTabChange} mobile />

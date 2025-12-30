@@ -7,33 +7,41 @@ export interface SearchConfig {
     maxTotalScrapedDocs: number;
     searchLimitPerStep: number;
     minSourcesForValidation: number;
+    conflictResolutionStrategy: 'first_win' | 'consensus' | 'ask_user';
+    requireNixForLogistics: boolean;
 }
 
 export const APP_CONFIG = {
     modes: {
         fast: {
-            maxRuntimeMs: 2 * 60 * 1000, // 2 minutes
+            maxRuntimeMs: 2 * 60 * 1000,
             maxTotalSearchCalls: 5,
             maxTotalSourcesCollected: 10,
             maxTotalScrapedDocs: 5,
             searchLimitPerStep: 3,
-            minSourcesForValidation: 1
+            minSourcesForValidation: 1,
+            conflictResolutionStrategy: 'first_win',
+            requireNixForLogistics: false
         } as SearchConfig,
         standard: {
-            maxRuntimeMs: 5 * 60 * 1000, // 5 minutes
+            maxRuntimeMs: 5 * 60 * 1000,
             maxTotalSearchCalls: 15,
             maxTotalSourcesCollected: 30,
             maxTotalScrapedDocs: 15,
             searchLimitPerStep: 5,
-            minSourcesForValidation: 2
+            minSourcesForValidation: 2,
+            conflictResolutionStrategy: 'consensus',
+            requireNixForLogistics: true
         } as SearchConfig,
         exhaustive: {
-            maxRuntimeMs: 12 * 60 * 1000, // 12 minutes
+            maxRuntimeMs: 12 * 60 * 1000,
             maxTotalSearchCalls: 40,
             maxTotalSourcesCollected: 100,
             maxTotalScrapedDocs: 50,
             searchLimitPerStep: 10,
-            minSourcesForValidation: 2
+            minSourcesForValidation: 3,
+            conflictResolutionStrategy: 'ask_user',
+            requireNixForLogistics: true
         } as SearchConfig
     },
 

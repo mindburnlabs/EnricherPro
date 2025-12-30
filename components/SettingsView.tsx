@@ -59,7 +59,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
 
   const handleSaveFirecrawl = async () => {
     if (!firecrawlKey.trim()) {
-      setFirecrawlError("API Key cannot be empty");
+      setFirecrawlError(t('settings.firecrawl.empty_key'));
       setFirecrawlStatus('error');
       return;
     }
@@ -75,7 +75,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
       setFirecrawlStatus('saved');
       setTimeout(() => setFirecrawlStatus('idle'), 3000);
     } else {
-      setFirecrawlError("Invalid API Key. Please check your credentials at firecrawl.dev");
+      setFirecrawlError(t('settings.firecrawl.invalid_key'));
       setFirecrawlStatus('error');
     }
   };
@@ -150,11 +150,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
-                  onClick={() => { i18n.changeLanguage('en'); localStorage.setItem('i18nextLng', 'en'); }}
-                  className={`p-4 rounded-2xl border-2 transition-all text-left ${i18n.language === 'en' || i18n.language.startsWith('en') ? 'border-primary-accent bg-primary-accent/5' : 'border-border-subtle hover:border-primary-accent/50'}`}
+                  disabled
+                  className="p-4 rounded-2xl border-2 transition-all text-left border-border-subtle opacity-50 cursor-not-allowed bg-surface/50"
+                  title="Coming Soon"
                 >
                   <div className="font-bold text-primary">English</div>
-                  <div className="text-xs text-primary-subtle">US English</div>
+                  <div className="text-xs text-primary-subtle">US English (Coming Soon)</div>
                 </button>
                 <button
                   onClick={() => { i18n.changeLanguage('ru'); localStorage.setItem('i18nextLng', 'ru'); }}
@@ -309,8 +310,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                           <Shield size={16} />
                         </div>
                         <div className="text-left">
-                          <div className="text-sm font-bold text-primary">Strict Sources Only</div>
-                          <div className="text-[10px] text-primary-subtle">Limit to OEM & Verified Whitelists</div>
+                          <div className="text-sm font-bold text-primary">{t('settings.firecrawl.toggles.strict_title')}</div>
+                          <div className="text-[10px] text-primary-subtle">{t('settings.firecrawl.toggles.strict_desc')}</div>
                         </div>
                         <div className={`ml-auto w-10 h-6 rounded-full p-1 transition-colors ${isStrict ? 'bg-emerald-500' : 'bg-border-subtle'}`}>
                           <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${isStrict ? 'translate-x-4' : 'translate-x-0'}`} />
@@ -337,8 +338,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                           <SettingsIcon size={16} />
                         </div>
                         <div className="text-left">
-                          <div className="text-sm font-bold text-primary">Visual Validation</div>
-                          <div className="text-[10px] text-primary-subtle">Audit images for white BG & size</div>
+                          <div className="text-sm font-bold text-primary">{t('settings.firecrawl.toggles.images_title')}</div>
+                          <div className="text-[10px] text-primary-subtle">{t('settings.firecrawl.toggles.images_desc')}</div>
                         </div>
                         <div className={`ml-auto w-10 h-6 rounded-full p-1 transition-colors ${isImages ? 'bg-indigo-500' : 'bg-border-subtle'}`}>
                           <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${isImages ? 'translate-x-4' : 'translate-x-0'}`} />

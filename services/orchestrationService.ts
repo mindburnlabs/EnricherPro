@@ -73,11 +73,17 @@ class OrchestrationService {
     public async processItem(
         rawQuery: string,
         onProgress: (stage: ProcessingStep) => void = () => { },
-        options: { engine: ProcessingEngine, mode?: 'fast' | 'standard' | 'exhaustive', locale?: string, strictSources?: boolean } = { engine: 'firecrawl' }
+        options: { engine: ProcessingEngine, mode?: 'fast' | 'standard' | 'exhaustive', locale?: string, strictSources?: boolean } = { engine: 'firecrawl' },
+        onLog?: (msg: string) => void
     ): Promise<EnrichedItem> {
         const jobId = uuidv4();
         const logs: string[] = [];
-        logs.push("Pivot: Enforcing Firecrawl-Only Architecture");
+        const log = (msg: string) => {
+            logs.push(msg);
+            if (onLog) onLog(msg);
+        };
+
+        log("Pivot: Enforcing Firecrawl-Only Architecture");
 
         // Default mode
         const mode = options.mode || 'standard';
@@ -86,9 +92,14 @@ class OrchestrationService {
 
         try {
             onProgress('discovery');
-            // Execute Deep Research (Firesearch Workflow)
-            // This handles Normalization -> Plan -> Collect -> Extract -> Validate Loop
-            const researchResult = await deepResearchService.executeWorkflow(rawQuery, mode, locale, strictSources);
+            // Execute Deep Research (Firesearch Workflow) with streaming updates
+            const researchResult = await deepResearchService.executeWorkflow(
+                rawQuery,
+                mode,
+                locale,
+                strictSources,
+                onLog // Pass the callback directly
+            );
 
             logs.push(...researchResult.logs);
 
@@ -129,11 +140,6 @@ class OrchestrationService {
     }
 
     // runResearchPhase removed as part of Firesearch refactoring.
-
-
-
-
-
 
     private constructEnrichedItem(
         jobId: string,

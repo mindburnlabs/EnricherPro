@@ -315,6 +315,15 @@ export interface FiresearchMeta {
         duration_ms: number;
     };
     warnings: string[];
+    conflicts?: {
+        field: string;
+        valueA: any;
+        valueB: any;
+        sourceA: string;
+        sourceB: string;
+        strategy_used: 'first_win' | 'consensus' | 'ask_user';
+        resolution: 'resolved' | 'unresolved' | 'overridden';
+    }[];
 }
 
 // Minimal Contract for Parsed Data (From Title)

@@ -42,7 +42,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
   onBulkRetry,
   errorSummary
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('results');
   const [filter, setFilter] = useState<'all' | ValidationStatus>('all');
   const [search, setSearch] = useState('');
   const [showManualQueue, setShowManualQueue] = useState(false);
@@ -287,7 +287,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           </div>
           <div className="bg-card p-5 rounded-[2rem] border border-border-subtle flex items-center justify-between shadow-sm">
             <div>
-              <div className="text-[10px] font-bold text-primary-subtle uppercase mb-2 tracking-widest">Progress</div>
+              <div className="text-[10px] font-bold text-primary-subtle uppercase mb-2 tracking-widest">{t('stats.progress')}</div>
               <div className="text-3xl font-black text-primary">{progressPercent}%</div>
             </div>
             <TrendingUp className="text-primary-subtle/50" size={24} />
@@ -297,19 +297,19 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         {/* Enhanced Metrics Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="px-4 py-3 rounded-2xl bg-surface border border-border-subtle">
-            <div className="text-[10px] font-bold text-primary-subtle uppercase mb-1 tracking-wider">Error Rate</div>
+            <div className="text-[10px] font-bold text-primary-subtle uppercase mb-1 tracking-wider">{t('stats.error_rate')}</div>
             <div className="text-lg font-bold text-primary">{stats.error_rate.toFixed(1)}%</div>
           </div>
           <div className="px-4 py-3 rounded-2xl bg-surface border border-border-subtle">
-            <div className="text-[10px] font-bold text-primary-subtle uppercase mb-1 tracking-wider">Avg Time</div>
+            <div className="text-[10px] font-bold text-primary-subtle uppercase mb-1 tracking-wider">{t('stats.avg_time')}</div>
             <div className="text-lg font-bold text-primary">{(stats.average_processing_time / 1000).toFixed(1)}s</div>
           </div>
           <div className="px-4 py-3 rounded-2xl bg-surface border border-border-subtle">
-            <div className="text-[10px] font-bold text-primary-subtle uppercase mb-1 tracking-wider">Manual Queue</div>
+            <div className="text-[10px] font-bold text-primary-subtle uppercase mb-1 tracking-wider">{t('stats.manual_queue')}</div>
             <div className="text-lg font-bold text-primary">{stats.manual_queue}</div>
           </div>
           <div className="px-4 py-3 rounded-2xl bg-surface border border-border-subtle">
-            <div className="text-[10px] font-bold text-primary-subtle uppercase mb-1 tracking-wider">Quality Score</div>
+            <div className="text-[10px] font-bold text-primary-subtle uppercase mb-1 tracking-wider">{t('stats.quality_score')}</div>
             <div className="text-lg font-bold text-primary">{(stats.quality_score_average * 100).toFixed(0)}%</div>
           </div>
         </div>
@@ -320,10 +320,10 @@ const ResultsView: React.FC<ResultsViewProps> = ({
             <div className="flex justify-between items-center mb-3">
               <span className="text-sm font-bold text-primary flex items-center gap-2">
                 <Loader2 size={16} className="animate-spin text-indigo-400" />
-                Batch Processing
+                {t('batch.title')}
               </span>
               <span className="text-[10px] text-indigo-400 font-black uppercase tracking-widest">
-                {batchProgress.processedItems} / {batchProgress.totalItems} ENRICHED
+                {batchProgress.processedItems} / {batchProgress.totalItems} {t('batch.enriched')}
               </span>
             </div>
             <div className="w-full bg-primary/5 rounded-full h-1.5 mb-3 overflow-hidden">
@@ -333,8 +333,8 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               ></div>
             </div>
             <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-              <span>ETA: {Math.round(batchProgress.estimatedTimeRemaining / 60)}min</span>
-              <span className="text-indigo-400">Rate: {batchProgress.throughputPerMinute.toFixed(1)} items/min</span>
+              <span>{t('batch.eta')}: {Math.round(batchProgress.estimatedTimeRemaining / 60)}min</span>
+              <span className="text-indigo-400">{t('batch.rate')}: {batchProgress.throughputPerMinute.toFixed(1)} {t('batch.items_per_min')}</span>
             </div>
           </div>
         )}
@@ -344,19 +344,19 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           <div className="mt-4 p-4 bg-red-500/5 rounded-2xl border border-red-500/20">
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle className="text-red-400" size={16} />
-              <span className="text-xs font-bold text-red-200 uppercase tracking-widest">Error Pulse</span>
+              <span className="text-xs font-bold text-red-200 uppercase tracking-widest">{t('errors.title')}</span>
             </div>
             <div className="grid grid-cols-3 gap-4 text-[10px] font-bold">
               <div className="flex flex-col">
-                <span className="text-slate-500 mb-1">TOTAL</span>
+                <span className="text-slate-500 mb-1">{t('errors.total')}</span>
                 <span className="text-primary text-lg">{errorSummary.totalErrors}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-slate-500 mb-1">CRITICAL</span>
+                <span className="text-slate-500 mb-1">{t('errors.critical')}</span>
                 <span className="text-red-400 text-lg">{errorSummary.criticalErrors}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-slate-500 mb-1">RETRYABLE</span>
+                <span className="text-slate-500 mb-1">{t('errors.retryable')}</span>
                 <span className="text-blue-400 text-lg">{errorSummary.retryableErrors}</span>
               </div>
             </div>
@@ -370,7 +370,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           <div className="flex items-center gap-3">
             <div className="relative w-full md:w-80">
               <Input
-                placeholder="Search by model, brand, or title..."
+                placeholder={t('filters.search_placeholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 leftIcon={<Search size={16} />}
@@ -385,7 +385,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
               leftIcon={<Filter size={14} />}
               rightIcon={showAdvancedFilters ? <EyeOff size={12} /> : <Eye size={12} />}
             >
-              Filters
+              {t('filters.toggle_filters')}
             </Button>
           </div>
 
@@ -397,7 +397,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                   onClick={() => setFilter(f as any)}
                   className={`px-4 py-1.5 text-[10px] uppercase tracking-widest font-black rounded-xl transition-all ${filter === f ? 'bg-primary-accent text-white shadow-lg' : 'text-primary-subtle hover:text-primary'}`}
                 >
-                  {f === 'needs_review' ? 'Review' : f}
+                  {f === 'needs_review' ? t('filters.review') : (f === 'all' ? t('filters.all') : f)}
                 </button>
               ))}
             </div>
@@ -414,7 +414,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                 leftIcon={<RefreshCw size={14} />}
                 className="bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/40 border-blue-500/20"
               >
-                Retry {selectedItems.length}
+                {t('filters.retry_selected')} {selectedItems.length}
               </Button>
             )}
 
@@ -426,7 +426,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                 leftIcon={<Users size={14} />}
                 className={!showManualQueue ? "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/10" : ""}
               >
-                Review Pool ({manualQueue.length})
+                {t('filters.review_pool')} ({manualQueue.length})
               </Button>
             )}
 
@@ -455,7 +455,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         {showAdvancedFilters && (
           <Card className="flex flex-wrap gap-4 p-5 animate-in shadow-lg">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Confidence Level</label>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('advanced_filters.confidence')}</label>
               <select
                 value={confidenceFilter}
                 onChange={(e) => setConfidenceFilter(e.target.value as any)}
@@ -469,7 +469,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Brand Filter</label>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('advanced_filters.brand')}</label>
               <select
                 value={brandFilter}
                 onChange={(e) => setBrandFilter(e.target.value)}
@@ -483,7 +483,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Issue Metadata</label>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('advanced_filters.metadata')}</label>
               <select
                 value={errorTypeFilter}
                 onChange={(e) => setErrorTypeFilter(e.target.value)}
@@ -499,7 +499,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sort Protocol</label>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('advanced_filters.sort')}</label>
               <div className="flex items-center gap-2">
                 <select
                   value={sortBy}
@@ -522,8 +522,8 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
             <div className="flex items-end ml-auto gap-4">
               <div className="text-right">
-                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">FILTERED SET</div>
-                <div className="text-lg font-bold text-primary">{filteredAndSortedItems.length} <span className="text-primary-subtle text-xs font-medium">/ {items.length} TOTAL</span></div>
+                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('filters.filtered_set')}</div>
+                <div className="text-lg font-bold text-primary">{filteredAndSortedItems.length} <span className="text-primary-subtle text-xs font-medium">/ {items.length} {t('errors.total')}</span></div>
               </div>
               <Button
                 onClick={() => {
@@ -538,7 +538,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                 size="sm"
                 className="text-indigo-400 hover:text-indigo-300 bg-indigo-400/10 border-indigo-400/20"
               >
-                Wipe Filters
+                {t('filters.wipe')}
               </Button>
             </div>
           </Card>
@@ -573,12 +573,12 @@ const ResultsView: React.FC<ResultsViewProps> = ({
             <div className="px-6 py-4 bg-status-warning/10 border-b border-status-warning/20">
               <h3 className="text-lg font-bold text-status-warning flex items-center gap-2">
                 <Users size={20} />
-                Manual Review Queue
+                {t('manual_queue.title')}
                 <span className="px-2 py-1 bg-status-warning/20 text-status-warning text-xs font-bold rounded-full">
-                  {manualQueue.length} items
+                  {manualQueue.length} {t('manual_queue.items')}
                 </span>
               </h3>
-              <p className="text-sm text-status-warning/80 mt-1">Items requiring human intervention with actionable recommendations</p>
+              <p className="text-sm text-status-warning/80 mt-1">{t('manual_queue.subtitle')}</p>
             </div>
             <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
               {manualQueue.map((entry) => (
@@ -591,14 +591,14 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                           entry.priority === 'medium' ? 'bg-status-warning/10 text-status-warning' :
                             'bg-surface text-primary-subtle border border-border-subtle'
                           }`}>
-                          {entry.priority} priority
+                          {entry.priority} {t('manual_queue.priority')}
                         </span>
                         <span className="text-xs text-primary-subtle flex items-center gap-1">
                           <Clock size={12} />
                           ~{entry.estimatedResolutionTime}min
                         </span>
                         <span className="text-xs text-primary-subtle">
-                          Attempt #{entry.attemptCount + 1}
+                          {t('manual_queue.attempt')} #{entry.attemptCount + 1}
                         </span>
                         {entry.context?.confidenceScores?.overall && (
                           <ConfidenceIndicator
@@ -614,13 +614,13 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                         className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-all flex items-center gap-1"
                       >
                         <RefreshCw size={12} />
-                        Retry
+                        {t('manual_queue.retry')}
                       </button>
                       <button
                         onClick={() => onRemoveFromManualQueue(entry.itemId)}
                         className="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-all"
                       >
-                        Remove
+                        {t('manual_queue.remove')}
                       </button>
                     </div>
                   </div>
@@ -630,7 +630,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                     <div>
                       <h5 className="font-bold text-primary-subtle mb-2 flex items-center gap-1">
                         <AlertTriangle size={12} />
-                        Missing Required Fields:
+                        {t('manual_queue.missing_fields')}
                       </h5>
                       <div className="flex flex-wrap gap-1">
                         {entry.missingFields.map(field => (
@@ -645,7 +645,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                     <div>
                       <h5 className="font-bold text-primary-subtle mb-2 flex items-center gap-1">
                         <Target size={12} />
-                        Recommended Actions:
+                        {t('manual_queue.recommended_actions')}
                       </h5>
                       <ul className="text-primary-subtle space-y-1">
                         {entry.recommendations.slice(0, 3).map((rec, i) => (
@@ -656,7 +656,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                         ))}
                         {entry.recommendations.length > 3 && (
                           <li className="text-xs text-slate-400 italic">
-                            +{entry.recommendations.length - 3} more recommendations...
+                            +{entry.recommendations.length - 3} {t('manual_queue.more_recs')}
                           </li>
                         )}
                       </ul>
@@ -668,7 +668,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                     <div className="mt-4 pt-3 border-t border-border-subtle">
                       <h5 className="font-bold text-primary-subtle mb-2 text-xs flex items-center gap-1">
                         <Zap size={12} />
-                        Error Analysis:
+                        {t('manual_queue.error_analysis')}
                       </h5>
                       <div className="space-y-2">
                         {entry.failureReasons.slice(0, 3).map((error, i) => (
@@ -703,7 +703,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                         ))}
                         {entry.failureReasons.length > 3 && (
                           <div className="text-xs text-primary-subtle italic text-center py-2">
-                            +{entry.failureReasons.length - 3} more errors (view in detail panel)
+                            +{entry.failureReasons.length - 3} {t('manual_queue.more_errors')}
                           </div>
                         )}
                       </div>
@@ -713,30 +713,30 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                   {/* Extracted Data Preview */}
                   {Object.keys(entry.extractedData).length > 0 && (
                     <div className="mt-4 pt-3 border-t border-amber-200">
-                      <h5 className="font-bold text-slate-700 mb-2 text-xs">Extracted Data:</h5>
+                      <h5 className="font-bold text-slate-700 mb-2 text-xs">{t('manual_queue.extracted_data')}</h5>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         {entry.extractedData.brand && (
                           <div className="flex justify-between">
-                            <span className="text-slate-500">Brand:</span>
+                            <span className="text-slate-500">{t('manual_queue.brand')}</span>
                             <span className="font-mono text-slate-700">{entry.extractedData.brand}</span>
                           </div>
                         )}
                         {entry.extractedData.model && (
                           <div className="flex justify-between">
-                            <span className="text-slate-500">Model:</span>
+                            <span className="text-slate-500">{t('manual_queue.model')}</span>
                             <span className="font-mono text-slate-700">{entry.extractedData.model}</span>
                           </div>
                         )}
                         {entry.extractedData.consumable_type && (
                           <div className="flex justify-between">
-                            <span className="text-slate-500">Type:</span>
+                            <span className="text-slate-500">{t('manual_queue.type')}</span>
                             <span className="font-mono text-slate-700">{entry.extractedData.consumable_type}</span>
                           </div>
                         )}
                         {entry.extractedData.printers_ru && entry.extractedData.printers_ru.length > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-slate-500">Printers:</span>
-                            <span className="font-mono text-slate-700">{entry.extractedData.printers_ru.length} found</span>
+                            <span className="text-slate-500">{t('manual_queue.printers')}</span>
+                            <span className="font-mono text-slate-700">{entry.extractedData.printers_ru.length} {t('manual_queue.found')}</span>
                           </div>
                         )}
                       </div>
@@ -762,21 +762,21 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                   />
                 </th>
                 <th className="px-6 py-4">
-                  <SortButton sortKey="created_at">Title / SKU</SortButton>
+                  <SortButton sortKey="created_at">{t('table.sku')}</SortButton>
                 </th>
-                <th className="px-6 py-4">Brand & Model</th>
-                <th className="px-6 py-4">Status & Progress</th>
-                <th className="px-6 py-4">Confidence</th>
+                <th className="px-6 py-4">{t('table.brand_model')}</th>
+                <th className="px-6 py-4">{t('table.status')}</th>
+                <th className="px-6 py-4">{t('table.confidence')}</th>
                 <th className="px-6 py-4">
-                  <SortButton sortKey="quality_score">Quality</SortButton>
-                </th>
-                <th className="px-6 py-4">
-                  <SortButton sortKey="error_count">Issues</SortButton>
+                  <SortButton sortKey="quality_score">{t('table.quality')}</SortButton>
                 </th>
                 <th className="px-6 py-4">
-                  <SortButton sortKey="processing_time">Time</SortButton>
+                  <SortButton sortKey="error_count">{t('table.issues')}</SortButton>
                 </th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-6 py-4">
+                  <SortButton sortKey="processing_time">{t('table.time')}</SortButton>
+                </th>
+                <th className="px-6 py-4 text-right">{t('table.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle">
@@ -795,7 +795,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                       {item.data.model || item.input_raw}
                     </div>
                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2 mt-1">
-                      {item.data.brand || 'CALCULATING...'}
+                      {item.data.brand || t('table.calculating')}
                       {item.retry_count > 0 && (
                         <span className="px-1.5 py-0.5 bg-status-info/10 text-status-info rounded-md text-[8px] border border-status-info/20">
                           RETRY {item.retry_count}
