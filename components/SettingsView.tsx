@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Shield, Key, Save, AlertCircle, CheckCircle2, Loader2, XCircle, Activity, TrendingUp, Settings as SettingsIcon, Zap, Brain, Moon, Sun, Monitor, Laptop, Globe, Search, RefreshCw, Server } from 'lucide-react';
 import { validateFirecrawlApiKey } from '../services/firecrawlService';
 import ApiStatusIndicator from './ApiStatusIndicator';
@@ -17,6 +18,7 @@ interface SettingsViewProps {
 }
 
 const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onClearData }) => {
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<'general' | 'firecrawl' | 'monitoring'>('general');
   const [systemHealth, setSystemHealth] = useState<any>(null);
 
@@ -83,17 +85,17 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
     <div className="p-4 md:p-12 max-w-6xl mx-auto w-full h-full overflow-y-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-black text-primary mb-2 flex items-center gap-3">
-          <SettingsIcon className="text-primary-accent" size={32} /> System Settings
+          <SettingsIcon className="text-primary-accent" size={32} /> {t('settings.title')}
         </h1>
-        <p className="text-primary-subtle font-medium">Configure API keys and system preferences.</p>
+        <p className="text-primary-subtle font-medium">{t('settings.subtitle')}</p>
       </div>
 
       {/* Modern Tabs */}
       <div className="mb-8 flex flex-wrap gap-2 bg-surface p-1.5 rounded-2xl border border-border-subtle w-fit">
         {[
-          { id: 'general', label: 'General', icon: Monitor },
-          { id: 'firecrawl', label: 'Firecrawl', icon: Globe },
-          { id: 'monitoring', label: 'Monitoring', icon: Activity },
+          { id: 'general', label: t('settings.tabs.general'), icon: Monitor },
+          { id: 'firecrawl', label: t('settings.tabs.firecrawl'), icon: Globe },
+          { id: 'monitoring', label: t('settings.tabs.monitoring'), icon: Activity },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -117,13 +119,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
             <section>
               <div className="flex items-center gap-2 mb-6 text-primary-subtle">
                 <Monitor size={18} />
-                <h2 className="text-xs font-black uppercase tracking-widest">Appearance</h2>
+                <h2 className="text-xs font-black uppercase tracking-widest">{t('settings.appearance.title')}</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                  { id: 'light', label: 'Light Mode', desc: 'Clean & crisp', icon: Sun, color: 'text-amber-500', bg: 'bg-white' },
-                  { id: 'dark', label: 'Dark Mode', desc: 'Easy on eyes', icon: Moon, color: 'text-indigo-400', bg: 'bg-slate-900' },
-                  { id: 'system', label: 'System', desc: 'Auto-detect', icon: Laptop, color: 'text-slate-500', bg: 'bg-gradient-to-br from-white to-slate-900' },
+                  { id: 'light', label: t('settings.appearance.light'), desc: t('settings.appearance.light_desc'), icon: Sun, color: 'text-amber-500', bg: 'bg-white' },
+                  { id: 'dark', label: t('settings.appearance.dark'), desc: t('settings.appearance.dark_desc'), icon: Moon, color: 'text-indigo-400', bg: 'bg-slate-900' },
+                  { id: 'system', label: t('settings.appearance.system'), desc: t('settings.appearance.system_desc'), icon: Laptop, color: 'text-slate-500', bg: 'bg-gradient-to-br from-white to-slate-900' },
                 ].map((t) => (
                   <button
                     key={t.id}
@@ -143,8 +145,31 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
 
             <section className="mt-8 pt-8 border-t border-border-subtle">
               <div className="flex items-center gap-2 mb-6 text-primary-subtle">
+                <Globe size={18} />
+                <h2 className="text-xs font-black uppercase tracking-widest">{t('settings.language.title')}</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  onClick={() => { i18n.changeLanguage('en'); localStorage.setItem('i18nextLng', 'en'); }}
+                  className={`p-4 rounded-2xl border-2 transition-all text-left ${i18n.language === 'en' || i18n.language.startsWith('en') ? 'border-primary-accent bg-primary-accent/5' : 'border-border-subtle hover:border-primary-accent/50'}`}
+                >
+                  <div className="font-bold text-primary">English</div>
+                  <div className="text-xs text-primary-subtle">US English</div>
+                </button>
+                <button
+                  onClick={() => { i18n.changeLanguage('ru'); localStorage.setItem('i18nextLng', 'ru'); }}
+                  className={`p-4 rounded-2xl border-2 transition-all text-left ${i18n.language === 'ru' || i18n.language.startsWith('ru') ? 'border-primary-accent bg-primary-accent/5' : 'border-border-subtle hover:border-primary-accent/50'}`}
+                >
+                  <div className="font-bold text-primary">Русский</div>
+                  <div className="text-xs text-primary-subtle">Russian</div>
+                </button>
+              </div>
+            </section>
+
+            <section className="mt-8 pt-8 border-t border-border-subtle">
+              <div className="flex items-center gap-2 mb-6 text-primary-subtle">
                 <Brain size={18} />
-                <h2 className="text-xs font-black uppercase tracking-widest">Primary Engine</h2>
+                <h2 className="text-xs font-black uppercase tracking-widest">{t('settings.engine.title')}</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <button
@@ -152,30 +177,30 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                   className="p-3 rounded-xl border text-left transition-all duration-200 bg-primary-accent/10 border-primary-accent text-primary-accent shadow-md shadow-primary-accent/10 cursor-default"
                 >
                   <div className="font-medium mb-1">Firecrawl Agent</div>
-                  <div className="text-xs opacity-70">Advanced Autonomous Web Research</div>
+                  <div className="text-xs opacity-70">{t('settings.engine.firecrawl_desc')}</div>
                 </button>
               </div>
               <p className="mt-2 text-xs text-primary-subtle">
-                * Enricher Pro now runs exclusively on Firecrawl for maximum reliability.
+                {t('settings.engine.exclusive_note')}
               </p>
             </section>
 
             <section className="mt-8 pt-8 border-t border-border-subtle">
               <div className="flex items-center gap-2 mb-6 text-status-error">
                 <AlertCircle size={18} />
-                <h2 className="text-xs font-black uppercase tracking-widest">Danger Zone</h2>
+                <h2 className="text-xs font-black uppercase tracking-widest">{t('settings.danger_zone.title')}</h2>
               </div>
               <div className="bg-status-error/5 border border-status-error/20 rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                  <h3 className="font-bold text-primary mb-1">Clear Application History</h3>
-                  <p className="text-sm text-primary-subtle">Permanently remove all enriched items, queues, and cached data. This action cannot be undone.</p>
+                  <h3 className="font-bold text-primary mb-1">{t('settings.danger_zone.clear_history')}</h3>
+                  <p className="text-sm text-primary-subtle">{t('settings.danger_zone.clear_desc')}</p>
                 </div>
                 <Button
                   onClick={onClearData}
                   variant="danger"
                   leftIcon={<AlertCircle size={18} />}
                 >
-                  Delete All History
+                  {t('settings.danger_zone.delete_btn')}
                 </Button>
               </div>
             </section>
@@ -186,8 +211,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
         {activeTab === 'firecrawl' && (
           <Card className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div>
-              <h2 className="text-xl font-bold text-primary mb-2">Firecrawl Scraper</h2>
-              <p className="text-sm text-primary-subtle">Advanced web scraping & agentic crawling.</p>
+              <h2 className="text-xl font-bold text-primary mb-2">{t('settings.firecrawl.title')}</h2>
+              <p className="text-sm text-primary-subtle">{t('settings.firecrawl.subtitle')}</p>
             </div>
 
             <div className="space-y-6">
@@ -195,25 +220,25 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
               <div className="p-6 bg-surface rounded-2xl border border-border-subtle">
                 <Input
                   type="password"
-                  label="API KEY (V2)"
+                  label={t('settings.firecrawl.api_key_label')}
                   value={firecrawlKey}
                   onChange={(e) => setFirecrawlKey(e.target.value)}
                   placeholder="fc-..."
                 />
                 <div className="mt-3 flex justify-between items-center">
                   <div className="text-xs text-primary-subtle flex items-center gap-1">
-                    <CheckCircle2 size={12} className="text-status-success" /> Using API V2 (Latest)
+                    <CheckCircle2 size={12} className="text-status-success" /> {t('settings.firecrawl.using_v2')}
                   </div>
                   <Button
                     onClick={handleSaveFirecrawl}
                     isLoading={firecrawlStatus === 'validating'}
-                    loadingText="Verifying..."
+                    loadingText={t('settings.firecrawl.validating_btn')}
                     className="bg-primary text-white hover:bg-primary/90"
                     size="sm"
                     variant="primary"
                     leftIcon={firecrawlStatus === 'saved' ? <CheckCircle2 size={14} /> : <Save size={14} />}
                   >
-                    {firecrawlStatus === 'saved' ? 'Verified' : 'Save Key'}
+                    {firecrawlStatus === 'saved' ? t('settings.firecrawl.verified_btn') : t('settings.firecrawl.save_btn')}
                   </Button>
                 </div>
                 {firecrawlStatus === 'error' && (
@@ -227,15 +252,15 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <SettingsIcon className="text-primary-accent" size={18} />
-                  <h3 className="text-sm font-black text-primary uppercase tracking-widest">Research Protocol</h3>
+                  <h3 className="text-sm font-black text-primary uppercase tracking-widest">{t('settings.firecrawl.research_protocol')}</h3>
                 </div>
 
                 {/* Mode Selector */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[
-                    { id: 'fast', label: 'Fast Audit', desc: 'Quick check (2m)', icon: Zap, color: 'text-amber-500' },
-                    { id: 'standard', label: 'Standard', desc: 'Deep verify (5m)', icon: Search, color: 'text-indigo-500' },
-                    { id: 'exhaustive', label: 'Deep Context', desc: 'Max depth (12m)', icon: Brain, color: 'text-purple-500' }
+                    { id: 'fast', label: t('settings.firecrawl.modes.fast'), desc: t('settings.firecrawl.modes.fast_desc'), icon: Zap, color: 'text-amber-500' },
+                    { id: 'standard', label: t('settings.firecrawl.modes.standard'), desc: t('settings.firecrawl.modes.standard_desc'), icon: Search, color: 'text-indigo-500' },
+                    { id: 'exhaustive', label: t('settings.firecrawl.modes.exhaustive'), desc: t('settings.firecrawl.modes.exhaustive_desc'), icon: Brain, color: 'text-purple-500' }
                   ].map((m) => {
                     const currentMode = localStorage.getItem('firesearch_mode') || 'standard';
                     const isActive = currentMode === m.id;
@@ -249,8 +274,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                           setActiveTab('firecrawl');
                         }}
                         className={`p-4 rounded-2xl border transition-all text-left relative overflow-hidden group ${isActive
-                            ? 'bg-primary-accent/5 border-primary-accent shadow-lg shadow-primary-accent/10'
-                            : 'bg-surface border-border-subtle hover:border-primary-accent/50'
+                          ? 'bg-primary-accent/5 border-primary-accent shadow-lg shadow-primary-accent/10'
+                          : 'bg-surface border-border-subtle hover:border-primary-accent/50'
                           }`}
                       >
                         <div className={`p-2 rounded-lg w-fit mb-3 ${isActive ? 'bg-primary-accent text-white' : 'bg-background ' + m.color}`}>
@@ -276,8 +301,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                           setActiveTab('firecrawl');
                         }}
                         className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${isStrict
-                            ? 'bg-emerald-500/5 border-emerald-500/30'
-                            : 'bg-surface border-border-subtle hover:border-border-highlight'
+                          ? 'bg-emerald-500/5 border-emerald-500/30'
+                          : 'bg-surface border-border-subtle hover:border-border-highlight'
                           }`}
                       >
                         <div className={`p-2 rounded-full ${isStrict ? 'bg-emerald-500 text-white' : 'bg-border-subtle text-primary-subtle'}`}>
@@ -304,8 +329,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                           setActiveTab('firecrawl');
                         }}
                         className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${isImages
-                            ? 'bg-indigo-500/5 border-indigo-500/30'
-                            : 'bg-surface border-border-subtle hover:border-border-highlight'
+                          ? 'bg-indigo-500/5 border-indigo-500/30'
+                          : 'bg-surface border-border-subtle hover:border-border-highlight'
                           }`}
                       >
                         <div className={`p-2 rounded-full ${isImages ? 'bg-indigo-500 text-white' : 'bg-border-subtle text-primary-subtle'}`}>
@@ -333,7 +358,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
           <Card className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div className="flex items-center gap-2 mb-6">
               <Activity size={18} className="text-primary-accent" />
-              <h2 className="text-xs font-black text-primary-subtle uppercase tracking-[0.2em]">Live API Status</h2>
+              <h2 className="text-xs font-black text-primary-subtle uppercase tracking-[0.2em]">{t('settings.monitoring.title')}</h2>
             </div>
 
             {systemHealth && (
@@ -342,19 +367,19 @@ const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, onCle
                   <div className={`text-2xl font-black ${systemHealth.overallHealth === 'healthy' ? 'text-status-success' : 'text-status-error'}`}>
                     {systemHealth.overallHealth.toUpperCase()}
                   </div>
-                  <div className="text-xs font-bold text-primary-subtle mt-1">SYSTEM HEALTH</div>
+                  <div className="text-xs font-bold text-primary-subtle mt-1">{t('settings.monitoring.health')}</div>
                 </div>
                 <div className="bg-surface p-4 rounded-2xl text-center border border-border-subtle">
                   <div className="text-2xl font-black text-primary">{Math.round(systemHealth.averageResponseTime)}ms</div>
-                  <div className="text-xs font-bold text-primary-subtle mt-1">AVG LATENCY</div>
+                  <div className="text-xs font-bold text-primary-subtle mt-1">{t('settings.monitoring.latency')}</div>
                 </div>
                 <div className="bg-surface p-4 rounded-2xl text-center border border-border-subtle">
                   <div className="text-2xl font-black text-primary">{systemHealth.totalRequests}</div>
-                  <div className="text-xs font-bold text-primary-subtle mt-1">TOTAL REQUESTS</div>
+                  <div className="text-xs font-bold text-primary-subtle mt-1">{t('settings.monitoring.total_inc')}</div>
                 </div>
                 <div className="bg-surface p-4 rounded-2xl text-center border border-border-subtle">
                   <div className="text-2xl font-black text-primary">{systemHealth.uptime}%</div>
-                  <div className="text-xs font-bold text-primary-subtle mt-1">EST. UPTIME</div>
+                  <div className="text-xs font-bold text-primary-subtle mt-1">{t('settings.monitoring.uptime')}</div>
                 </div>
               </div>
             )}

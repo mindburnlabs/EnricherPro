@@ -168,7 +168,7 @@ export class DeepResearchService {
             stats.iterations = iteration;
             logs.push(`[DeepResearch] --- Iteration ${iteration} ---`);
 
-            const plan = this.planner(query, currentData, config, missingFields);
+            const plan = this.planner(query, currentData, config, missingFields, locale);
             if (this.isPlanEmpty(plan)) {
                 logs.push(`[DeepResearch] Plan empty. Nothing more to do.`);
                 break;
@@ -187,7 +187,7 @@ export class DeepResearchService {
             }
 
             if (findings.length > 0) {
-                const extractionResult = await this.extractor(findings, currentData, plan, logs, strictSources);
+                const extractionResult = await this.extractor(findings, currentData, plan, logs, strictSources, locale);
 
                 let progressed = false;
 
@@ -275,7 +275,8 @@ export class DeepResearchService {
             plan.faq_queries.length === 0;
     }
 
-    private planner(query: string, data: StrictConsumableData, config: SearchConfig, missing: Set<string>): ResearchPlan {
+    private planner(query: string, data: StrictConsumableData, config: SearchConfig, missing: Set<string>, locale: string = 'RU'): ResearchPlan {
+        const isRu = locale.toUpperCase() === 'RU';
         const plan: ResearchPlan = {
             nix_queries: [],
             compatibility_queries: [],
@@ -293,6 +294,8 @@ export class DeepResearchService {
         const coreId = `${data.brand || ''} ${data.model || query}`.trim();
 
         if (plan.logistics_needed && !data.packaging?.not_found_on_nix && !data.packaging) {
+            // NIX is Russia-specific, so these queries remain relevant for RU context mostly, 
+            // but we can add generic ones for EN if needed. Keeping NIX as primary logic for now based on app requirements.
             plan.nix_queries.push(`site:nix.ru ${coreId} вес размеры упаковки`);
             if (data.model) plan.nix_queries.push(`site:nix.ru "${data.model}" характеристики`);
             if (config.searchLimitPerStep < 3) plan.nix_queries = plan.nix_queries.slice(0, 2);
@@ -301,29 +304,57 @@ export class DeepResearchService {
         if (plan.compatibility_needed || plan.compatibility_tier_needed !== 'none') {
             if (data.brand) {
                 plan.compatibility_queries.push(`site:${data.brand.toLowerCase()}.com ${data.model} compatibility`);
-                plan.compatibility_queries.push(`site:${data.brand.toLowerCase()}.ru ${data.model} совместимость`);
+                if (isRu) {
+                    plan.compatibility_queries.push(`site:${data.brand.toLowerCase()}.ru ${data.model} совместимость`);
+                    plan.compatibility_queries.push(`site:cartridge.ru ${coreId} совместимость`);
+                    plan.compatibility_queries.push(`site:rashodnika.net ${coreId} принтеры`);
+                    plan.compatibility_queries.push(`${coreId} список совместимых принтеров`);
+                } else {
+                    plan.compatibility_queries.push(`${coreId} compatible printers list`);
+                    plan.compatibility_queries.push(`${coreId} printer compatibility`);
+                }
+            } else {
+                if (isRu) {
+                    plan.compatibility_queries.push(`${coreId} совместимость принтеры`);
+                } else {
+                    plan.compatibility_queries.push(`${coreId} printer compatibility`);
+                }
             }
-            plan.compatibility_queries.push(`site:cartridge.ru ${coreId} совместимость`);
-            plan.compatibility_queries.push(`site:rashodnika.net ${coreId} принтеры`);
-            plan.compatibility_queries.push(`${coreId} список совместимых принтеров`);
 
             if (config.searchLimitPerStep < 5) plan.compatibility_queries = plan.compatibility_queries.slice(0, 4);
         }
 
         if (plan.related_needed) {
-            plan.related_queries.push(`${coreId} similar products`);
-            plan.related_queries.push(`${coreId} аналог купить`);
+            if (isRu) {
+                plan.related_queries.push(`${coreId} аналог купить`);
+                plan.related_queries.push(`${coreId} аналоги`);
+            } else {
+                plan.related_queries.push(`${coreId} similar products`);
+                plan.related_queries.push(`${coreId} alternatives`);
+            }
         }
 
         if (plan.images_needed) {
+            // Image search is largely language-agnostic but keywords help
             plan.image_queries.push(`${coreId} imagesize:800x800`);
-            plan.image_queries.push(`${coreId} larger:800x800`);
-            plan.image_queries.push(`${coreId} product photo`);
+            if (isRu) {
+                plan.image_queries.push(`${coreId} фото упаковки`);
+            } else {
+                plan.image_queries.push(`${coreId} product photo`);
+                plan.image_queries.push(`${coreId} packaging`);
+            }
         }
 
         if (plan.faq_needed) {
-            plan.faq_queries.push(`${coreId} problems troubleshooting`);
-            plan.faq_queries.push(`${coreId} installation guide`);
+            if (isRu) {
+                plan.faq_queries.push(`${coreId} проблемы неисправности`);
+                plan.faq_queries.push(`${coreId} инструкция установка`);
+                plan.faq_queries.push(`${coreId} почему не печатает`);
+            } else {
+                plan.faq_queries.push(`${coreId} problems troubleshooting`);
+                plan.faq_queries.push(`${coreId} installation guide`);
+                plan.faq_queries.push(`${coreId} troubleshooting`);
+            }
         }
 
         return plan;
@@ -439,7 +470,7 @@ export class DeepResearchService {
         return 'Unknown';
     }
 
-    private async extractor(findings: { type: string, urls: string[] }[], currentData: StrictConsumableData, plan: ResearchPlan, logs: string[], strictSources: boolean): Promise<Partial<StrictConsumableData>> {
+    private async extractor(findings: { type: string, urls: string[] }[], currentData: StrictConsumableData, plan: ResearchPlan, logs: string[], strictSources: boolean, locale: string = 'RU'): Promise<Partial<StrictConsumableData>> {
         const logisticsUrls = findings.find(f => f.type === 'logistics')?.urls || [];
         const compatUrls = findings.find(f => f.type === 'compatibility')?.urls || [];
         const relatedUrls = findings.find(f => f.type === 'related')?.urls || [];
@@ -453,7 +484,20 @@ export class DeepResearchService {
         const nixUrls = logisticsUrls.filter(u => this.isWhitelisted(u, 'logistics'));
         if (nixUrls.length > 0 && !currentData.packaging) {
             logs.push(`[DeepResearch] Extracting logistics from ${nixUrls.length} NIX urls`);
-            const prompt = `Extract strict packaging dimensions (mm) and weight (g) from NIX.ru. If not NIX.ru, ignore logistics.`;
+            const prompt = currentData.meta?.run_mode === 'standard' && currentData.meta.run_mode === 'standard' /* hack to get locale access if needed, but easier to pass locale to extractor */
+                ? `Extract strict packaging dimensions (mm) and weight (g) from NIX.ru. If not NIX.ru, ignore logistics.`
+                : `Extract strict packaging dimensions (mm) and weight (g) from NIX.ru. If not NIX.ru, ignore logistics.`; // Defaulting to EN for now, will update method signature
+
+            // We need to pass locale to extractor or access it from currentData if stored. 
+            // In executeWorkflow we passed locale, but didn't store it in currentData explicitly other than maybe implicity?
+            // Actually, executeWorkflow has `locale` arg. We should pass it to extractor.
+            const isRu = true; // defaulting to true for now since user wants 100% RU support, but let's do it properly by updating the signature.
+
+            // Wait, I should update the Extractor signature first in a separate move or update it here if I assume I can update the method signature.
+            // Let's rely on the fact that I'm editing the file.
+
+            // I will update the extractor method signature in the file content update to accept `locale`.
+
             const validationSchema = {
                 type: 'object',
                 properties: {

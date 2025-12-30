@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { FileInput, List, Database, Settings, ShieldCheck, Award } from 'lucide-react';
 import { getFirecrawlApiKey } from '../services/firecrawlService';
 import ApiStatusIndicator from './ApiStatusIndicator';
+import { useTranslation } from 'react-i18next';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -29,6 +30,7 @@ const NavItem = ({ icon: Icon, label, id, active, onClick, mobile = false }: any
 );
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => {
+  const { t } = useTranslation();
   const [activeEngineFormatted, setActiveEngineFormatted] = useState('Gemini 2.0 (Default)');
 
   const checkKeys = () => {
@@ -70,21 +72,21 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
         <nav className="flex-1 space-y-2">
           <NavItem
             icon={FileInput}
-            label="Import Items"
+            label={t('nav.import')}
             id="import"
             active={activeTab === 'import'}
             onClick={onTabChange}
           />
           <NavItem
             icon={List}
-            label="Analysis Results"
+            label={t('nav.results')}
             id="results"
             active={activeTab === 'results'}
             onClick={onTabChange}
           />
           <NavItem
             icon={Award}
-            label="Publication Readiness"
+            label={t('nav.publication')}
             id="publication"
             active={activeTab === 'publication'}
             onClick={onTabChange}
@@ -92,7 +94,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
           <div className="pt-6 mt-6 border-t border-border-subtle">
             <NavItem
               icon={Settings}
-              label="System Settings"
+              label={t('nav.settings')}
               id="settings"
               active={activeTab === 'settings'}
               onClick={onTabChange}
@@ -140,10 +142,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
 
       {/* Mobile Nav */}
       <div className="md:hidden bg-card/80 backdrop-blur-xl border-t border-border-subtle flex justify-around shrink-0 py-2 px-4 z-20">
-        <NavItem icon={FileInput} label="Import" id="import" active={activeTab === 'import'} onClick={onTabChange} mobile />
-        <NavItem icon={List} label="Results" id="results" active={activeTab === 'results'} onClick={onTabChange} mobile />
-        <NavItem icon={Award} label="Publish" id="publication" active={activeTab === 'publication'} onClick={onTabChange} mobile />
-        <NavItem icon={Settings} label="Settings" id="settings" active={activeTab === 'settings'} onClick={onTabChange} mobile />
+        <NavItem icon={FileInput} label={t('nav.import')} id="import" active={activeTab === 'import'} onClick={onTabChange} mobile />
+        <NavItem icon={List} label={t('nav.results')} id="results" active={activeTab === 'results'} onClick={onTabChange} mobile />
+        <NavItem icon={Award} label={t('nav.publication')} id="publication" active={activeTab === 'publication'} onClick={onTabChange} mobile />
+        <NavItem icon={Settings} label={t('nav.settings')} id="settings" active={activeTab === 'settings'} onClick={onTabChange} mobile />
       </div>
     </div>
   );

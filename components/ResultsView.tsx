@@ -1,5 +1,5 @@
-
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { EnrichedItem, ValidationStatus, ProcessingStats, BatchProcessingProgress, ManualQueueEntry } from '../types';
 import { Search, Edit, FileJson, FileSpreadsheet, Loader2, X, TrendingUp, AlertTriangle, RefreshCw, Clock, Users, Filter, SortAsc, SortDesc, Eye, EyeOff, Zap, Target } from 'lucide-react';
 import StatusBadge from './StatusBadge';
@@ -42,6 +42,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
   onBulkRetry,
   errorSummary
 }) => {
+  const { t } = useTranslation();
   const [filter, setFilter] = useState<'all' | ValidationStatus>('all');
   const [search, setSearch] = useState('');
   const [showManualQueue, setShowManualQueue] = useState(false);
@@ -260,24 +261,28 @@ const ResultsView: React.FC<ResultsViewProps> = ({
       <div className="px-6 py-8 border-b border-border-subtle bg-transparent">
         {/* Enhanced Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+          import {useTranslation} from 'react-i18next';
+          // ... inside ResultsView component ...
+          const {t} = useTranslation();
+          // ...
           <div className="bg-card p-5 rounded-[2rem] border border-primary-accent/10 shadow-sm">
-            <div className="text-[10px] font-bold text-primary-accent uppercase mb-2 tracking-widest">Total Queue</div>
+            <div className="text-[10px] font-bold text-primary-accent uppercase mb-2 tracking-widest">{t('stats.total')}</div>
             <div className="text-3xl font-black text-primary">{stats.total}</div>
           </div>
           <div className="bg-card p-5 rounded-[2rem] border border-status-success/20 shadow-sm">
-            <div className="text-[10px] font-bold text-status-success uppercase mb-2 tracking-widest">Approved</div>
+            <div className="text-[10px] font-bold text-status-success uppercase mb-2 tracking-widest">{t('stats.ok')}</div>
             <div className="text-3xl font-black text-primary">{stats.ok}</div>
           </div>
           <div className="bg-card p-5 rounded-[2rem] border border-status-warning/20 shadow-sm">
-            <div className="text-[10px] font-bold text-status-warning uppercase mb-2 tracking-widest">Review</div>
+            <div className="text-[10px] font-bold text-status-warning uppercase mb-2 tracking-widest">{t('stats.needs_review')}</div>
             <div className="text-3xl font-black text-primary">{stats.needs_review}</div>
           </div>
           <div className="bg-card p-5 rounded-[2rem] border border-status-error/20 shadow-sm">
-            <div className="text-[10px] font-bold text-status-error uppercase mb-2 tracking-widest">Failed</div>
+            <div className="text-[10px] font-bold text-status-error uppercase mb-2 tracking-widest">{t('stats.failed')}</div>
             <div className="text-3xl font-black text-primary">{stats.failed}</div>
           </div>
           <div className="bg-card p-5 rounded-[2rem] border border-status-info/10 shadow-sm">
-            <div className="text-[10px] font-bold text-status-info uppercase mb-2 tracking-widest">Retrying</div>
+            <div className="text-[10px] font-bold text-status-info uppercase mb-2 tracking-widest">{t('stats.retrying')}</div>
             <div className="text-3xl font-black text-primary">{stats.retrying}</div>
           </div>
           <div className="bg-card p-5 rounded-[2rem] border border-border-subtle flex items-center justify-between shadow-sm">

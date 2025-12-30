@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
 import { orchestrationService } from '../services/orchestrationService';
 import { EnrichedItem, ProcessingStep, BatchProcessingProgress, ManualQueueEntry } from '../types';
@@ -21,6 +22,7 @@ export interface UseEnricherProcessorProps {
 }
 
 export function useEnricherProcessor({ initialItems = [], processingEngine = 'gemini' }: UseEnricherProcessorProps = {}) {
+    const { i18n } = useTranslation();
     const [items, setItems] = useState<EnrichedItem[]>(initialItems);
     const [queue, setQueue] = useState<string[]>([]);
     const [manualQueue, setManualQueue] = useState<ManualQueueEntry[]>([]);
@@ -165,7 +167,10 @@ export function useEnricherProcessor({ initialItems = [], processingEngine = 'ge
                             setBatchProgress(prev => prev ? updateCurrentProcessing(prev, tempId, step) : null);
                         }
                     },
-                    { engine: engineRef.current }
+                    {
+                        engine: engineRef.current,
+                        locale: i18n.language
+                    }
                 );
 
                 const processingEnd = Date.now();
