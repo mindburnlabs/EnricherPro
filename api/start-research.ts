@@ -13,6 +13,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
         return response.status(405).json({ error: 'Method Not Allowed' });
     }
 
+    if (!process.env.INNGEST_EVENT_KEY) {
+        console.error("Missing INNGEST_EVENT_KEY");
+        return response.status(500).json({ error: 'Configuration Error: Missing INNGEST_EVENT_KEY on server' });
+    }
+
     try {
         const { input } = request.body;
 
