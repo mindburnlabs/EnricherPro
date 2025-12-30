@@ -1,5 +1,5 @@
 
-import { ConsumableData } from "../../../types/domain";
+import { StrictConsumableData, ConsumableData } from '../../types/domain';
 
 export async function verifierStep(data: Partial<ConsumableData>) {
     // Rule-based verification (Server Side)

@@ -93,6 +93,11 @@
         "fail": "FAIL",
         "oem_logo": "OEM ЛОГО",
         "ok": "OK",
-        "rejection_reasons": "Причины отклонения"
+        "rejection_reasons": "Причины отклонения",
+        "primary": "Основное"
+    },
+    "specs": {
+        "title": "Характеристики",
+        "click_hint": "Нажмите для просмотра источников"
     }
 }

@@ -13,7 +13,8 @@
     "lint": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "check:all": "npm run lint && npm run test && npm run build"
   },
   "dependencies": {
     "@google/genai": "^1.34.0",

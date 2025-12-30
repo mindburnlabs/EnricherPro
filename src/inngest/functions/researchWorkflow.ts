@@ -3,15 +3,36 @@ import { inngest } from "../client";
 import { ItemsRepository } from "../../repositories/itemsRepository";
 
 export const researchWorkflow = inngest.createFunction(
-    { id: "research-workflow" },
+    {
+        id: "research-workflow",
+        concurrency: { limit: 5 },
+        retries: 3,
+        onFailure: async ({ event, error }) => {
+            // @ts-ignore - Inngest typing quirk
+            const { jobId } = event.data;
+            console.error(`[Workflow Failed] Job ${jobId}:`, error);
+
+            // Try to find the item and mark it as failed
+            // We can't use step.run here easily as context might be lost or different
+            // But we can try direct DB access if possible, or just log for now.
+            // Better: Load item by jobId and update status.
+            try {
+                const item = await ItemsRepository.findByJobId(jobId);
+                if (item) {
+                    await ItemsRepository.setStatus(item.id, 'failed', error.message);
+                }
+            } catch (e) {
+                console.error("Failed to update status on failure", e);
+            }
+        }
+    },
     { event: "app/research.started" },
     async ({ event, step }) => {
         const { jobId, inputRaw } = event.data;
 
-        // 1. Initialize DB Record
+        // 1. Initialize DB Record (Idempotent)
         const item = await step.run("create-db-item", async () => {
-            // Create a skeleton item
-            return await ItemsRepository.create(jobId, "PENDING-MPN", {
+            return await ItemsRepository.createOrGet(jobId, "PENDING-MPN", {
                 // @ts-ignore - Minimal skeleton
                 mpn_identity: { mpn: "PENDING", canonical_model_name: inputRaw },
                 brand: null,

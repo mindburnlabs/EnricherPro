@@ -29,7 +29,7 @@ describe('Repositories Integration Test', () => {
     });
 
     it('should create and retrieve an item', async () => {
-        const item = await ItemsRepository.create(createdJobId, mockMpn, mockData);
+        const item = await ItemsRepository.createOrGet(createdJobId, mockMpn, mockData);
         expect(item).toBeDefined();
         expect(item.mpn).toBe(mockMpn);
         expect(item.id).toBeDefined();
@@ -41,7 +41,7 @@ describe('Repositories Integration Test', () => {
 
     it('should add and retrieve evidence', async () => {
         // create another item
-        const item = await ItemsRepository.create(createdJobId, 'EVIDENCE-SKU', mockData);
+        const item = await ItemsRepository.createOrGet(createdJobId, 'EVIDENCE-SKU', mockData);
 
         await EvidenceRepository.addEvidence(
             item.id,

@@ -3,11 +3,18 @@ import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { items, jobs } from '../db/schema';
 import { Transformers } from '../lib/transformers';
-import { ConsumableData } from '../../types/domain';
+import { ConsumableData } from '../types/domain';
 
 export class ItemsRepository {
 
-    static async create(jobId: string, mpn: string, initialData: ConsumableData) {
+    static async createOrGet(jobId: string, mpn: string, initialData: ConsumableData) {
+        // Idempotency: Check if item exists for this job
+        const existing = await this.findByJobId(jobId);
+        if (existing) {
+            console.log(`[Idempotency] Item already exists for job ${jobId}`);
+            return existing;
+        }
+
         const [newItem] = await db.insert(items).values({
             jobId,
             mpn,
@@ -57,9 +64,10 @@ export class ItemsRepository {
         return updated;
     }
 
-    static async setStatus(id: string, status: 'processing' | 'needs_review' | 'published' | 'rejected', reason?: string) {
+    static async setStatus(id: string, status: 'processing' | 'needs_review' | 'published' | 'rejected' | 'failed', reason?: string) {
+        // @ts-ignore - DB schema string enum might need update or cast
         await db.update(items)
-            .set({ status, reviewReason: reason, updatedAt: new Date() })
+            .set({ status: status as any, reviewReason: reason, updatedAt: new Date() })
             .where(eq(items.id, id));
     }
 }

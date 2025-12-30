@@ -8,14 +8,27 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: '0.0.0.0',
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000', // Self-target if using Vercel Dev, or different port if separate backend
+          changeOrigin: true,
+          rewrite: (path) => path // Vercel dev handles /api
+        }
+      }
     },
     plugins: [react()],
-    define: {
-      // 'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom', 'lucide-react']
+          }
+        }
+      }
     },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(__dirname, './src'),
       }
     }
   };

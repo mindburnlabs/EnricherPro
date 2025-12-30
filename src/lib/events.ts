@@ -1,6 +1,5 @@
-
 import { type EventSchemas } from "inngest";
-import { ConsumableData } from "../../types/domain";
+import { EnrichedItem, ConsumableData } from "../types/domain";
 
 export type ResearchStartedEvent = {
     name: "app/research.started";

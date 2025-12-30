@@ -1,5 +1,5 @@
 
-import { ConsumableData } from '../../types/domain';
+import { ConsumableData } from '../types/domain';
 import { items } from '../db/schema';
 import { InferSelectModel } from 'drizzle-orm';
 

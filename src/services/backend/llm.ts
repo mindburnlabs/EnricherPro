@@ -4,7 +4,7 @@
 
 
 export class BackendLLMService {
-    private static apiKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
+    private static apiKey = process.env.OPENROUTER_API_KEY;
 
     static async complete(config: {
         model: string,

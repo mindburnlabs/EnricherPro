@@ -71,7 +71,6 @@ describe('i18n Implementation', () => {
 
         // 2. Scan Files
         const srcDir = path.resolve(__dirname, '../src');
-        const componentsDir = path.resolve(__dirname, '../components');
 
         function getFiles(dir: string): string[] {
             const subdirs = fs.readdirSync(dir);
@@ -82,7 +81,7 @@ describe('i18n Implementation', () => {
             return files.flat();
         }
 
-        const files = [...getFiles(srcDir), ...getFiles(componentsDir)]
+        const files = getFiles(srcDir)
             .filter(f => f.endsWith('.tsx') || f.endsWith('.ts'));
 
         const missingKeys: string[] = [];

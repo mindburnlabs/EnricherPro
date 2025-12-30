@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { ResearchComposer } from './src/components/Research/ResearchComposer';
-import { RunProgress, StepStatus } from './src/components/Research/RunProgress';
-import { ReviewQueue } from './src/components/Research/ReviewQueue';
-// import { triggerResearch } from './api/start-research'; // If we use it, api is in root
-// API
-import { triggerResearch } from './src/lib/api'; // I wrote api.ts to src/lib/api.ts earlier!
+import { ResearchComposer } from './components/Research/ResearchComposer';
+import { RunProgress, StepStatus } from './components/Research/RunProgress';
+// import { ReviewQueue } from './components/Research/ReviewQueue';
+// Lazy load ReviewQueue
+const ReviewQueue = React.lazy(() => import('./components/Research/ReviewQueue').then(module => ({ default: module.ReviewQueue })));
 
+import { triggerResearch, getItems, approveItem } from './lib/api';
+import { EnrichedItem } from './types/domain';
 import { useTranslation } from 'react-i18next';
 
 const App: React.FC = () => {
@@ -14,6 +15,7 @@ const App: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [steps, setSteps] = useState<StepStatus[]>([]);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [items, setItems] = useState<EnrichedItem[]>([]);
 
   // Clear legacy storage on mount
   React.useEffect(() => {
@@ -34,8 +36,12 @@ const App: React.FC = () => {
         if (data.status === 'needs_review' || data.status === 'published') {
           clearInterval(interval);
           setIsProcessing(false);
-          // If we had a real ReviewQueue with data, we would set it here
-          // For now, we just show the completion state
+
+          // Fetch final items
+          const itemsRes = await getItems(id);
+          if (itemsRes.success) {
+            setItems(itemsRes.items);
+          }
         }
       } catch (e) {
         console.error("Polling error", e);
@@ -43,9 +49,21 @@ const App: React.FC = () => {
     }, 2000);
   };
 
+  const handleApprove = async (itemId: string) => {
+    try {
+      await approveItem(itemId);
+      // Optimistic update
+      setItems(prev => prev.filter(i => i.id !== itemId));
+    } catch (e) {
+      console.error("Failed to approve", e);
+      alert("Failed to approve item");
+    }
+  };
+
   const handleSearch = async (input: string) => {
     setIsProcessing(true);
     setSteps([{ id: 'init', label: t('status.initializing', { ns: 'research' }), status: 'running' }]);
+    setItems([]); // Clear previous results
 
     try {
       // Trigger Server
@@ -81,15 +99,19 @@ const App: React.FC = () => {
 
         <RunProgress steps={steps} isVisible={steps.length > 0} />
 
-        {/* Placeholder for Review Queue when job is done */}
-        {!isProcessing && steps.length >= 4 && (
+        {!isProcessing && items.length > 0 && (
           <div className="mt-12 w-full max-w-4xl animate-in fade-in slide-in-from-bottom duration-700">
-            <ReviewQueue items={[]} onApprove={() => { }} />
-            <div className="text-center text-gray-400 p-8 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl">
-              {t('messages.search_completed_placeholder')}
-            </div>
+            <React.Suspense fallback={<div className="h-40 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />}>
+              <ReviewQueue items={items} onApprove={handleApprove} />
+            </React.Suspense>
           </div>
         )}
+
+        {/* Empty State after processing but no items? */}
+        {!isProcessing && steps.length > 0 && items.length === 0 && (
+          <p className="text-gray-400 mt-8">Processing complete. No actionable items found.</p>
+        )}
+
       </div>
     </div>
   );

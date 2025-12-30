@@ -31,5 +31,13 @@
         "detected_plural_many": "Обнаружено {{count}} аномалий",
         "resolution_needed": "Требуется разрешение конфликта",
         "reasons_label": "Анализ расхождений"
+    },
+    "review": {
+        "title": "Требует проверки",
+        "reasons": "Причины: {{reason}}",
+        "unknown_mpn": "Неизвестный MPN",
+        "button_detail": "Просмотр",
+        "button_approve": "Утвердить",
+        "unknown_reason": "Не указана"
     }
 }
