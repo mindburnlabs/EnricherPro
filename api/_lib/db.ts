@@ -1,8 +1,10 @@
 
-import { Pool } from 'pg';
+import pg from 'pg';
+const { Pool } = pg;
+import type { Pool as PoolType } from 'pg';
 
 // Isolated DB client for API context - avoids src/ dependencies
-let pool: Pool | null = null;
+let pool: PoolType | null = null;
 
 export const getDb = () => {
     if (!pool) {
