@@ -40,16 +40,29 @@ export const APP_CONFIG = {
     // Whitelists
     sources: {
         logistics: ['nix.ru', 'max.nix.ru'], // Strict NIX only for dimensions/weight
-        compatibility: [
-            'cartridge.ru',
-            'rashodnika.net',
+        // Tier A: Official OEM domains (High Trust)
+        tierA_oem: [
             'hp.com',
             'canon.com', 'canon.ru',
             'epson.com', 'epson.ru',
             'kyocera.com', 'kyoceradocumentsolutions.ru',
             'brother.com', 'brother.ru',
-            'xerox.com', 'xerox.ru'
-        ]
+            'xerox.com', 'xerox.ru',
+            'ricoh.com', 'ricoh.ru',
+            'pantum.com', 'pantum.ru'
+        ],
+        // Tier B: Trusted Independent Retailers (Medium Trust - Requires Consensus)
+        tierB_retailer: [
+            'cartridge.ru',
+            'rashodnika.net',
+            'dns-shop.ru',
+            'citilink.ru',
+            'onlinetrade.ru'
+        ],
+        // Legacy support - combined list
+        get compatibility() {
+            return [...this.tierA_oem, ...this.tierB_retailer];
+        }
     },
 
     timeouts: {

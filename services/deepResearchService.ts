@@ -19,6 +19,8 @@ export interface ResearchPlan {
     related_needed: boolean;
     images_needed: boolean;
     faq_needed: boolean;
+    // Track if we need to expand search for consensus
+    compatibility_tier_needed: 'oem_or_more_retailers' | 'none';
 }
 
 export interface DeepResearchResult {
@@ -237,6 +239,20 @@ export class DeepResearchService {
 
         // Final Status Calculation
         if (currentData.automation_status !== 'done') {
+            if (currentData.packaging?.not_found_on_nix) {
+                currentData.meta!.warnings.push('NIX_NOT_FOUND');
+            }
+            if (currentData.compatibility_ru?.needs_review) {
+                if (currentData.compatibility_ru.exclusion_notes?.some(n => n.includes('Consensus'))) {
+                    currentData.meta!.warnings.push('CONSENSUS_FAILED');
+                } else {
+                    currentData.meta!.warnings.push('COMPATIBILITY_UNCERTAIN');
+                }
+            }
+            if (!currentData.images || currentData.images.length === 0) {
+                currentData.meta!.warnings.push('NO_IMAGES_FOUND');
+            }
+
             if (currentData.packaging?.not_found_on_nix || currentData.compatibility_ru?.needs_review || currentData.related_consumables?.needs_review) {
                 currentData.automation_status = 'needs_review';
             } else {
@@ -270,37 +286,39 @@ export class DeepResearchService {
             compatibility_needed: missing.has('compatibility'),
             related_needed: missing.has('related'),
             images_needed: missing.has('images'),
-            faq_needed: missing.has('faq')
+            faq_needed: missing.has('faq'),
+            compatibility_tier_needed: data.compatibility_ru?.needs_review && missing.has('compatibility') ? 'oem_or_more_retailers' : 'none'
         };
 
         const coreId = `${data.brand || ''} ${data.model || query}`.trim();
 
         if (plan.logistics_needed && !data.packaging?.not_found_on_nix && !data.packaging) {
             plan.nix_queries.push(`site:nix.ru ${coreId} вес размеры упаковки`);
-            plan.nix_queries.push(`site:nix.ru ${coreId} характеристика`);
-            if (config.searchLimitPerStep < 3) plan.nix_queries = plan.nix_queries.slice(0, 1);
+            if (data.model) plan.nix_queries.push(`site:nix.ru "${data.model}" характеристики`);
+            if (config.searchLimitPerStep < 3) plan.nix_queries = plan.nix_queries.slice(0, 2);
         }
 
-        if (plan.compatibility_needed) {
+        if (plan.compatibility_needed || plan.compatibility_tier_needed !== 'none') {
             if (data.brand) {
                 plan.compatibility_queries.push(`site:${data.brand.toLowerCase()}.com ${data.model} compatibility`);
-                //  plan.compatibility_queries.push(`site:${data.brand.toLowerCase()}.ru ${data.model} совместимость`);
+                plan.compatibility_queries.push(`site:${data.brand.toLowerCase()}.ru ${data.model} совместимость`);
             }
             plan.compatibility_queries.push(`site:cartridge.ru ${coreId} совместимость`);
             plan.compatibility_queries.push(`site:rashodnika.net ${coreId} принтеры`);
-            // Fallback
-            plan.compatibility_queries.push(`${coreId} совместимые принтеры купить`);
+            plan.compatibility_queries.push(`${coreId} список совместимых принтеров`);
 
-            if (config.searchLimitPerStep < 5) plan.compatibility_queries = plan.compatibility_queries.slice(0, 3);
+            if (config.searchLimitPerStep < 5) plan.compatibility_queries = plan.compatibility_queries.slice(0, 4);
         }
 
         if (plan.related_needed) {
             plan.related_queries.push(`${coreId} similar products`);
-            plan.related_queries.push(`${coreId} compatible series cartridges`);
+            plan.related_queries.push(`${coreId} аналог купить`);
         }
 
         if (plan.images_needed) {
-            plan.image_queries.push(`${coreId} product photo white background -box`);
+            plan.image_queries.push(`${coreId} imagesize:800x800`);
+            plan.image_queries.push(`${coreId} larger:800x800`);
+            plan.image_queries.push(`${coreId} product photo`);
         }
 
         if (plan.faq_needed) {
@@ -333,15 +351,32 @@ export class DeepResearchService {
                     });
                     calls++;
 
-                    if (res.data) {
-                        const items = Array.isArray(res.data) ? res.data : (res.data.data || []);
-                        logs.push(`[DeepResearch] Found ${items.length} items for ${q}`);
-                        items.forEach((item: any) => {
+                    if (!res.success) {
+                        if (res.statusCode === 402 || res.statusCode === 401) {
+                            const msg = `CRITICAL: Firecrawl API Error ${res.statusCode} (Payment/Auth). Stopping workflow.`;
+                            logs.push(msg);
+                            throw new Error(msg); // Throwing here catches below, we need to propagate up or break completely
+                        }
+                        if (res.statusCode === 429) {
+                            logs.push(`[DeepResearch] Rate limit hit. Waiting 5s...`);
+                            await new Promise(r => setTimeout(r, 5000));
+                        }
+                        logs.push(`[DeepResearch] Search failed for ${q}: ${res.error}`);
+                        continue;
+                    }
+
+                    if (res.data && Array.isArray(res.data)) {
+                        logs.push(`[DeepResearch] Found ${res.data.length} items for ${q}`);
+                        res.data.forEach((item: any) => {
                             if (item.url) urls.add(item.url);
                         });
                     }
                 } catch (e) {
-                    logs.push(`[DeepResearch] Error in ${type}: ${(e as Error).message}`);
+                    const err = e as Error;
+                    logs.push(`[DeepResearch] Error in ${type}: ${err.message}`);
+                    if (err.message.includes('CRITICAL') || err.message.includes('402')) {
+                        throw err; // Re-throw critical errors to stop the entire service
+                    }
                 }
             }
             if (urls.size > 0) {
@@ -350,27 +385,58 @@ export class DeepResearchService {
             }
         };
 
-        if (plan.nix_queries.length > 0) await executeBatch(plan.nix_queries, 'logistics', { location: 'ru' });
-        if (plan.compatibility_queries.length > 0) await executeBatch(plan.compatibility_queries, 'compatibility', { location: 'ru' });
-        if (plan.related_queries.length > 0) await executeBatch(plan.related_queries, 'related', { location: 'ru' });
-        if (plan.faq_queries.length > 0) await executeBatch(plan.faq_queries, 'faq', { location: 'ru' });
-        if (plan.image_queries.length > 0) await executeBatch(plan.image_queries, 'images', { is_image: true, sources: ['images'] });
+        try {
+            if (plan.nix_queries.length > 0) await executeBatch(plan.nix_queries, 'logistics', { location: 'ru' });
+            if (plan.compatibility_queries.length > 0) await executeBatch(plan.compatibility_queries, 'compatibility', { location: 'ru' });
+            if (plan.related_queries.length > 0) await executeBatch(plan.related_queries, 'related', { location: 'ru' });
+            if (plan.faq_queries.length > 0) await executeBatch(plan.faq_queries, 'faq', { location: 'ru' });
+            if (plan.image_queries.length > 0) await executeBatch(plan.image_queries, 'images', { is_image: true, sources: ['images'] });
+        } catch (e) {
+            // Propagate critical errors up to executeWorkflow to stop the loop
+            const err = e as Error;
+            if (err.message.includes('CRITICAL')) throw err;
+        }
 
         return { findings, calls, sources: sourcesCount };
     }
 
     /**
-     * Helper: Validate URL against whitelist
+     * Helper: Validate URL against whitelist / Tiers
      */
     private isWhitelisted(url: string, category: 'logistics' | 'compatibility'): boolean {
         const domain = new URL(url).hostname.replace('www.', '');
-        const whitelist = APP_CONFIG.sources[category];
-        return whitelist.some(w => domain.endsWith(w));
+        // For compatibility, we check Tier B explicitly here, or the combined list
+        // logic moved to checkSourceTier
+        if (category === 'logistics') {
+            return APP_CONFIG.sources.logistics.some(w => domain.endsWith(w));
+        }
+        return false;
     }
 
     private isOEM(url: string, brand: string): boolean {
         if (!brand) return false;
         return url.toLowerCase().includes(brand.toLowerCase());
+    }
+
+    private checkSourceTier(url: string, brand: string): 'TierA' | 'TierB' | 'TierC' | 'Unknown' {
+        const domain = new URL(url).hostname.toLowerCase().replace('www.', '');
+
+        // Tier A: OEM
+        // Check exact brand match first
+        if (brand && (domain.includes(brand.toLowerCase()) ||
+            APP_CONFIG.sources.tierA_oem.some(o => domain.endsWith(o) && o.includes(brand.toLowerCase())))) {
+            return 'TierA';
+        }
+        // General OEM check
+        if (APP_CONFIG.sources.tierA_oem.some(o => domain.endsWith(o))) return 'TierA';
+
+        // Tier B: Retailers
+        if (APP_CONFIG.sources.tierB_retailer.some(r => domain.endsWith(r))) return 'TierB';
+
+        // Tier C: Marketplaces/Forums (Approximation)
+        if (domain.includes('ozon') || domain.includes('wildberries') || domain.includes('yandex') || domain.includes('forum') || domain.includes('otvet')) return 'TierC';
+
+        return 'Unknown';
     }
 
     private async extractor(findings: { type: string, urls: string[] }[], currentData: StrictConsumableData, plan: ResearchPlan, logs: string[], strictSources: boolean): Promise<Partial<StrictConsumableData>> {
@@ -424,36 +490,47 @@ export class DeepResearchService {
             validCompatUrls = compatUrls;
         }
 
-        if (validCompatUrls.length > 0 && !currentData.compatibility_ru) {
-            logs.push(`[DeepResearch] Extracting compatibility from ${validCompatUrls.length} valid urls (Strict: ${strictSources})`);
-            const prompt = `List all compatible PRINTER models.`;
+        if (validCompatUrls.length > 0) {
+            // Logic: we want to extract from enough sources to reach consensus.
+            // If strictly enforcing, we focus on Tier A/B.
+            // If we have existing data but it needs review, we merge new info.
+
+            logs.push(`[DeepResearch] Extracting compatibility from ${validCompatUrls.length} urls`);
+            const prompt = `List all compatible PRINTER models. Return rigorous list.`;
             const schema = {
                 type: 'object',
                 properties: {
-                    printers: { type: 'array', items: { type: 'string' } },
-                    is_ru_source: { type: 'boolean' }
+                    printers: { type: 'array', items: { type: 'string' } }
                 }
             };
-            // Increase limit if not strict?
+
             const extracted = await extractData(validCompatUrls.slice(0, 5), prompt, schema);
+
             if (extracted && extracted.printers && extracted.printers.length > 0) {
-                // Check Trust Rules: 
-                const oemCount = validCompatUrls.filter(u => this.isOEM(u, currentData.brand)).length;
-                const whitelistCount = validCompatUrls.filter(u => this.isWhitelisted(u, 'compatibility')).length;
+                // Consensus Logic
+                const tiers = validCompatUrls.map(u => this.checkSourceTier(u, currentData.brand || ''));
+                const tierACount = tiers.filter(t => t === 'TierA').length;
+                const tierBCount = tiers.filter(t => t === 'TierB').length;
 
-                // If strict, we enforce 2 whitelist or 1 OEM.
-                // If NOT strict, do we enforce trust? 
-                // The prompt says "Trust rules: ...". It doesn't say these rules are optional in non-strict mode.
-                // But "strict_sources" parameter implies the SOURCE selection is strict.
-                // Let's assume trust rules apply to the *result* classification (needs_review).
+                // Count unique domains for Tier B
+                const uniqueTierBDomains = new Set(
+                    validCompatUrls
+                        .filter((u, i) => tiers[i] === 'TierB')
+                        .map(u => new URL(u).hostname)
+                ).size;
 
-                const isTrusted = oemCount >= 1 || whitelistCount >= 2;
+                const isTrusted = tierACount >= 1 || uniqueTierBDomains >= 2;
+
+                // Merge logic: If we already have printers, we define a strategy. 
+                // For now, simpler: overwrite or unique merge. Let's precise unique merge.
+                const existing = currentData.compatibility_ru?.printers || [];
+                const mergedPrinters = Array.from(new Set([...existing, ...extracted.printers]));
 
                 result.compatibility_ru = {
-                    printers: extracted.printers,
-                    evidence_urls: validCompatUrls.slice(0, 5),
+                    printers: mergedPrinters,
+                    evidence_urls: [...(currentData.compatibility_ru?.evidence_urls || []), ...validCompatUrls.slice(0, 5)],
                     needs_review: !isTrusted,
-                    exclusion_notes: !isTrusted ? ['Insufficient independent sources (Strict/Trust Rule)'] : []
+                    exclusion_notes: !isTrusted ? [`Consensus check failed: TierA=${tierACount}, UniqueTierB=${uniqueTierBDomains}`] : []
                 };
             }
         }
@@ -529,10 +606,10 @@ export class DeepResearchService {
         const missing = new Set<string>();
 
         // Logistics is core
-        if (!data.packaging_from_nix) missing.add('logistics');
+        if (!data.packaging_from_nix && !data.packaging?.not_found_on_nix) missing.add('logistics');
 
-        // Compatibility is core
-        if (!data.compatible_printers_ru || data.compatible_printers_ru.length === 0) missing.add('compatibility');
+        // Compatibility is core - keep looking if it needs review
+        if (!data.compatible_printers_ru || data.compatible_printers_ru.length === 0 || (data.compatibility_ru?.needs_review && strict)) missing.add('compatibility');
 
         // Related is core for network effect
         if (!data.related_consumables || !data.related_consumables.for_similar_products_block || data.related_consumables.for_similar_products_block.length === 0) {

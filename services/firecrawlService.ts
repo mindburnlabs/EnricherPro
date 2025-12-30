@@ -829,5 +829,9 @@ export const firecrawlSearch = async (query: string, options: SearchOptions = {}
   }
 
   // Unwrap the data array from v2 response body
-  return response.data?.data || [];
+  return {
+    success: true,
+    data: response.data?.data || [],
+    statusCode: response.statusCode
+  };
 };
