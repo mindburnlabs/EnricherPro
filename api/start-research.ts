@@ -1,5 +1,5 @@
 
-import { inngest } from "../src/inngest/client";
+import { inngest } from "./_lib/inngest";
 
 export const POST = async (request: Request) => {
     const body = await request.json();
