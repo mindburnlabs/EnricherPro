@@ -1,6 +1,7 @@
 
 import { inngest } from "./_lib/inngest";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { v4 as uuidv4 } from 'uuid';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     if (request.method !== 'POST') {
@@ -14,8 +15,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
             return response.status(400).json({ error: 'Missing input' });
         }
 
-        const { v4 }: { v4: () => string } = require('uuid');
-        const jobId = v4();
+        const jobId = uuidv4();
 
         // Send event to Inngest
         try {
