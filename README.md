@@ -58,6 +58,12 @@
    npm run dev
    ```
 
+4. **Verify**:
+    Run the full quality gate to ensure everything is set up correctly:
+    ```bash
+    npm run check:all
+    ```
+
 ---
 
 ## 🏗️ Technical Architecture (SOTA Agentic)
@@ -83,9 +89,10 @@ The system utilizes a State-of-the-Art (SOTA) **Multi-Agent** architecture to gu
 
 The system follows a modular, service-oriented architecture:
 
-- **`/services`**: Core logic for API integration, text processing, and market compliance.
-- **`/types`**: Modular TypeScript definitions (Error, Domain, Audit, API).
-- **`/components`**: Reactive UI components built with modern React.
+- **`/src/services`**: Core logic for API integration, text processing, and market compliance.
+- **`/src/types`**: Modular TypeScript definitions (Error, Domain, Audit, API).
+- **`/src/components`**: Reactive UI components built with modern React.
+- **`/docs`**: Comprehensive documentation including [deployment](docs/DEPLOYMENT.md) and [audit reports](docs/PREPROD_AUDIT_REPORT.md).
 
 For deep technical details, see the [API Documentation](API_DOCUMENTATION.md).
 
