@@ -1,5 +1,10 @@
 
-import { inngest } from "./_lib/inngest";
+import { Inngest } from "inngest";
+
+// Minimal client for API context - isolated from src/ to prevent Vercel bundle issues
+const inngest = new Inngest({
+    id: "enricher-labs",
+});
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { v4 as uuidv4 } from 'uuid';
 
