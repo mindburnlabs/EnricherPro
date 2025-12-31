@@ -13,7 +13,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
             return response.status(400).json({ error: 'Missing itemId' });
         }
 
-        const db = getDb();
+        const db = await getDb();
         await db.query(`UPDATE items SET status = 'published' WHERE id = $1`, [itemId]);
 
         return response.status(200).json({ success: true });
