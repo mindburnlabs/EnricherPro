@@ -1,13 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Inngest } from "inngest";
+
 import { v4 as uuidv4 } from 'uuid';
 import { RateLimiter } from '../src/lib/rateLimit';
 import { getTenantId } from '../src/lib/context';
 
-// Minimal client for API context
-const inngest = new Inngest({
-    id: "enricher-labs",
-});
+import { inngest } from '../src/inngest/client';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     if (request.method !== 'POST') {

@@ -1,4 +1,16 @@
-export const triggerResearch = async (input: string, mode: 'fast' | 'balanced' | 'deep' = 'balanced', options?: { forceRefresh?: boolean, apiKeys?: Record<string, string>, sourceConfig?: any, budgets?: any }) => { return fetch('/api/start-research', { method: 'POST', body: JSON.stringify({ input, mode, ...options }), headers: { 'Content-Type': 'application/json' } }).then(r => r.json()); }
+export const triggerResearch = async (input: string, mode: 'fast' | 'balanced' | 'deep' = 'balanced', options?: { forceRefresh?: boolean, apiKeys?: Record<string, string>, sourceConfig?: any, budgets?: any }) => {
+    const res = await fetch('/api/start-research', { method: 'POST', body: JSON.stringify({ input, mode, ...options }), headers: { 'Content-Type': 'application/json' } });
+    if (!res.ok) {
+        const text = await res.text();
+        try {
+            const json = JSON.parse(text);
+            throw new Error(json.error || json.details || text);
+        } catch (e) {
+            throw new Error(`Server Error (${res.status}): ${text}`);
+        }
+    }
+    return res.json();
+}
 
 export const getItems = async (jobId: string) => {
     return fetch(`/api/items?jobId=${jobId}`).then(r => r.json());
