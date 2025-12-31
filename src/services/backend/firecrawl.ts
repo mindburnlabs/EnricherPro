@@ -67,7 +67,7 @@ export class BackendFirecrawlService {
             includePaths: options.includePaths,
             excludePaths: options.excludePaths,
             maxDepth: options.maxDepth || 2
-        });
+        } as any);
 
         if (result && (result as any).id) {
             return (result as any).id;
@@ -76,6 +76,6 @@ export class BackendFirecrawlService {
             return (result as any).id || 'sync-completed';
         }
 
-        throw new Error(`Firecrawl Crawl Failed: ${result?.error || 'Unknown'}`);
+        throw new Error(`Firecrawl Crawl Failed: ${(result as any)?.error || 'Unknown'}`);
     }
 }

@@ -42,8 +42,8 @@ export class BackendLLMService {
                         headers: {
                             "Authorization": `Bearer ${apiKey}`,
                             "Content-Type": "application/json",
-                            "HTTP-Referer": "https://enricher.pro",
-                            "X-Title": "EnricherPro"
+                            "HTTP-Referer": "https://d-squared.app",
+                            "X-Title": "D²"
                         },
                         body: JSON.stringify({
                             model: model,

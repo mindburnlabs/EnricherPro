@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -69,7 +70,7 @@ Rules:
 3. Use Russian queries for logistics (e.g. "вес упаковки").
 4. In DEEP mode, strictly include: "site:alibaba.com [model] specs" and "site:printerknowledge.com [model]".`;
 
-const DEFAULT_SYNTHESIS_PROMPT = `You are the Synthesis Agent for the EnricherPro Consumable Database.
+const DEFAULT_SYNTHESIS_PROMPT = `You are the Synthesis Agent for the D² Consumable Database.
 Your mission is to extract PRISTINE, VERIFIED data from the provided raw text evidence.
 
 CRITICAL RULES (Evidence-First):
@@ -140,7 +141,7 @@ export const useSettingsStore = create<SettingsState>()(
             }))
         }),
         {
-            name: 'enricher-pro-settings',
+            name: 'd-squared-settings',
         }
     )
 );

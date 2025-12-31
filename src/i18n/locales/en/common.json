@@ -1,7 +1,7 @@
 {
     "app": {
-        "title": "Consumable Enricher Pro",
-        "title_labs": "Enricher Labs",
+        "title": "D² Consumable Database",
+        "title_labs": "D²",
         "subtitle": "Autonomous Deep Research Agent for Consumables.",
         "loading": "Loading..."
     },

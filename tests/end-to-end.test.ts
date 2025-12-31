@@ -12,7 +12,7 @@ import { jobs } from '../src/db/schema';
 
 describe('End-to-End Workflow Simulation', () => {
     const jobId = uuidv4();
-    const mpn = "TEST-E2E-123";
+    const mpn = `TEST-E2E-${jobId}`;
 
     beforeEach(async () => {
         // Create parent job to satisfy FK
@@ -31,9 +31,9 @@ describe('End-to-End Workflow Simulation', () => {
             status: "processing"
         } as any);
 
-        expect(item).toBeDefined();
-        expect(item.status).toBe('processing');
-        expect(item.jobId).toBe(jobId);
+        expect(item!).toBeDefined();
+        expect(item!.status).toBe('processing');
+        expect(item!.jobId).toBe(jobId);
 
         // 2. Simulate Idempotency (Retry)
         console.log("Step 2: Simulating Retry");
@@ -43,24 +43,24 @@ describe('End-to-End Workflow Simulation', () => {
             status: "processing"
         } as any);
 
-        expect(itemRetry.id).toBe(item.id); // Should be same item
-        expect(itemRetry.createdAt).toEqual(item.createdAt);
+        expect(itemRetry!.id).toBe(item!.id); // Should be same item
+        expect(itemRetry!.createdAt).toEqual(item!.createdAt);
 
         // 3. Simulate Data Enrichment (Update Data)
         console.log("Step 3: Enriching Data");
         const enrichedData = {
-            ...(item.data as any),
+            ...(item!.data as any),
             specs: { color: "Black", yield: "1000" },
             marketing: { description: "Best toner ever" }
         };
-        await ItemsRepository.updateData(item.id, enrichedData as any);
+        await ItemsRepository.updateData(item!.id, enrichedData as any);
 
         const updatedItem = await ItemsRepository.findByJobId(jobId);
         expect((updatedItem?.data as any).specs).toEqual({ color: "Black", yield: "1000" });
 
         // 4. Simulate Completion (Set Status)
         console.log("Step 4: Completing Workflow");
-        await ItemsRepository.setStatus(item.id, 'needs_review', 'Low confidence on yield');
+        await ItemsRepository.setStatus(item!.id, 'needs_review', 'Low confidence on yield');
 
         const finalItem = await ItemsRepository.findByJobId(jobId);
         expect(finalItem?.status).toBe('needs_review');

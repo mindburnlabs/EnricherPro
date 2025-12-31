@@ -29,7 +29,7 @@ describe('i18n Implementation', () => {
 
     it('should initialize with Russian as default', () => {
         expect(i18next.language).toBe('ru');
-        expect(i18next.t('app.title')).toBe('Consumable Enricher Pro');
+        expect(i18next.t('app.title')).toBe('D² Consumable Database');
     });
 
     it('should handle Russian plurals correctly (research.conflict)', () => {

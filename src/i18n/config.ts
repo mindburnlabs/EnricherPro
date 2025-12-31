@@ -9,7 +9,7 @@ i18n
     .use(initReactI18next)
     .init({
         // lng: 'ru', // Let detector decide, but fallback to RU
-        fallbackLng: 'en', // Fallback to English
+        fallbackLng: 'ru', // Fallback to Russian
         ns: ['common', 'research', 'sku', 'statuses', 'settings', 'detail', 'import', 'results'],
         defaultNS: 'common',
         resources: {

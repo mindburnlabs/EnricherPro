@@ -13,7 +13,7 @@
 - [x] Create `src/db/schema.ts` (Jobs, Items, Evidence tables)
 - [x] Create `drizzle.config.ts`
 - [x] Generate initial migration (SQL)
-- [x] Verify DB connection script
+- [x] Verify DB connection script (Re-verified after schema sync)
 
 ### Package 2: Evidence Store & Repositories
 - [x] Create `src/repositories/itemsRepository.ts`

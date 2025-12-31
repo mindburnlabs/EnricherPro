@@ -61,7 +61,7 @@ export class SynthesisAgent {
 
     static async merge(sources: string[], schemaKey: string = "StrictConsumableData", apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void): Promise<Partial<ConsumableData>> {
         onLog?.(`Synthesizing data from ${sources.length} sources...`);
-        const systemPrompt = promptOverride || `You are the Synthesis Agent for the EnricherPro Consumable Database.
+        const systemPrompt = promptOverride || `You are the Synthesis Agent for the D² Consumable Database.
         Your mission is to extract PRISTINE, VERIFIED data from the provided raw text evidence.
         
         CRITICAL RULES (Evidence-First):

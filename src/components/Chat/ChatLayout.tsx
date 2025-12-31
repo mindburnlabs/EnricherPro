@@ -16,7 +16,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ children, onSettingsClic
             <header className="flex-none p-4 flex justify-between items-center border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-30">
                 <div className="flex items-center gap-2">
                     <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-cyan-500">
-                        Enricher Labs
+                        D²
                     </span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium">
                         v2.0
