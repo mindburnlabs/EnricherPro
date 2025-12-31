@@ -105,7 +105,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ config }) => {
                 apiKeys: config.apiKeys,
                 sourceConfig: config.sources,
                 budgets: config.budgets,
-                previousJobId
+                previousJobId,
+                model: config.model
             });
 
             if (res.success && res.jobId) {

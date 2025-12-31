@@ -26,6 +26,7 @@ export interface ResearchConfig {
         blockedDomains: string[];
     };
     lang: string;
+    model: string;
 }
 
 const defaultBudgets = {
@@ -47,7 +48,7 @@ const defaultSources = {
 export const useResearchConfig = () => {
     // Initialize state from localStorage or defaults
     const [config, setConfig] = useState<ResearchConfig>(() => {
-        if (typeof window === 'undefined') return { apiKeys: {}, prompts: {}, budgets: defaultBudgets, sources: defaultSources, lang: 'en' } as any;
+        if (typeof window === 'undefined') return { apiKeys: {}, prompts: {}, budgets: defaultBudgets, sources: defaultSources, lang: 'en', model: 'google/gemini-2.0-flash-exp' } as any;
 
         const apiKeys = {
             firecrawl: localStorage.getItem('firecrawl_key') || '',
@@ -69,7 +70,9 @@ export const useResearchConfig = () => {
 
         const lang = localStorage.getItem('i18nextLng') || 'en';
 
-        return { apiKeys, prompts, budgets, sources, lang };
+        const model = localStorage.getItem('selected_model') || 'google/gemini-2.0-flash-exp';
+
+        return { apiKeys, prompts, budgets, sources, lang, model };
     });
 
     // Save to localStorage whenever config changes
@@ -93,6 +96,10 @@ export const useResearchConfig = () => {
 
         if (newConfig.sources) {
             localStorage.setItem('research_sources', JSON.stringify(newConfig.sources));
+        }
+
+        if (newConfig.model) {
+            localStorage.setItem('selected_model', newConfig.model);
         }
     };
 
