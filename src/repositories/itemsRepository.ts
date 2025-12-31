@@ -37,6 +37,13 @@ export class ItemsRepository {
                 // Standard Dedup: Return existing item (and let frontend see old job status potentially)
                 return this.findById(duplicate.id);
             }
+        } // Close if(mpn)
+
+        // 3. Integrity Check: Ensure Job exists (Handle Inngest Race Condition)
+        const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId));
+        if (!job) {
+            // Throwing a standard Error forces Inngest to retry (unlike FK constraint violation which might be fatal)
+            throw new Error(`Integrity Error: Job ${jobId} not found during Item creation. Retrying...`);
         }
 
         const [newItem] = await db.insert(items).values({
