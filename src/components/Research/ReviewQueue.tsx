@@ -7,7 +7,8 @@ import { ItemDetail } from './ItemDetail';
 interface ReviewQueueProps {
     items: EnrichedItem[];
     onApprove: (id: string) => void;
-    onMerge: (item: EnrichedItem) => void;
+    onMerge: (item: EnrichedItem, previousJobId?: string) => void;
+    onArchive: (id: string) => void;
 }
 
 import { useTranslation } from 'react-i18next';
@@ -15,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { ConflictResolver } from './ConflictResolver';
 import { getItem } from '../../lib/api';
 
-export const ReviewQueue: React.FC<ReviewQueueProps> = ({ items, onApprove, onMerge }) => {
+export const ReviewQueue: React.FC<ReviewQueueProps> = ({ items, onApprove, onMerge, onArchive }) => {
     const { t } = useTranslation('research');
     const [selectedItem, setSelectedItem] = useState<EnrichedItem | null>(null);
 

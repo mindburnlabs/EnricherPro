@@ -49,7 +49,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 items = res.rows;
             } else {
                 const res = await pool.query(
-                    `SELECT id, job_id, status, data, review_reason, created_at, updated_at FROM items WHERE job_id = $1`,
+                    `SELECT id, job_id, status, data, review_reason, created_at, updated_at FROM items WHERE job_id = $1 AND status != 'archived'`,
                     [jobId]
                 );
                 items = res.rows;

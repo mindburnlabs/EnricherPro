@@ -127,11 +127,35 @@ export class DiscoveryAgent {
 
                 try {
                     onLog?.(`Executing query: "${query}"...`);
-                    const searchResults = await BackendFirecrawlService.search(query, {
-                        limit: budget.limitPerQuery,
-                        formats: ['markdown'],
-                        apiKey: apiKeys?.firecrawl
-                    });
+
+                    let searchResults: RetrieverResult[] = [];
+                    try {
+                        // Primary: Firecrawl
+                        const rawResults = await BackendFirecrawlService.search(query, {
+                            limit: budget.limitPerQuery,
+                            formats: ['markdown'],
+                            apiKey: apiKeys?.firecrawl
+                        });
+
+                        // Map raw results to RetrieverResult if needed, or assume Firecrawl returns compatible shape
+                        // The current BackendFirecrawlService returns `any[]` but usually matches expected shape
+                        // We need to map it to ensure consistency
+                        searchResults = rawResults.map((item: any) => ({
+                            url: item.url,
+                            title: item.title || "No Title",
+                            markdown: item.markdown || "",
+                            source_type: 'other', // Will be refined below
+                            timestamp: new Date().toISOString()
+                        }));
+
+                    } catch (fcError) {
+                        console.warn(`Primary Search Failed for "${query}":`, fcError);
+                        onLog?.(`Primary search failed. Switching to Fallback (Perplexity)...`);
+
+                        // Fallback: Perplexity
+                        const { FallbackSearchService } = await import("../backend/fallback.js");
+                        searchResults = await FallbackSearchService.search(query, apiKeys);
+                    }
 
                     onLog?.(`Found ${searchResults.length} results for "${query}".`);
 
@@ -157,6 +181,8 @@ export class DiscoveryAgent {
                             else sourceType = 'marketplace';
                         }
 
+                        // If item came from fallback, source_type is 'other' but domain check above might refine it.
+
                         // --- Source Type allowed check ---
                         if (sourceConfig && sourceConfig.allowedTypes) {
                             // This is imperfect mapping but sufficient for MVP
@@ -176,10 +202,10 @@ export class DiscoveryAgent {
                         visitedUrls.add(item.url);
                         allResults.push({
                             url: item.url,
-                            title: item.title || "No Title",
-                            markdown: item.markdown || "",
+                            title: item.title,
+                            markdown: item.markdown,
                             source_type: sourceType,
-                            timestamp: new Date().toISOString()
+                            timestamp: item.timestamp
                         });
                     }
                 } catch (e) {

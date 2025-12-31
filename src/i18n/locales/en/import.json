@@ -1,0 +1,32 @@
+{
+    "new_badge": "NEW: FIRECRAWL V2 SUPPORT",
+    "title_prefix": "Ready to",
+    "title_highlight": "enrich",
+    "title_suffix": "data?",
+    "subtitle": "Enter vendor strings or upload photos of packaging. The agent handles the research.",
+    "input_queue": {
+        "title": "Input Queue",
+        "detected": "detected",
+        "analyzing": "AI Analyzing...",
+        "identify_btn": "Identify from Photo",
+        "placeholder": "Ex: HP CF234A Imaging Drum\nKyocera DK-7105...\nPaste data here...",
+        "magic_sample": "Load Sample",
+        "run_agent": "Run Agent"
+    },
+    "how_it_works": {
+        "title": "How It Works",
+        "step1_title": "Parallel Search",
+        "step1_subtitle": "Firecrawl (Web) + Perplexity (Deep)",
+        "step1_desc": "Simultaneous broad and deep search for maximum coverage.",
+        "step2_title": "Consensus Merging",
+        "step2_subtitle": "Multi-Agent Synthesis",
+        "step2_desc": "Cross-verification of sources to eliminate hallucinations.",
+        "step3_title": "Reactive Mitigation",
+        "step3_subtitle": "Auto-Correction Loop",
+        "step3_desc": "If data is missing, agent autonomously generates new queries."
+    },
+    "tips": {
+        "title": "Quality Tips",
+        "desc": "For best results, use full MPNs. Photo recognition works best with clear label shots."
+    }
+}

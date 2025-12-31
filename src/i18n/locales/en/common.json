@@ -1,0 +1,50 @@
+{
+    "app": {
+        "title": "Consumable Enricher Pro",
+        "title_labs": "Enricher Labs",
+        "subtitle": "Autonomous Deep Research Agent for Consumables.",
+        "loading": "Loading..."
+    },
+    "layout": {
+        "api_services": "API Services",
+        "live_engine": "Active Engine",
+        "active_orchestrator": "Active Orchestrator"
+    },
+    "engines": {
+        "gemini_default": "Gemini 2.0 (Default)",
+        "firecrawl_agent": "Firecrawl Agent",
+        "openrouter": "OpenRouter AI"
+    },
+    "messages": {
+        "search_completed_placeholder": "Search completed. Results will appear here."
+    },
+    "nav": {
+        "research": "Research",
+        "import": "Import",
+        "results": "Results",
+        "publication": "Ready for Publication",
+        "settings": "Settings"
+    },
+    "stats": {
+        "total": "Total",
+        "ok": "Ready",
+        "needs_review": "Review",
+        "failed": "Failed",
+        "pending": "Pending",
+        "retrying": "Retrying",
+        "manual_queue": "Manual Queue",
+        "error_rate": "Error Rate %",
+        "avg_time": "Avg Time",
+        "throughput": "Throughput"
+    },
+    "actions": {
+        "run": "Run Agent",
+        "retry": "Retry",
+        "approve": "Approve",
+        "merge": "Merge",
+        "cancel": "Cancel",
+        "save": "Save",
+        "search": "Search",
+        "clear": "Clear"
+    }
+}

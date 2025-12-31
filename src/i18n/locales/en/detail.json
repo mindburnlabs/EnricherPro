@@ -1,0 +1,103 @@
+{
+    "tabs": {
+        "specs": "Identification & Specs",
+        "network": "Network & Relations",
+        "images": "Visual Audit",
+        "evidence": "Evidence & Sources",
+        "intelligence": "Intelligence",
+        "faq": "AI Support FAQ"
+    },
+    "header": {
+        "model": "Model",
+        "system_confidence": "System Confidence",
+        "quality_matched": "Match Quality",
+        "discard": "Discard Changes",
+        "approve": "Approve PIM Record",
+        "model_placeholder": "UNDEFINED"
+    },
+    "alerts": {
+        "structural": "Structural Alert",
+        "validation_failed": "Validation Failed"
+    },
+    "identity": {
+        "title": "Identity Extraction",
+        "brand": "Brand (Authority)",
+        "mpn": "Entity Identity (MPN)",
+        "alias": "Semantic Alias",
+        "alias_placeholder": "short identifier",
+        "yield": "Yield Matrix",
+        "yield_units": {
+            "pages": "ISO/IEC PAGES (A4)",
+            "ml": "LIQUID VOLUME (ML)",
+            "copies": "COPIES"
+        },
+        "chip": "IC Chip Architecture",
+        "counter": "FW Logical Counter"
+    },
+    "market": {
+        "eligibility": "Market Eligibility",
+        "agents_validated": "AGENTS VALIDATED",
+        "placeholder": "Verified list of compatible ID terminals..."
+    },
+    "logistics": {
+        "title": "Logistics Protocol",
+        "mass": "Gross Weight",
+        "width": "Width",
+        "height": "Height",
+        "depth": "Depth",
+        "nix_verified": "NIX.ru Authority Verified",
+        "missing": "Data Missing: Request Scan",
+        "reliability": "RELIABILITY"
+    },
+    "evidence": {
+        "metrics_title": "Quality Metrics Panel",
+        "data_complete": "Data Completeness",
+        "source_trust": "Source Trust",
+        "validation_pass": "Validation Pass",
+        "efficiency": "Efficiency",
+        "sources_used": "Sources Used",
+        "timeline_title": "Processing Timeline",
+        "consensus_title": "Parallel Consensus Evidence",
+        "firecrawl": "Firecrawl Scraper",
+        "perplexity": "Deep Research (Perplexity)",
+        "no_direct": "No direct sources found.",
+        "no_deep": "No deep research sources found.",
+        "audit_trail": "Audit Trail",
+        "read_only": "Read Only",
+        "traceability": "Field Traceability",
+        "method": "METHOD:",
+        "grounding": "Search Grounding Sources"
+    },
+    "network": {
+        "title": "Consumables Network Graph",
+        "companions": "Companions",
+        "alternatives": "Alternatives",
+        "confidence": "Network Confidence",
+        "core_companions": "Core Companions",
+        "functional_alternatives": "Functional Alternatives",
+        "standard_unit": "Standard Unit",
+        "alt_option": "Alt Option",
+        "match": "Match",
+        "rel": "REL",
+        "cap": "Cap",
+        "no_data": "No relational data found in this run"
+    },
+    "images": {
+        "audit": "Image Audit",
+        "upload": "Upload Evidence Manually",
+        "resolution": "RESOLUTION (800x800+)",
+        "no_packaging": "NO PACKAGING",
+        "no_watermark": "NO WATERMARKS",
+        "compatible_look": "COMPATIBLE LOOK",
+        "pass": "PASS",
+        "fail": "FAIL",
+        "oem_logo": "OEM LOGO",
+        "ok": "OK",
+        "rejection_reasons": "Rejection Reasons",
+        "primary": "Primary"
+    },
+    "specs": {
+        "title": "Specifications",
+        "click_hint": "Click to view sources"
+    }
+}

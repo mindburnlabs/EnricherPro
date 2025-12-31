@@ -1,8 +1,10 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { db } from '../src/db';
-import { items, jobEvents } from '../src/db/schema';
-import { eq, gt, and } from 'drizzle-orm';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+
+let pool: any = null;
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     if (request.method !== 'GET') {
@@ -13,6 +15,20 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     if (!jobId || Array.isArray(jobId)) {
         return response.status(400).json({ error: 'Missing or invalid jobId' });
+    }
+
+    // Initialize pool if needed
+    if (!pool) {
+        const pg = require('pg');
+        const { Pool } = pg;
+        if (!process.env.DATABASE_URL) {
+            console.error("DATABASE_URL missing");
+            return response.status(500).json({ error: 'Server Configuration Error' });
+        }
+        pool = new Pool({
+            connectionString: process.env.DATABASE_URL,
+            max: 1, // Serverless: limit connections
+        });
     }
 
     // Set headers for SSE
@@ -28,28 +44,35 @@ export default async function handler(request: VercelRequest, response: VercelRe
     let lastStep = '';
     let lastStatus = '';
     let lastUpdatedAt = 0;
-    // Track last log timestamp to ONLY fetch new logs (Bandwidth Optimization)
-    // Start from 0 to get initial history, then update.
     let lastLogTimestamp = new Date(0);
 
     const intervalId = setInterval(async () => {
         try {
-            const [item] = await db.select().from(items).where(eq(items.jobId, jobId as string));
+            // Query Items
+            const itemsResult = await pool.query(
+                `SELECT * FROM items WHERE job_id = $1 LIMIT 1`,
+                [jobId]
+            );
+            const item = itemsResult.rows[0];
 
             if (item) {
-                const currentUpdatedAt = item.updatedAt ? new Date(item.updatedAt).getTime() : 0;
+                const currentUpdatedAt = item.updated_at ? new Date(item.updated_at).getTime() : 0;
 
                 // 1. Fetch new logs separately (Incremental)
-                // Use gt(timestamp, lastLogTimestamp) to avoid re-sending history
-
-                const logs = await db.select().from(jobEvents)
-                    .where(
-                        and(
-                            eq(jobEvents.jobId, jobId as string),
-                            gt(jobEvents.timestamp, lastLogTimestamp)
-                        )
-                    )
-                    .orderBy(jobEvents.timestamp);
+                const logsResult = await pool.query(
+                    `SELECT * FROM job_events WHERE job_id = $1 AND timestamp > $2 ORDER BY timestamp ASC`,
+                    [jobId, lastLogTimestamp.toISOString()]
+                );
+                const logs = logsResult.rows.map((row: any) => ({
+                    // Map snake_case to camelCase if needed, though simple fields usually match or are handled
+                    id: row.id,
+                    jobId: row.job_id,
+                    tenantId: row.tenant_id,
+                    agent: row.agent,
+                    message: row.message,
+                    type: row.type,
+                    timestamp: row.timestamp
+                }));
 
                 if (logs.length > 0) {
                     // Update cursor to the newest log's timestamp
@@ -61,36 +84,39 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 }
 
                 // 2. Check Item Status
-                if (item.currentStep !== lastStep || item.status !== lastStatus || currentUpdatedAt > lastUpdatedAt) {
+                // item columns are snake_case from pg: current_step, status, updated_at
+                const currentStep = item.current_step || '';
+                const status = item.status || '';
+
+                if (currentStep !== lastStep || status !== lastStatus || currentUpdatedAt > lastUpdatedAt) {
 
                     const payload = {
                         type: 'update',
-                        step: item.currentStep,
-                        status: item.status,
-                        data: item.data, // Send partial data if needed
-                        reviewReason: item.reviewReason
+                        step: currentStep,
+                        status: status,
+                        data: item.data,
+                        reviewReason: item.review_reason
                     };
 
                     response.write(`data: ${JSON.stringify(payload)}\n\n`);
 
-                    lastStep = item.currentStep || '';
-                    lastStatus = item.status || '';
+                    lastStep = currentStep;
+                    lastStatus = status;
                     lastUpdatedAt = currentUpdatedAt;
 
                     // If final status, close connection
-                    if (['published', 'needs_review', 'failed'].includes(item.status || '')) {
-                        // Wait a tick to ensure logs flush? No, synchronous.
-                        response.write(`data: ${JSON.stringify({ type: 'complete', status: item.status })}\n\n`);
+                    if (['published', 'needs_review', 'failed'].includes(status)) {
+                        response.write(`data: ${JSON.stringify({ type: 'complete', status: status })}\n\n`);
                         clearInterval(intervalId);
                         response.end();
                     }
                 }
             } else {
-                // Item not found yet, maybe creating...
+                // Item not found yet
             }
         } catch (error) {
             console.error("SSE Poll Error:", error);
-            response.write(`data: ${JSON.stringify({ type: 'error', message: 'Internal polling error' })}\n\n`);
+            response.write(`data: ${JSON.stringify({ type: 'error', message: 'Internal polling error: ' + String(error) })}\n\n`);
             clearInterval(intervalId);
             response.end();
         }

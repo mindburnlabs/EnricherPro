@@ -79,7 +79,19 @@ const App: React.FC = () => {
     }
   };
 
-  const handleMerge = async (item: EnrichedItem) => {
+  const handleArchive = async (itemId: string) => {
+    try {
+      await import('./lib/api').then(m => m.archiveItem(itemId));
+      // No alert needed, UI updates on stream/refresh
+    } catch (e) {
+      console.error("Failed to archive item", e);
+      alert("Failed to archive item: " + String(e));
+    }
+  };
+
+  const handleMerge = async (item: EnrichedItem, previousJobId?: string) => {
+    // If previousJobId is passed (Smart Merge), use it.
+    // Otherwise, standard re-run.
     const mode = 'balanced';
     reset();
 
@@ -88,7 +100,8 @@ const App: React.FC = () => {
         forceRefresh: true,
         apiKeys: config.apiKeys,
         sourceConfig: config.sources,
-        budgets: config.budgets
+        budgets: config.budgets,
+        previousJobId: previousJobId // Pass context if available
       });
       if (res.success && res.jobId) {
         startStream(res.jobId);
@@ -97,6 +110,7 @@ const App: React.FC = () => {
       alert("Merge failed: " + String(e));
     }
   };
+
 
 
   return (
@@ -137,7 +151,7 @@ const App: React.FC = () => {
         {status === 'completed' && items.length > 0 && (
           <div className="mt-12 w-full max-w-4xl animate-in fade-in slide-in-from-bottom duration-700">
             <React.Suspense fallback={<div className="h-40 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />}>
-              <ReviewQueue items={items} onApprove={handleApprove} onMerge={handleMerge} />
+              <ReviewQueue items={items} onApprove={handleApprove} onMerge={handleMerge} onArchive={handleArchive} />
             </React.Suspense>
           </div>
         )}

@@ -1,0 +1,66 @@
+{
+    "title": "System Settings",
+    "subtitle": "Configure API keys and system preferences.",
+    "tabs": {
+        "general": "General",
+        "firecrawl": "Firecrawl",
+        "monitoring": "Monitoring"
+    },
+    "appearance": {
+        "title": "Appearance",
+        "light": "Light",
+        "light_desc": "Clean & Bright",
+        "dark": "Dark",
+        "dark_desc": "Easy on Eyes",
+        "system": "System",
+        "system_desc": "Auto-detect"
+    },
+    "engine": {
+        "title": "Primary Engine",
+        "firecrawl_desc": "Autonomous Web Research",
+        "exclusive_note": "* Enricher Pro uses Firecrawl exclusively for maximum reliability."
+    },
+    "danger_zone": {
+        "title": "Danger Zone",
+        "clear_history": "Clear History",
+        "clear_desc": "Remove all data, queues, and cache. This action cannot be undone.",
+        "delete_btn": "Delete All History"
+    },
+    "firecrawl": {
+        "title": "Firecrawl Scraper",
+        "subtitle": "Advanced web scraping & agentic search.",
+        "api_key_label": "API KEY (V2)",
+        "using_v2": "Using API V2 (Latest)",
+        "save_btn": "Save",
+        "verified_btn": "Verified",
+        "validating_btn": "Verifying...",
+        "invalid_key": "Invalid Key. Check credentials at firecrawl.dev",
+        "empty_key": "Key cannot be empty",
+        "research_protocol": "Research Protocol",
+        "modes": {
+            "fast": "Fast Audit",
+            "fast_desc": "Quick check (2m)",
+            "standard": "Standard",
+            "standard_desc": "Deep check (5m)",
+            "exhaustive": "Deep Context",
+            "exhaustive_desc": "Max depth (12m)"
+        },
+        "toggles": {
+            "strict_title": "Strict Source Selection",
+            "strict_desc": "OEM & Whitelists Only",
+            "images_title": "Visual Validation",
+            "images_desc": "Background & Dimensions Audit"
+        }
+    },
+    "language": {
+        "title": "Language / Язык",
+        "select": "Select Interface Language"
+    },
+    "monitoring": {
+        "title": "API Status",
+        "health": "SYSTEM HEALTH",
+        "latency": "AVG LATENCY",
+        "total_inc": "TOTAL REQUESTS",
+        "uptime": "UPTIME"
+    }
+}

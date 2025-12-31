@@ -2,17 +2,19 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import ru from './locales/ru';
+import en from './locales/en';
 
 i18n
     .use(LanguageDetector)
     .use(initReactI18next)
     .init({
         // lng: 'ru', // Let detector decide, but fallback to RU
-        fallbackLng: 'ru', // Fallback to Russian if EN missing
+        fallbackLng: 'en', // Fallback to English
         ns: ['common', 'research', 'sku', 'statuses', 'settings', 'detail', 'import', 'results'],
         defaultNS: 'common',
         resources: {
-            ru
+            ru,
+            en
         },
         debug: false,
         interpolation: {

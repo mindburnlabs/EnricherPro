@@ -1,4 +1,4 @@
-export const triggerResearch = async (input: string, mode: 'fast' | 'balanced' | 'deep' = 'balanced', options?: { forceRefresh?: boolean, apiKeys?: Record<string, string>, sourceConfig?: any, budgets?: any }) => {
+export const triggerResearch = async (input: string, mode: 'fast' | 'balanced' | 'deep' = 'balanced', options?: { forceRefresh?: boolean, apiKeys?: Record<string, string>, sourceConfig?: any, budgets?: any, previousJobId?: string }) => {
     const res = await fetch('/api/start-research', { method: 'POST', body: JSON.stringify({ input, mode, ...options }), headers: { 'Content-Type': 'application/json' } });
     if (!res.ok) {
         const text = await res.text();
@@ -22,6 +22,14 @@ export const getItem = async (id: string) => {
 
 export const approveItem = async (itemId: string) => {
     return fetch('/api/approve', {
+        method: 'POST',
+        body: JSON.stringify({ itemId }),
+        headers: { 'Content-Type': 'application/json' }
+    }).then(r => r.json());
+}
+
+export const archiveItem = async (itemId: string) => {
+    return fetch('/api/archive', {
         method: 'POST',
         body: JSON.stringify({ itemId }),
         headers: { 'Content-Type': 'application/json' }
