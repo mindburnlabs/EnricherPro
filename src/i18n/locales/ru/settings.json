@@ -52,6 +52,7 @@
         "system_prompts": "Системные промпты",
         "discovery": "Агент-Исследователь (Discovery)",
         "synthesis": "Агент-Синтезатор (Synthesis)",
+        "logistics": "Агент-Логист (Logistics)",
         "reset": "Сбросить по умолчанию"
     },
     "actions": {

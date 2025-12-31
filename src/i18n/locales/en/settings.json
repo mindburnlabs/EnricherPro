@@ -52,6 +52,7 @@
         "system_prompts": "System Prompts",
         "discovery": "Discovery Agent",
         "synthesis": "Synthesis Agent",
+        "logistics": "Logistics Agent",
         "reset": "Reset to Defaults"
     },
     "actions": {

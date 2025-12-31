@@ -198,30 +198,32 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                                 let newDiscovery = localConfig.prompts.discovery;
                                                 let newSynthesis = localConfig.prompts.synthesis;
                                                 let newLogistics = localConfig.prompts.logistics;
+
+                                                // Robust Check: If the prompt contains key English phrases, we assume it's English.
+                                                // If it contains key Russian phrases, we assume it's Russian.
+                                                // This is safer than checking the exact start of the string.
+
+                                                const isEnDiscovery = newDiscovery.includes("Lead Research Planner") || newDiscovery.includes("Research Modes");
+                                                const isRuDiscovery = newDiscovery.includes("Ведущий Планировщик") || newDiscovery.includes("Режимы Исследования");
+
+                                                const isEnSynthesis = newSynthesis.includes("Synthesis Agent") || newSynthesis.includes("PRISTINE");
+                                                const isRuSynthesis = newSynthesis.includes("Агент Синтеза") || newSynthesis.includes("ЧИСТЫЕ");
+
+                                                const isEnLogistics = newLogistics && (newLogistics.includes("NIX.ru Data Extractor") || newLogistics.includes("Gross Weight"));
+                                                const isRuLogistics = newLogistics && (newLogistics.includes("Экстрактор Данных NIX.ru") || newLogistics.includes("Вес брутто"));
+
                                                 if (newLang === 'ru') {
-                                                    // If current is English Default (or close enough), switch to RU
-                                                    // We check if it starts with the first line to be safer against version changes
-                                                    if (newDiscovery.trim().startsWith(DEFAULT_DISCOVERY_PROMPT.split('\n')[0].trim())) {
-                                                        newDiscovery = DEFAULT_DISCOVERY_PROMPT_RU;
-                                                    }
-                                                    if (newSynthesis.trim().startsWith(DEFAULT_SYNTHESIS_PROMPT.split('\n')[0].trim())) {
-                                                        newSynthesis = DEFAULT_SYNTHESIS_PROMPT_RU;
-                                                    }
-                                                    if (newLogistics && newLogistics.trim().startsWith(DEFAULT_LOGISTICS_PROMPT.split('\n')[0].trim())) {
-                                                        newLogistics = DEFAULT_LOGISTICS_PROMPT_RU;
-                                                    }
+                                                    // Switch to RU if currently EN (or default)
+                                                    if (isEnDiscovery || !isRuDiscovery) newDiscovery = DEFAULT_DISCOVERY_PROMPT_RU;
+                                                    if (isEnSynthesis || !isRuSynthesis) newSynthesis = DEFAULT_SYNTHESIS_PROMPT_RU;
+                                                    if (isEnLogistics || !isRuLogistics) newLogistics = DEFAULT_LOGISTICS_PROMPT_RU;
                                                 } else {
-                                                    // If current is RU Default (or close enough), switch to EN
-                                                    if (newDiscovery.trim().startsWith(DEFAULT_DISCOVERY_PROMPT_RU.split('\n')[0].trim())) {
-                                                        newDiscovery = DEFAULT_DISCOVERY_PROMPT;
-                                                    }
-                                                    if (newSynthesis.trim().startsWith(DEFAULT_SYNTHESIS_PROMPT_RU.split('\n')[0].trim())) {
-                                                        newSynthesis = DEFAULT_SYNTHESIS_PROMPT;
-                                                    }
-                                                    if (newLogistics && newLogistics.trim().startsWith(DEFAULT_LOGISTICS_PROMPT_RU.split('\n')[0].trim())) {
-                                                        newLogistics = DEFAULT_LOGISTICS_PROMPT;
-                                                    }
+                                                    // Switch to EN if currently RU (or default)
+                                                    if (isRuDiscovery || !isEnDiscovery) newDiscovery = DEFAULT_DISCOVERY_PROMPT;
+                                                    if (isRuSynthesis || !isEnSynthesis) newSynthesis = DEFAULT_SYNTHESIS_PROMPT;
+                                                    if (isRuLogistics || !isEnLogistics) newLogistics = DEFAULT_LOGISTICS_PROMPT;
                                                 }
+
                                                 setLocalConfig({ ...localConfig, language: newLang, prompts: { ...localConfig.prompts, discovery: newDiscovery, synthesis: newSynthesis, logistics: newLogistics! } });
                                             }}
                                             className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 outline-none"
