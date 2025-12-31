@@ -29,6 +29,9 @@ const TrustBadge = ({ evidence }: { evidence?: FieldEvidence<any> }) => {
     if (evidence.method === 'consensus') {
         return <span className="flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800"><Users className="w-3 h-3" /> {t('trust.consensus')}</span>;
     }
+    if (evidence.source_url?.includes('nix.ru') || evidence.source_url?.includes('dns-shop.ru')) {
+        return <span className="flex items-center gap-1 text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-800"><ShieldCheck className="w-3 h-3" /> Verified by NIX</span>;
+    }
     if (evidence.is_conflict) {
         return <span className="flex items-center gap-1 text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800"><AlertTriangle className="w-3 h-3" /> {t('trust.conflict')}</span>;
     }
@@ -113,8 +116,66 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                             <EvidenceRow label={t('identity.mpn')} value={data.mpn_identity.mpn} fieldEnv={evidence['mpn_identity.mpn']} fieldKey="mpn_identity.mpn" />
                             <EvidenceRow label={t('specs.yield')} value={`${data.yield?.value} ${data.yield?.unit}`} fieldEnv={evidence['specifications.yield_pages']} fieldKey="specifications.yield_pages" />
                             <EvidenceRow label={t('specs.color')} value={data.color} fieldEnv={evidence['specifications.color']} fieldKey="specifications.color" />
+                            {data.aliases && data.aliases.length > 0 && (
+                                <EvidenceRow label="Aliases" value={data.aliases.join(", ")} fieldEnv={evidence['aliases']} fieldKey="aliases" />
+                            )}
                         </div>
                     </div>
+
+                    {/* Compatibility (RU) */}
+                    {data.compatible_printers_ru && data.compatible_printers_ru.length > 0 && (
+                        <div>
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                                Compatibility <span className="text-xs font-normal text-gray-500">(RU Region)</span>
+                                {data.compatible_printers_ru.some(p => p.canonicalName?.includes('nix')) && (
+                                    <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 rounded-full">NIX Checked</span>
+                                )}
+                            </h3>
+                            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 max-h-40 overflow-y-auto">
+                                <div className="flex flex-wrap gap-2">
+                                    {data.compatible_printers_ru.map((p, i) => (
+                                        <span key={i} className="px-2 py-1 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 text-sm">
+                                            {p.model}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* FAQ Section */}
+                    {data.faq && data.faq.length > 0 && (
+                        <div>
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">FAQ & Troubleshooting</h3>
+                            <div className="space-y-3">
+                                {data.faq.map((item, idx) => (
+                                    <div key={idx} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">{item.question}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">{item.answer}</p>
+                                        {item.source_url && (
+                                            <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline mt-2 block truncate">
+                                                Source: {new URL(item.source_url).hostname}
+                                            </a>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Related SKUs */}
+                    {data.related_skus && data.related_skus.length > 0 && (
+                        <div>
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Related Products</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {data.related_skus.map((sku, i) => (
+                                    <span key={i} className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm border border-blue-100 dark:border-blue-800">
+                                        {sku}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Logistics Section */}
                     <div>

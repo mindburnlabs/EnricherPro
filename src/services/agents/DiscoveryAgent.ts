@@ -30,8 +30,45 @@ import { WHITELIST_DOMAINS } from "../../config/domains.js";
 
 export class DiscoveryAgent {
 
+    /**
+     * Heuristic Parser to extract "Knowns" from input string.
+     * Example: "Картридж HP W1331X С ЧИПОМ 15K" -> { brand: "HP", model: "W1331X", yield: 15000 }
+     */
+    static parseInput(input: string): { brand?: string, model?: string, yield?: number, type?: string } {
+        const result: any = {};
+
+        // Brand Detection (common lists)
+        const brands = ['HP', 'Canon', 'Kyocera', 'Brother', 'Xerox', 'Samsung', 'Ricoh', 'Pantum'];
+        const brandMatch = brands.find(b => new RegExp(`\\b${b}\\b`, 'i').test(input));
+        if (brandMatch) result.brand = brandMatch;
+
+        // Yield Detection (e.g. "15K", "15000")
+        const kMatch = input.match(/(\d+)[kК]\b/i);
+        if (kMatch) {
+            result.yield = parseInt(kMatch[1]) * 1000;
+        } else {
+            const plainMatch = input.match(/(\d{3,})\s*(pages|стр|копий)/i);
+            if (plainMatch) result.yield = parseInt(plainMatch[1]);
+        }
+
+        // Model Detection (Simple alphanumeric logic - usually the "weird" distinct word)
+        // This is heuristic and can be improved.
+        if (result.brand) {
+            // Find word after brand, or look for patterns like W1331X, Q2612A
+            const words = input.split(' ');
+            const potentialModel = words.find(w => /[A-Z]+\d+[A-Z]*/.test(w) && w.length > 3 && !brands.includes(w));
+            if (potentialModel) result.model = potentialModel;
+        }
+
+        return result;
+    }
+
     static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string, language: string = 'en', model?: string): Promise<AgentPlan> {
         onLog?.(`Planning research for "${inputRaw}" in ${mode} mode (${language.toUpperCase()})...`);
+
+        // 1. Pre-process Input
+        const knowns = this.parseInput(inputRaw);
+        onLog?.(`Parsed Knowns: ${JSON.stringify(knowns)}`);
 
         let contextInstruction = "";
         if (context) {
@@ -59,11 +96,11 @@ export class DiscoveryAgent {
             - Use Chinese for OEM/Factory sourcing if DEEP mode.
             `;
 
-        const systemPrompt = promptOverride || `You are the Lead Research Planner for a Printer Consumables Database.
+        const systemPromptEn = promptOverride || `You are the Lead Research Planner for a Printer Consumables Database.
         Your goal is to analyze the user input and construct a precise, HIGH-RECALL search strategy.
         
         Research Modes:
-        - Fast: Quick identification. 2-3 queries (EN/RU mixed).
+        - Fast: Quick identification. 2-3 queries.
         - Balanced: Verification. 4-6 queries testing Official vs Retailer data.
         - Deep: "Leave No Stone Unturned". 8-12 queries. MUST traverse English (Official), Russian (Local), and Chinese (OEM) sources.
 
@@ -71,6 +108,7 @@ export class DiscoveryAgent {
         Target Language: ${language.toUpperCase()}
 
         Input: "${inputRaw}"
+        Known Metadata: ${JSON.stringify(knowns)}
         ${contextInstruction}
 
         Return a JSON object with:
@@ -85,7 +123,21 @@ export class DiscoveryAgent {
             schema?: any; // JSON Schema for Agent Structured Output
         }>
 
-        CRITICAL SEARCH RULES (99% Recall Protocol):
+        CRITICAL ENRICHMENT RULES (Russian Market):
+        1. **Identity & Aliases**:
+           - Search for "Short Name" or "Alias" (e.g. Q2612A -> "12A").
+           - Query: "${knowns.model || inputRaw} short name alias", "${knowns.model || inputRaw} сокращенное название".
+        2. **RU Compatibility (Strict)**:
+           - MUST find printers sold in Russia.
+           - Query: "site:nix.ru ${knowns.model || inputRaw} совместимые принтеры", "site:dns-shop.ru ${knowns.model || inputRaw} подходит для".
+        3. **FAQ & Pain Points**:
+           - Find common problems to generate FAQ.
+           - Query: "${knowns.model || inputRaw} problems error defect", "${knowns.model || inputRaw} проблемы форум".
+        4. **Related Products**:
+           - Find cross-sell items (drums, maintenance kits).
+           - Query: "${knowns.model || inputRaw} drum unit", "${knowns.model || inputRaw} фотобарабан".
+        
+        GENERAL SEARCH RULES:
         1. **Multi-Lingual Triangulation**:
            - ALWAYS generate at least one query in English (e.g. "[Model] specs datasheet").
            - If target is RU, ALWAYS generate Russian commercial queries (e.g. "[Model] купить характеристики").
@@ -98,45 +150,65 @@ export class DiscoveryAgent {
         4. **Autonomous Agent (Firecrawl Agent)**:
            - In DEEP mode, use "firecrawl_agent" type for complex navigation tasks.
            - MUST provide a JSON schema for the agent to extract structured data.
-           - Example prompt: "Find valid datasheet for [Model] on official site and extract all tables".
-        
-        Example Deep Strategy:
-        [
-          { "name": "Official Specs (EN)", "queries": ["Canon C-EXV 42 datasheet pdf"], "type": "query" },
-          { 
-            "name": "Autonomous Navigation (Strict)", 
-            "queries": ["Navigate to Canon support page for C-EXV 42 and extract technical specifications"], 
-            "type": "firecrawl_agent",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "yield": { 
-                        "type": "object",
-                        "properties": {
-                            "value": { "type": "number", "description": "Numeric yield" },
-                            "unit": { "type": "string", "enum": ["pages", "copies", "ml"] }
-                        }
-                    },
-                    "packaging_from_nix": {
-                        "type": "object",
-                        "properties": {
-                            "weight_g": { "type": "number", "description": "Weight in grams" },
-                            "width_mm": { "type": "number" },
-                            "height_mm": { "type": "number" },
-                            "depth_mm": { "type": "number" }
-                        }
-                    },
-                    "compatible_printers_ru": { 
-                        "type": "array", 
-                        "items": { "type": "object", "properties": { "model": { "type": "string" } } }
-                    },
-                    "brand": { "type": "string" },
-                    "consumable_type": { "type": "string" }
-                }
-            }
-          }
-        ]
         `;
+
+        const systemPromptRu = `Вы - Ведущий Планировщик Исследований для Базы Данных Расходных Материалов.
+        Ваша цель - проанализировать ввод пользователя и создать точную, ИСЧЕРПЫВАЮЩУЮ стратегию поиска.
+        
+        Режимы Исследования:
+        - Fast: Быстрая идентификация. 2-3 запроса.
+        - Balanced: Проверка. 4-6 запросов, проверка официальных данных против ритейлеров.
+        - Deep: "Не оставить камня на камне". 8-12 запросов. ОБЯЗАТЕЛЬНО искать в Английских (Официальные), Русских (Местные) и Китайских (OEM) источниках.
+
+        Текущий Режим: ${mode.toUpperCase()}
+        Целевой Язык: РУССКИЙ (RU)
+
+        Входные данные: "${inputRaw}"
+        Известные Метаданные: ${JSON.stringify(knowns)}
+        ${contextInstruction}
+
+        Верните JSON объект со следующей структурой (Ключи JSON должны быть на английском!):
+        - type: "single_sku" | "list" | "unknown"
+        - mpn: string (Артикул)
+        - canonical_name: string (Каноническое имя)
+        - strategies: Array<{
+            name: string; (Название стратегии на русском)
+            type: "query" | "domain_crawl" | "firecrawl_agent";
+            queries: string[]; (Массив поисковых запросов)
+            target_domain?: string;
+            schema?: any; // JSON схема для агента
+        }>
+
+        КРИТИЧЕСКИЕ ПРАВИЛА ОБОГАЩЕНИЯ (Российский Рынок):
+        1. **Идентификация и Алиасы**:
+           - Искать "Сокращенное название" или "Алиас" (например, Q2612A -> "12A").
+           - Запрос: "${knowns.model || inputRaw} short name alias", "${knowns.model || inputRaw} сокращенное название".
+        2. **Совместимость в РФ (Строго)**:
+           - ОБЯЗАТЕЛЬНО найти принтеры, продаваемые в России.
+           - Запрос: "site:nix.ru ${knowns.model || inputRaw} совместимые принтеры", "site:dns-shop.ru ${knowns.model || inputRaw} подходит для".
+        3. **FAQ и Проблемы**:
+           - Найти частые проблемы для генерации FAQ.
+           - Запрос: "${knowns.model || inputRaw} проблемы форум", "${knowns.model || inputRaw} common problems".
+        4. **Связанные Товары**:
+           - Искать кросс-продажи (барабаны, ремкомплекты).
+           - Запрос: "${knowns.model || inputRaw} фотобарабан", "${knowns.model || inputRaw} drum unit".
+
+        ОБЩИЕ ПРАВИЛА ПОИСКА:
+        1. **Многоязычная Триангуляция**:
+           - ВСЕГДА генерировать минимум один запрос на Английском (например, "[Model] specs datasheet").
+           - Поскольку цель RU, ВСЕГДА генерировать запросы о покупке/характеристиках на Русском.
+           - В режиме DEEP, ВСЕГДА генерировать Китайские OEM запросы (например, "[Model] 耗材").
+        2. **Логистика Обязательна**:
+           - Включать "вес", "габариты", "упаковка" в запросы.
+        3. **Разнообразие Источников**:
+           - Официальные сайты (HP, Canon).
+           - Маркетплейсы (Wildberries, Ozon, DNS, NIX).
+        4. **Автономный Агент (Firecrawl Agent)**:
+           - В режиме DEEP использовать тип "firecrawl_agent" для сложной навигации.
+           - ОБЯЗАТЕЛЬНО предоставить JSON схему.
+        `;
+
+        const systemPrompt = isRu ? systemPromptRu : systemPromptEn;
 
         const modelsToTry = [
             model || "openrouter/auto:free", // Primary - let Auto decide
@@ -194,6 +266,20 @@ export class DiscoveryAgent {
                                 `${inputRaw} характеристики`,
                                 `site:nix.ru ${inputRaw}`,
                                 `site:dns-shop.ru ${inputRaw}`
+                            ]
+                        });
+                    }
+
+                    // Force FAQ / Problems Strategy if missing (New Requirement)
+                    const hasFAQ = /problem|defect|error|проблем|ошиб|форум/i.test(allQueries);
+                    if (!hasFAQ) {
+                        plan.strategies.push({
+                            name: "Enforced FAQ & Troubleshooting",
+                            type: "query",
+                            queries: [
+                                `${inputRaw} common problems`,
+                                `${inputRaw} проблемы форум`,
+                                `${inputRaw} error codes`
                             ]
                         });
                     }

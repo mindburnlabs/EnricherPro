@@ -85,7 +85,7 @@ export const researchWorkflow = inngest.createFunction(
             const defaultBudget = { maxQueries: 5, limitPerQuery: 3 };
             const budget = (budgets && budgets[mode]) ? budgets[mode] : defaultBudget;
 
-            const MAX_STEPS = budget.maxQueries || (mode === 'deep' ? 20 : 10);
+            const MAX_STEPS = budget.maxQueries || (mode === 'deep' ? 40 : 10);
             const allResults: any[] = [];
             let stepsCount = 0;
 
@@ -229,11 +229,11 @@ export const researchWorkflow = inngest.createFunction(
                                     claims = flatten(parsed);
                                 } catch (e) {
                                     console.warn("Failed to parse Agent JSON, falling back to LLM extraction", e);
-                                    claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model);
+                                    claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model, language);
                                 }
                             } else {
                                 // Standard Path: LLM Extraction from raw text
-                                claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model);
+                                claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model, language);
                             }
 
                             // 3. Persist Claims
@@ -362,7 +362,8 @@ export const researchWorkflow = inngest.createFunction(
                     apiKeys,
                     agentConfig?.prompts?.synthesis,
                     undefined,
-                    model
+                    model,
+                    language
                 );
                 // Merge synthesized info where missing, allowing resolvedData to win
                 return { ...synthesized, ...resolvedData };
