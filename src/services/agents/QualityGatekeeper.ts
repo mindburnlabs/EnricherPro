@@ -20,7 +20,8 @@ export interface VerificationResult {
 
 export class QualityGatekeeper {
 
-    static async validate(data: Partial<StrictConsumableData>): Promise<VerificationResult> {
+    static async validate(data: Partial<StrictConsumableData>, language: string = 'en'): Promise<VerificationResult> {
+        const isRu = language === 'ru';
         const errors: string[] = [];
         const warnings: string[] = [];
         const stages = {
@@ -34,21 +35,35 @@ export class QualityGatekeeper {
             deduplication: false
         };
 
+        const MSG = {
+            BRAND_UNKNOWN: isRu ? `Бренд '${data.brand}' не найден в списке известных` : `Brand '${data.brand}' not in common list`,
+            MISSING_MPN: isRu ? "ОТСУТСТВУЕТ_АРТИКУЛ: Продукт идентифицирован только по имени" : "MISSING_MPN: Product identified by name only",
+            INCONSISTENT_LOGISTICS: isRu ? "НЕСООТВЕТСТВИЕ_ЛОГИСТИКИ: Есть габариты, но нет веса" : "INCONSISTENT_LOGISTICS: Dimensions exist but weight is missing",
+            MISSING_LOGISTICS: isRu ? "НЕТ_ЛОГИСТИКИ: Вес/Габариты не найдены (NIX.ru)" : "MISSING_LOGISTICS: Weight/Dimensions not found",
+            MISSING_COMPATIBILITY: isRu ? "НЕТ_СОВМЕСТИМОСТИ: Принтеры не найдены" : "MISSING_COMPATIBILITY: No compatible printers found",
+            UNATTRIBUTED_ID: isRu ? "НЕТ_ИСТОЧНИКА: Идентификация" : "UNATTRIBUTED: Identity",
+            UNATTRIBUTED_COMPAT: isRu ? "НЕТ_ИСТОЧНИКА: Совместимость" : "UNATTRIBUTED: Compatibility",
+            SINGLE_SOURCE: isRu ? "ОДИН_ИСТОЧНИК: Данные из одного магазина без подтверждения" : "SINGLE_SOURCE: Data relies on a single retail source without official verification",
+            NO_SOURCES: isRu ? "НЕТ_ИСТОЧНИКОВ: Данные не подтверждены" : "NO_SOURCES: Data has no verifiable sources",
+            POSSIBLE_DUPLICATE: isRu ? "ВОЗМОЖНЫЙ_ДУБЛИКАТ: Найден похожий товар" : "POSSIBLE_DUPLICATE: Found similar item",
+            STRICT_FAIL_LOGISTICS: isRu ? "СТРОГИЙ_ОТКАЗ: Нет Веса/Габаритов" : "STRICT_FAIL: Missing Weight/Dims",
+            STRICT_FAIL_COMPAT: isRu ? "СТРОГИЙ_ОТКАЗ: Нет Совместимости" : "STRICT_FAIL: Missing Compatibility",
+            STRICT_FAIL_SOURCES: isRu ? "СТРОГИЙ_ОТКАЗ: Недостаточно источников" : "STRICT_FAIL: Insufficient Sources"
+        };
+
         // Stage 1: Brand (Basic Sanity)
         const knownBrands = ['HP', 'Canon', 'Kyocera', 'Xerox', 'Brother', 'Samsung', 'Ricoh', 'Pantum', 'Konica Minolta', 'OKI', 'Lexmark', 'Epson', 'Cactus', 'Sakura', 'Uniterm'];
         if (data.brand && knownBrands.some(b => data.brand?.toUpperCase().includes(b.toUpperCase()))) {
             stages.brand = true;
         } else {
-            // Not a hard error, maybe a new brand
-            warnings.push(`Brand '${data.brand}' not in common list`);
+            warnings.push(MSG.BRAND_UNKNOWN);
         }
 
         // Stage 2: Identity (Critical but allow partials)
         if (data.mpn_identity?.mpn && data.mpn_identity.mpn.length > 2) {
             stages.identity = true;
         } else {
-            // RELAXED: Moved from Error to Warning. We can often recover MPN later or manually.
-            warnings.push("MISSING_MPN: Product identified by name only");
+            warnings.push(MSG.MISSING_MPN);
         }
 
         // Stage 3: Consistency (Physical & Logical)
@@ -59,8 +74,7 @@ export class QualityGatekeeper {
         const hasDims = !!(data.packaging_from_nix?.width_mm || (data as any).logistics?.dimensions);
 
         if (hasDims && !hasWeight) {
-            warnings.push("INCONSISTENT_LOGISTICS: Dimensions exist but weight is missing");
-            // consistencyPass = false; // Don't fail consistency for this
+            warnings.push(MSG.INCONSISTENT_LOGISTICS);
         }
 
         stages.consistency = consistencyPass;
@@ -70,7 +84,7 @@ export class QualityGatekeeper {
         if (hasWeight || hasDims) {
             stages.logistics = true;
         } else {
-            warnings.push("MISSING_LOGISTICS: Weight/Dimensions not found");
+            warnings.push(MSG.MISSING_LOGISTICS);
         }
 
         // Stage 5: Compatibility (RU Market Consensus)
@@ -79,8 +93,7 @@ export class QualityGatekeeper {
         } else if ((data as any).compatibility_ru?.printers && (data as any).compatibility_ru.printers.length > 0) {
             stages.compatibility = true;
         } else {
-            // RELAXED: Warning only.
-            warnings.push("MISSING_COMPATIBILITY: No compatible printers found");
+            warnings.push(MSG.MISSING_COMPATIBILITY);
         }
 
         // Stage 6: Attribution
@@ -88,8 +101,8 @@ export class QualityGatekeeper {
         const hasCompatEvidence = !!(data._evidence?.compatible_printers_ru || data._evidence?.['compatibility_ru']);
 
         let attributionPass = true;
-        if (!hasIdentityEvidence) { attributionPass = false; warnings.push("UNATTRIBUTED: Identity"); }
-        if (!hasCompatEvidence && stages.compatibility) { attributionPass = false; warnings.push("UNATTRIBUTED: Compatibility"); }
+        if (!hasIdentityEvidence) { attributionPass = false; warnings.push(MSG.UNATTRIBUTED_ID); }
+        if (!hasCompatEvidence && stages.compatibility) { attributionPass = false; warnings.push(MSG.UNATTRIBUTED_COMPAT); }
 
         stages.attribution = attributionPass;
 
@@ -114,9 +127,9 @@ export class QualityGatekeeper {
         if (uniqueDomains.size >= 2 || isOfficialOrNix) {
             stages.completeness = true;
         } else if (uniqueDomains.size === 1) {
-            warnings.push("SINGLE_SOURCE: Data relies on a single retail source without official verification");
+            warnings.push(MSG.SINGLE_SOURCE);
         } else {
-            warnings.push("NO_SOURCES: Data has no verifiable sources");
+            warnings.push(MSG.NO_SOURCES);
         }
 
 
@@ -130,7 +143,7 @@ export class QualityGatekeeper {
                 ).catch(() => null);
 
                 if (duplicate) {
-                    warnings.push(`POSSIBLE_DUPLICATE: Found similar item ${duplicate.id}`);
+                    warnings.push(`${MSG.POSSIBLE_DUPLICATE}: ${duplicate.id}`);
                     stages.deduplication = false;
                 }
             } catch (e) { console.warn("Dedupe check failed silently", e); }
@@ -152,9 +165,9 @@ export class QualityGatekeeper {
 
         // If not valid, explain broadly
         if (!isValid && warnings.length === 0) {
-            if (!stages.logistics) warnings.push("STRICT_FAIL: Missing Weight/Dims");
-            if (!stages.compatibility) warnings.push("STRICT_FAIL: Missing Compatibility");
-            if (!stages.completeness) warnings.push("STRICT_FAIL: Insufficient Sources");
+            if (!stages.logistics) warnings.push(MSG.STRICT_FAIL_LOGISTICS);
+            if (!stages.compatibility) warnings.push(MSG.STRICT_FAIL_COMPAT);
+            if (!stages.completeness) warnings.push(MSG.STRICT_FAIL_SOURCES);
         }
 
         return {

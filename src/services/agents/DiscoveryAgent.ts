@@ -321,10 +321,11 @@ export class DiscoveryAgent {
      * Analyzes search results to find new keyword expansion opportunities.
      * Uses Fast/Cheap model to keep costs low.
      */
-    static async analyzeForExpansion(originalQuery: string, searchResults: RetrieverResult[], apiKeys?: Record<string, string>): Promise<string[]> {
+    static async analyzeForExpansion(originalQuery: string, searchResults: RetrieverResult[], apiKeys?: Record<string, string>, language: string = 'en'): Promise<string[]> {
         if (searchResults.length === 0) return [];
 
-        const systemPrompt = `You are a Research Expansion Engine.
+        const isRu = language === 'ru';
+        const systemPromptEn = `You are a Research Expansion Engine.
         Your goal is to look at the search snippets and find BETTER or MORE SPECIFIC keywords to find product details.
         
         Look for:
@@ -338,6 +339,23 @@ export class DiscoveryAgent {
         
         If no new useful keywords found, return empty array [].
         `;
+
+        const systemPromptRu = `Вы - Движок Расширения Поиска.
+        Ваша цель - проанализировать сниппеты поиска и найти БОЛЕЕ ТОЧНЫЕ ключевые слова для поиска деталей продукта.
+        
+        Искать:
+        - Альтернативные названия моделей (напр. "Canon C-EXV 42" -> "NPG-57").
+        - Артикулы производителя (MPN), если исходный запрос был общим.
+        - Специфические коды вендора (напр. "CF287A" -> "87A").
+        - Аналоги конкурентов, если уместно.
+        
+        Верните JSON массив СТРОК (Запросы на РУССКОМ или АНГЛИЙСКОМ, как уместно).
+        Пример: ["Canon NPG-57 характеристики", "Canon GPR-43 вес"]
+        
+        Если новых полезных ключевых слов не найдено, верните пустой массив [].
+        `;
+
+        const systemPrompt = isRu ? systemPromptRu : systemPromptEn;
 
         const context = searchResults.slice(0, 3).map(r =>
             `Title: ${r.title}\nSnippet: ${r.markdown.substring(0, 300)}`

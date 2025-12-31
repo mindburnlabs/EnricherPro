@@ -239,7 +239,7 @@ export const researchWorkflow = inngest.createFunction(
                                 markdown: r.markdown || "",
                                 source_type: r.source_type as any,
                                 timestamp: new Date().toISOString()
-                            })), apiKeys);
+                            })), apiKeys, language);
 
                             if (newQueries && newQueries.length > 0) {
                                 for (const q of newQueries) {
@@ -371,7 +371,7 @@ export const researchWorkflow = inngest.createFunction(
         const verification = await step.run("verify-data", async () => {
             const { QualityGatekeeper } = await import("../../services/agents/QualityGatekeeper.js");
             // @ts-ignore
-            return await QualityGatekeeper.validate(extractedData);
+            return await QualityGatekeeper.validate(extractedData, language);
         });
 
         // 6. DB Update & Finalization
