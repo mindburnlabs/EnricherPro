@@ -6,6 +6,7 @@ interface CompletionConfig {
     profile?: ModelProfile; // Preferred way to select model
     messages: { role: 'system' | 'user' | 'assistant', content: string }[];
     jsonSchema?: any;
+    maxTokens?: number;
     apiKeys?: Record<string, string>;
 }
 
@@ -37,43 +38,57 @@ export class BackendLLMService {
         for (const model of candidates) {
             try {
                 return await withRetry(async () => {
-                    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                        method: "POST",
-                        headers: {
-                            "Authorization": `Bearer ${apiKey}`,
-                            "Content-Type": "application/json",
-                            "HTTP-Referer": "https://d-squared.app",
-                            "X-Title": "D²"
-                        },
-                        body: JSON.stringify({
-                            model: model,
-                            messages: config.messages,
-                            response_format: config.jsonSchema ? { type: "json_object" } : undefined,
-                            // Provider routing preferences for OpenRouter
-                            provider: {
-                                order: ["DeepSeek", "Google", "OpenAI", "Anthropic"],
-                                allow_fallbacks: false // We handle fallbacks manually via candidates loop if needed, but OpenRouter has its own too.
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+                    try {
+                        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                            method: "POST",
+                            headers: {
+                                "Authorization": `Bearer ${apiKey}`,
+                                "Content-Type": "application/json",
+                                "HTTP-Referer": "https://d-squared.app",
+                                "X-Title": "D²"
+                            },
+                            body: JSON.stringify({
+                                model: model,
+                                messages: config.messages,
+                                max_tokens: config.maxTokens,
+                                response_format: config.jsonSchema ? { type: "json_object" } : undefined,
+                                // Provider routing preferences for OpenRouter
+                                provider: {
+                                    order: ["DeepSeek", "Google", "OpenAI", "Anthropic"],
+                                    allow_fallbacks: false // We handle fallbacks manually via candidates loop if needed, but OpenRouter has its own too.
+                                }
+                            }),
+                            signal: controller.signal
+                        });
+
+                        clearTimeout(timeoutId);
+
+                        if (!response.ok) {
+                            const errText = await response.text();
+                            // 404 might mean model unavailable on OpenRouter -> Try next candidate
+                            if (response.status === 404) {
+                                throw new Error(`Model ${model} not found/unavailable (404)`);
                             }
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const errText = await response.text();
-                        // 404 might mean model unavailable on OpenRouter -> Try next candidate
-                        if (response.status === 404) {
-                            throw new Error(`Model ${model} not found/unavailable (404)`);
+                            if ([400, 401, 403].includes(response.status)) {
+                                throw new Error(`OpenRouter Call Failed (${response.status}): ${errText}`); // Non-retryable
+                            }
+                            throw new Error(`OpenRouter Call Failed (${response.status}): ${errText}`);
                         }
-                        if ([400, 401, 403].includes(response.status)) {
-                            throw new Error(`OpenRouter Call Failed (${response.status}): ${errText}`); // Non-retryable
-                        }
-                        throw new Error(`OpenRouter Call Failed (${response.status}): ${errText}`);
-                    }
 
-                    const json = await response.json();
-                    if (!json.choices || json.choices.length === 0) {
-                        throw new Error("Empty response from LLM provider");
+                        const json = await response.json();
+                        if (!json.choices || json.choices.length === 0) {
+                            throw new Error("Empty response from LLM provider");
+                        }
+                        return json.choices[0].message.content;
+
+                    } catch (e) {
+                        throw e;
+                    } finally {
+                        clearTimeout(timeoutId);
                     }
-                    return json.choices[0].message.content;
 
                 }, {
                     maxRetries: 2, // Retries per model

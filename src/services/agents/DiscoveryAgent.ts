@@ -143,31 +143,45 @@ export class DiscoveryAgent {
         ]
         `;
 
-        try {
-            const response = await BackendLLMService.complete({
-                model: model || "google/gemini-2.0-flash-lite-preview-02-05:free",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: inputRaw }
-                ],
-                jsonSchema: true,
-                apiKeys // Pass to service
-            });
+        const modelsToTry = [
+            model || "openrouter/auto:free", // Primary - let Auto decide
+            "google/gemini-2.0-flash-exp:free", // Secondary 
+            "google/gemini-2.0-flash-thinking-exp:free"
+        ];
 
-            return JSON.parse(response || "{}");
-        } catch (error) {
-            console.error("DiscoveryAgent Plan Failed:", error);
-            // Fallback plan
-            return {
-                type: "single_sku",
-                mpn: null,
-                canonical_name: inputRaw,
-                strategies: [{
-                    name: "Fallback Search",
-                    queries: [`${inputRaw} specs`, `${inputRaw} cartridge ${isRu ? 'купить' : 'buy'}`]
-                }]
-            };
+        // Deduplicate
+        const uniqueModels = [...new Set(modelsToTry)];
+
+        for (const modelId of uniqueModels) {
+            try {
+                const response = await BackendLLMService.complete({
+                    model: modelId,
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: inputRaw }
+                    ],
+                    jsonSchema: true,
+                    maxTokens: 4096, // Cap to fit free tier
+                    apiKeys // Pass to service
+                });
+
+                return JSON.parse(response || "{}");
+            } catch (error) {
+                console.warn(`DiscoveryAgent Plan Failed with ${modelId}, trying next...`, (error as any).message);
+            }
         }
+
+        console.error("DiscoveryAgent: All models failed.");
+        // Fallback plan
+        return {
+            type: "single_sku",
+            mpn: null,
+            canonical_name: inputRaw,
+            strategies: [{
+                name: "Fallback Search",
+                queries: [`${inputRaw} specs`, `${inputRaw} cartridge ${isRu ? 'купить' : 'buy'}`]
+            }]
+        };
     }
 
     /**
