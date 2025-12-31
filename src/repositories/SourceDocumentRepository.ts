@@ -1,5 +1,5 @@
-import { db } from "../../db/index.js";
-import { sourceDocuments } from "../../db/schema.js";
+import { db } from "../db/index.js";
+import { sourceDocuments } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
 
