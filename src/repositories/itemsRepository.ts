@@ -7,7 +7,7 @@ import { ConsumableData } from '../types/domain';
 
 export class ItemsRepository {
 
-    static async createOrGet(jobId: string, mpn: string, initialData: ConsumableData) {
+    static async createOrGet(jobId: string, mpn: string, initialData: ConsumableData, forceRefresh = false) {
         // 1. Idempotency: Check if item exists for this job
         const existingInJob = await this.findByJobId(jobId);
         if (existingInJob) {
@@ -21,19 +21,24 @@ export class ItemsRepository {
             const duplicate = await DeduplicationService.findPotentialDuplicate(mpn);
             if (duplicate) {
                 console.log(`[Dedup] Found existing item ${duplicate.id} for MPN ${mpn}`);
-                // In a real app we might link this job to the existing item or merge.
-                // For this MVP, we will RETURN THE EXISTING ITEM so the frontend sees the "Already Researching/Done" item.
-                // However, the Job ID stored on that item will be OLD.
-                // This means 'useResearchStream' might poll the OLD item if we just return it?
-                // Actually 'check_status' polls by JobID. If we return an item with a DIFFERENT JobID,
-                // the frontend might be confused if it filters by current JobID.
-                // 
-                // Strategy: Update the existing item to point to the NEW JobID? 
-                // No, that breaks history.
-                //
-                // Strategy B: Create a NEW item but copy data?
-                //
-                // Strategy C: For now, strict existing return.
+
+                if (forceRefresh) {
+                    // FORCE REFRESH: Hijack the existing item for this new job
+                    console.log(`[Force Refresh] Taking over item ${duplicate.id} for job ${jobId}`);
+                    const [updated] = await db.update(items)
+                        .set({
+                            jobId: jobId, // Point to new job
+                            status: 'processing', // Reset status
+                            currentStep: 'planning', // Reset step
+                            updatedAt: new Date(),
+                            reviewReason: null // Clear errors
+                        })
+                        .where(eq(items.id, duplicate.id))
+                        .returning();
+                    return updated;
+                }
+
+                // Standard Dedup: Return existing item (and let frontend see old job status potentially)
                 return this.findById(duplicate.id);
             }
         }

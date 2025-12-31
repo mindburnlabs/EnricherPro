@@ -17,19 +17,20 @@ export const researchWorkflow = inngest.createFunction(
     },
     { event: "app/research.started" },
     async ({ event, step }) => {
-        const { jobId, inputRaw, mode = 'balanced' } = event.data;
-        const agent = new OrchestratorAgent(jobId);
+        // @ts-ignore - Custom event prop
+        const { jobId, inputRaw, mode = 'balanced', forceRefresh, apiKeys } = event.data;
+        const agent = new OrchestratorAgent(jobId, apiKeys);
 
         // 1. Initialize DB Record
         const item = await step.run("create-db-item", async () => {
-            return await agent.getOrCreateItem(inputRaw);
+            return await agent.getOrCreateItem(inputRaw, forceRefresh);
         });
 
         // 2. Planning
         await step.run("transition-planning", () => agent.transition('planning'));
         const plan = await step.run("generate-plan", async () => {
             const { DiscoveryAgent } = await import("../../services/agents/DiscoveryAgent");
-            return await DiscoveryAgent.plan(inputRaw, mode);
+            return await DiscoveryAgent.plan(inputRaw, mode, apiKeys);
         });
 
         // 3. Execution (Discovery)
@@ -39,7 +40,7 @@ export const researchWorkflow = inngest.createFunction(
             const { LogisticsAgent } = await import("../../services/agents/LogisticsAgent");
 
             // Core Search
-            const results = await DiscoveryAgent.execute(plan as any);
+            const results = await DiscoveryAgent.execute(plan as any, apiKeys);
 
             // Logistics Check (if needed)
             if (mode !== 'fast' && plan.canonical_name) {
@@ -65,7 +66,7 @@ export const researchWorkflow = inngest.createFunction(
             const combinedSources = searchResults.map((r: any) =>
                 `Source: ${r.url} (${r.source_type})\n---\n${r.markdown}`
             );
-            return await SynthesisAgent.merge(combinedSources, "StrictConsumableData");
+            return await SynthesisAgent.merge(combinedSources, "StrictConsumableData", apiKeys);
         });
 
         // 5. Verification

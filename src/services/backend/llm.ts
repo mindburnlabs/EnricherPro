@@ -9,9 +9,11 @@ export class BackendLLMService {
     static async complete(config: {
         model: string,
         messages: { role: 'system' | 'user' | 'assistant', content: string }[],
-        jsonSchema?: any
+        jsonSchema?: any,
+        apiKeys?: Record<string, string>
     }) {
-        if (!this.apiKey) throw new Error("Missing OPENROUTER_API_KEY");
+        const apiKey = config.apiKeys?.google || config.apiKeys?.openrouter || this.apiKey;
+        if (!apiKey) throw new Error("Missing LLM API Key");
 
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",

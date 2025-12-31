@@ -4,7 +4,7 @@ import { Send, Paperclip, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface ResearchComposerProps {
-    onSubmit: (input: string, mode: 'fast' | 'balanced' | 'deep') => void;
+    onSubmit: (input: string | string[], mode: 'fast' | 'balanced' | 'deep') => void;
     isProcessing: boolean;
 }
 
@@ -23,7 +23,15 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (input.trim() && !isProcessing) {
-            onSubmit(input, mode);
+            // Split by newline and filter empty
+            const lines = input.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length > 1) {
+                // Batch
+                onSubmit(lines, mode);
+            } else {
+                // Single
+                onSubmit(lines[0], mode);
+            }
             setInput('');
         }
     };

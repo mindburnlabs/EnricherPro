@@ -32,7 +32,7 @@ const WHITELIST_DOMAINS = [
 
 export class DiscoveryAgent {
 
-    static async plan(inputRaw: string, mode: ResearchMode = 'balanced'): Promise<AgentPlan> {
+    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>): Promise<AgentPlan> {
         const systemPrompt = `You are the Lead Research Planner for a Printer Consumables Database.
         Your goal is to analyze the user input and construct a precise search strategy.
         
@@ -67,7 +67,8 @@ export class DiscoveryAgent {
                     { role: "system", content: systemPrompt },
                     { role: "user", content: inputRaw }
                 ],
-                jsonSchema: true
+                jsonSchema: true,
+                apiKeys // Pass to service
             });
 
             return JSON.parse(response || "{}");
@@ -86,7 +87,7 @@ export class DiscoveryAgent {
         }
     }
 
-    static async execute(plan: AgentPlan): Promise<RetrieverResult[]> {
+    static async execute(plan: AgentPlan, apiKeys?: Record<string, string>): Promise<RetrieverResult[]> {
         const allResults: RetrieverResult[] = [];
         const visitedUrls = new Set<string>();
 
@@ -96,7 +97,8 @@ export class DiscoveryAgent {
                 try {
                     const searchResults = await BackendFirecrawlService.search(query, {
                         limit: 3,
-                        formats: ['markdown']
+                        formats: ['markdown'],
+                        apiKey: apiKeys?.firecrawl
                     });
 
                     for (const item of searchResults) {

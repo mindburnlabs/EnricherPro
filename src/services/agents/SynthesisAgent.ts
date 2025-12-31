@@ -4,7 +4,7 @@ import { ConsumableData } from "../../types/domain";
 
 export class SynthesisAgent {
 
-    static async merge(sources: string[], schemaKey: string = "StrictConsumableData"): Promise<Partial<ConsumableData>> {
+    static async merge(sources: string[], schemaKey: string = "StrictConsumableData", apiKeys?: Record<string, string>): Promise<Partial<ConsumableData>> {
         const systemPrompt = `You are the Synthesis Agent for the EnricherPro Consumable Database.
         Your mission is to extract PRISTINE, VERIFIED data from the provided raw text evidence.
         
@@ -36,7 +36,8 @@ export class SynthesisAgent {
                     { role: "system", content: systemPrompt },
                     { role: "user", content: "Extract data according to StrictConsumableData schema." }
                 ],
-                jsonSchema: true
+                jsonSchema: true,
+                apiKeys
             });
 
             const parsed = JSON.parse(response || "{}");

@@ -42,6 +42,8 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 data: {
                     jobId,
                     inputRaw: input,
+                    forceRefresh: !!request.body.forceRefresh,
+                    apiKeys: request.body.apiKeys || {},
                 },
             });
         } catch (inngestError) {

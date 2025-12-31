@@ -11,9 +11,13 @@ import { EnrichedItem } from './types/domain';
 import { useTranslation } from 'react-i18next';
 import { useResearchStream } from './hooks/useResearchStream';
 
+import { SettingsView } from './components/Settings/SettingsView';
+import { Settings } from 'lucide-react';
+
 const App: React.FC = () => {
   const { t } = useTranslation('common');
   const { steps, items, status, startStream, reset } = useResearchStream();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
@@ -34,19 +38,14 @@ const App: React.FC = () => {
   };
 
   // Clear legacy storage on mount
-  React.useEffect(() => {
-    localStorage.clear();
-    console.log("System verified. Local storage cleared for production.");
-  }, []);
+  // React.useEffect(() => {
+  //   localStorage.clear();
+  //   console.log("System verified. Local storage cleared for production.");
+  // }, []);
 
   const handleApprove = async (itemId: string) => {
     try {
       await approveItem(itemId);
-      // Manually filter out for now, though hook owns state this simplistic approach implies local mutation which is tricky with hook.
-      // Ideally hook exposes setItems or we refactor. For now, let's just re-fetch or ignore since approve moves it to published.
-      // Simple fix: Reload page or refetch. 
-      // Better: expose setItems from hook?
-      // Let's modify hook in next step if needed. For now just alert or log.
       alert("Item approved! (Refresh to clear)");
     } catch (e) {
       console.error("Failed to approve", e);
@@ -54,22 +53,47 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSearch = async (input: string, mode: 'fast' | 'balanced' | 'deep') => {
-    reset();
-    try {
-      // Trigger Server
-      const res = await triggerResearch(input, mode);
-      if (res.success && res.jobId) {
-        startStream(res.jobId);
-      } else {
-        throw new Error("Failed to start job");
-      }
+  const getApiKeys = () => ({
+    firecrawl: localStorage.getItem('firecrawl_key') || undefined,
+    google: localStorage.getItem('google_key') || undefined,
+    openrouter: localStorage.getItem('openrouter_key') || undefined,
+  });
 
+  const handleSearch = async (input: string | string[], mode: 'fast' | 'balanced' | 'deep') => {
+    reset();
+    const inputs = Array.isArray(input) ? input : [input];
+    const apiKeys = getApiKeys();
+
+    try {
+      for (const singleInput of inputs) {
+        if (!singleInput.trim()) continue;
+
+        // Trigger Server
+        const res = await triggerResearch(singleInput, mode, { apiKeys });
+        if (res.success && res.jobId) {
+          startStream(res.jobId);
+        } else {
+          console.error("Failed to start job for", singleInput);
+        }
+      }
     } catch (e) {
       console.error(e);
-      // setSteps similar logic handled inside hook for stream start? 
-      // Actually hook manages steps. We need to manually set error state if trigger fails.
       alert("Failed to start research: " + String(e));
+    }
+  };
+
+  const handleMerge = async (item: EnrichedItem) => {
+    const mode = 'balanced';
+    reset();
+    const apiKeys = getApiKeys();
+
+    try {
+      const res = await triggerResearch(item.data.mpn_identity.mpn || "unknown", mode, { forceRefresh: true, apiKeys });
+      if (res.success && res.jobId) {
+        startStream(res.jobId);
+      }
+    } catch (e) {
+      alert("Merge failed: " + String(e));
     }
   };
 
@@ -78,14 +102,24 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 font-sans">
       <div className="container mx-auto px-4 py-12 flex flex-col items-center justify-center min-h-[80vh]">
 
-        <header className="mb-12 text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-700 relative">
-          <button
-            onClick={toggleTheme}
-            className="absolute top-0 right-0 p-2 rounded-full bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:scale-105 transition-transform"
-            aria-label="Toggle Theme"
-          >
-            {theme === 'light' ? '🌙' : '☀️'}
-          </button>
+        <header className="mb-12 text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-700 relative w-full max-w-4xl">
+          <div className="absolute top-0 right-0 flex gap-2">
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-2 rounded-full bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:scale-105 transition-transform"
+              aria-label="Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-full bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:scale-105 transition-transform"
+              aria-label="Toggle Theme"
+            >
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
+          </div>
+
           <h1 className="text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-cyan-500">
             {t('app.title_labs')}
           </h1>
@@ -102,7 +136,7 @@ const App: React.FC = () => {
         {status === 'completed' && items.length > 0 && (
           <div className="mt-12 w-full max-w-4xl animate-in fade-in slide-in-from-bottom duration-700">
             <React.Suspense fallback={<div className="h-40 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />}>
-              <ReviewQueue items={items} onApprove={handleApprove} />
+              <ReviewQueue items={items} onApprove={handleApprove} onMerge={handleMerge} />
             </React.Suspense>
           </div>
         )}
@@ -111,6 +145,13 @@ const App: React.FC = () => {
         {status === 'completed' && items.length === 0 && (
           <p className="text-gray-400 mt-8">Processing complete. No actionable items found.</p>
         )}
+
+        <SettingsView
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          onThemeChange={toggleTheme}
+          currentTheme={theme}
+        />
 
       </div>
     </div>

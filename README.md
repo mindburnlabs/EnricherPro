@@ -1,104 +1,101 @@
-<div align="center">
-<img width="1200" height="475" alt="Consumable Enricher Pro Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+# Consumable Enricher Pro 🚀
 
-# 📦 Consumable Enricher Pro
-### Enterprise-grade PIM data enrichment for printer consumables
+> **The State-of-the-Art Consumables Database Enrichment System**
 
-[![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?style=flat-square&logo=vite)](https://vitejs.dev/)
-[![React](https://img.shields.io/badge/React-19.0-61DAFB?style=flat-square&logo=react)](https://react.dev/)
-[![Gemini](https://img.shields.io/badge/Google-AI_Studio-4285F4?style=flat-square&logo=google-gemini)](https://ai.google.dev/)
-[![Firecrawl](https://img.shields.io/badge/Firecrawl-V2-FF4F40?style=flat-square)](https://firecrawl.dev/)
+Enricher Pro is an agentic AI system designed to autonomously research, verify, and enrich printer consumable data (toners, cartridges) with high precision (99%+ target). It leverages a multi-agent architecture to cross-reference data from official manufacturer sites and trusted marketplaces like NIX.ru.
 
-</div>
+![Status](https://img.shields.io/badge/Status-Production_Ready-green)
+![Tech](https://img.shields.io/badge/Stack-React_|_Node.js_|_Inngest-blue)
 
----
+## ✨ Key Features
 
-## 🚀 Overview
+-   **Autonomous Research Agents**: A swarm of specialized AI agents (Discovery, Logistics, Synthesis) orchestrate the research process.
+-   **Multi-Source Verification**: cross-references official datasheets with marketplace data to ensure accuracy.
+-   **NIX.ru Logistics Integration**: Specifically targets verified weight and dimension data from NIX.ru.
+-   **Quality Gatekeeper**: A strict 5-stage validation pipeline ensures only complete and consistent data is published.
+-   **Real-time Streaming**: Live research progress updates via Server-Sent Events (SSE).
+-   **Batch Processing**: Queue hundreds of SKUs for background enrichment.
+-   **Dynamic Configuration**: BYOK (Bring Your Own Key) support for Firecrawl, OpenRouter, and Google Gemini via the UI.
 
-**Consumable Enricher Pro** is a powerful data processing engine designed to transform messy supplier product titles into high-precision, publication-ready catalogs. It specializes in **Printer Consumables** (toners, drums, ink) with a strict focus on the **Russian market** and logistics accuracy.
+## 🏗️ Architecture
 
-![App Dashboard](/Users/ivan/.gemini/antigravity/brain/191a3926-02c3-4461-86fc-7b22cffe0548/enricher_pro_dashboard_1766996281581.png)
+The system follows a durable execution model using **Inngest**:
 
-## ✨ Core Features
+```mermaid
+graph TD
+    User[User Input] --> API[Next.js API]
+    API --> Inngest[Inngest Event Bus]
+    Inngest --> Workflow[Research Workflow]
+    
+    subgraph Agents
+        Workflow --> Planning[Discovery Agent (Plan)]
+        Workflow --> Execution[Discovery Agent (Execute)]
+        Execution --> Firecrawl[Firecrawl Search]
+        Workflow --> Logistics[Logistics Agent (NIX.ru)]
+        Workflow --> Synthesis[Synthesis Agent (LLM Merge)]
+        Workflow --> Gatekeeper[Quality Gatekeeper (Validation)]
+    end
+    
+    Gatekeeper --> DB[(PostgreSQL DB)]
+    DB --> UI[React Frontend]
+```
 
-- **🔥 Firecrawl V2 Integration**: Autonomous web research and deep scraping of OEM sources.
-- **🤖 Gemini & OpenRouter**: Multi-LLM synthesis with high-performance search grounding and GPT-4o fallback.
-- **📦 Exclusive NIX Logistics**: Precise packaging dimensions (mm) and weight (g) sourced exclusively from NIX.ru.
-- **🇷🇺 Russian Market Compliance**: Strict 2+ source verification process for printer compatibility.
-- **🖼️ Image Auditing**: Automated validation (800x800) with watermark and OEM trademark rejection.
-- **📊 Quality Scoring**: Publication readiness scoring (0-100%) for automated bulk approval.
-
----
-
-## 🛠️ Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
-- **Node.js** (v18+)
-- **NPM** or **Yarn**
+
+-   Node.js 18+
+-   PostgreSQL (Neon.tech recommended)
+-   API Keys:
+    -   **Firecrawl** (for web search)
+    -   **OpenRouter / Google Gemini** (for LLM reasoning)
 
 ### Installation
 
-1. **Clone and Install**:
-   ```bash
-   npm install
-   ```
-
-2. **Configure Environment**:
-   Create a `.env.local` file with the following keys:
-   ```env
-   VITE_GOOGLE_API_KEY=your_gemini_key
-   VITE_FIRECRAWL_API_KEY=your_firecrawl_key
-   VITE_OPENROUTER_API_KEY=your_openrouter_key  # Optional fallback
-   VITE_STRICT_MODE=true
-   VITE_IMAGE_POLICY=approved_library_only
-   ```
-
-3. **Launch**:
-   ```bash
-   npm run dev
-   ```
-
-4. **Verify**:
-    Run the full quality gate to ensure everything is set up correctly:
+1.  **Clone the repository:**
     ```bash
-    npm run check:all
+    git clone https://github.com/your-org/enricher-pro.git
+    cd enricher-pro
     ```
 
----
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-## 🏗️ Technical Architecture (SOTA Agentic)
+3.  **Configure Environment:**
+    Copy `.env.local.example` to `.env.local`:
+    ```bash
+    cp .env.local.example .env.local
+    ```
+    Fill in your database URL and default API keys.
 
-The system utilizes a State-of-the-Art (SOTA) **Multi-Agent** architecture to guarantee data precision:
+4.  **Initialize Database:**
+    ```bash
+    npx drizzle-kit push
+    ```
 
-### 🧩 Agentic Pipeline
-1.  **Orchestrator Agent**: Manages the end-to-end lifecycle, audit trails, and state transitions.
-2.  **Discovery Agent (Perplexity)**: Scans the web for high-confidence data sources (OEM, Retailers).
-3.  **Logistics Agent (Firecrawl)**: deep-crawls NIX.ru to extract authoritative packaging metrics (mm, g).
-4.  **Synthesis Agent (Gemini 3.0)**: Fuses data from multiple sources, resolves conflicts, and generates JSON-LD.
-5.  **Quality Gatekeeper**: rigorous 5-stage validation (Brand, Identity, Logistics, Compatibility, Completeness).
+5.  **Run Development Server:**
+    ```bash
+    npm run dev
+    ```
 
-### 🛡️ Compliance & Safety
-- **Russian Market Filter**: Enforces 2+ independent sources for printer compatibility verification.
-- **Audit Trails**: Every data field is traced back to a specific URL with a timestamp and confidence score.
-- **Strict Typing**: Full TypeScript coverage ensuring zero runtime errors in production.
+### 🌍 BYOK (Bring Your Own Key)
 
----
+You can configure API keys directly in the **Settings** UI (Top right gear icon). These keys are stored in your browser's `localStorage` and passed securely to the backend for each request, overriding the server defaults.
 
-## 🏗️ Project Structure
+## 🛠️ Operational Guide
 
+See [docs/operations.md](docs/operations.md) for detailed deployment, monitoring, and troubleshooting instructions.
 
-The system follows a modular, service-oriented architecture:
+## 🧪 Testing
 
-- **`/src/services`**: Core logic for API integration, text processing, and market compliance.
-- **`/src/types`**: Modular TypeScript definitions (Error, Domain, Audit, API).
-- **`/src/components`**: Reactive UI components built with modern React.
-- **`/docs`**: Comprehensive documentation including [deployment](docs/DEPLOYMENT.md) and [audit reports](docs/PREPROD_AUDIT_REPORT.md).
+Run the test suite to verify agent logic:
 
-For deep technical details, see the [API Documentation](API_DOCUMENTATION.md).
+```bash
+npm test
+```
 
----
+## 📜 License
 
-## 📄 License
-
-Internal Tool - All Rights Reserved.
-
+Private / Proprietary.

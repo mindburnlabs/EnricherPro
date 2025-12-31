@@ -14,8 +14,8 @@ export class BackendFirecrawlService {
         return this.client;
     }
 
-    static async search(query: string, options: { limit?: number; country?: string; formats?: string[] } = {}) {
-        const client = this.getClient();
+    static async search(query: string, options: { limit?: number; country?: string; formats?: string[]; apiKey?: string } = {}) {
+        const client = options.apiKey ? new FirecrawlApp({ apiKey: options.apiKey }) : this.getClient();
         // V2 search
         try {
             // @ts-ignore - Firecrawl JS SDK types might be behind

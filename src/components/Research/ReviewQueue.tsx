@@ -7,11 +7,12 @@ import { ItemDetail } from './ItemDetail';
 interface ReviewQueueProps {
     items: EnrichedItem[];
     onApprove: (id: string) => void;
+    onMerge: (item: EnrichedItem) => void;
 }
 
 import { useTranslation } from 'react-i18next';
 
-export const ReviewQueue: React.FC<ReviewQueueProps> = ({ items, onApprove }) => {
+export const ReviewQueue: React.FC<ReviewQueueProps> = ({ items, onApprove, onMerge }) => {
     const { t } = useTranslation('research');
     const [selectedItem, setSelectedItem] = useState<EnrichedItem | null>(null);
 
@@ -43,10 +44,10 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ items, onApprove }) =>
 
                             <div className="flex justify-end gap-2">
                                 <button
-                                    onClick={() => alert("Merge UI coming in Phase 4.5")}
+                                    onClick={() => onMerge(item)}
                                     className="px-3 py-1.5 text-sm font-medium text-amber-600 hover:bg-amber-50 border border-amber-200 rounded-lg dark:border-amber-900/50"
                                 >
-                                    Merge
+                                    Merge (Re-Run)
                                 </button>
                                 <button
                                     onClick={() => setSelectedItem(item)}

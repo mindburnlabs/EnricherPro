@@ -6,18 +6,21 @@ export class OrchestratorAgent {
     private jobId: string;
     private itemId: string | null = null;
 
-    constructor(jobId: string) {
+    private apiKeys?: Record<string, string>;
+
+    constructor(jobId: string, apiKeys?: Record<string, string>) {
         this.jobId = jobId;
+        this.apiKeys = apiKeys;
     }
 
-    async getOrCreateItem(inputRaw: string): Promise<any> {
+    async getOrCreateItem(inputRaw: string, forceRefresh = false): Promise<any> {
         // Initialize DB Record
         const item = await ItemsRepository.createOrGet(this.jobId, "PENDING-MPN", {
             mpn_identity: { mpn: "PENDING", canonical_model_name: inputRaw },
             brand: null,
             status: "processing",
             processing_step: "planning"
-        } as any);
+        } as any, forceRefresh);
         this.itemId = item.id;
         return item;
     }
