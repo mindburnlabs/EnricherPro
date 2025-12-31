@@ -67,8 +67,14 @@ export const researchWorkflow = inngest.createFunction(
             // Seed Frontier with Plan
             if (plan.strategies) {
                 for (const strategy of plan.strategies) {
-                    for (const query of strategy.queries) {
-                        await FrontierService.add(jobId, 'query', query, 50, 0, { strategy: strategy.name, target_domain: strategy.target_domain });
+                    if (strategy.type === 'domain_crawl' && strategy.target_domain) {
+                        // Seed explicit crawl if present in plan
+                        // We seed a root URL or search to find root
+                        await FrontierService.add(jobId, 'domain_crawl', strategy.target_url || strategy.target_domain, 100, 0, { strategy: strategy.name, target_domain: strategy.target_domain });
+                    } else {
+                        for (const query of strategy.queries) {
+                            await FrontierService.add(jobId, 'query', query, 50, 0, { strategy: strategy.name, target_domain: strategy.target_domain });
+                        }
                     }
                 }
             }
@@ -97,8 +103,31 @@ export const researchWorkflow = inngest.createFunction(
                             const raw = await FallbackSearchService.search(task.value, apiKeys);
                             results = raw.map(r => ({ ...r, source_type: 'fallback' }));
                         }
+                    } else if (task.type === 'domain_crawl') {
+                        agent.log('discovery', `Starting Deep Crawl on ${task.value}...`);
+                        try {
+                            // Use 'site:domain' search as a synchronous "Deep Scan" proxy 
+                            // Real async crawl is tricky in a single sync loop step without blocking for minutes.
+                            // This is a robust "Instant Deep" implementation.
+                            const siteQuery = `site:${task.value} ${plan.canonical_name || plan.mpn || "specs"}`;
+                            const raw = await BackendFirecrawlService.search(siteQuery, { apiKey: apiKeys?.firecrawl, limit: 10 });
+                            results = raw.map(r => ({ ...r, source_type: 'crawl_result' }));
+                        } catch (e) {
+                            console.error("Deep Crawl simulation failed", e);
+                        }
                     } else if (task.type === 'url') {
-                        // Placeholder for URL scrape
+                        // Direct scrape
+                        try {
+                            const data = await BackendFirecrawlService.extract([task.value], {});
+                            if (Array.isArray(data) && data[0]) {
+                                results.push({
+                                    url: task.value,
+                                    title: data[0].metadata?.title || "Scraped URL",
+                                    markdown: data[0].markdown || "",
+                                    source_type: 'direct_scrape'
+                                });
+                            }
+                        } catch (e) { console.warn("URL scrape failed", e); }
                     }
 
                     // Process Results & Evidence Persistence
@@ -144,6 +173,7 @@ export const researchWorkflow = inngest.createFunction(
                     }
 
                     // 4. Frontier Expansion (Phase A)
+                    // If we found good results, maybe expand with more specific queries
                     if (mode !== 'fast' && stepsCount < MAX_STEPS && results.length > 0) {
                         try {
                             const newQueries = await DiscoveryAgent.analyzeForExpansion(task.value, results.map(r => ({

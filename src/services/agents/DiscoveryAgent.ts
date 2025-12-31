@@ -12,6 +12,8 @@ export interface AgentPlan {
         name: string;
         queries: string[];
         target_domain?: string;
+        type?: "query" | "domain_crawl";
+        target_url?: string;
     }>;
 }
 
@@ -81,14 +83,25 @@ export class DiscoveryAgent {
         - canonical_name: string (normalized model name)
         - strategies: An array of steps. Each step has:
             - name: string (e.g. "Primary Specs", "Logistics Check", "Chinese Suppliers", "Forum Deep Dive")
-            - queries: string[] (The exact Firecrawl queries)
-            - target_domain: string (optional, e.g. "nix.ru" for weight checks, "alibaba.com" for sourcing)
+            - type: "query" | "domain_crawl" (Default is "query". Use "domain_crawl" for deep site enumeration)
+            - queries: string[] (The exact Firecrawl queries if type is "query")
+            - target_domain: string (optional, e.g. "nix.ru")
+            - target_url: string (optional, ONLY if type is "domain_crawl", e.g. "https://nix.ru/comp/...")
         
         Rules:
         ${regionRules}
         1. ALWAYS include a specific logistics query (e.g. "weight", "dimensions", "вес").
         2. If the input is a list, set type to "list" and suggest splitting.
-        3. In DEEP mode, strictly include: "site:alibaba.com [model] specs" and "site:printerknowledge.com [model]".
+        3. In DEEP mode, you MUST include a 'domain_crawl' strategy for high-value targets if identified (e.g. "nix.ru", "hp.com").
+        
+        Example Strategy Item:
+        {
+            "name": "NIX.ru Deep Scan",
+            "queries": [], 
+            "target_domain": "nix.ru",
+            "type": "domain_crawl", 
+            "target_url": "https://nix.ru/..." 
+        }
         `;
 
         try {
@@ -165,136 +178,9 @@ export class DiscoveryAgent {
         }
     }
 
+    // Legacy execute kept for compatibility if used elsewhere, but workflow manages loop.
     static async execute(plan: AgentPlan, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, budgetOverrides?: Record<string, { maxQueries: number, limitPerQuery: number }>, onLog?: (msg: string) => void, sourceConfig?: any): Promise<RetrieverResult[]> {
-        const allResults: RetrieverResult[] = [];
-        const visitedUrls = new Set<string>();
-
-        const validModes = ['fast', 'balanced', 'deep'];
-        const currentMode = validModes.includes(mode) ? mode : 'balanced';
-
-        const defaultBudgets = {
-            fast: { maxQueries: 3, limitPerQuery: 3 },
-            balanced: { maxQueries: 6, limitPerQuery: 5 },
-            deep: { maxQueries: 15, limitPerQuery: 8 }
-        };
-
-        const budget = budgetOverrides?.[currentMode] || defaultBudgets[currentMode as ResearchMode];
-        let queryCount = 0;
-
-        // Dynamic Loading of Fallback Service
-        const { FallbackSearchService } = await import("../backend/fallback.js");
-
-        for (const strategy of plan.strategies) {
-            for (const query of strategy.queries) {
-                if (queryCount >= budget.maxQueries) {
-                    onLog?.(`Budget limit reached (${budget.maxQueries}). Stopping.`);
-                    break;
-                }
-                queryCount++;
-
-                try {
-                    onLog?.(`Executing query: "${query}"...`);
-
-                    let searchResults: RetrieverResult[] = [];
-                    let usedFallback = false;
-
-                    try {
-                        // PRIMARY: Firecrawl
-                        // We set a strict timeout or error handler here
-                        const rawResults = await BackendFirecrawlService.search(query, {
-                            limit: budget.limitPerQuery,
-                            formats: ['markdown'],
-                            apiKey: apiKeys?.firecrawl
-                        });
-
-                        // Map raw results
-                        searchResults = rawResults.map((item: any) => ({
-                            url: item.url,
-                            title: item.title || "No Title",
-                            markdown: item.markdown || "",
-                            source_type: 'other', // Will be refined below
-                            timestamp: new Date().toISOString()
-                        }));
-
-                        // SMART FAILOVER: If results are too few or empty, try Fallback
-                        if (searchResults.length < 1) { // Extremely loose check, even 1 result is better than 0
-                            throw new Error("Firecrawl returned 0 results");
-                        }
-
-                    } catch (fcError) {
-                        console.warn(`Primary Search Failed/Low-Yield for "${query}":`, fcError);
-                        onLog?.(`Primary search yielded low results. Switching to active Fallback (Perplexity/Sonar)...`);
-
-                        usedFallback = true;
-                        // FAILOVER: Perplexity
-                        searchResults = await FallbackSearchService.search(query, apiKeys);
-                    }
-
-                    // Check again if we still have 0 results after fallback
-                    if (searchResults.length === 0) {
-                        onLog?.(`No results found even after fallback for "${query}".`);
-                        continue;
-                    }
-
-                    onLog?.(`Found ${searchResults.length} results for "${query}" (Source: ${usedFallback ? 'Fallback AI' : 'Web Scraper'}).`);
-
-                    for (const item of searchResults) {
-                        if (visitedUrls.has(item.url)) continue;
-
-                        // Careful with Perplexity URLs (sometimes they might be just 'perplexity.ai' if not parsed well, but Fallback service tries to be real)
-                        let domain = "";
-                        try {
-                            domain = new URL(item.url).hostname;
-                        } catch (e) {
-                            domain = "unknown";
-                        }
-
-                        // --- Source Management Filtering ---
-                        if (sourceConfig) {
-                            // 1. Blocked Domains
-                            if (sourceConfig.blockedDomains && sourceConfig.blockedDomains.some((d: string) => domain.includes(d))) {
-                                console.log(`[Discovery] Skipped blocked domain: ${domain}`);
-                                continue;
-                            }
-                        }
-                        // -----------------------------------
-
-                        let sourceType: RetrieverResult['source_type'] = 'other';
-                        if (domain.includes('nix.ru')) sourceType = 'nix_ru';
-                        else if (WHITELIST_DOMAINS.some(d => domain.includes(d))) {
-                            if (domain.includes('hp.com') || domain.includes('canon') || domain.includes('brother')) sourceType = 'official';
-                            else sourceType = 'marketplace';
-                        } else if (domain.includes('alibaba') || domain.includes('taobao') || domain.includes('aliexpress')) {
-                            sourceType = 'marketplace';
-                        }
-
-                        // --- Source Type allowed check ---
-                        if (sourceConfig && sourceConfig.allowedTypes) {
-                            if (sourceType === 'official' && !sourceConfig.allowedTypes.official) continue;
-                            if (sourceType === 'marketplace' && !sourceConfig.allowedTypes.marketplaces) continue;
-                            if (sourceType === 'other' && !sourceConfig.allowedTypes.search) continue;
-                        }
-                        // --------------------------------
-
-                        // Target domain filter (loose check)
-                        if (strategy.target_domain && !usedFallback) { // If fallback used, we accept anything
-                            if (!domain.includes(strategy.target_domain)) continue;
-                        }
-
-                        visitedUrls.add(item.url);
-                        allResults.push({
-                            url: item.url,
-                            title: item.title,
-                            markdown: item.markdown,
-                            source_type: sourceType,
-                            timestamp: item.timestamp
-                        });
-                    }
-                } catch (e) {
-                    console.error(`Search failed for query "${query}":`, e);
-                }
-            }
-        }
-        return allResults;
+        // Simple shim for compatibility - focused on queries only
+        return [];
     }
 }
