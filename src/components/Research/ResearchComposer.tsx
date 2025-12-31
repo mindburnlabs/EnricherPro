@@ -69,21 +69,21 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
 
     return (
         <div className="w-full max-w-3xl mx-auto">
-            <form onSubmit={handleSubmit} className="relative group">
+            <form onSubmit={handleSubmit} className="relative group z-20">
                 <div className={`
                     flex flex-col bg-white dark:bg-gray-800 
                     border border-gray-200 dark:border-gray-700
-                    rounded-[32px] shadow-lg transition-all duration-300 
-                    relative z-10 overflow-hidden
-                    focus-within:shadow-xl focus-within:border-emerald-500/50 focus-within:ring-4 focus-within:ring-emerald-500/10
-                    ${isRefining ? 'border-purple-200 dark:border-purple-800/50 focus-within:border-purple-500/50 focus-within:ring-purple-500/10' : ''}
+                    rounded-[26px] shadow-sm transition-all duration-300 
+                    relative
+                    focus-within:shadow-2xl focus-within:border-emerald-500/30 focus-within:ring-4 focus-within:ring-emerald-500/5
+                    ${isRefining ? 'border-purple-200 dark:border-purple-800/50 focus-within:border-purple-500/30 focus-within:ring-purple-500/5' : ''}
                 `}>
 
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder={isRefining ? "Ask a follow-up..." : t('composer.placeholder')}
-                        className="w-full min-h-[80px] p-5 pb-12 bg-transparent text-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none font-medium leading-relaxed"
+                        placeholder={isRefining ? "Ask a follow-up question..." : t('composer.placeholder')}
+                        className="w-full min-h-[72px] p-5 pb-14 bg-transparent text-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none font-medium leading-relaxed rounded-[26px]"
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
@@ -93,78 +93,116 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
                     />
 
                     {/* Bottom Toolbar */}
-                    <div className="absolute bottom-3 left-4 right-3 flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            {/* Focus / Mode Selector */}
-                            <button
-                                type="button"
-                                onClick={() => setShowModes(!showModes)}
-                                className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
-                            >
-                                {mode === 'fast' && <span>⚡</span>}
-                                {mode === 'balanced' && <span>⚖️</span>}
-                                {mode === 'deep' && <span>🧠</span>}
-                                <span>{modes.find(m => m.id === mode)?.label.split(' ')[1]}</span>
-                            </button>
+                    <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                            {/* Mode Selector */}
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowModes(!showModes)}
+                                    className={`
+                                        flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 border
+                                        ${showModes
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-900/50'
+                                            : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'}
+                                    `}
+                                >
+                                    <span className="text-base">
+                                        {mode === 'fast' && '⚡'}
+                                        {mode === 'balanced' && '⚖️'}
+                                        {mode === 'deep' && '🧠'}
+                                    </span>
+                                    <span>{modes.find(m => m.id === mode)?.label.split(' ')[1]}</span>
+                                </button>
+
+                                {/* Dropdown Menu - Positioned Absolute/Z-Index High */}
+                                {showModes && (
+                                    <>
+                                        <div className="fixed inset-0 z-30" onClick={() => setShowModes(false)} />
+                                        <div className="absolute bottom-full mb-3 left-0 w-64 bg-white dark:bg-[#1a1c20] rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden z-40 animate-in fade-in zoom-in-95 duration-200 origin-bottom-left">
+                                            <div className="p-1 space-y-0.5">
+                                                {modes.map((m) => (
+                                                    <button
+                                                        key={m.id}
+                                                        type="button"
+                                                        onClick={() => { setMode(m.id as any); setShowModes(false); }}
+                                                        className={`w-full text-left px-3 py-2.5 rounded-xl transition-all duration-200 flex items-start gap-3 group
+                                                            ${mode === m.id
+                                                                ? 'bg-emerald-50/50 dark:bg-emerald-500/10'
+                                                                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                                                            }`}
+                                                    >
+                                                        <div className={`
+                                                            flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full text-base transition-colors
+                                                            ${mode === m.id
+                                                                ? 'bg-emerald-100/50 dark:bg-emerald-500/20'
+                                                                : 'bg-gray-100 dark:bg-gray-800 group-hover:bg-white dark:group-hover:bg-gray-700'}
+                                                        `}>
+                                                            {m.label.split(' ')[0]}
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <div className="flex items-center justify-between w-full">
+                                                                <span className={`text-sm font-semibold ${mode === m.id ? 'text-emerald-900 dark:text-emerald-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                                                    {m.label.split(' ').slice(1).join(' ')}
+                                                                </span>
+                                                                {mode === m.id && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5" />}
+                                                            </div>
+                                                            <span className={`text-[11px] ${mode === m.id ? 'text-emerald-700/80 dark:text-emerald-400/70' : 'text-gray-500'}`}>
+                                                                {m.desc}
+                                                            </span>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
 
                             {/* Refine Toggle */}
                             {canRefine && (
                                 <button
                                     type="button"
                                     onClick={() => setIsRefining(!isRefining)}
-                                    className={`flex items-center space-x-1 px-3 py-1.5 text-xs font-semibold rounded-full transition-colors ${isRefining
-                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
-                                        : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200'}`}
+                                    className={`
+                                        flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 border
+                                        ${isRefining
+                                            ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-900/50'
+                                            : 'text-gray-500 dark:text-gray-400 bg-transparent border-transparent hover:bg-gray-100 dark:hover:bg-gray-800'}
+                                    `}
                                 >
-                                    <span>✨ Refine</span>
+                                    <span className={isRefining ? 'animate-pulse' : ''}>✨</span>
+                                    <span>Refine</span>
                                 </button>
                             )}
-
-                            <label className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Upload">
-                                <Paperclip className="w-4 h-4" />
-                                <input type="file" accept=".csv,.txt" className="hidden" onChange={handleFileUpload} />
-                            </label>
                         </div>
 
                         <div className="flex items-center gap-2">
-                            {/* Word Count / Ready State? */}
-                            {/* Submit Button */}
+                            <label className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700/50 active:scale-95 duration-200" title="Upload Context">
+                                <Paperclip className="w-4 h-4" />
+                                <input type="file" accept=".csv,.txt" className="hidden" onChange={handleFileUpload} />
+                            </label>
+
+                            <div className="h-4 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
+
                             <button
                                 type="submit"
                                 disabled={!input.trim() || isProcessing}
-                                className={`p-2 rounded-full text-white transition-all transform duration-200 shadow-md flex items-center justify-center
+                                className={`p-2 rounded-full text-white transition-all duration-300 shadow-md flex items-center justify-center group
                                     ${input.trim() && !isProcessing
-                                        ? (isRefining ? 'bg-purple-600 hover:bg-purple-500 scale-100' : 'bg-emerald-600 hover:bg-emerald-500 scale-100')
-                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-400 scale-95 cursor-not-allowed shadow-none'}`}
+                                        ? (isRefining
+                                            ? 'bg-gradient-to-tr from-purple-600 to-indigo-600 hover:shadow-purple-500/25 hover:scale-105 active:scale-95'
+                                            : 'bg-gradient-to-tr from-emerald-500 to-teal-500 hover:shadow-emerald-500/25 hover:scale-105 active:scale-95')
+                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600 shadow-none cursor-not-allowed scale-95'}`}
                             >
-                                {isProcessing ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
+                                {isProcessing ? (
+                                    <div className="w-4 h-4 border-2 border-white/90 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <Send className="w-4 h-4 ml-0.5" />
+                                )}
                             </button>
                         </div>
                     </div>
-
-                    {/* Mode Dropdown */}
-                    {showModes && (
-                        <div className="absolute bottom-14 left-4 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 p-1">
-                            {modes.map((m) => (
-                                <button
-                                    key={m.id}
-                                    type="button"
-                                    onClick={() => { setMode(m.id as any); setShowModes(false); }}
-                                    className={`w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors flex items-center gap-3 ${mode === m.id ? 'bg-gray-50 dark:bg-gray-700/30' : ''}`}
-                                >
-                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 shadow-sm text-base">
-                                        {m.label.split(' ')[0]}
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className={`font-semibold ${mode === m.id ? 'text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300'}`}>
-                                            {m.label.split(' ').slice(1).join(' ')}
-                                        </span>
-                                        <span className="text-[10px] text-gray-500">{m.desc}</span>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    )}
                 </div>
             </form>
 

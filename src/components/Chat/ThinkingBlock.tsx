@@ -69,45 +69,60 @@ export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({ steps, logs, statu
                 <div className="flex items-center gap-3">
                     {/* Badge for phase */}
                     {activeStep && status === 'running' && (
-                        <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
+                        <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest animate-pulse">
                             {activeStep.id.replace('_', ' ')}
                         </span>
                     )}
 
-                    <div className={`text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
-                        <ChevronDown className="w-4 h-4" />
+                    <div className={`p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
                     </div>
                 </div>
             </button>
 
             {/* Details Content */}
-            <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+            <div className={`grid transition-[grid-template-rows,opacity] duration-500 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
                 <div className="overflow-hidden">
                     <div className="p-4 pt-0 border-t border-gray-100 dark:border-gray-700/30 space-y-6">
 
                         {/* Interactive Steps Timeline */}
-                        <div className="mt-4 relative pl-2 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gray-100 dark:before:bg-gray-800">
-                            {steps.map((step) => {
+                        <div className="mt-4 relative pl-2 space-y-0.5 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gradient-to-b before:from-gray-100 before:via-gray-100 before:to-transparent dark:before:from-gray-800 dark:before:via-gray-800">
+                            {steps.map((step, idx) => {
                                 const isCurrent = step.status === 'running';
                                 const isDone = step.status === 'completed';
+                                const isPending = step.status === 'pending';
 
                                 return (
-                                    <div key={step.id} className="relative pl-8 flex flex-col gap-1 group/step">
-                                        <div className={`absolute left-0 top-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors z-10 bg-white dark:bg-gray-900
-                                            ${isDone ? 'border-emerald-500 text-emerald-500' : isCurrent ? 'border-emerald-500 text-emerald-500' : 'border-gray-200 dark:border-gray-700 text-gray-300'}
+                                    <div key={step.id} className="relative pl-8 py-2 flex flex-col gap-1 group/step">
+                                        {/* Status Dot */}
+                                        <div className={`absolute left-0 top-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 z-10 bg-white dark:bg-gray-900
+                                            ${isDone
+                                                ? 'border-emerald-500 text-emerald-500 scale-100'
+                                                : isCurrent
+                                                    ? 'border-emerald-500 text-emerald-500 scale-110 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                                                    : 'border-gray-100 dark:border-gray-800 text-gray-300 scale-90'}
                                         `}>
-                                            {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : isCurrent ? <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> : <div className="w-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full" />}
+                                            {isDone ? (
+                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                            ) : isCurrent ? (
+                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                            ) : (
+                                                <div className="w-1.5 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full group-hover/step:bg-gray-300 dark:group-hover/step:bg-gray-600 transition-colors" />
+                                            )}
                                         </div>
 
-                                        <span className={`text-sm font-medium transition-colors ${isCurrent ? 'text-emerald-600 dark:text-emerald-400' : isDone ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400'}`}>
+                                        <span className={`text-sm font-medium transition-colors duration-300 ${isCurrent ? 'text-emerald-700 dark:text-emerald-400' : isDone ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600'}`}>
                                             {step.label}
                                         </span>
 
-                                        {/* Show relevant logs for this step if running */}
+                                        {/* Show relevant logs for this step using a Carousel-like fade effect */}
                                         {isCurrent && (
-                                            <div className="text-xs font-mono text-gray-500 dark:text-gray-500 mt-1 pl-1 border-l-2 border-gray-100 dark:border-gray-800 ml-1 py-1">
-                                                {logs.slice(-2).map(l => (
-                                                    <div key={l.id} className="truncate opacity-75">{l.message}</div>
+                                            <div className="text-xs font-mono text-gray-500 dark:text-gray-500 mt-1 pl-3 border-l-2 border-emerald-100 dark:border-emerald-900/30 ml-0.5 py-1 animate-in slide-in-from-left-2 duration-300">
+                                                {logs.slice(-3).map((l, i) => (
+                                                    <div key={l.id} className="truncate opacity-75 py-0.5" style={{ animationDelay: `${i * 100}ms` }}>
+                                                        <span className="text-emerald-500/50 mr-2">›</span>
+                                                        {l.message}
+                                                    </div>
                                                 ))}
                                             </div>
                                         )}
