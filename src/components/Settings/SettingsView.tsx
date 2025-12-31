@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, Moon, Sun, Globe, Brain, Zap, Key, Layout, Shield, Database, Check, History, ChevronRight, AlertCircle, RefreshCw, Wand2, Factory } from 'lucide-react';
+import { X, Save, Moon, Sun, Globe, Brain, Zap, Key, Layout, Shield, Database, Check, History, ChevronRight, AlertCircle, RefreshCw, Wand2, Factory, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore, SettingsState, DEFAULT_DISCOVERY_PROMPT, DEFAULT_SYNTHESIS_PROMPT, DEFAULT_DISCOVERY_PROMPT_RU, DEFAULT_SYNTHESIS_PROMPT_RU } from '../../stores/settingsStore.js';
 
@@ -25,6 +25,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
     const [hasChanges, setHasChanges] = useState(false);
     const [isFetchingModels, setIsFetchingModels] = useState(false);
     const [availableModels, setAvailableModels] = useState<any[]>([]);
+    const [modelSearch, setModelSearch] = useState('');
 
     useEffect(() => {
         // Sync local config with store when opening
@@ -226,9 +227,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                     </p>
 
                                     <div className="flex gap-2">
-                                        <div className="flex-1 bg-white dark:bg-black border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3 flex items-center justify-between shadow-sm">
-                                            <span className="font-mono text-sm">{localConfig.model.id}</span>
-                                            <span className="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">{t('settings:models.active')}</span>
+                                        <div className="flex-1 relative group">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                                            <input
+                                                type="text"
+                                                value={modelSearch}
+                                                onChange={(e) => setModelSearch(e.target.value)}
+                                                placeholder={localConfig.model.id}
+                                                className="w-full bg-white dark:bg-black border border-emerald-200 dark:border-emerald-800 rounded-xl pl-10 pr-4 py-3 text-sm font-mono shadow-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                            />
+                                            {!modelSearch && (
+                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium pointer-events-none opacity-60">
+                                                    {t('settings:models.active')}
+                                                </span>
+                                            )}
                                         </div>
                                         <button
                                             onClick={fetchModels}
@@ -240,17 +252,27 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                     </div>
 
                                     {availableModels.length > 0 && (
-                                        <div className="mt-4 max-h-64 overflow-y-auto border border-gray-100 dark:border-gray-800 rounded-xl">
-                                            {availableModels.map(model => (
-                                                <button
-                                                    key={model.id}
-                                                    onClick={() => setLocalConfig({ ...localConfig, model: { id: model.id, name: model.name } })}
-                                                    className={`w-full text-left px-4 py-3 text-xs font-mono border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 flex justify-between ${localConfig.model.id === model.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400'}`}
-                                                >
-                                                    {model.id}
-                                                    {localConfig.model.id === model.id && <Check className="w-3 h-3" />}
-                                                </button>
-                                            ))}
+                                        <div className="mt-4 max-h-64 overflow-y-auto border border-gray-100 dark:border-gray-800 rounded-xl custom-scrollbar">
+                                            {availableModels
+                                                .filter(m => !modelSearch || m.id.toLowerCase().includes(modelSearch.toLowerCase()) || (m.name && m.name.toLowerCase().includes(modelSearch.toLowerCase())))
+                                                .map(model => (
+                                                    <button
+                                                        key={model.id}
+                                                        onClick={() => {
+                                                            setLocalConfig({ ...localConfig, model: { id: model.id, name: model.name } });
+                                                            setModelSearch(''); // Clear search to show new active model as placeholder
+                                                        }}
+                                                        className={`w-full text-left px-4 py-3 text-xs font-mono border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 flex justify-between group ${localConfig.model.id === model.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400'}`}
+                                                    >
+                                                        <span className="truncate pr-4">{model.id}</span>
+                                                        {localConfig.model.id === model.id && <Check className="w-3 h-3 flex-shrink-0" />}
+                                                    </button>
+                                                ))}
+                                            {availableModels.filter(m => !modelSearch || m.id.toLowerCase().includes(modelSearch.toLowerCase())).length === 0 && (
+                                                <div className="p-4 text-center text-xs text-gray-400 italic">
+                                                    No models match "{modelSearch}"
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
