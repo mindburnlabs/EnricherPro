@@ -25,7 +25,7 @@ describe('End-to-End Workflow Simulation', () => {
     it('should handle the full lifecycle of an item', async () => {
         // 1. Workflow Start: Create Item (Idempotent check)
         console.log("Step 1: Creating Item");
-        const item = await ItemsRepository.createOrGet(jobId, mpn, {
+        const item = await ItemsRepository.createOrGet('default', jobId, mpn, {
             mpn_identity: { mpn, canonical_model_name: "Test Model" },
             brand: "Test Brand",
             status: "processing"
@@ -37,7 +37,7 @@ describe('End-to-End Workflow Simulation', () => {
 
         // 2. Simulate Idempotency (Retry)
         console.log("Step 2: Simulating Retry");
-        const itemRetry = await ItemsRepository.createOrGet(jobId, mpn, {
+        const itemRetry = await ItemsRepository.createOrGet('default', jobId, mpn, {
             mpn_identity: { mpn, canonical_model_name: "Test Model" },
             brand: "Test Brand",
             status: "processing"

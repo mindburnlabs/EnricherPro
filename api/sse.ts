@@ -2,7 +2,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { db } from '../src/db';
 import { items, jobEvents } from '../src/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, gt, and } from 'drizzle-orm';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     if (request.method !== 'GET') {
@@ -28,6 +28,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
     let lastStep = '';
     let lastStatus = '';
     let lastUpdatedAt = 0;
+    // Track last log timestamp to ONLY fetch new logs (Bandwidth Optimization)
+    // Start from 0 to get initial history, then update.
+    let lastLogTimestamp = new Date(0);
 
     const intervalId = setInterval(async () => {
         try {
@@ -36,21 +39,24 @@ export default async function handler(request: VercelRequest, response: VercelRe
             if (item) {
                 const currentUpdatedAt = item.updatedAt ? new Date(item.updatedAt).getTime() : 0;
 
-                // 1. Fetch new logs separately
-                // Using a simpler lastSeenTimestamp for logs to avoid re-sending
-                const logs = await db.select().from(jobEvents)
-                    .where(eq(jobEvents.jobId, jobId as string))
-                // In a real app we'd filter gt(timestamp, lastLogDate) but for low volume we can just dedup or send all
-                // Actually, let's keep it simple: fetch all, client dedups? No, too heavy.
-                // Let's filter by array length or something?
-                // Since we don't have gt() imported easily without updating imports...
-                // Let's rely on client side dedup for now (simpler for this constrained env), 
-                // OR just import `gt` in next step. I'll import `gt` and `and`.
+                // 1. Fetch new logs separately (Incremental)
+                // Use gt(timestamp, lastLogTimestamp) to avoid re-sending history
 
-                // For this step I'll assume we send all logs and client dedups by ID. 
-                // It's safer for "reconnection" scenarios anyway.
+                const logs = await db.select().from(jobEvents)
+                    .where(
+                        and(
+                            eq(jobEvents.jobId, jobId as string),
+                            gt(jobEvents.timestamp, lastLogTimestamp)
+                        )
+                    )
+                    .orderBy(jobEvents.timestamp);
 
                 if (logs.length > 0) {
+                    // Update cursor to the newest log's timestamp
+                    const newestLog = logs[logs.length - 1];
+                    if (newestLog && newestLog.timestamp) {
+                        lastLogTimestamp = new Date(newestLog.timestamp);
+                    }
                     response.write(`data: ${JSON.stringify({ type: 'logs', logs })}\n\n`);
                 }
 
@@ -73,6 +79,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
                     // If final status, close connection
                     if (['published', 'needs_review', 'failed'].includes(item.status || '')) {
+                        // Wait a tick to ensure logs flush? No, synchronous.
                         response.write(`data: ${JSON.stringify({ type: 'complete', status: item.status })}\n\n`);
                         clearInterval(intervalId);
                         response.end();

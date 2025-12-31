@@ -32,8 +32,20 @@ const WHITELIST_DOMAINS = [
 
 export class DiscoveryAgent {
 
-    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void): Promise<AgentPlan> {
+    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string): Promise<AgentPlan> { // ADDED context
         onLog?.(`Planning research for "${inputRaw}" in ${mode} mode...`);
+
+        let contextInstruction = "";
+        if (context) {
+            contextInstruction = `
+            PREVIOUS CONTEXT (The user is refining or following up on this result):
+            """
+            ${context}
+            """
+            Analyze the input in relation to this context. If the user asks to "correct" or "find more", use the previous data as a baseline.
+            `;
+        }
+
         const systemPrompt = promptOverride || `You are the Lead Research Planner for a Printer Consumables Database.
         Your goal is to analyze the user input and construct a precise search strategy.
         
@@ -45,6 +57,7 @@ export class DiscoveryAgent {
         Current Mode: ${mode.toUpperCase()}
 
         Input: "${inputRaw}"
+        ${contextInstruction}
 
         Return a JSON object with:
         - type: "single_sku" | "list" | "unknown"
@@ -88,7 +101,7 @@ export class DiscoveryAgent {
         }
     }
 
-    static async execute(plan: AgentPlan, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, budgetOverrides?: Record<string, { maxQueries: number, limitPerQuery: number }>, onLog?: (msg: string) => void): Promise<RetrieverResult[]> {
+    static async execute(plan: AgentPlan, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, budgetOverrides?: Record<string, { maxQueries: number, limitPerQuery: number }>, onLog?: (msg: string) => void, sourceConfig?: any): Promise<RetrieverResult[]> {
         const allResults: RetrieverResult[] = [];
         const visitedUrls = new Set<string>();
 
@@ -107,7 +120,8 @@ export class DiscoveryAgent {
         for (const strategy of plan.strategies) {
             for (const query of strategy.queries) {
                 if (queryCount >= budget.maxQueries) {
-                    console.log(`[Discovery] Mode '${currentMode}' budget reached (${queryCount} queries).`);
+                    // Skipped blocked domain
+
                     break;
                 }
                 queryCount++;
@@ -127,12 +141,33 @@ export class DiscoveryAgent {
 
                         const domain = new URL(item.url).hostname;
 
+                        // --- Source Management Filtering ---
+                        if (sourceConfig) {
+                            // 1. Blocked Domains
+                            if (sourceConfig.blockedDomains && sourceConfig.blockedDomains.some((d: string) => domain.includes(d))) {
+                                console.log(`[Discovery] Skipped blocked domain: ${domain}`);
+                                continue;
+                            }
+                        }
+                        // -----------------------------------
+
                         let sourceType: RetrieverResult['source_type'] = 'other';
                         if (domain.includes('nix.ru')) sourceType = 'nix_ru';
                         else if (WHITELIST_DOMAINS.some(d => domain.includes(d))) {
                             if (domain.includes('hp.com') || domain.includes('canon') || domain.includes('brother')) sourceType = 'official';
                             else sourceType = 'marketplace';
                         }
+
+                        // --- Source Type allowed check ---
+                        if (sourceConfig && sourceConfig.allowedTypes) {
+                            // This is imperfect mapping but sufficient for MVP
+                            if (sourceType === 'official' && !sourceConfig.allowedTypes.official) continue;
+                            if (sourceType === 'marketplace' && !sourceConfig.allowedTypes.marketplaces) continue;
+                            // Community/Search mappings would need smarter classifiers, but 'other' falls into here
+                            if (sourceType === 'other' && !sourceConfig.allowedTypes.search) continue;
+                        }
+                        // --------------------------------
+
 
                         // Target domain filter
                         if (strategy.target_domain && !domain.includes(strategy.target_domain)) {

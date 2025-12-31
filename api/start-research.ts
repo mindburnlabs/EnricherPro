@@ -1,13 +1,13 @@
-
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Inngest } from "inngest";
+import { v4 as uuidv4 } from 'uuid';
+import { RateLimiter } from '../src/lib/rateLimit';
+import { getTenantId } from '../src/lib/context';
 
-// Minimal client for API context - isolated from src/ to prevent Vercel bundle issues
+// Minimal client for API context
 const inngest = new Inngest({
     id: "enricher-labs",
 });
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { v4 as uuidv4 } from 'uuid';
-import { RateLimiter } from '../src/lib/rateLimit';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     if (request.method !== 'POST') {
@@ -20,7 +20,6 @@ export default async function handler(request: VercelRequest, response: VercelRe
         return response.status(429).json({ error: 'Too Many Requests' });
     }
 
-
     if (!process.env.INNGEST_EVENT_KEY) {
         console.error("Missing INNGEST_EVENT_KEY");
         return response.status(500).json({ error: 'Configuration Error: Missing INNGEST_EVENT_KEY on server' });
@@ -28,6 +27,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     try {
         const { input } = request.body;
+        const tenantId = getTenantId(request);
 
         if (!input) {
             return response.status(400).json({ error: 'Missing input' });
@@ -41,10 +41,15 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 name: "app/research.started",
                 data: {
                     jobId,
+                    tenantId, // PASS TENANT ID
                     inputRaw: input,
                     forceRefresh: !!request.body.forceRefresh,
                     apiKeys: request.body.apiKeys || {},
-                    agentConfig: request.body.agentConfig || {}, // Pass config
+                    agentConfig: request.body.agentConfig || {},
+                    sourceConfig: request.body.sourceConfig || {},
+                    budgets: request.body.budgets || {},
+                    previousJobId: request.body.previousJobId || undefined,
+                    mode: request.body.mode || 'balanced',
                 },
             });
         } catch (inngestError) {

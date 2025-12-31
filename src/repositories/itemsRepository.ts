@@ -7,11 +7,10 @@ import { ConsumableData } from '../types/domain';
 
 export class ItemsRepository {
 
-    static async createOrGet(jobId: string, mpn: string, initialData: ConsumableData, forceRefresh = false) {
+    static async createOrGet(tenantId: string, jobId: string, mpn: string, initialData: ConsumableData, forceRefresh = false) {
         // 1. Idempotency: Check if item exists for this job
         const existingInJob = await this.findByJobId(jobId);
         if (existingInJob) {
-            console.log(`[Idempotency] Item already exists for job ${jobId}`);
             return existingInJob;
         }
 
@@ -20,11 +19,8 @@ export class ItemsRepository {
             const { DeduplicationService } = await import("../services/backend/DeduplicationService");
             const duplicate = await DeduplicationService.findPotentialDuplicate(mpn);
             if (duplicate) {
-                console.log(`[Dedup] Found existing item ${duplicate.id} for MPN ${mpn}`);
-
                 if (forceRefresh) {
                     // FORCE REFRESH: Hijack the existing item for this new job
-                    console.log(`[Force Refresh] Taking over item ${duplicate.id} for job ${jobId}`);
                     const [updated] = await db.update(items)
                         .set({
                             jobId: jobId, // Point to new job
@@ -44,6 +40,7 @@ export class ItemsRepository {
         }
 
         const [newItem] = await db.insert(items).values({
+            tenantId,
             jobId,
             mpn,
             brand: initialData.brand,

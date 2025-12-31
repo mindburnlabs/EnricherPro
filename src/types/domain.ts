@@ -144,6 +144,7 @@ export interface ConsumableData {
     publish_ready: boolean;
 
     mpn_identity: MpnIdentity;
+    reviewReason?: string; // Reason why item needs review
 
     // 2. Core Attributes
     brand: string | null; // e.g., HP, Kyocera

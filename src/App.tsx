@@ -11,12 +11,15 @@ import { EnrichedItem } from './types/domain';
 import { useTranslation } from 'react-i18next';
 import { useResearchStream } from './hooks/useResearchStream';
 
+import { useResearchConfig } from './hooks/useResearchConfig';
+
 import { SettingsView } from './components/Settings/SettingsView';
 import { Settings } from 'lucide-react';
 
 const App: React.FC = () => {
   const { t } = useTranslation('common');
   const { steps, items, logs, status, startStream, reset } = useResearchStream();
+  const { config, updateConfig } = useResearchConfig(); // NEW HOOK
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -37,12 +40,6 @@ const App: React.FC = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  // Clear legacy storage on mount
-  // React.useEffect(() => {
-  //   localStorage.clear();
-  //   console.log("System verified. Local storage cleared for production.");
-  // }, []);
-
   const handleApprove = async (itemId: string) => {
     try {
       await approveItem(itemId);
@@ -53,23 +50,23 @@ const App: React.FC = () => {
     }
   };
 
-  const getApiKeys = () => ({
-    firecrawl: localStorage.getItem('firecrawl_key') || undefined,
-    google: localStorage.getItem('google_key') || undefined,
-    openrouter: localStorage.getItem('openrouter_key') || undefined,
-  });
+  // Deprecated helper - now using config directly
+  // const getApiKeys = () => ...
 
   const handleSearch = async (input: string | string[], mode: 'fast' | 'balanced' | 'deep') => {
     reset();
     const inputs = Array.isArray(input) ? input : [input];
-    const apiKeys = getApiKeys();
 
     try {
       for (const singleInput of inputs) {
         if (!singleInput.trim()) continue;
 
-        // Trigger Server
-        const res = await triggerResearch(singleInput, mode, { apiKeys });
+        // Trigger Server with full config options
+        const res = await triggerResearch(singleInput, mode, {
+          apiKeys: config.apiKeys,
+          sourceConfig: config.sources, // PASS SOURCES
+          budgets: config.budgets       // PASS BUDGETS
+        });
         if (res.success && res.jobId) {
           startStream(res.jobId);
         } else {
@@ -85,10 +82,14 @@ const App: React.FC = () => {
   const handleMerge = async (item: EnrichedItem) => {
     const mode = 'balanced';
     reset();
-    const apiKeys = getApiKeys();
 
     try {
-      const res = await triggerResearch(item.data.mpn_identity.mpn || "unknown", mode, { forceRefresh: true, apiKeys });
+      const res = await triggerResearch(item.data.mpn_identity.mpn || "unknown", mode, {
+        forceRefresh: true,
+        apiKeys: config.apiKeys,
+        sourceConfig: config.sources,
+        budgets: config.budgets
+      });
       if (res.success && res.jobId) {
         startStream(res.jobId);
       }
@@ -151,6 +152,8 @@ const App: React.FC = () => {
           onClose={() => setIsSettingsOpen(false)}
           onThemeChange={toggleTheme}
           currentTheme={theme}
+          config={config}
+          onSave={updateConfig}
         />
 
       </div>

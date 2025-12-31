@@ -18,13 +18,21 @@ export const researchWorkflow = inngest.createFunction(
     { event: "app/research.started" },
     async ({ event, step }) => {
         // @ts-ignore - Custom event prop
-        const { jobId, inputRaw, mode = 'balanced', forceRefresh, apiKeys, agentConfig } = event.data;
-        const agent = new OrchestratorAgent(jobId, apiKeys);
+        const { jobId, tenantId, inputRaw, mode = 'balanced', forceRefresh, apiKeys, agentConfig, sourceConfig, budgets, previousJobId } = event.data;
+        const agent = new OrchestratorAgent(jobId, apiKeys, tenantId);
 
         // 1. Initialize DB Record
         const item = await step.run("create-db-item", async () => {
             return await agent.getOrCreateItem(inputRaw, forceRefresh);
         });
+
+        // REFINEMENT CONTEXT
+        let context = undefined;
+        if (previousJobId) {
+            context = await step.run("fetch-context", async () => {
+                return await agent.getContext(previousJobId) || undefined;
+            });
+        }
 
         // 2. Planning
         await step.run("transition-planning", () => agent.transition('planning'));
@@ -35,7 +43,8 @@ export const researchWorkflow = inngest.createFunction(
                 mode,
                 apiKeys,
                 agentConfig?.prompts?.discovery,
-                (msg) => agent.log('discovery', msg)
+                (msg) => agent.log('discovery', msg),
+                context // Pass context
             );
         });
 
@@ -50,8 +59,9 @@ export const researchWorkflow = inngest.createFunction(
                 plan as any,
                 mode,
                 apiKeys,
-                agentConfig?.budgets,
-                (msg) => agent.log('discovery', msg)
+                budgets || agentConfig?.budgets,
+                (msg) => agent.log('discovery', msg),
+                sourceConfig // Pass sourceConfig
             );
 
             // Logistics Check (if needed)

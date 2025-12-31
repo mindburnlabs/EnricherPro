@@ -4,6 +4,7 @@ import { relations } from 'drizzle-orm';
 // --- JOBS (The "Deep Research" Session) ---
 export const jobs = pgTable('jobs', {
     id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: text('tenant_id').default('default').notNull(), // Multi-tenancy
     userId: text('user_id'), // Optional, for auth
     status: text('status', { enum: ['pending', 'running', 'completed', 'failed'] }).default('pending').notNull(),
     inputRaw: text('input_raw').notNull(),
@@ -19,6 +20,7 @@ export const jobs = pgTable('jobs', {
 // --- ITEMS (The SKU / Consumable) ---
 export const items = pgTable('items', {
     id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: text('tenant_id').default('default').notNull(),
     jobId: uuid('job_id').references(() => jobs.id).notNull(),
 
     // Identity
@@ -61,6 +63,7 @@ export const evidence = pgTable('evidence', {
 // --- EVENTS (The "Live Stream") ---
 export const jobEvents = pgTable('job_events', {
     id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: text('tenant_id').default('default').notNull(),
     jobId: uuid('job_id').references(() => jobs.id).notNull(),
 
     agent: text('agent').notNull(), // 'orchestrator', 'discovery', 'synthesis', 'logistics', 'gatekeeper'

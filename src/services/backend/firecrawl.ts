@@ -15,26 +15,31 @@ export class BackendFirecrawlService {
     }
 
     static async search(query: string, options: { limit?: number; country?: string; formats?: string[]; apiKey?: string } = {}) {
-        const client = options.apiKey ? new FirecrawlApp({ apiKey: options.apiKey }) : this.getClient();
-        // V2 search
-        try {
-            // @ts-ignore - Firecrawl JS SDK types might be behind
-            const result = await client.search(query, {
-                limit: options.limit || 5,
-                scrapeOptions: {
-                    formats: (options.formats || ['markdown']) as any
-                },
-                // V2 usually infers country or uses generic settings
-            });
+        const { withRetry } = await import("../../lib/reliability");
 
-            if (result && (result as any).data) {
-                return (result as any).data;
+        return withRetry(async () => {
+            const client = options.apiKey ? new FirecrawlApp({ apiKey: options.apiKey }) : this.getClient();
+            try {
+                // @ts-ignore
+                const result = await client.search(query, {
+                    limit: options.limit || 5,
+                    scrapeOptions: {
+                        formats: (options.formats || ['markdown']) as any
+                    },
+                });
+
+                if (result && (result as any).data) {
+                    return (result as any).data;
+                }
+                return [];
+            } catch (error) {
+                // If 402 or 401, don't retry, throw immediately
+                if ((error as any).statusCode === 402 || (error as any).statusCode === 401) {
+                    throw error;
+                }
+                throw error; // Let retry handle others
             }
-            return [];
-        } catch (error) {
-            console.error("Firecrawl Search Error:", error);
-            return [];
-        }
+        }, { maxRetries: 3, baseDelayMs: 2000 });
     }
 
     static async extract(urls: string[], schema: any) {

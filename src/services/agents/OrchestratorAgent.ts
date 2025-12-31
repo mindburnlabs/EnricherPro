@@ -6,18 +6,20 @@ export type ResearchState = 'planning' | 'searching' | 'enrichment' | 'gate_chec
 
 export class OrchestratorAgent {
     private jobId: string;
+    private tenantId: string;
     private itemId: string | null = null;
 
     private apiKeys?: Record<string, string>;
 
-    constructor(jobId: string, apiKeys?: Record<string, string>) {
+    constructor(jobId: string, apiKeys?: Record<string, string>, tenantId: string = 'default') {
         this.jobId = jobId;
         this.apiKeys = apiKeys;
+        this.tenantId = tenantId;
     }
 
     async getOrCreateItem(inputRaw: string, forceRefresh = false): Promise<any> {
         // Initialize DB Record
-        const item = await ItemsRepository.createOrGet(this.jobId, "PENDING-MPN", {
+        const item = await ItemsRepository.createOrGet(this.tenantId, this.jobId, "PENDING-MPN", {
             mpn_identity: { mpn: "PENDING", canonical_model_name: inputRaw },
             brand: null,
             status: "processing",
@@ -25,6 +27,12 @@ export class OrchestratorAgent {
         } as any, forceRefresh);
         this.itemId = item.id;
         return item;
+    }
+
+    async getContext(previousJobId: string): Promise<string | null> {
+        const item = await ItemsRepository.findByJobId(previousJobId);
+        if (!item || !item.data) return null;
+        return JSON.stringify(item.data, null, 2);
     }
 
     async transition(toState: ResearchState) {
@@ -74,6 +82,7 @@ export class OrchestratorAgent {
         try {
             await db.insert(jobEvents).values({
                 jobId: this.jobId,
+                tenantId: this.tenantId,
                 agent,
                 message,
                 type

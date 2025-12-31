@@ -51,7 +51,7 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
                 const data = JSON.parse(event.data);
 
                 if (data.type === 'connected') {
-                    console.log('SSE Connected', data.jobId);
+
                     return;
                 }
 

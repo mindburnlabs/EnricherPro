@@ -12,6 +12,14 @@ export default async function handler(request: VercelRequest, response: VercelRe
     try {
         const allItems = await db.select().from(items);
 
+        const format = (request.query.format as string) || 'csv';
+
+        if (format === 'json') {
+            response.setHeader('Content-Type', 'application/json');
+            response.setHeader('Content-Disposition', 'attachment; filename="enriched_data.json"');
+            return response.status(200).send(JSON.stringify(allItems, null, 2));
+        }
+
         // Flatten data for CSV
         const csvData = allItems.map(item => {
             const d = item.data as any;
@@ -35,9 +43,12 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
         const csvString = Papa.unparse(csvData);
 
+        // Add BOM for Excel compatibility
+        const bom = "\uFEFF";
+
         response.setHeader('Content-Type', 'text/csv; charset=utf-8');
         response.setHeader('Content-Disposition', 'attachment; filename="enriched_data.csv"');
-        response.status(200).send(csvString);
+        response.status(200).send(bom + csvString);
 
     } catch (error) {
         console.error("Export Failed:", error);
