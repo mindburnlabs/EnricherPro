@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 import { v4 as uuidv4 } from 'uuid';
-import { RateLimiter } from './_lib/rateLimit';
-import { getTenantId } from './_lib/context';
+import { RateLimiter } from './_lib/rateLimit.js';
+import { getTenantId } from './_lib/context.js';
 
-import { inngest } from './_lib/inngest';
+import { inngest } from './_lib/inngest.js';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     if (request.method !== 'POST') {
