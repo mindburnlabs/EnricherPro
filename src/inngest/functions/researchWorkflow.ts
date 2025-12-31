@@ -286,10 +286,12 @@ export const researchWorkflow = inngest.createFunction(
 
             // Logistics Check (Side-quest)
             if (mode !== 'fast' && plan.canonical_name) {
+                const logisticsPrompt = agentConfig?.prompts?.logistics;
                 const logistics = await LogisticsAgent.checkNixRu(
                     plan.canonical_name,
                     apiKeys,
-                    (msg) => agent.log('logistics', msg)
+                    (msg) => agent.log('logistics', msg),
+                    logisticsPrompt
                 );
                 if (logistics.url) {
                     allResults.push({

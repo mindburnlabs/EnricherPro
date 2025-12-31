@@ -9,7 +9,7 @@ export class LogisticsAgent {
      * NIX.ru Specialized Scraper & Parser (No-API)
      * Scans NIX.ru for comprehensive data: Logistics, Specs, Compatibility.
      */
-    static async checkNixRu(canonicalName: string, apiKeys?: Record<string, string>, onLog?: (msg: string) => void): Promise<{ weight: string | null, dimensions: string | null, url: string | null, fullExtract?: any }> {
+    static async checkNixRu(canonicalName: string, apiKeys?: Record<string, string>, onLog?: (msg: string) => void, promptOverride?: string): Promise<{ weight: string | null, dimensions: string | null, url: string | null, fullExtract?: any }> {
         // Broad search to find the specific product page
         const queries = [
             `site:nix.ru ${canonicalName} описание`, // Description
@@ -37,7 +37,7 @@ export class LogisticsAgent {
 
                 // Use Cheap LLM to parse NIX.ru's specific table format
                 // They often have "Характеристики" (Specs) and "Совместимость" (Compatibility) blocks
-                const systemPrompt = `You are a NIX.ru Data Extractor, expert in parsing Russian technical specs.
+                const systemPrompt = promptOverride || `You are a NIX.ru Data Extractor, expert in parsing Russian technical specs.
                 Extract the following from the text:
                 1. "Вес брутто" (Gross Weight) -> normalized to kg.
                 2. "Размеры упаковки" (Dimensions) -> normalized to cm (W x D x H).

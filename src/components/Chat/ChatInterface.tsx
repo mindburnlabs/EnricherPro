@@ -100,6 +100,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
                     openrouter: config.apiKeys.openRouter,
                     perplexity: config.apiKeys.perplexity
                 },
+                agentConfig: {
+                    prompts: config.prompts
+                },
                 sourceConfig: {
                     allowedTypes: {
                         official: config.sources.official,

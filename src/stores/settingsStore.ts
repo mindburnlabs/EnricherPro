@@ -23,6 +23,7 @@ export interface SettingsState {
     prompts: {
         discovery: string;
         synthesis: string;
+        logistics: string;
     };
 
     // Source Configuration
@@ -46,7 +47,7 @@ export interface SettingsState {
     // Actions
     setModel: (model: ModelConfig) => void;
     setApiKey: (key: 'openRouter' | 'firecrawl' | 'perplexity', value: string) => void;
-    setPrompt: (agent: 'discovery' | 'synthesis', value: string) => void;
+    setPrompt: (agent: 'discovery' | 'synthesis' | 'logistics', value: string) => void;
     setBudget: (mode: 'fast' | 'balanced' | 'deep', field: 'maxQueries' | 'limitPerQuery', value: number) => void;
     toggleSource: (type: 'official' | 'marketplace' | 'community') => void;
     addBlockedDomain: (domain: string) => void;
@@ -176,6 +177,34 @@ export const DEFAULT_SYNTHESIS_PROMPT_RU = `Вы - Агент Синтеза д�
 Входной Текст:
 {SOURCES}`;
 
+export const DEFAULT_LOGISTICS_PROMPT = `You are a NIX.ru Data Extractor, expert in parsing Russian technical specs.
+Extract the following from the text:
+1. "Вес брутто" (Gross Weight) -> normalized to kg.
+2. "Размеры упаковки" (Dimensions) -> normalized to cm (W x D x H).
+3. "Совместимость" (Compatibility) -> list of printer models.
+4. "Ресурс" (Yield) -> pages.
+
+Return JSON:
+{
+    "logistics": { "weight": "0.85 kg", "dimensions": "35x15x10 cm" },
+    "compatibility": ["Printer 1", "Printer 2"],
+    "specs": { "yield": "1500 pages", "color": "Black" }
+}`;
+
+export const DEFAULT_LOGISTICS_PROMPT_RU = `Вы - Экстрактор Данных NIX.ru, эксперт по техническим характеристикам.
+Извлеките следующее из текста:
+1. "Вес брутто" -> нормализовать в кг.
+2. "Размеры упаковки" -> нормализовать в см (Ш x Г x В).
+3. "Совместимость" -> список моделей принтеров.
+4. "Ресурс" -> страниц (Yield).
+
+Верните JSON:
+{
+    "logistics": { "weight": "0.85 кг", "dimensions": "35x15x10 см" },
+    "compatibility": ["Принтер 1", "Принтер 2"],
+    "specs": { "yield": "1500 страниц", "color": "Black" }
+}`;
+
 export const useSettingsStore = create<SettingsState>()(
     persist(
         (set, get) => ({
@@ -187,7 +216,8 @@ export const useSettingsStore = create<SettingsState>()(
             },
             prompts: {
                 discovery: DEFAULT_DISCOVERY_PROMPT,
-                synthesis: DEFAULT_SYNTHESIS_PROMPT
+                synthesis: DEFAULT_SYNTHESIS_PROMPT,
+                logistics: DEFAULT_LOGISTICS_PROMPT
             },
             sources: {
                 official: true,
@@ -232,13 +262,22 @@ export const useSettingsStore = create<SettingsState>()(
                 set((state) => ({
                     prompts: {
                         discovery: lang === 'ru' ? DEFAULT_DISCOVERY_PROMPT_RU : DEFAULT_DISCOVERY_PROMPT,
-                        synthesis: lang === 'ru' ? DEFAULT_SYNTHESIS_PROMPT_RU : DEFAULT_SYNTHESIS_PROMPT
+                        synthesis: lang === 'ru' ? DEFAULT_SYNTHESIS_PROMPT_RU : DEFAULT_SYNTHESIS_PROMPT,
+                        logistics: lang === 'ru' ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT
                     }
                 }));
             }
         }),
         {
             name: 'd-squared-settings',
+            // Define a migration to add new defaults if missing
+            onRehydrateStorage: () => (state) => {
+                if (state) {
+                    if (!state.prompts.logistics) {
+                        state.prompts.logistics = state.language === 'ru' ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT;
+                    }
+                }
+            }
         }
     )
 );

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Moon, Sun, Globe, Brain, Zap, Key, Layout, Shield, Database, Check, History, ChevronRight, AlertCircle, RefreshCw, Wand2, Factory, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useSettingsStore, SettingsState, DEFAULT_DISCOVERY_PROMPT, DEFAULT_SYNTHESIS_PROMPT, DEFAULT_DISCOVERY_PROMPT_RU, DEFAULT_SYNTHESIS_PROMPT_RU } from '../../stores/settingsStore.js';
+import { useSettingsStore, SettingsState, DEFAULT_DISCOVERY_PROMPT, DEFAULT_SYNTHESIS_PROMPT, DEFAULT_DISCOVERY_PROMPT_RU, DEFAULT_SYNTHESIS_PROMPT_RU, DEFAULT_LOGISTICS_PROMPT, DEFAULT_LOGISTICS_PROMPT_RU } from '../../stores/settingsStore.js';
 
 interface SettingsViewProps {
     isOpen: boolean;
@@ -56,6 +56,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
         store.setApiKey('perplexity', localConfig.apiKeys.perplexity);
         store.setPrompt('discovery', localConfig.prompts.discovery);
         store.setPrompt('synthesis', localConfig.prompts.synthesis);
+        store.setPrompt('logistics', localConfig.prompts.logistics);
         store.setLanguage(localConfig.language);
 
         store.setBlockedDomains(localConfig.sources.blockedDomains);
@@ -196,6 +197,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                                 const newLang = e.target.value as 'en' | 'ru';
                                                 let newDiscovery = localConfig.prompts.discovery;
                                                 let newSynthesis = localConfig.prompts.synthesis;
+                                                let newLogistics = localConfig.prompts.logistics;
                                                 if (newLang === 'ru') {
                                                     // If current is English Default (or close enough), switch to RU
                                                     // We check if it starts with the first line to be safer against version changes
@@ -205,6 +207,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                                     if (newSynthesis.trim().startsWith(DEFAULT_SYNTHESIS_PROMPT.split('\n')[0].trim())) {
                                                         newSynthesis = DEFAULT_SYNTHESIS_PROMPT_RU;
                                                     }
+                                                    if (newLogistics && newLogistics.trim().startsWith(DEFAULT_LOGISTICS_PROMPT.split('\n')[0].trim())) {
+                                                        newLogistics = DEFAULT_LOGISTICS_PROMPT_RU;
+                                                    }
                                                 } else {
                                                     // If current is RU Default (or close enough), switch to EN
                                                     if (newDiscovery.trim().startsWith(DEFAULT_DISCOVERY_PROMPT_RU.split('\n')[0].trim())) {
@@ -213,8 +218,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                                     if (newSynthesis.trim().startsWith(DEFAULT_SYNTHESIS_PROMPT_RU.split('\n')[0].trim())) {
                                                         newSynthesis = DEFAULT_SYNTHESIS_PROMPT;
                                                     }
+                                                    if (newLogistics && newLogistics.trim().startsWith(DEFAULT_LOGISTICS_PROMPT_RU.split('\n')[0].trim())) {
+                                                        newLogistics = DEFAULT_LOGISTICS_PROMPT;
+                                                    }
                                                 }
-                                                setLocalConfig({ ...localConfig, language: newLang, prompts: { ...localConfig.prompts, discovery: newDiscovery, synthesis: newSynthesis } });
+                                                setLocalConfig({ ...localConfig, language: newLang, prompts: { ...localConfig.prompts, discovery: newDiscovery, synthesis: newSynthesis, logistics: newLogistics! } });
                                             }}
                                             className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 outline-none"
                                         >
@@ -411,7 +419,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                                 ...localConfig,
                                                 prompts: {
                                                     discovery: isRu ? DEFAULT_DISCOVERY_PROMPT_RU : DEFAULT_DISCOVERY_PROMPT,
-                                                    synthesis: isRu ? DEFAULT_SYNTHESIS_PROMPT_RU : DEFAULT_SYNTHESIS_PROMPT
+                                                    synthesis: isRu ? DEFAULT_SYNTHESIS_PROMPT_RU : DEFAULT_SYNTHESIS_PROMPT,
+                                                    logistics: isRu ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT
                                                 }
                                             });
                                         }}
@@ -430,6 +439,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                         label={t('settings:prompts.synthesis')}
                                         value={localConfig.prompts.synthesis}
                                         onChange={(v) => setLocalConfig({ ...localConfig, prompts: { ...localConfig.prompts, synthesis: v } })}
+                                    />
+                                    <PromptEditor
+                                        label={t('settings:prompts.logistics') || "LOGISTICS AGENT"}
+                                        value={localConfig.prompts.logistics || ""}
+                                        onChange={(v) => setLocalConfig({ ...localConfig, prompts: { ...localConfig.prompts, logistics: v } })}
                                     />
                                 </div>
                             </div>
