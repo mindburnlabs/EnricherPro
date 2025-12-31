@@ -18,7 +18,7 @@ export const researchWorkflow = inngest.createFunction(
     { event: "app/research.started" },
     async ({ event, step }) => {
         // @ts-ignore - Custom event prop
-        const { jobId, tenantId, inputRaw, mode = 'balanced', forceRefresh, apiKeys, agentConfig, sourceConfig, budgets, previousJobId } = event.data;
+        const { jobId, tenantId, inputRaw, mode = 'balanced', forceRefresh, apiKeys, agentConfig, sourceConfig, budgets, previousJobId, language = 'en' } = event.data;
         const agent = new OrchestratorAgent(jobId, apiKeys, tenantId);
 
         // 1. Initialize DB Record
@@ -44,7 +44,8 @@ export const researchWorkflow = inngest.createFunction(
                 apiKeys,
                 agentConfig?.prompts?.discovery,
                 (msg) => agent.log('discovery', msg),
-                context // Pass context
+                context, // Pass context
+                language // Pass language
             );
         });
 
@@ -120,4 +121,3 @@ export const researchWorkflow = inngest.createFunction(
         };
     }
 );
-

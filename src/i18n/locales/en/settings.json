@@ -1,66 +1,62 @@
 {
-    "title": "System Settings",
-    "subtitle": "Configure API keys and system preferences.",
+    "title": "Settings",
+    "subtitle": "Manage your research agent",
     "tabs": {
         "general": "General",
-        "firecrawl": "Firecrawl",
-        "monitoring": "Monitoring"
+        "models": "Models",
+        "api": "API Keys",
+        "modes": "Research Modes",
+        "sources": "Sources",
+        "prompts": "Agent Prompts"
     },
-    "appearance": {
-        "title": "Appearance",
-        "light": "Light",
-        "light_desc": "Clean & Bright",
-        "dark": "Dark",
-        "dark_desc": "Easy on Eyes",
-        "system": "System",
-        "system_desc": "Auto-detect"
+    "general": {
+        "appearance": "Appearance",
+        "light": "Light Mode",
+        "dark": "Dark Mode",
+        "localization": "Localization",
+        "language": "Interface Language",
+        "language_desc": "Affects UI text and default search regions"
     },
-    "engine": {
-        "title": "Primary Engine",
-        "firecrawl_desc": "Autonomous Web Research",
-        "exclusive_note": "* Enricher Pro uses Firecrawl exclusively for maximum reliability."
+    "models": {
+        "title": "Primary Reasoner Model",
+        "desc": "Select the LLM used for planning and synthesis.",
+        "active": "Active",
+        "fetch_error": "Failed to fetch models",
+        "fetch_tip": "Click the refresh button to load available models from OpenRouter."
     },
-    "danger_zone": {
-        "title": "Danger Zone",
-        "clear_history": "Clear History",
-        "clear_desc": "Remove all data, queues, and cache. This action cannot be undone.",
-        "delete_btn": "Delete All History"
+    "api": {
+        "security_note": "API keys are stored in your browser.",
+        "firecrawl": "Firecrawl API Key",
+        "openrouter": "OpenRouter API Key",
+        "perplexity": "Perplexity API Key"
     },
-    "firecrawl": {
-        "title": "Firecrawl Scraper",
-        "subtitle": "Advanced web scraping & agentic search.",
-        "api_key_label": "API KEY (V2)",
-        "using_v2": "Using API V2 (Latest)",
-        "save_btn": "Save",
-        "verified_btn": "Verified",
-        "validating_btn": "Verifying...",
-        "invalid_key": "Invalid Key. Check credentials at firecrawl.dev",
-        "empty_key": "Key cannot be empty",
-        "research_protocol": "Research Protocol",
-        "modes": {
-            "fast": "Fast Audit",
-            "fast_desc": "Quick check (2m)",
-            "standard": "Standard",
-            "standard_desc": "Deep check (5m)",
-            "exhaustive": "Deep Context",
-            "exhaustive_desc": "Max depth (12m)"
-        },
-        "toggles": {
-            "strict_title": "Strict Source Selection",
-            "strict_desc": "OEM & Whitelists Only",
-            "images_title": "Visual Validation",
-            "images_desc": "Background & Dimensions Audit"
-        }
+    "modes": {
+        "fast": "Fast",
+        "balanced": "Balanced",
+        "deep": "Deep",
+        "max_queries": "Max Queries",
+        "limit_per_query": "Limit / Query"
     },
-    "language": {
-        "title": "Language / Язык",
-        "select": "Select Interface Language"
+    "sources": {
+        "allowed_types": "Allowed Source Types",
+        "official": "Official Sources",
+        "official_desc": "Brand websites, documentation.",
+        "marketplace": "Marketplaces",
+        "marketplace_desc": "Amazon, eBay, etc.",
+        "community": "Community & Forums",
+        "community_desc": "Reddit, FixYourOwnPrinter, etc.",
+        "blocked_domains": "Blocked Domains",
+        "blocked_domains_desc": "Enter one domain per line."
     },
-    "monitoring": {
-        "title": "API Status",
-        "health": "SYSTEM HEALTH",
-        "latency": "AVG LATENCY",
-        "total_inc": "TOTAL REQUESTS",
-        "uptime": "UPTIME"
-    }
+    "prompts": {
+        "system_prompts": "System Prompts",
+        "discovery": "Discovery Agent",
+        "synthesis": "Synthesis Agent",
+        "reset": "Reset to Defaults"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "save": "Save Changes"
+    },
+    "plan_active": "Pro Plan Active"
 }

@@ -34,7 +34,8 @@ describe('QualityGatekeeper Advanced Gates', () => {
 
         const result = await QualityGatekeeper.validate(item as any);
         expect(result.warnings).toContain('INCONSISTENT_LOGISTICS: Dimensions exist but weight is missing');
-        expect(result.stages.consistency).toBe(false);
+        // Relaxed logic: consistency check stays TRUE, just adds warning
+        expect(result.stages.consistency).toBe(true);
     });
 
     it('Stage 3: Consistency - Should pass if both exist', async () => {

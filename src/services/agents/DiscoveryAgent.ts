@@ -1,3 +1,4 @@
+
 import { BackendLLMService } from "../backend/llm.js";
 import { BackendFirecrawlService } from "../backend/firecrawl.js";
 
@@ -31,8 +32,8 @@ const WHITELIST_DOMAINS = [
 
 export class DiscoveryAgent {
 
-    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string): Promise<AgentPlan> { // ADDED context
-        onLog?.(`Planning research for "${inputRaw}" in ${mode} mode...`);
+    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string, language: string = 'en'): Promise<AgentPlan> {
+        onLog?.(`Planning research for "${inputRaw}" in ${mode} mode (${language.toUpperCase()})...`);
 
         let contextInstruction = "";
         if (context) {
@@ -45,15 +46,31 @@ export class DiscoveryAgent {
             `;
         }
 
+        // Dynamic Language Rules
+        const isRu = language === 'ru';
+        const regionRules = isRu
+            ? `
+            - PRIMARY MARKET: Russia/CIS.
+            - Use Russian keywords for generic terms (e.g., "купить", "характеристики", "совместимость", "вес").
+            - Prioritize domains: nix.ru, dns-shop.ru, citilink.ru.
+            - Maintain English for Model Names and MPNs (e.g., "Canon C-EXV 42").
+            `
+            : `
+            - PRIMARY MARKET: Global/US/EU.
+            - Use English keywords.
+            - Prioritize domains: hp.com, canon.com, amazon.com, staples.com.
+            `;
+
         const systemPrompt = promptOverride || `You are the Lead Research Planner for a Printer Consumables Database.
         Your goal is to analyze the user input and construct a precise search strategy.
         
         Research Modes:
         - Fast: Focus on quick identification and basic specs. 1-2 generic queries.
-        - Balanced: Verify against NIX.ru and official sources. 2-3 queries.
-        - Deep: Exhaustive search for difficult items, including forums and cross-ref. 4-5 queries including PDF manuals.
+        - Balanced: Verify against ${isRu ? "NIX.ru and local retailers" : "Official Sources and major retailers"}. 3-4 queries.
+        - Deep: Exhaustive search. Include Chinese marketplaces (Alibaba/Taobao) for OEM parts, and Legacy Forums (FixYourOwnPrinter) for obscure specs. 5-7 queries.
 
         Current Mode: ${mode.toUpperCase()}
+        Target Language: ${language.toUpperCase()}
 
         Input: "${inputRaw}"
         ${contextInstruction}
@@ -63,14 +80,15 @@ export class DiscoveryAgent {
         - mpn: string (if explicitly present)
         - canonical_name: string (normalized model name)
         - strategies: An array of steps. Each step has:
-            - name: string (e.g. "Primary Specs", "Logistics Check", "Verification")
+            - name: string (e.g. "Primary Specs", "Logistics Check", "Chinese Suppliers", "Forum Deep Dive")
             - queries: string[] (The exact Firecrawl queries)
-            - target_domain: string (optional, e.g. "nix.ru" for weight checks)
+            - target_domain: string (optional, e.g. "nix.ru" for weight checks, "alibaba.com" for sourcing)
         
         Rules:
-        1. ALWAYS include a specific query for "NIX.ru [model] weight" if mode is Balanced or Deep.
+        ${regionRules}
+        1. ALWAYS include a specific logistics query (e.g. "weight", "dimensions", "вес").
         2. If the input is a list, set type to "list" and suggest splitting.
-        3. Use Russian queries for logistics (e.g. "вес упаковки").
+        3. In DEEP mode, strictly include: "site:alibaba.com [model] specs" and "site:printerknowledge.com [model]".
         `;
 
         try {
@@ -94,7 +112,7 @@ export class DiscoveryAgent {
                 canonical_name: inputRaw,
                 strategies: [{
                     name: "Fallback Search",
-                    queries: [`${inputRaw} specs`, `${inputRaw} cartridge`]
+                    queries: [`${inputRaw} specs`, `${inputRaw} cartridge ${isRu ? 'купить' : 'buy'}`]
                 }]
             };
         }
@@ -108,19 +126,21 @@ export class DiscoveryAgent {
         const currentMode = validModes.includes(mode) ? mode : 'balanced';
 
         const defaultBudgets = {
-            fast: { maxQueries: 2, limitPerQuery: 3 },
-            balanced: { maxQueries: 5, limitPerQuery: 5 },
-            deep: { maxQueries: 12, limitPerQuery: 10 }
+            fast: { maxQueries: 3, limitPerQuery: 3 },
+            balanced: { maxQueries: 6, limitPerQuery: 5 },
+            deep: { maxQueries: 15, limitPerQuery: 8 }
         };
 
         const budget = budgetOverrides?.[currentMode] || defaultBudgets[currentMode as ResearchMode];
         let queryCount = 0;
 
+        // Dynamic Loading of Fallback Service
+        const { FallbackSearchService } = await import("../backend/fallback.js");
+
         for (const strategy of plan.strategies) {
             for (const query of strategy.queries) {
                 if (queryCount >= budget.maxQueries) {
-                    // Skipped blocked domain
-
+                    onLog?.(`Budget limit reached (${budget.maxQueries}). Stopping.`);
                     break;
                 }
                 queryCount++;
@@ -129,15 +149,18 @@ export class DiscoveryAgent {
                     onLog?.(`Executing query: "${query}"...`);
 
                     let searchResults: RetrieverResult[] = [];
+                    let usedFallback = false;
+
                     try {
-                        // Primary: Firecrawl
+                        // PRIMARY: Firecrawl
+                        // We set a strict timeout or error handler here
                         const rawResults = await BackendFirecrawlService.search(query, {
                             limit: budget.limitPerQuery,
                             formats: ['markdown'],
                             apiKey: apiKeys?.firecrawl
                         });
 
-                        // Map raw results to RetrieverResult if needed
+                        // Map raw results
                         searchResults = rawResults.map((item: any) => ({
                             url: item.url,
                             title: item.title || "No Title",
@@ -146,25 +169,38 @@ export class DiscoveryAgent {
                             timestamp: new Date().toISOString()
                         }));
 
-                        if (searchResults.length === 0) {
-                            throw new Error("Firecrawl returned 0 results (Empty Set)");
+                        // SMART FAILOVER: If results are too few or empty, try Fallback
+                        if (searchResults.length < 1) { // Extremely loose check, even 1 result is better than 0
+                            throw new Error("Firecrawl returned 0 results");
                         }
 
                     } catch (fcError) {
-                        console.warn(`Primary Search Failed for "${query}":`, fcError);
-                        onLog?.(`Primary search failed (or empty). Switching to Fallback (Perplexity)...`);
+                        console.warn(`Primary Search Failed/Low-Yield for "${query}":`, fcError);
+                        onLog?.(`Primary search yielded low results. Switching to active Fallback (Perplexity/Sonar)...`);
 
-                        // Fallback: Perplexity
-                        const { FallbackSearchService } = await import("../backend/fallback.js");
+                        usedFallback = true;
+                        // FAILOVER: Perplexity
                         searchResults = await FallbackSearchService.search(query, apiKeys);
                     }
 
-                    onLog?.(`Found ${searchResults.length} results for "${query}".`);
+                    // Check again if we still have 0 results after fallback
+                    if (searchResults.length === 0) {
+                        onLog?.(`No results found even after fallback for "${query}".`);
+                        continue;
+                    }
+
+                    onLog?.(`Found ${searchResults.length} results for "${query}" (Source: ${usedFallback ? 'Fallback AI' : 'Web Scraper'}).`);
 
                     for (const item of searchResults) {
                         if (visitedUrls.has(item.url)) continue;
 
-                        const domain = new URL(item.url).hostname;
+                        // Careful with Perplexity URLs (sometimes they might be just 'perplexity.ai' if not parsed well, but Fallback service tries to be real)
+                        let domain = "";
+                        try {
+                            domain = new URL(item.url).hostname;
+                        } catch (e) {
+                            domain = "unknown";
+                        }
 
                         // --- Source Management Filtering ---
                         if (sourceConfig) {
@@ -181,24 +217,21 @@ export class DiscoveryAgent {
                         else if (WHITELIST_DOMAINS.some(d => domain.includes(d))) {
                             if (domain.includes('hp.com') || domain.includes('canon') || domain.includes('brother')) sourceType = 'official';
                             else sourceType = 'marketplace';
+                        } else if (domain.includes('alibaba') || domain.includes('taobao') || domain.includes('aliexpress')) {
+                            sourceType = 'marketplace';
                         }
-
-                        // If item came from fallback, source_type is 'other' but domain check above might refine it.
 
                         // --- Source Type allowed check ---
                         if (sourceConfig && sourceConfig.allowedTypes) {
-                            // This is imperfect mapping but sufficient for MVP
                             if (sourceType === 'official' && !sourceConfig.allowedTypes.official) continue;
                             if (sourceType === 'marketplace' && !sourceConfig.allowedTypes.marketplaces) continue;
-                            // Community/Search mappings would need smarter classifiers, but 'other' falls into here
                             if (sourceType === 'other' && !sourceConfig.allowedTypes.search) continue;
                         }
                         // --------------------------------
 
-
-                        // Target domain filter
-                        if (strategy.target_domain && !domain.includes(strategy.target_domain)) {
-                            continue;
+                        // Target domain filter (loose check)
+                        if (strategy.target_domain && !usedFallback) { // If fallback used, we accept anything
+                            if (!domain.includes(strategy.target_domain)) continue;
                         }
 
                         visitedUrls.add(item.url);

@@ -1,52 +1,85 @@
+
 import React, { useState, useEffect } from 'react';
-import { X, Save, Moon, Sun, Globe, Brain, Zap, Key, Layout, Shield, Database, Check, History, ChevronRight, AlertCircle, RefreshCw, Wand2 } from 'lucide-react';
+import { X, Save, Moon, Sun, Globe, Brain, Zap, Key, Layout, Shield, Database, Check, History, ChevronRight, AlertCircle, RefreshCw, Wand2, Factory } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { ResearchConfig } from '../../hooks/useResearchConfig.js';
+import { useSettingsStore, SettingsState } from '../../stores/settingsStore.js';
 
 interface SettingsViewProps {
     isOpen: boolean;
     onClose: () => void;
     onThemeChange: () => void;
     currentTheme: 'light' | 'dark';
-    config: ResearchConfig;
-    onSave: (newConfig: Partial<ResearchConfig>) => void;
 }
 
 type Tab = 'general' | 'models' | 'api' | 'prompts' | 'modes' | 'sources';
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onThemeChange, currentTheme, config, onSave }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onThemeChange, currentTheme }) => {
     if (!isOpen) return null;
 
-    const { t, i18n } = useTranslation('common');
+    const { t, i18n } = useTranslation(['settings', 'common']);
+    const store = useSettingsStore();
+
+    // Local state for editing before save
+    const [localConfig, setLocalConfig] = useState<SettingsState>(store);
     const [activeTab, setActiveTab] = useState<Tab>('general');
-    const [localConfig, setLocalConfig] = useState<ResearchConfig>(config);
     const [hasChanges, setHasChanges] = useState(false);
     const [isFetchingModels, setIsFetchingModels] = useState(false);
     const [availableModels, setAvailableModels] = useState<any[]>([]);
 
     useEffect(() => {
-        setLocalConfig(config);
-        setHasChanges(false);
-    }, [config]);
+        // Sync local config with store when opening
+        if (isOpen) {
+            // @ts-ignore - Zustand types unwrapping
+            setLocalConfig({ ...store });
+            setHasChanges(false);
+        }
+    }, [isOpen, store.model.id, store.language]); // Depend on key props to re-sync if needed
 
     // Detect changes
     useEffect(() => {
-        const isDifferent = JSON.stringify(config) !== JSON.stringify(localConfig);
+        // Deep compare roughly
+        const isDifferent = JSON.stringify(localConfig.apiKeys) !== JSON.stringify(store.apiKeys) ||
+            JSON.stringify(localConfig.prompts) !== JSON.stringify(store.prompts) ||
+            JSON.stringify(localConfig.sources) !== JSON.stringify(store.sources) ||
+            JSON.stringify(localConfig.budgets) !== JSON.stringify(store.budgets) ||
+            localConfig.model.id !== store.model.id ||
+            localConfig.language !== store.language;
         setHasChanges(isDifferent);
-    }, [localConfig, config]);
+    }, [localConfig, store]);
 
     const handleSave = () => {
-        onSave(localConfig);
-        if (localConfig.lang !== i18n.language) {
-            i18n.changeLanguage(localConfig.lang);
+        // Commit changes to store
+        store.setModel(localConfig.model);
+        store.setApiKey('firecrawl', localConfig.apiKeys.firecrawl);
+        store.setApiKey('openRouter', localConfig.apiKeys.openRouter);
+        store.setApiKey('perplexity', localConfig.apiKeys.perplexity);
+        store.setPrompt('discovery', localConfig.prompts.discovery);
+        store.setPrompt('synthesis', localConfig.prompts.synthesis);
+        store.setLanguage(localConfig.language);
+
+        store.setBlockedDomains(localConfig.sources.blockedDomains);
+
+        if (localConfig.sources.official !== store.sources.official) store.toggleSource('official');
+        if (localConfig.sources.marketplace !== store.sources.marketplace) store.toggleSource('marketplace');
+        if (localConfig.sources.community !== store.sources.community) store.toggleSource('community');
+
+        // Budgets
+        (['fast', 'balanced', 'deep'] as const).forEach(mode => {
+            store.setBudget(mode, 'maxQueries', localConfig.budgets[mode].maxQueries);
+            store.setBudget(mode, 'limitPerQuery', localConfig.budgets[mode].limitPerQuery);
+        });
+
+        if (localConfig.language !== i18n.language) {
+            i18n.changeLanguage(localConfig.language);
         }
+
         setHasChanges(false);
         onClose();
     };
 
     const fetchModels = async () => {
-        if (!localConfig.apiKeys.openrouter) {
-            alert("Please save an OpenRouter API Key first.");
+        if (!localConfig.apiKeys.openRouter) {
+            alert(t('settings:models.fetch_error')); // Simple alert for now
             return;
         }
         setIsFetchingModels(true);
@@ -54,24 +87,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
             const res = await fetch('https://openrouter.ai/api/v1/models');
             const data = await res.json();
             if (data.data) {
-                // Filter for reasonable models to avoid overwhelming the user (e.g. context > 4k)
                 const models = data.data.sort((a: any, b: any) => a.id.localeCompare(b.id));
                 setAvailableModels(models);
             }
         } catch (e) {
-            alert("Failed to fetch models");
+            alert(t('settings:models.fetch_error'));
         } finally {
             setIsFetchingModels(false);
         }
     };
 
     const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-        { id: 'general', label: 'General', icon: <Layout className="w-4 h-4" /> },
-        { id: 'models', label: 'Models', icon: <Database className="w-4 h-4" /> },
-        { id: 'api', label: 'API Keys', icon: <Key className="w-4 h-4" /> },
-        { id: 'modes', label: 'Research Modes', icon: <Zap className="w-4 h-4" /> },
-        { id: 'sources', label: 'Sources', icon: <Shield className="w-4 h-4" /> },
-        { id: 'prompts', label: 'Agent Prompts', icon: <Brain className="w-4 h-4" /> },
+        { id: 'general', label: t('settings:tabs.general'), icon: <Layout className="w-4 h-4" /> },
+        { id: 'models', label: t('settings:tabs.models'), icon: <Database className="w-4 h-4" /> },
+        { id: 'api', label: t('settings:tabs.api'), icon: <Key className="w-4 h-4" /> },
+        { id: 'modes', label: t('settings:tabs.modes'), icon: <Zap className="w-4 h-4" /> },
+        { id: 'sources', label: t('settings:tabs.sources'), icon: <Shield className="w-4 h-4" /> },
+        { id: 'prompts', label: t('settings:tabs.prompts'), icon: <Brain className="w-4 h-4" /> },
     ];
 
     return (
@@ -83,8 +115,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                 {/* Sidebar */}
                 <div className="w-64 bg-gray-50/50 dark:bg-black/20 border-r border-gray-200 dark:border-gray-800 flex flex-col pt-6 pb-4">
                     <div className="px-6 mb-8">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Settings</h2>
-                        <p className="text-xs text-gray-500 mt-1">Manage your research agent</p>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">{t('settings:title')}</h2>
+                        <p className="text-xs text-gray-500 mt-1">{t('settings:subtitle')}</p>
                     </div>
 
                     <nav className="flex-1 px-3 space-y-1">
@@ -107,18 +139,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                     <div className="px-6 mt-auto">
                         <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20">
                             <Wand2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Pro Plan Active</span>
+                            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">{t('settings:plan_active')}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Content Area */}
                 <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0f1115]">
-                    {/* Header for Mobile/Context */}
                     <div className="px-8 py-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-[#0f1115] sticky top-0 z-10">
                         <div>
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white">{tabs.find(t => t.id === activeTab)?.label}</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Configure global preferences and API connections</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{t('settings:subtitle')}</p>
                         </div>
                         <div className="flex items-center gap-3">
                             <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-500 transition-colors">
@@ -130,37 +161,37 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                     <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
                         {activeTab === 'general' && (
                             <div className="space-y-8 max-w-2xl animate-in slide-in-from-right-4 duration-300">
-                                <Section title="Appearance">
+                                <Section title={t('settings:general.appearance')}>
                                     <div className="grid grid-cols-2 gap-4">
                                         <ThemeCard
                                             active={currentTheme === 'light'}
                                             onClick={() => currentTheme !== 'light' && onThemeChange()}
                                             icon={<Sun className="w-5 h-5" />}
-                                            label="Light Mode"
+                                            label={t('settings:general.light')}
                                         />
                                         <ThemeCard
                                             active={currentTheme === 'dark'}
                                             onClick={() => currentTheme !== 'dark' && onThemeChange()}
                                             icon={<Moon className="w-5 h-5" />}
-                                            label="Dark Mode"
+                                            label={t('settings:general.dark')}
                                         />
                                     </div>
                                 </Section>
 
-                                <Section title="Localization">
+                                <Section title={t('settings:general.localization')}>
                                     <div className="bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600">
                                                 <Globe className="w-5 h-5" />
                                             </div>
                                             <div>
-                                                <div className="font-medium text-gray-900 dark:text-white">Interface Language</div>
-                                                <div className="text-xs text-gray-500">Affects UI text and default search regions</div>
+                                                <div className="font-medium text-gray-900 dark:text-white">{t('settings:general.language')}</div>
+                                                <div className="text-xs text-gray-500">{t('settings:general.language_desc')}</div>
                                             </div>
                                         </div>
                                         <select
-                                            value={localConfig.lang}
-                                            onChange={(e) => setLocalConfig({ ...localConfig, lang: e.target.value })}
+                                            value={localConfig.language}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, language: e.target.value as any })}
                                             className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 outline-none"
                                         >
                                             <option value="en">English (US)</option>
@@ -176,16 +207,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                 <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10 rounded-2xl p-6 border border-emerald-100 dark:border-emerald-900/30">
                                     <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                         <Database className="w-5 h-5 text-emerald-600" />
-                                        Primary Reasoner Model
+                                        {t('settings:models.title')}
                                     </h4>
                                     <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 mb-4">
-                                        Select the LLM used for planning, synthesis, and reasoning. Requires OpenRouter key.
+                                        {t('settings:models.desc')}
                                     </p>
 
                                     <div className="flex gap-2">
                                         <div className="flex-1 bg-white dark:bg-black border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3 flex items-center justify-between shadow-sm">
-                                            <span className="font-mono text-sm">{localConfig.model}</span>
-                                            <span className="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">Active</span>
+                                            <span className="font-mono text-sm">{localConfig.model.id}</span>
+                                            <span className="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">{t('settings:models.active')}</span>
                                         </div>
                                         <button
                                             onClick={fetchModels}
@@ -201,11 +232,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                             {availableModels.map(model => (
                                                 <button
                                                     key={model.id}
-                                                    onClick={() => setLocalConfig({ ...localConfig, model: model.id })}
-                                                    className={`w-full text-left px-4 py-3 text-xs font-mono border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 flex justify-between ${localConfig.model === model.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400'}`}
+                                                    onClick={() => setLocalConfig({ ...localConfig, model: { id: model.id, name: model.name } })}
+                                                    className={`w-full text-left px-4 py-3 text-xs font-mono border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 flex justify-between ${localConfig.model.id === model.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400'}`}
                                                 >
                                                     {model.id}
-                                                    {localConfig.model === model.id && <Check className="w-3 h-3" />}
+                                                    {localConfig.model.id === model.id && <Check className="w-3 h-3" />}
                                                 </button>
                                             ))}
                                         </div>
@@ -213,7 +244,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
 
                                     {availableModels.length === 0 && !isFetchingModels && (
                                         <p className="text-xs text-gray-500 mt-2">
-                                            Click the refresh button to load available models from OpenRouter.
+                                            {t('settings:models.fetch_tip')}
                                         </p>
                                     )}
                                 </div>
@@ -225,32 +256,28 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                 <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-xl p-4 flex gap-3">
                                     <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
                                     <p className="text-sm text-amber-800 dark:text-amber-200">
-                                        API keys are stored securely in your browser's LocalStorage. They are never sent to our servers, only directly to the providers.
+                                        {t('settings:api.security_note')}
                                     </p>
                                 </div>
-
                                 <InputGroup
-                                    label="Firecrawl API Key"
-                                    desc="Required for web scraping and search"
+                                    label={t('settings:api.firecrawl')}
                                     value={localConfig.apiKeys.firecrawl}
                                     onChange={(v) => setLocalConfig({ ...localConfig, apiKeys: { ...localConfig.apiKeys, firecrawl: v } })}
                                     placeholder="fc-..."
                                     type="password"
                                 />
                                 <InputGroup
-                                    label="OpenRouter API Key"
-                                    desc="Required for LLM reasoning models"
-                                    value={localConfig.apiKeys.openrouter}
-                                    onChange={(v) => setLocalConfig({ ...localConfig, apiKeys: { ...localConfig.apiKeys, openrouter: v } })}
+                                    label={t('settings:api.openrouter')}
+                                    value={localConfig.apiKeys.openRouter}
+                                    onChange={(v) => setLocalConfig({ ...localConfig, apiKeys: { ...localConfig.apiKeys, openRouter: v } })}
                                     placeholder="sk-or-..."
                                     type="password"
                                 />
                                 <InputGroup
-                                    label="Google Gemini API Key"
-                                    desc="Optional backup model provider"
-                                    value={localConfig.apiKeys.google}
-                                    onChange={(v) => setLocalConfig({ ...localConfig, apiKeys: { ...localConfig.apiKeys, google: v } })}
-                                    placeholder="AIza..."
+                                    label={t('settings:api.perplexity')}
+                                    value={localConfig.apiKeys.perplexity}
+                                    onChange={(v) => setLocalConfig({ ...localConfig, apiKeys: { ...localConfig.apiKeys, perplexity: v } })}
+                                    placeholder="pplx-..."
                                     type="password"
                                 />
                             </div>
@@ -263,11 +290,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                         <div key={mode} className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
                                             <div className="flex items-center gap-2 mb-3">
                                                 <Zap className={`w-4 h-4 ${mode === 'deep' ? 'text-purple-500' : mode === 'balanced' ? 'text-blue-500' : 'text-amber-500'}`} />
-                                                <h4 className="font-bold capitalize text-gray-900 dark:text-white">{mode}</h4>
+                                                <h4 className="font-bold capitalize text-gray-900 dark:text-white">{t(`settings:modes.${mode}`)}</h4>
                                             </div>
                                             <div className="space-y-3">
                                                 <div>
-                                                    <label className="text-[10px] uppercase font-bold text-gray-400">Max Queries</label>
+                                                    <label className="text-[10px] uppercase font-bold text-gray-400">{t('settings:modes.max_queries')}</label>
                                                     <input
                                                         type="number"
                                                         value={localConfig.budgets[mode].maxQueries}
@@ -276,7 +303,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="text-[10px] uppercase font-bold text-gray-400">Depth Limit</label>
+                                                    <label className="text-[10px] uppercase font-bold text-gray-400">{t('settings:modes.limit_per_query')}</label>
                                                     <input
                                                         type="number"
                                                         value={localConfig.budgets[mode].limitPerQuery}
@@ -293,37 +320,37 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
 
                         {activeTab === 'sources' && (
                             <div className="space-y-8 max-w-2xl animate-in slide-in-from-right-4 duration-300">
-                                <Section title="Allowed Source Types">
+                                <Section title={t('settings:sources.allowed_types')}>
                                     <div className="grid grid-cols-1 gap-3">
                                         <ToggleRow
-                                            label="Official Sources"
-                                            desc="Brand websites, documentation, and verified portals."
-                                            active={localConfig.sources.allowedTypes.official}
-                                            onToggle={() => setLocalConfig(prev => ({ ...prev, sources: { ...prev.sources, allowedTypes: { ...prev.sources.allowedTypes, official: !prev.sources.allowedTypes.official } } }))}
+                                            label={t('settings:sources.official')}
+                                            desc={t('settings:sources.official_desc')}
+                                            active={localConfig.sources.official}
+                                            onToggle={() => setLocalConfig(prev => ({ ...prev, sources: { ...prev.sources, official: !prev.sources.official } }))}
                                         />
                                         <ToggleRow
-                                            label="Marketplaces"
-                                            desc="E-commerce sites like Amazon, eBay, Newegg."
-                                            active={localConfig.sources.allowedTypes.marketplaces}
-                                            onToggle={() => setLocalConfig(prev => ({ ...prev, sources: { ...prev.sources, allowedTypes: { ...prev.sources.allowedTypes, marketplaces: !prev.sources.allowedTypes.marketplaces } } }))}
+                                            label={t('settings:sources.marketplace')}
+                                            desc={t('settings:sources.marketplace_desc')}
+                                            active={localConfig.sources.marketplace}
+                                            onToggle={() => setLocalConfig(prev => ({ ...prev, sources: { ...prev.sources, marketplace: !prev.sources.marketplace } }))}
                                         />
                                         <ToggleRow
-                                            label="Community & Forums"
-                                            desc="Reddit, StackExchange, and niche discussion boards."
-                                            active={localConfig.sources.allowedTypes.community}
-                                            onToggle={() => setLocalConfig(prev => ({ ...prev, sources: { ...prev.sources, allowedTypes: { ...prev.sources.allowedTypes, community: !prev.sources.allowedTypes.community } } }))}
+                                            label={t('settings:sources.community')}
+                                            desc={t('settings:sources.community_desc')}
+                                            active={localConfig.sources.community}
+                                            onToggle={() => setLocalConfig(prev => ({ ...prev, sources: { ...prev.sources, community: !prev.sources.community } }))}
                                         />
                                     </div>
                                 </Section>
 
-                                <Section title="Blocked Domains">
+                                <Section title={t('settings:sources.blocked_domains')}>
                                     <textarea
                                         value={localConfig.sources.blockedDomains.join('\n')}
                                         onChange={(e) => setLocalConfig({ ...localConfig, sources: { ...localConfig.sources, blockedDomains: e.target.value.split('\n') } })}
                                         className="w-full h-32 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 text-sm font-mono focus:ring-2 focus:ring-emerald-500 outline-none"
                                         placeholder="example.com"
                                     />
-                                    <p className="text-xs text-gray-500 mt-2">Enter one domain per line to exclude from research.</p>
+                                    <p className="text-xs text-gray-500 mt-2">{t('settings:sources.blocked_domains_desc')}</p>
                                 </Section>
                             </div>
                         )}
@@ -331,22 +358,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                         {activeTab === 'prompts' && (
                             <div className="space-y-6 max-w-4xl animate-in slide-in-from-right-4 duration-300">
                                 <div className="flex items-center justify-between">
-                                    <Section title="System Prompts" />
+                                    <Section title={t('settings:prompts.system_prompts')} />
                                     <button
-                                        onClick={() => setLocalConfig(prev => ({ ...prev, prompts: { discovery: '', synthesis: '' } }))}
+                                        onClick={() => setLocalConfig({ ...localConfig, prompts: { discovery: 'Default...', synthesis: 'Default...' } })} // Placeholder reset
                                         className="text-xs font-medium text-red-500 hover:text-red-600 hover:underline"
                                     >
-                                        at Reset Defaults
+                                        {t('settings:prompts.reset')}
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     <PromptEditor
-                                        label="Discovery Agent"
+                                        label={t('settings:prompts.discovery')}
                                         value={localConfig.prompts.discovery}
                                         onChange={(v) => setLocalConfig({ ...localConfig, prompts: { ...localConfig.prompts, discovery: v } })}
                                     />
                                     <PromptEditor
-                                        label="Synthesis Agent"
+                                        label={t('settings:prompts.synthesis')}
                                         value={localConfig.prompts.synthesis}
                                         onChange={(v) => setLocalConfig({ ...localConfig, prompts: { ...localConfig.prompts, synthesis: v } })}
                                     />
@@ -356,13 +383,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
 
                     </div>
 
-                    {/* Footer Actions */}
                     <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-[#0f1115] flex justify-end gap-3 rounded-br-3xl">
-                        <button
-                            onClick={onClose}
-                            className="px-5 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
-                        >
-                            Cancel
+                        <button onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                            {t('settings:actions.cancel')}
                         </button>
                         <button
                             onClick={handleSave}
@@ -373,7 +396,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                 }`}
                         >
                             <Save className="w-4 h-4" />
-                            Save Changes
+                            {t('settings:actions.save')}
                         </button>
                     </div>
                 </div>
@@ -459,4 +482,3 @@ const PromptEditor: React.FC<{ label: string; value: string; onChange: (v: strin
         />
     </div>
 );
-

@@ -1,14 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useResearchConfig } from './hooks/useResearchConfig.js';
 import { SettingsView } from './components/Settings/SettingsView.js';
 import { ChatLayout } from './components/Chat/ChatLayout.js';
 import { ChatInterface } from './components/Chat/ChatInterface.js';
 
 const App: React.FC = () => {
   const { t } = useTranslation('common');
-  const { config, updateConfig } = useResearchConfig();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Theme Management
@@ -37,15 +35,13 @@ const App: React.FC = () => {
       onThemeToggle={toggleTheme}
       theme={theme}
     >
-      <ChatInterface config={config} />
+      <ChatInterface />
 
       <SettingsView
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         onThemeChange={toggleTheme}
         currentTheme={theme}
-        config={config}
-        onSave={updateConfig}
       />
     </ChatLayout>
   );

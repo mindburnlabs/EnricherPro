@@ -1,66 +1,62 @@
 {
-    "title": "Системные настройки",
-    "subtitle": "Настройка API ключей и параметров системы.",
+    "title": "Настройки",
+    "subtitle": "Управление агентом и параметрами",
     "tabs": {
         "general": "Общие",
-        "firecrawl": "Firecrawl",
-        "monitoring": "Мониторинг"
+        "models": "Модели",
+        "api": "API Ключи",
+        "modes": "Режимы",
+        "sources": "Источники",
+        "prompts": "Промпты"
     },
-    "appearance": {
-        "title": "Внешний вид",
-        "light": "Светлая",
-        "light_desc": "Чисто и ярко",
-        "dark": "Темная",
-        "dark_desc": "Комфорт для глаз",
-        "system": "Системная",
-        "system_desc": "Автообнаружение"
+    "general": {
+        "appearance": "Внешний вид",
+        "light": "Светлая тема",
+        "dark": "Темная тема",
+        "localization": "Локализация",
+        "language": "Язык интерфейса",
+        "language_desc": "Влияет на текст интерфейса и регион поиска"
     },
-    "engine": {
-        "title": "Основной движок",
-        "firecrawl_desc": "Автономный веб-поиск",
-        "exclusive_note": "* Enricher Pro использует исключительно Firecrawl для максимальной надежности."
+    "models": {
+        "title": "Основная модель (Reasoner)",
+        "desc": "Выберите LLM для планирования и синтеза.",
+        "active": "Активна",
+        "fetch_error": "Не удалось загрузить модели",
+        "fetch_tip": "Нажмите кнопку обновления для загрузки моделей из OpenRouter."
     },
-    "danger_zone": {
-        "title": "Опасная зона",
-        "clear_history": "Очистить историю",
-        "clear_desc": "Удалить все данные, очереди и кэш. Это действие нельзя отменить.",
-        "delete_btn": "Удалить всю историю"
+    "api": {
+        "security_note": "API ключи хранятся в вашем браузере.",
+        "firecrawl": "API Ключ Firecrawl",
+        "openrouter": "API Ключ OpenRouter",
+        "perplexity": "API Ключ Perplexity"
     },
-    "firecrawl": {
-        "title": "Скрапер Firecrawl",
-        "subtitle": "Продвинутый веб-скрейпинг и агентный поиск.",
-        "api_key_label": "API КЛЮЧ (V2)",
-        "using_v2": "Используется API V2 (Последняя)",
-        "save_btn": "Сохранить",
-        "verified_btn": "Подтверждено",
-        "validating_btn": "Проверка...",
-        "invalid_key": "Неверный ключ. Проверьте данные на firecrawl.dev",
-        "empty_key": "Ключ не может быть пустым",
-        "research_protocol": "Протокол исследования",
-        "modes": {
-            "fast": "Быстрый аудит",
-            "fast_desc": "Быстрая проверка (2м)",
-            "standard": "Стандарт",
-            "standard_desc": "Глубокая проверка (5м)",
-            "exhaustive": "Глубокий контекст",
-            "exhaustive_desc": "Макс. глубина (12м)"
-        },
-        "toggles": {
-            "strict_title": "Строгий отбор источников",
-            "strict_desc": "Только OEM и белые списки",
-            "images_title": "Визуальная валидация",
-            "images_desc": "Аудит фона и размеров"
-        }
+    "modes": {
+        "fast": "Быстрый",
+        "balanced": "Баланс",
+        "deep": "Глубокий",
+        "max_queries": "Макс. запросов",
+        "limit_per_query": "Лимит / запрос"
     },
-    "language": {
-        "title": "Язык / Language",
-        "select": "Выберите язык интерфейса"
+    "sources": {
+        "allowed_types": "Типы источников",
+        "official": "Официальные",
+        "official_desc": "Сайты брендов, документация.",
+        "marketplace": "Маркетплейсы",
+        "marketplace_desc": "Amazon, eBay, Alibaba и др.",
+        "community": "Сообщества и Форумы",
+        "community_desc": "Reddit, FixYourOwnPrinter и др.",
+        "blocked_domains": "Заблокированные домены",
+        "blocked_domains_desc": "Один домен на строку."
     },
-    "monitoring": {
-        "title": "Статус API",
-        "health": "ЗДОРОВЬЕ СИСТЕМЫ",
-        "latency": "СР. ЗАДЕРЖКА",
-        "total_inc": "ВСЕГО ЗАПРОСОВ",
-        "uptime": "АПТАЙМ"
-    }
+    "prompts": {
+        "system_prompts": "Системные промпты",
+        "discovery": "Агент-Исследователь (Discovery)",
+        "synthesis": "Агент-Синтезатор (Synthesis)",
+        "reset": "Сбросить по умолчанию"
+    },
+    "actions": {
+        "cancel": "Отмена",
+        "save": "Сохранить"
+    },
+    "plan_active": "Pro План Активен"
 }

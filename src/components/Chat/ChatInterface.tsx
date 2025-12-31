@@ -8,12 +8,12 @@ import { ChatResultBlock } from './ChatResultBlock.js';
 import { triggerResearch, approveItem } from '../../lib/api.js';
 import { EnrichedItem } from '../../types/domain.js';
 import { User } from 'lucide-react';
+import { useSettingsStore } from '../../stores/settingsStore.js';
 
-interface ChatInterfaceProps {
-    config: any;
-}
+interface ChatInterfaceProps { }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ config }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
+    const config = useSettingsStore();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [activeJobId, setActiveJobId] = useState<string | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -83,9 +83,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ config }) => {
         const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant' && m.jobId);
         const previousJobId = isRefinement ? lastAssistantMsg?.jobId : undefined;
 
-        const newJobId = `job-${Date.now()}`; // Temp ID until server returns real one? 
-        // No, we await trigger.
-
         setMessages(prev => [...prev, userMsg]);
 
         try {
@@ -102,11 +99,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ config }) => {
 
             // For now specific to single input support in UI flow, loop if needed
             const res = await triggerResearch(queryText, mode, {
-                apiKeys: config.apiKeys,
-                sourceConfig: config.sources,
+                apiKeys: {
+                    firecrawl: config.apiKeys.firecrawl,
+                    openrouter: config.apiKeys.openRouter,
+                    perplexity: config.apiKeys.perplexity
+                },
+                sourceConfig: {
+                    allowedTypes: {
+                        official: config.sources.official,
+                        marketplaces: config.sources.marketplace,
+                        community: config.sources.community,
+                        search: true
+                    },
+                    blockedDomains: config.sources.blockedDomains
+                },
                 budgets: config.budgets,
                 previousJobId,
-                model: config.model
+                model: config.model.id
             });
 
             if (res.success && res.jobId) {
