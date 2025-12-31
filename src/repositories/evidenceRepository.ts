@@ -1,6 +1,6 @@
 
 import { eq, and } from 'drizzle-orm';
-import { db } from '../db';
+import { db } from '../db/index.js';
 import { evidence } from '../db/schema';
 
 export class EvidenceRepository {

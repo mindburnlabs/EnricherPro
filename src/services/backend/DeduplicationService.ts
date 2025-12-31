@@ -1,5 +1,5 @@
 
-import { db } from "../../db";
+import { db } from '../../db/index.js';
 import { items } from "../../db/schema";
 import { eq, or, ilike } from "drizzle-orm";
 
