@@ -42,21 +42,30 @@ export class ItemsRepository {
         // 3. Integrity Check: Ensure Job exists (Handle Inngest Race Condition)
         const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId));
         if (!job) {
-            // Throwing a standard Error forces Inngest to retry (unlike FK constraint violation which might be fatal)
-            throw new Error(`Integrity Error: Job ${jobId} not found during Item creation. Retrying...`);
+            // Throwing a standard Error forces Inngest to retry
+            throw new Error(`Integrity Error: Job ${jobId} not found during Item creation (Pre-check). Retrying...`);
         }
 
-        const [newItem] = await db.insert(items).values({
-            tenantId,
-            jobId,
-            mpn,
-            brand: initialData.brand,
-            model: initialData.model,
-            data: Transformers.toDbData(initialData),
-            status: 'processing'
-        }).returning();
+        try {
+            const [newItem] = await db.insert(items).values({
+                tenantId,
+                jobId,
+                mpn,
+                brand: initialData.brand,
+                model: initialData.model,
+                data: Transformers.toDbData(initialData),
+                status: 'processing'
+            }).returning();
 
-        return newItem;
+            return newItem;
+        } catch (err: any) {
+            // Handle Race Condition: Job might be missing despite check (Replica lag, etc.)
+            // Postgres Error 23503 = foreign_key_violation
+            if (err?.code === '23503' && err?.constraint?.includes('items_job_id')) {
+                throw new Error(`Integrity Error (FK): Job ${jobId} not found during Item insert. Retrying...`);
+            }
+            throw err;
+        }
     }
 
     static async findById(id: string) {

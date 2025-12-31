@@ -70,24 +70,41 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
     return (
         <div className="w-full max-w-3xl mx-auto">
             <form onSubmit={handleSubmit} className="relative group">
-                <div className={`flex flex-col bg-white dark:bg-gray-800 border-2 ${isRefining ? 'border-purple-500/50' : 'border-transparent'} focus-within:${isRefining ? 'border-purple-500' : 'border-emerald-500/50'} rounded-2xl shadow-xl transition-all duration-300 overflow-hidden relative z-10`}>
+                <div className={`
+                    flex flex-col bg-white dark:bg-gray-800 
+                    border border-gray-200 dark:border-gray-700
+                    rounded-[32px] shadow-lg transition-all duration-300 
+                    relative z-10 overflow-hidden
+                    focus-within:shadow-xl focus-within:border-emerald-500/50 focus-within:ring-4 focus-within:ring-emerald-500/10
+                    ${isRefining ? 'border-purple-200 dark:border-purple-800/50 focus-within:border-purple-500/50 focus-within:ring-purple-500/10' : ''}
+                `}>
 
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder={isRefining ? "Ask a follow-up question or refine criteria..." : t('composer.placeholder')}
-                        className="w-full min-h-[120px] p-4 bg-transparent text-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none font-medium"
+                        placeholder={isRefining ? "Ask a follow-up..." : t('composer.placeholder')}
+                        className="w-full min-h-[80px] p-5 pb-12 bg-transparent text-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none font-medium leading-relaxed"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSubmit(e);
+                            }
+                        }}
                     />
 
-                    <div className="flex items-center justify-between px-3 py-2 bg-gray-50/50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
-                        <div className="flex space-x-2 relative">
-                            {/* Mode Selector */}
+                    {/* Bottom Toolbar */}
+                    <div className="absolute bottom-3 left-4 right-3 flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                            {/* Focus / Mode Selector */}
                             <button
                                 type="button"
                                 onClick={() => setShowModes(!showModes)}
-                                className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200 dark:border-gray-700"
+                                className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
                             >
-                                <span>{modes.find(m => m.id === mode)?.label}</span>
+                                {mode === 'fast' && <span>⚡</span>}
+                                {mode === 'balanced' && <span>⚖️</span>}
+                                {mode === 'deep' && <span>🧠</span>}
+                                <span>{modes.find(m => m.id === mode)?.label.split(' ')[1]}</span>
                             </button>
 
                             {/* Refine Toggle */}
@@ -95,64 +112,69 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
                                 <button
                                     type="button"
                                     onClick={() => setIsRefining(!isRefining)}
-                                    className={`flex items-center space-x-1 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors border ${isRefining
-                                        ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800'
-                                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700'}`}
+                                    className={`flex items-center space-x-1 px-3 py-1.5 text-xs font-semibold rounded-full transition-colors ${isRefining
+                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                                        : 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200'}`}
                                 >
                                     <span>✨ Refine</span>
                                 </button>
                             )}
 
-                            {/* Mode Dropdown ... */}
-                            {showModes && (
-                                <div className="absolute bottom-12 left-0 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                                    {modes.map((m) => (
-                                        <button
-                                            key={m.id}
-                                            type="button"
-                                            onClick={() => { setMode(m.id as any); setShowModes(false); }}
-                                            className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col ${mode === m.id ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
-                                        >
-                                            <span className={`font-semibold ${mode === m.id ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-gray-100'}`}>{m.label}</span>
-                                            <span className="text-xs text-gray-500">{m.desc}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            <label className="p-2 text-gray-500 hover:text-emerald-600 cursor-pointer transition-colors" title="Upload CSV">
-                                <Paperclip className="w-5 h-5" />
+                            <label className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" title="Upload">
+                                <Paperclip className="w-4 h-4" />
                                 <input type="file" accept=".csv,.txt" className="hidden" onChange={handleFileUpload} />
                             </label>
                         </div>
 
-                        <button
-                            type="submit"
-                            disabled={!input.trim() || isProcessing}
-                            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-white font-medium transition-all transform duration-200
-                ${input.trim() && !isProcessing
-                                    ? (isRefining ? 'bg-purple-600 hover:bg-purple-500 shadow-lg shadow-purple-600/20 translate-y-0' : 'bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-600/20 translate-y-0')
-                                    : 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'}`}
-                        >
-                            <span>{isRefining ? 'Refine' : t('composer.button')}</span>
-                            <div className={`p-1 rounded-full ${input.trim() ? 'bg-white/20' : ''}`}>
-                                <Send className="w-4 h-4" />
-                            </div>
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {/* Word Count / Ready State? */}
+                            {/* Submit Button */}
+                            <button
+                                type="submit"
+                                disabled={!input.trim() || isProcessing}
+                                className={`p-2 rounded-full text-white transition-all transform duration-200 shadow-md flex items-center justify-center
+                                    ${input.trim() && !isProcessing
+                                        ? (isRefining ? 'bg-purple-600 hover:bg-purple-500 scale-100' : 'bg-emerald-600 hover:bg-emerald-500 scale-100')
+                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-400 scale-95 cursor-not-allowed shadow-none'}`}
+                            >
+                                {isProcessing ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                {/* Glow Effect */}
-                <div className={`absolute -inset-0.5 bg-gradient-to-r ${isRefining ? 'from-purple-500 via-pink-500 to-rose-500' : 'from-emerald-500 via-teal-500 to-cyan-500'} rounded-2xl opacity-20 group-focus-within:opacity-50 blur transition duration-500 -z-10`}></div>
+                    {/* Mode Dropdown */}
+                    {showModes && (
+                        <div className="absolute bottom-14 left-4 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 p-1">
+                            {modes.map((m) => (
+                                <button
+                                    key={m.id}
+                                    type="button"
+                                    onClick={() => { setMode(m.id as any); setShowModes(false); }}
+                                    className={`w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors flex items-center gap-3 ${mode === m.id ? 'bg-gray-50 dark:bg-gray-700/30' : ''}`}
+                                >
+                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 shadow-sm text-base">
+                                        {m.label.split(' ')[0]}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className={`font-semibold ${mode === m.id ? 'text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300'}`}>
+                                            {m.label.split(' ').slice(1).join(' ')}
+                                        </span>
+                                        <span className="text-[10px] text-gray-500">{m.desc}</span>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </form>
 
             {!isRefining && (
-                <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <div className="mt-8 flex flex-wrap justify-center gap-2">
                     {suggestions.map((suggestion) => (
                         <button
                             key={suggestion}
                             onClick={() => setInput(suggestion)}
-                            className="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:border-emerald-400 dark:hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                            className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 border border-transparent hover:border-emerald-200 dark:hover:border-emerald-800 rounded-xl transition-all hover:-translate-y-0.5"
                         >
                             {suggestion}
                         </button>

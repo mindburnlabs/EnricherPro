@@ -137,9 +137,7 @@ export class DiscoveryAgent {
                             apiKey: apiKeys?.firecrawl
                         });
 
-                        // Map raw results to RetrieverResult if needed, or assume Firecrawl returns compatible shape
-                        // The current BackendFirecrawlService returns `any[]` but usually matches expected shape
-                        // We need to map it to ensure consistency
+                        // Map raw results to RetrieverResult if needed
                         searchResults = rawResults.map((item: any) => ({
                             url: item.url,
                             title: item.title || "No Title",
@@ -148,9 +146,13 @@ export class DiscoveryAgent {
                             timestamp: new Date().toISOString()
                         }));
 
+                        if (searchResults.length === 0) {
+                            throw new Error("Firecrawl returned 0 results (Empty Set)");
+                        }
+
                     } catch (fcError) {
                         console.warn(`Primary Search Failed for "${query}":`, fcError);
-                        onLog?.(`Primary search failed. Switching to Fallback (Perplexity)...`);
+                        onLog?.(`Primary search failed (or empty). Switching to Fallback (Perplexity)...`);
 
                         // Fallback: Perplexity
                         const { FallbackSearchService } = await import("../backend/fallback.js");

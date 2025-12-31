@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { StepStatus } from '../components/Research/RunProgress.js';
-import { EnrichedItem } from '../types/domain.js';
+import { StepStatus, EnrichedItem } from '../types/domain.js';
 import { getItems } from '../lib/api.js';
 
 type ResearchStatus = 'idle' | 'running' | 'completed' | 'failed';

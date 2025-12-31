@@ -78,6 +78,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                     <TabButton active={activeTab === 'prompts'} onClick={() => setActiveTab('prompts')} icon={<Brain className="w-4 h-4" />} label="Agent Prompts" />
                     <TabButton active={activeTab === 'modes'} onClick={() => setActiveTab('modes')} icon={<Zap className="w-4 h-4" />} label="Modes" />
                     <TabButton active={activeTab === 'sources'} onClick={() => setActiveTab('sources')} icon={<Shield className="w-4 h-4" />} label="Sources" />
+                    <TabButton active={activeTab === 'models'} onClick={() => setActiveTab('models')} icon={<Database className="w-4 h-4" />} label="Models" />
                 </div>
 
                 {/* Content */}
@@ -263,6 +264,48 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                     h="h-32"
                                 />
                                 <p className="text-xs text-gray-500 mt-2">These domains will be excluded from search results.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'models' && (
+                        <div className="space-y-6 animate-in slide-in-from-right-4 duration-200">
+                            <h3 className="section-title">Model Selection</h3>
+                            <p className="text-sm text-gray-500 mb-4">
+                                Configure which models are used for reasoning. Fetching requires a valid OpenRouter Key.
+                            </p>
+
+                            <div className="setting-card flex-col items-start gap-4">
+                                <div className="flex justify-between w-full items-center">
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">Available Models</span>
+                                    <button
+                                        onClick={async () => {
+                                            if (!localConfig.apiKeys.openrouter) {
+                                                alert("Please save an OpenRouter API Key first.");
+                                                return;
+                                            }
+                                            try {
+                                                const res = await fetch('https://openrouter.ai/api/v1/models');
+                                                const data = await res.json();
+                                                if (data.data) {
+                                                    alert(`Successfully fetched ${data.data.length} models from OpenRouter!`);
+                                                    console.log("Models:", data.data);
+                                                }
+                                            } catch (e) {
+                                                alert("Failed to fetch models: " + String(e));
+                                            }
+                                        }}
+                                        className="btn-secondary text-sm"
+                                    >
+                                        Fetch Live Models
+                                    </button>
+                                </div>
+                                <div className="w-full p-4 bg-gray-100 dark:bg-gray-900 rounded-lg text-xs font-mono text-gray-500">
+                                    Current Planner Model: <span className="text-emerald-600">google/gemini-2.0-flash-exp</span> (Hardcoded default)
+                                    <br />
+                                    <br />
+                                    <i>Selectable model list coming in next update.</i>
+                                </div>
                             </div>
                         </div>
                     )}

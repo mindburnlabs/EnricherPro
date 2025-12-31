@@ -3,6 +3,14 @@ export type RuMarketEligibility = 'ru_verified' | 'ru_unknown' | 'ru_rejected';
 
 export type ProcessingStep = 'idle' | 'normalization' | 'parsing' | 'discovery' | 'searching' | 'filtering' | 'scraping_nix' | 'scraping_compat' | 'enrichment' | 'analyzing' | 'auditing_images' | 'finalizing' | 'gate_check' | 'complete' | 'error' | 'failed';
 
+export interface StepStatus {
+    id: string;
+    label: string;
+    status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+    description?: string;
+    timestamp?: string;
+}
+
 export type AutomationStatus = 'done' | 'needs_review' | 'failed';
 
 export type ConsumableType =
