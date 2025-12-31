@@ -304,6 +304,64 @@ export const researchWorkflow = inngest.createFunction(
                 }
             }
 
+            // ---------------------------------------------------------
+            // ZERO RESULTS RESCUE: Final Safety Net
+            // ---------------------------------------------------------
+            if (allResults.length === 0) {
+                agent.log('discovery', '⚠️ Primary search yielded 0 results. Initiating Emergency Fallback...');
+                console.warn(`[ZeroResultsRescue] Job ${jobId}: Main loop finished with 0 results. Triggering rescue.`);
+
+                try {
+                    // Try one last broad broad search with the canonical name or raw input
+                    const rescueQuery = plan.canonical_name || inputRaw;
+                    const rescueResults = await FallbackSearchService.search(rescueQuery, apiKeys);
+
+                    if (rescueResults && rescueResults.length > 0) {
+                        agent.log('discovery', `✅ Rescue successful: Found ${rescueResults.length} fallback sources.`);
+
+                        // PERSIST RESCUE RESULTS
+                        for (const r of rescueResults) {
+                            try {
+                                const sourceDoc = await SourceDocumentRepository.create({
+                                    jobId,
+                                    url: r.url,
+                                    domain: new URL(r.url).hostname,
+                                    rawContent: r.markdown,
+                                    status: 'success',
+                                    extractedMetadata: { title: r.title, type: 'fallback_rescue' }
+                                });
+
+                                // Basic claim extraction for rescue results too
+                                const claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model, language);
+                                if (claims && claims.length > 0) {
+                                    await ClaimsRepository.createBatch(claims.map(c => ({
+                                        itemId: item.id,
+                                        sourceDocId: sourceDoc.id,
+                                        field: c.field,
+                                        value: typeof c.value === 'object' ? JSON.stringify(c.value) : String(c.value),
+                                        confidence: Math.round((c.confidence || 0.5) * 100)
+                                    })));
+                                }
+
+                                allResults.push({
+                                    url: r.url,
+                                    title: r.title,
+                                    markdown: r.markdown,
+                                    source_type: 'fallback_rescue',
+                                    timestamp: new Date().toISOString()
+                                });
+                            } catch (e) {
+                                console.error("Failed to persist rescue result", e);
+                            }
+                        }
+                    } else {
+                        agent.log('discovery', '❌ Emergency Rescue failed. No sources found.');
+                    }
+                } catch (e) {
+                    console.error("[ZeroResultsRescue] Rescue failed:", e);
+                }
+            }
+
             return allResults;
         });
 
