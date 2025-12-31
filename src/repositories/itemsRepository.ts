@@ -16,7 +16,7 @@ export class ItemsRepository {
 
         // 2. Global Deduplication (if MPN provided)
         if (mpn) {
-            const { DeduplicationService } = await import("../services/backend/DeduplicationService");
+            const { DeduplicationService } = await import("../services/backend/DeduplicationService.js");
             const duplicate = await DeduplicationService.findPotentialDuplicate(mpn);
             if (duplicate) {
                 if (forceRefresh) {
