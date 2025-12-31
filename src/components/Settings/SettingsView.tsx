@@ -197,11 +197,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                                 let newDiscovery = localConfig.prompts.discovery;
                                                 let newSynthesis = localConfig.prompts.synthesis;
                                                 if (newLang === 'ru') {
-                                                    if (newDiscovery === DEFAULT_DISCOVERY_PROMPT) newDiscovery = DEFAULT_DISCOVERY_PROMPT_RU;
-                                                    if (newSynthesis === DEFAULT_SYNTHESIS_PROMPT) newSynthesis = DEFAULT_SYNTHESIS_PROMPT_RU;
+                                                    // If current is English Default (or close enough), switch to RU
+                                                    // We check if it starts with the first line to be safer against version changes
+                                                    if (newDiscovery.trim().startsWith(DEFAULT_DISCOVERY_PROMPT.split('\n')[0].trim())) {
+                                                        newDiscovery = DEFAULT_DISCOVERY_PROMPT_RU;
+                                                    }
+                                                    if (newSynthesis.trim().startsWith(DEFAULT_SYNTHESIS_PROMPT.split('\n')[0].trim())) {
+                                                        newSynthesis = DEFAULT_SYNTHESIS_PROMPT_RU;
+                                                    }
                                                 } else {
-                                                    if (newDiscovery === DEFAULT_DISCOVERY_PROMPT_RU) newDiscovery = DEFAULT_DISCOVERY_PROMPT;
-                                                    if (newSynthesis === DEFAULT_SYNTHESIS_PROMPT_RU) newSynthesis = DEFAULT_SYNTHESIS_PROMPT;
+                                                    // If current is RU Default (or close enough), switch to EN
+                                                    if (newDiscovery.trim().startsWith(DEFAULT_DISCOVERY_PROMPT_RU.split('\n')[0].trim())) {
+                                                        newDiscovery = DEFAULT_DISCOVERY_PROMPT;
+                                                    }
+                                                    if (newSynthesis.trim().startsWith(DEFAULT_SYNTHESIS_PROMPT_RU.split('\n')[0].trim())) {
+                                                        newSynthesis = DEFAULT_SYNTHESIS_PROMPT;
+                                                    }
                                                 }
                                                 setLocalConfig({ ...localConfig, language: newLang, prompts: { ...localConfig.prompts, discovery: newDiscovery, synthesis: newSynthesis } });
                                             }}
