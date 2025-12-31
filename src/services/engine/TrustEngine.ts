@@ -1,4 +1,5 @@
 import { claims } from "../../db/schema.js";
+import { WHITELIST_DOMAINS, OFFICIAL_DOMAINS } from "../../config/domains.js";
 
 type Claim = typeof claims.$inferSelect & { sourceDomain?: string; sourceType?: string };
 
@@ -14,8 +15,6 @@ export class TrustEngine {
 
     // Domain Trust Tiers
     private static TRUST_TIERS: Record<string, number> = {
-        'hp.com': 100, 'canon.com': 100, 'brother.com': 100, 'xerox.com': 100, // Official
-        'firecrawl_agent': 95, // AI Agent (High Trust due to structured schema)
         'nix.ru': 90, // Trusted Retailer (Spec-Heavy)
         'dns-shop.ru': 80, 'citilink.ru': 80, // Major Retailers
         'amazon.com': 70, // Marketplaces (high noise)
@@ -41,18 +40,26 @@ export class TrustEngine {
 
             // Calculate Score based on Trust Tiers
             let trustStart = 50; // default
-            if (claim.sourceDomain) {
-                // partial match check
-                for (const [domain, score] of Object.entries(this.TRUST_TIERS)) {
-                    if (claim.sourceDomain.includes(domain) || claim.sourceType === 'firecrawl_agent') {
-                        if (claim.sourceType === 'firecrawl_agent') trustStart = 95;
-                        else if (claim.sourceDomain.includes(domain)) {
-                            trustStart = score;
-                            break;
-                        }
+            const domain = claim.sourceDomain || '';
+            const isAgent = claim.sourceType === 'firecrawl_agent' || claim.sourceType === 'agent_result';
+
+            // Smart Scrutiny
+            if (OFFICIAL_DOMAINS.some((d: string) => domain.includes(d))) {
+                trustStart = 100; // Gold Standard
+            } else if (WHITELIST_DOMAINS.some((d: string) => domain.includes(d))) {
+                trustStart = 90; // Trusted Retailer
+            } else if (isAgent) {
+                trustStart = 75; // Agent on unknown domain (Good, but doesn't beat NIX)
+            } else {
+                // partial match check for others
+                for (const [tDomain, score] of Object.entries(this.TRUST_TIERS)) {
+                    if (domain.includes(tDomain)) {
+                        trustStart = score;
+                        break;
                     }
                 }
             }
+
             grouped[val].score += trustStart;
         }
 
@@ -67,10 +74,10 @@ export class TrustEngine {
         let method: ResolvedField<T>['method'] = 'single_source';
         let isConflict = false;
 
-        // Check for conflicts (if runner-up has significant score)
+        // Check for conflicts
         if (sorted.length > 1) {
             const runnerUp = sorted[1];
-            if (runnerUp[1].score > winnerStats.score * 0.5) {
+            if (runnerUp[1].score > winnerStats.score * 0.7) { // Stricter conflict threshold
                 isConflict = true;
             }
         }
@@ -81,28 +88,19 @@ export class TrustEngine {
         // Official Source Rule
         const hasOfficial = winnerStats.claims.some(c => {
             const d = c.sourceDomain || '';
-            return d.includes('hp.com') || d.includes('canon') || d.includes('epson');
+            return OFFICIAL_DOMAINS.some((od: string) => d.includes(od));
         });
 
-        // Agent Rule
-        const hasAgent = winnerStats.claims.some(c => c.sourceType === 'firecrawl_agent');
-
-        // NIX Rule for Logistics
-        const fieldName = fieldClaims[0].field; // assume all same field
-        const isLogistics = fieldName.includes('weight') || fieldName.includes('dim');
-        const hasNix = winnerStats.claims.some(c => (c.sourceDomain || '').includes('nix.ru'));
+        // Agent Rule (Verified)
+        const hasAgent = winnerStats.claims.some(c => c.sourceType === 'firecrawl_agent' || c.sourceType === 'agent_result');
 
         if (hasOfficial) {
             confidence = 1.0;
             method = 'official';
-            isConflict = false; // Official overrides conflict usually
-        } else if (hasAgent) {
+            isConflict = false;
+        } else if (hasAgent && winnerStats.score >= 90) { // Only high trust agent
             confidence = 0.95;
-            method = 'agent_result'; // High trust for Agent
-            isConflict = false; // Trust Agent over consensus
-        } else if (isLogistics && hasNix) {
-            confidence = 0.95;
-            method = 'official'; // Treat NIX as official for logistics
+            method = 'agent_result';
         } else if (uniqueDomains >= 3) {
             confidence = 0.9;
             method = 'consensus';
@@ -111,16 +109,18 @@ export class TrustEngine {
             method = 'consensus';
         }
 
-        if (isConflict && confidence < 0.9) {
-            confidence = 0.4; // Penalize for conflict if no official source
+        // Downgrade low-trust agent
+        if (method === 'agent_result' && winnerStats.score < 90) {
+            confidence = 0.75; // Still decent, but not definitive
+            if (isConflict) confidence = 0.5;
         }
 
-        // Cast value
-        // Assuming string for now, but T allows flexibility.
-        // We stored values as strings in DB.
+        if (isConflict && confidence < 0.9) {
+            confidence = 0.4;
+        }
 
         return {
-            value: winnerVal as unknown as T, // Caller handles type parsing from string if needed
+            value: winnerVal as unknown as T,
             confidence,
             sources: Array.from(winnerStats.domains),
             isConflict,

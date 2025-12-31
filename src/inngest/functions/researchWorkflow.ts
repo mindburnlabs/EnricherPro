@@ -194,6 +194,18 @@ export const researchWorkflow = inngest.createFunction(
                                     const parsed = JSON.parse(r.markdown);
                                     agent.log('synthesis', `Directly ingesting structured data from Agent...`);
 
+                                    const { WHITELIST_DOMAINS, OFFICIAL_DOMAINS } = await import("../../config/domains.js");
+                                    const sourceUrl = r.url;
+                                    const hostname = new URL(sourceUrl).hostname;
+
+                                    // Dynamic Confidence Calculation
+                                    let baseConfidence = 0.75; // Default for unknown web sources
+                                    if (OFFICIAL_DOMAINS.some(d => hostname.includes(d))) {
+                                        baseConfidence = 0.99; // Gold standard
+                                    } else if (WHITELIST_DOMAINS.some(d => hostname.includes(d))) {
+                                        baseConfidence = 0.90; // Silver standard (Trusted Retailer)
+                                    }
+
                                     // Map structured JSON to Claim objects
                                     // Flatten object to claims
                                     const flatten = (obj: any, prefix = '') => {
@@ -207,7 +219,7 @@ export const researchWorkflow = inngest.createFunction(
                                                 res.push({
                                                     field: fieldKey,
                                                     value: val,
-                                                    confidence: 0.95, // High confidence in Agent
+                                                    confidence: baseConfidence, // Use calculated confidence
                                                     rawSnippet: "Agent Structured Output"
                                                 });
                                             }

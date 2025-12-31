@@ -26,12 +26,7 @@ export interface RetrieverResult {
     timestamp: string;
 }
 
-const WHITELIST_DOMAINS = [
-    'nix.ru', 'dns-shop.ru', 'citilink.ru', 'regard.ru',
-    'komus.ru', 'rashodnika.net', 'cartridge.ru', 'rm-company.ru',
-    'hp.com', 'canon.ru', 'kyoceradocumentsolutions.ru', 'ricoh.ru',
-    'brother.ru', 'xerox.ru', 'pantum.ru'
-];
+import { WHITELIST_DOMAINS } from "../../config/domains.js";
 
 export class DiscoveryAgent {
 
@@ -165,7 +160,47 @@ export class DiscoveryAgent {
                     apiKeys // Pass to service
                 });
 
-                return JSON.parse(response || "{}");
+                const plan = JSON.parse(response || "{}");
+
+                // ---------------------------------------------------------
+                // "Smarter" Safeguard: Enforce Language Protocol (User: "ALWAYS")
+                // ---------------------------------------------------------
+                if (mode === 'deep' && plan.strategies) {
+                    const allQueries = plan.strategies.flatMap((s: any) => s.queries || []).join(' ');
+
+                    const hasChinese = /[\u4e00-\u9fa5]/.test(allQueries);
+                    const hasRussian = /[а-яА-Я]/.test(allQueries);
+
+                    // Force Chinese OEM Strategy if missing
+                    if (!hasChinese) {
+                        plan.strategies.push({
+                            name: "Enforced OEM Sourcing (Smart)",
+                            type: "query",
+                            queries: [
+                                `${inputRaw} 耗材 (consumables)`,
+                                `${inputRaw} 规格 (specs)`,
+                                `${inputRaw} original manufacturer`
+                            ]
+                        });
+                    }
+
+                    // Force Russian Retail Strategy if target is RU and missing
+                    if (isRu && !hasRussian) {
+                        plan.strategies.push({
+                            name: "Enforced Local Availability (Smart)",
+                            type: "query",
+                            queries: [
+                                `${inputRaw} купить`,
+                                `${inputRaw} характеристики`,
+                                `site:nix.ru ${inputRaw}`,
+                                `site:dns-shop.ru ${inputRaw}`
+                            ]
+                        });
+                    }
+                }
+
+                return plan;
+
             } catch (error) {
                 console.warn(`DiscoveryAgent Plan Failed with ${modelId}, trying next...`, (error as any).message);
             }
