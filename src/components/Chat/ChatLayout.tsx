@@ -19,7 +19,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ children, onSettingsClic
                         D²
                     </span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium">
-                        v2.0
+                        beta
                     </span>
                 </div>
 
