@@ -154,16 +154,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ config }) => {
 
                             {/* Avatar */}
                             {msg.role === 'assistant' && (
-                                <div className="flex-none w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xs shadow-lg">
+                                <div className="flex-none w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xs shadow-md shadow-emerald-500/20 mt-1">
                                     AI
                                 </div>
                             )}
 
-                            <div className={`flex-1 max-w-3xl space-y-2 ${msg.role === 'user' ? 'text-right' : ''}`}>
+                            <div className={`flex-1 max-w-3xl space-y-3 ${msg.role === 'user' ? 'text-right' : ''}`}>
 
                                 {/* User Message Wrapper */}
                                 {msg.role === 'user' && (
-                                    <div className="inline-block px-5 py-3 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 font-medium text-lg">
+                                    <div className="inline-block px-6 py-3.5 rounded-[24px] rounded-br-none bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 font-medium text-lg leading-relaxed shadow-sm">
                                         {msg.content}
                                     </div>
                                 )}
