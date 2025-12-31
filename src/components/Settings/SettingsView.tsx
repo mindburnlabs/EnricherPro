@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Moon, Sun, Globe, Brain, Zap, Key, Layout, Shield, Database, Check, History, ChevronRight, AlertCircle, RefreshCw, Wand2, Factory } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useSettingsStore, SettingsState } from '../../stores/settingsStore.js';
+import { useSettingsStore, SettingsState, DEFAULT_DISCOVERY_PROMPT, DEFAULT_SYNTHESIS_PROMPT, DEFAULT_DISCOVERY_PROMPT_RU, DEFAULT_SYNTHESIS_PROMPT_RU } from '../../stores/settingsStore.js';
 
 interface SettingsViewProps {
     isOpen: boolean;
@@ -191,7 +191,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                         </div>
                                         <select
                                             value={localConfig.language}
-                                            onChange={(e) => setLocalConfig({ ...localConfig, language: e.target.value as any })}
+                                            onChange={(e) => {
+                                                const newLang = e.target.value as 'en' | 'ru';
+                                                let newDiscovery = localConfig.prompts.discovery;
+                                                let newSynthesis = localConfig.prompts.synthesis;
+                                                if (newLang === 'ru') {
+                                                    if (newDiscovery === DEFAULT_DISCOVERY_PROMPT) newDiscovery = DEFAULT_DISCOVERY_PROMPT_RU;
+                                                    if (newSynthesis === DEFAULT_SYNTHESIS_PROMPT) newSynthesis = DEFAULT_SYNTHESIS_PROMPT_RU;
+                                                } else {
+                                                    if (newDiscovery === DEFAULT_DISCOVERY_PROMPT_RU) newDiscovery = DEFAULT_DISCOVERY_PROMPT;
+                                                    if (newSynthesis === DEFAULT_SYNTHESIS_PROMPT_RU) newSynthesis = DEFAULT_SYNTHESIS_PROMPT;
+                                                }
+                                                setLocalConfig({ ...localConfig, language: newLang, prompts: { ...localConfig.prompts, discovery: newDiscovery, synthesis: newSynthesis } });
+                                            }}
                                             className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 outline-none"
                                         >
                                             <option value="en">English (US)</option>
@@ -360,7 +372,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                 <div className="flex items-center justify-between">
                                     <Section title={t('settings:prompts.system_prompts')} />
                                     <button
-                                        onClick={() => setLocalConfig({ ...localConfig, prompts: { discovery: 'Default...', synthesis: 'Default...' } })} // Placeholder reset
+                                        onClick={() => {
+                                            const isRu = localConfig.language === 'ru';
+                                            setLocalConfig({
+                                                ...localConfig,
+                                                prompts: {
+                                                    discovery: isRu ? DEFAULT_DISCOVERY_PROMPT_RU : DEFAULT_DISCOVERY_PROMPT,
+                                                    synthesis: isRu ? DEFAULT_SYNTHESIS_PROMPT_RU : DEFAULT_SYNTHESIS_PROMPT
+                                                }
+                                            });
+                                        }}
                                         className="text-xs font-medium text-red-500 hover:text-red-600 hover:underline"
                                     >
                                         {t('settings:prompts.reset')}

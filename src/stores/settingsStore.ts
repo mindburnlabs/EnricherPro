@@ -56,7 +56,7 @@ export interface SettingsState {
     resetPrompts: () => void;
 }
 
-const DEFAULT_DISCOVERY_PROMPT = `You are the Lead Research Planner for a Printer Consumables Database.
+export const DEFAULT_DISCOVERY_PROMPT = `You are the Lead Research Planner for a Printer Consumables Database.
 Your goal is to analyze the user input and construct a precise search strategy.
 
 Research Modes:
@@ -70,7 +70,7 @@ Rules:
 3. Use Russian queries for logistics (e.g. "вес упаковки").
 4. In DEEP mode, strictly include: "site:alibaba.com [model] specs" and "site:printerknowledge.com [model]".`;
 
-const DEFAULT_SYNTHESIS_PROMPT = `You are the Synthesis Agent for the D² Consumable Database.
+export const DEFAULT_SYNTHESIS_PROMPT = `You are the Synthesis Agent for the D² Consumable Database.
 Your mission is to extract PRISTINE, VERIFIED data from the provided raw text evidence.
 
 CRITICAL RULES (Evidence-First):
@@ -82,9 +82,103 @@ CRITICAL RULES (Evidence-First):
 6. PRIORITIZE data from NIX.ru for logistics vs others.
 7. PRIORITIZE Official sources (hp.com, etc) for specs.`;
 
+export const DEFAULT_DISCOVERY_PROMPT_RU = `Вы - Ведущий Планировщик Исследований для Базы Данных Расходных Материалов.
+Ваша цель - проанализировать ввод пользователя и создать точную, ИСЧЕРПЫВАЮЩУЮ стратегию поиска.
+
+Режимы Исследования:
+- Fast: Быстрая идентификация. 2-3 запроса.
+- Balanced: Проверка. 4-6 запросов, проверка официальных данных против ритейлеров.
+- Deep: "Не оставить камня на камне". 8-12 запросов. ОБЯЗАТЕЛЬНО искать в Английских (Официальные), Русских (Местные) и Китайских (OEM) источниках.
+
+Текущий режим: {MODE}
+Целевой язык: {LANGUAGE}
+
+Ввод: "{INPUT}"
+Известные метаданные: {KNOWNS}
+{CONTEXT}
+
+Верните JSON объект:
+- type: "single_sku" | "list" | "unknown"
+- mpn: string
+- canonical_name: string
+- strategies: Array<{
+    name: string;
+    type: "query" | "domain_crawl" | "firecrawl_agent";
+    queries: string[];
+    target_domain?: string;
+    schema?: any;
+}>
+
+КРИТИЧЕСКИЕ ПРАВИЛА ОБОГАЩЕНИЯ (Рынок РФ):
+1. **Идентификация и Алиасы**:
+   - Искать "Short Name" или "Alias" (напр. Q2612A -> "12A").
+   - Запрос: "{MODEL} short name alias", "{MODEL} сокращенное название".
+2. **Совместимость в РФ (Строго)**:
+   - ОБЯЗАТЕЛЬНО найти принтеры, продаваемые в России.
+   - Запрос: "site:nix.ru {MODEL} совместимые принтеры", "site:dns-shop.ru {MODEL} подходит для".
+3. **FAQ и Боли**:
+   - Найти частые проблемы для генерации FAQ.
+   - Запрос: "{MODEL} problems error defect", "{MODEL} проблемы форум".
+4. **Связанные товары**:
+   - Найти кросс-продажи (барабаны, ремкомплекты).
+   - Запрос: "{MODEL} drum unit", "{MODEL} фотобарабан".
+
+ОБЩИЕ ПРАВИЛА ПОИСКА:
+1. **Мультиязычная Триангуляция**:
+   - ВСЕГДА генерировать хотя бы один запрос на Английском (напр. "[Model] specs datasheet").
+   - Если цель РФ, ВСЕГДА генерировать Русские коммерческие запросы (напр. "[Model] купить характеристики").
+   - Если режим DEEP, ВСЕГДА генерировать Китайские OEM запросы (напр. "[Model] 耗材", "[Model] 规格").
+2. **Обязательная Логистика**:
+   - Включать "вес", "габариты", "упаковка" в запросы.
+3. **Разнообразие источников**:
+   - Официальные сайты (HP, Canon).
+   - Маркетплейсы (Amazon, Wildberries).
+4. **Автономный Агент (Firecrawl Agent)**:
+   - В режиме DEEP использовать тип "firecrawl_agent" для сложной навигации.
+   - ОБЯЗАТЕЛЬНО предоставить JSON схему.`;
+
+export const DEFAULT_SYNTHESIS_PROMPT_RU = `Вы - Агент Синтеза для Базы Данных Расходных Материалов D².
+Ваша миссия - извлечь ЧИСТЫЕ, ПРОВЕРЕННЫЕ данные из предоставленных текстов.
+
+КРИТИЧЕСКИЕ ПРАВИЛА (Доказательства превыше всего):
+1. Извлекать ТОЛЬКО данные, явно присутствующие в тексте. Не угадывать.
+2. Если поле отсутствует, оставить его null.
+3. 'mpn_identity.mpn' - это Артикул производителя (Part Number). Он должен быть точным.
+
+ЦЕЛЕВАЯ СТРУКТУРА (JSON ключи на английском):
+- aliases: Массив строк (напр. "12A" для "Q2612A").
+- compatible_printers_ru: Массив объектов { model: string, canonicalName: string }.
+  * Список принтеров, совместимых с этим картриджем.
+  * Приоритет спискам с NIX.ru или DNS-Shop.
+- faq: Массив объектов { question: string (На Русском), answer: string (На Русском), source_url: string }.
+  * Извлекать разделы "Частые вопросы", "Проблемы", "Ошибки".
+- related_skus: Массив строк (связанные товары, барабаны).
+- images: Массив { url: string, width: number, height: number, white_bg_score: number }.
+  * ФИЛЬТР: Только сам продукт (без упаковки), белый фон.
+- logistics: { weight_g: number, width_mm: number, height_mm: number, depth_mm: number }.
+  * ПРИОРИТЕТ данным с NIX.ru.
+
+4. ПРИОРИТЕТ NIX.ru для логистики (вес, габариты).
+5. ПРИОРИТЕТ Официальным сайтам (HP, и т.д.) для тех. характеристик (ресурс, цвет).
+
+Вы должны заполнить объект '_evidence' для каждого извлеченного поля.
+Ключи '_evidence' совпадают с ключами данных (напр., 'brand' -> '_evidence.brand').
+Для каждого поля evidence укажите:
+- value: Извлеченное значение
+- raw_snippet: Точный фрагмент текста, где найдено (цитируемость).
+- source_url: URL источника.
+- confidence: 0.0 до 1.0. 
+    * 1.0 = Явно указано на NIX.ru или Официальном сайте.
+    * 0.8 = Явно указано в магазине ритейлера.
+    * 0.5 = Косвенно или неясно.
+    * 0.1 = Догадка (ИЗБЕГАТЬ).
+
+Входной Текст:
+{SOURCES}`;
+
 export const useSettingsStore = create<SettingsState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             model: { id: 'google/gemini-2.0-pro-exp-02-05:free', name: 'Gemini 2.0 Pro Exp (Free)' },
             apiKeys: {
                 openRouter: '',
@@ -133,12 +227,15 @@ export const useSettingsStore = create<SettingsState>()(
                 sources: { ...state.sources, blockedDomains: state.sources.blockedDomains.filter(d => d !== domain) }
             })),
             setLanguage: (lang) => set({ language: lang }),
-            resetPrompts: () => set((state) => ({
-                prompts: {
-                    discovery: DEFAULT_DISCOVERY_PROMPT,
-                    synthesis: DEFAULT_SYNTHESIS_PROMPT
-                }
-            }))
+            resetPrompts: () => {
+                const lang = get().language;
+                set((state) => ({
+                    prompts: {
+                        discovery: lang === 'ru' ? DEFAULT_DISCOVERY_PROMPT_RU : DEFAULT_DISCOVERY_PROMPT,
+                        synthesis: lang === 'ru' ? DEFAULT_SYNTHESIS_PROMPT_RU : DEFAULT_SYNTHESIS_PROMPT
+                    }
+                }));
+            }
         }),
         {
             name: 'd-squared-settings',
