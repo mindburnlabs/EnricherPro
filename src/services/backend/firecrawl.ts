@@ -94,19 +94,15 @@ export class BackendFirecrawlService {
                     throw new Error("Firecrawl SDK does not support .agent() yet. Update dependency.");
                 }
 
-                // Map options to Firecrawl Agent params
-                const agentParams: any = {
-                    timeout: options.timeout || 60000
-                };
-
-                if (options.schema) {
-                    agentParams.responseFormat = {
+                // Correct Signature: agent({ prompt, ...options })
+                const result = await agentFn.call(client, {
+                    prompt: prompt,
+                    timeout: options.timeout || 60000,
+                    responseFormat: options.schema ? {
                         type: "json_object",
                         schema: options.schema
-                    };
-                }
-
-                const result = await agentFn.call(client, prompt, agentParams);
+                    } : undefined
+                });
 
                 if (result && result.data) {
                     return result.data; // Markdown, etc.
