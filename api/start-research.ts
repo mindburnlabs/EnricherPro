@@ -5,6 +5,8 @@ import { RateLimiter } from './_lib/rateLimit.js';
 import { getTenantId } from './_lib/context.js';
 
 import { inngest } from './_lib/inngest.js';
+import { db } from '../src/db/index.js';
+import { jobs } from '../src/db/schema.js';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     if (request.method !== 'POST') {
@@ -32,7 +34,25 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
         const jobId = uuidv4();
 
-        // Send event to Inngest
+        // 1. Create Job Record in DB (Critical: Must happen BEFORE Inngest trigger)
+        try {
+            await db.insert(jobs).values({
+                id: jobId,
+                tenantId,
+                inputRaw: typeof input === 'string' ? input : JSON.stringify(input),
+                status: 'pending',
+                progress: 0,
+                // meta: {
+                //     mode: request.body.mode || 'balanced',
+                //     initiatedBy: 'api'
+                // }
+            });
+        } catch (dbError) {
+            console.error("Failed to create job record:", dbError);
+            return response.status(500).json({ error: 'Failed to initialize research job', details: String(dbError) });
+        }
+
+        // 2. Send event to Inngest
         try {
             await inngest.send({
                 name: "app/research.started",
@@ -51,6 +71,8 @@ export default async function handler(request: VercelRequest, response: VercelRe
             });
         } catch (inngestError) {
             console.error("Inngest Send Error:", inngestError);
+            // Optional: Delete job if Inngest fails to prevent orphan pending jobs? 
+            // For now, keep it as 'pending'/stuck is better than missing data.
             return response.status(500).json({ error: 'Failed to trigger workflow', details: String(inngestError) });
         }
 
