@@ -1,4 +1,4 @@
-import { FailureReason } from './error';
+import { FailureReason } from './error.js';
 
 export interface RetryConfig {
     maxAttempts: number;

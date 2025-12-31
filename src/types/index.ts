@@ -1,8 +1,8 @@
-export * from './error';
-export * from './audit';
-export * from './config';
-export * from './domain';
-export * from './api';
-// export * from './domain'; // EnrichedItem exported via api? No.
+export * from './error.js';
+export * from './audit.js';
+export * from './config.js';
+export * from './domain.js';
+export * from './api.js';
+
 // Domain exports EnrichedItem. API exports EnrichedItem?
 // Only export unique.

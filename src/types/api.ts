@@ -1,5 +1,5 @@
-import { ConsumableData, ConfidenceScores, EnrichedItem, ProcessingStep, ValidationStatus, ManualQueueEntry } from './domain';
-import { ErrorCategory, ErrorSeverity, FailureReason } from './error';
+import { ConsumableData, ConfidenceScores, EnrichedItem, ProcessingStep, ValidationStatus, ManualQueueEntry } from './domain.js';
+import { ErrorCategory, ErrorSeverity, FailureReason } from './error.js';
 
 
 export interface BatchProcessingProgress {

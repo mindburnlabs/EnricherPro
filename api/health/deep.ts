@@ -1,6 +1,6 @@
 
 import { sql } from 'drizzle-orm';
-import { db } from '../../src/db';
+import { db } from '../../src/db/index.js';
 
 export default async function handler(req, res) {
     const health = {

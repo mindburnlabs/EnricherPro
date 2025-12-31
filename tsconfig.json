@@ -3,7 +3,7 @@
     "target": "ES2022",
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
-    "module": "ESNext",
+    "module": "Node16",
     "lib": [
       "ES2022",
       "DOM",
@@ -14,17 +14,22 @@
       "node",
       "vitest/globals"
     ],
-    "moduleResolution": "bundler",
+    "moduleResolution": "Node16",
     "isolatedModules": true,
     "moduleDetection": "force",
     "allowJs": true,
     "jsx": "react-jsx",
+    "resolveJsonModule": true,
     "paths": {
       "@/*": [
         "./src/*"
       ]
     },
-    "allowImportingTsExtensions": true,
+    // "allowImportingTsExtensions": true, // Not needed for .js imports
     "noEmit": true
-  }
+  },
+  "include": [
+    "src",
+    "api"
+  ]
 }

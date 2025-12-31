@@ -1,7 +1,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { db } from '../src/db';
-import { items } from '../src/db/schema';
+import { db } from '../src/db/index.js';
+import { items } from '../src/db/schema.js';
 import Papa from 'papaparse';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {

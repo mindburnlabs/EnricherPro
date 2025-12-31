@@ -1,7 +1,7 @@
-import { db } from '../src/db';
-import { jobs } from '../src/db/schema';
+import { db } from '../src/db/index.js';
+import { jobs } from '../src/db/schema.js';
 import { desc, eq } from 'drizzle-orm';
-import { getTenantId } from '../src/lib/context';
+import { getTenantId } from './_lib/context.js';
 
 export default async function handler(req: any, res: any) {
     if (req.method !== 'GET') {

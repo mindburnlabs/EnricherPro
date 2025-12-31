@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { ArrowRight, Check, X, Shuffle, AlertTriangle } from 'lucide-react';
-import { EnrichedItem } from '../../types/domain';
+import { EnrichedItem } from '../../types/domain.js';
 
 interface ConflictResolverProps {
     current: EnrichedItem;
@@ -119,8 +119,8 @@ export const ConflictResolver: React.FC<ConflictResolverProps> = ({ current, can
                         disabled={!selectedAction}
                         onClick={() => selectedAction && onResolve(selectedAction)}
                         className={`px-6 py-2 rounded-lg font-bold text-white shadow-lg transition-all ${selectedAction
-                                ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105 transform'
-                                : 'bg-gray-300 cursor-not-allowed'
+                            ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105 transform'
+                            : 'bg-gray-300 cursor-not-allowed'
                             }`}
                     >
                         Confirm Resolution

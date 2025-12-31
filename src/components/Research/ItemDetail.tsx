@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { X, ExternalLink, ShieldCheck, Edit, Check } from 'lucide-react';
-import { EnrichedItem } from '../../types/domain';
-import { CitationDrawer } from './CitationDrawer';
-import { EvidenceTooltip } from './EvidenceTooltip';
+import { EnrichedItem } from '../../types/domain.js';
+import { CitationDrawer } from './CitationDrawer.js';
+import { EvidenceTooltip } from './EvidenceTooltip.js';
 
 interface ItemDetailProps {
     item: EnrichedItem | null;

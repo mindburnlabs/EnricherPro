@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Loader2, CheckCircle, Circle, Brain, Search, Database, FileCheck, Terminal, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ResearchLog } from '../../hooks/useResearchStream';
+import { ResearchLog } from '../../hooks/useResearchStream.js';
 
 export interface StepStatus {
     id: string;

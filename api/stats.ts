@@ -1,6 +1,6 @@
 
-import { db } from '../src/db';
-import { jobs, jobEvents, items } from '../src/db/schema';
+import { db } from '../src/db/index.js';
+import { jobs, jobEvents, items } from '../src/db/schema.js';
 import { count, eq, like, desc } from 'drizzle-orm';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 

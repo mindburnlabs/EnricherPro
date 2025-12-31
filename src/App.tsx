@@ -1,19 +1,19 @@
 
 import React, { useState } from 'react';
-import { ResearchComposer } from './components/Research/ResearchComposer';
-import { RunProgress, StepStatus } from './components/Research/RunProgress';
-// import { ReviewQueue } from './components/Research/ReviewQueue';
+import { ResearchComposer } from './components/Research/ResearchComposer.js';
+import { RunProgress, StepStatus } from './components/Research/RunProgress.js';
+// import { ReviewQueue } from './components/Research/ReviewQueue.js';
 // Lazy load ReviewQueue
-const ReviewQueue = React.lazy(() => import('./components/Research/ReviewQueue').then(module => ({ default: module.ReviewQueue })));
+const ReviewQueue = React.lazy(() => import('./components/Research/ReviewQueue.js').then(module => ({ default: module.ReviewQueue })));
 
-import { triggerResearch, getItems, approveItem } from './lib/api';
-import { EnrichedItem } from './types/domain';
+import { triggerResearch, getItems, approveItem } from './lib/api.js';
+import { EnrichedItem } from './types/domain.js';
 import { useTranslation } from 'react-i18next';
-import { useResearchStream } from './hooks/useResearchStream';
+import { useResearchStream } from './hooks/useResearchStream.js';
 
-import { useResearchConfig } from './hooks/useResearchConfig';
+import { useResearchConfig } from './hooks/useResearchConfig.js';
 
-import { SettingsView } from './components/Settings/SettingsView';
+import { SettingsView } from './components/Settings/SettingsView.js';
 import { Settings } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -81,7 +81,7 @@ const App: React.FC = () => {
 
   const handleArchive = async (itemId: string) => {
     try {
-      await import('./lib/api').then(m => m.archiveItem(itemId));
+      await import('./lib/api.js').then(m => m.archiveItem(itemId));
       // No alert needed, UI updates on stream/refresh
     } catch (e) {
       console.error("Failed to archive item", e);

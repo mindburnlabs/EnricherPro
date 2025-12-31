@@ -1,4 +1,4 @@
-import { ProcessingStep } from './domain';
+import { ProcessingStep } from './domain.js';
 
 export interface ProcessingHistoryEntry {
     step: ProcessingStep;

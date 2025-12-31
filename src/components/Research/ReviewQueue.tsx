@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { AlertTriangle, Check } from 'lucide-react';
-import { EnrichedItem } from '../../types/domain';
-import { ItemDetail } from './ItemDetail';
+import { EnrichedItem } from '../../types/domain.js';
+import { ItemDetail } from './ItemDetail.js';
 
 interface ReviewQueueProps {
     items: EnrichedItem[];
@@ -13,8 +13,8 @@ interface ReviewQueueProps {
 
 import { useTranslation } from 'react-i18next';
 
-import { ConflictResolver } from './ConflictResolver';
-import { getItem } from '../../lib/api';
+import { ConflictResolver } from './ConflictResolver.js';
+import { getItem } from '../../lib/api.js';
 
 export const ReviewQueue: React.FC<ReviewQueueProps> = ({ items, onApprove, onMerge, onArchive }) => {
     const { t } = useTranslation('research');

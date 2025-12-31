@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Moon, Sun, Globe, Brain, Zap, Key, Layout, Shield, Database } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { ResearchConfig } from '../../hooks/useResearchConfig';
+import { ResearchConfig } from '../../hooks/useResearchConfig.js';
 
 interface SettingsViewProps {
     isOpen: boolean;

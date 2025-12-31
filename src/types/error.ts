@@ -34,7 +34,7 @@ export type ErrorCategory =
     | 'timeout_error'
     | 'configuration_error';
 
-import { ProcessingStep } from './domain';
+import { ProcessingStep } from './domain.js';
 
 export interface ErrorDetail {
     reason: FailureReason;
