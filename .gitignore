@@ -8,7 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 .env
 .env.local
-
+.env.production
+.env.prod.real
 
 node_modules
 dist
