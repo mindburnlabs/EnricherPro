@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ResearchComposer } from '../Research/ResearchComposer.js';
 import { useResearchStream } from '../../hooks/useResearchStream.js';
 import { ChatMessage } from './types.js';
@@ -13,6 +14,7 @@ import { useSettingsStore } from '../../stores/settingsStore.js';
 interface ChatInterfaceProps { }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
+    const { t } = useTranslation('common');
     const config = useSettingsStore();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -226,9 +228,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
                 {isEmpty && (
                     <div className="text-center mb-8 animate-in fade-in zoom-in duration-700">
                         <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-cyan-500 mb-2">
-                            What do you want to verify?
+                            {t('app.hero_title')}
                         </h1>
-                        <p className="text-gray-500">Ask anything about specs, availability, or compatibility.</p>
+                        <p className="text-gray-500">{t('app.hero_subtitle')}</p>
                     </div>
                 )}
 

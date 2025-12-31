@@ -3,7 +3,9 @@
         "title": "D² Consumable Database",
         "title_labs": "D²",
         "subtitle": "Autonomous Deep Research Agent for Consumables.",
-        "loading": "Loading..."
+        "loading": "Loading...",
+        "hero_title": "What do you want to verify?",
+        "hero_subtitle": "Ask anything about specs, availability, or compatibility."
     },
     "layout": {
         "api_services": "API Services",
