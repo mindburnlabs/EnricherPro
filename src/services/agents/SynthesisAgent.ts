@@ -4,8 +4,8 @@ import { ConsumableData } from "../../types/domain";
 
 export class SynthesisAgent {
 
-    static async merge(sources: string[], schemaKey: string = "StrictConsumableData", apiKeys?: Record<string, string>): Promise<Partial<ConsumableData>> {
-        const systemPrompt = `You are the Synthesis Agent for the EnricherPro Consumable Database.
+    static async merge(sources: string[], schemaKey: string = "StrictConsumableData", apiKeys?: Record<string, string>, promptOverride?: string): Promise<Partial<ConsumableData>> {
+        const systemPrompt = promptOverride || `You are the Synthesis Agent for the EnricherPro Consumable Database.
         Your mission is to extract PRISTINE, VERIFIED data from the provided raw text evidence.
         
         CRITICAL RULES (Evidence-First):

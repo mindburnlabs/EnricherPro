@@ -32,8 +32,8 @@ const WHITELIST_DOMAINS = [
 
 export class DiscoveryAgent {
 
-    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>): Promise<AgentPlan> {
-        const systemPrompt = `You are the Lead Research Planner for a Printer Consumables Database.
+    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string): Promise<AgentPlan> {
+        const systemPrompt = promptOverride || `You are the Lead Research Planner for a Printer Consumables Database.
         Your goal is to analyze the user input and construct a precise search strategy.
         
         Research Modes:
@@ -87,34 +87,20 @@ export class DiscoveryAgent {
         }
     }
 
-    static async execute(plan: AgentPlan, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>): Promise<RetrieverResult[]> {
+    static async execute(plan: AgentPlan, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, budgetOverrides?: Record<string, { maxQueries: number, limitPerQuery: number }>): Promise<RetrieverResult[]> {
         const allResults: RetrieverResult[] = [];
         const visitedUrls = new Set<string>();
-
-        // Mode-Based Budgets (Inferred from plan doesn't work well if we don't know mode here, 
-        // but wait, execute() doesn't take mode currently. We should pass it or infer.
-        // Let's rely on hard limits for now to prevent runaway costs, but ideally pass mode.)
-        // Actually, let's assume 'balanced' defaults if we can't tell, but better to update signature?
-        // Creating a new signature changes standard interface... let's check callers.
-        // Callers: researchWorkflow.ts calls execute(plan, apiKeys).
-        // Let's update signature to execute(plan, mode, apiKeys).
-
-        // For now, I'll implement a robust default that auto-throttles. 
-        // But the prompt demanded mode budgets. I'll update signature in next step if checking.
-        // Actually, let's look at the plan object. It doesn't have mode.
-        // I will adhere to "Fast/Balanced/Deep" limits by checking the number of queries in the plan 
-        // AND ensuring we don't exceed a global safety cap (e.g. 10 queries).
 
         const validModes = ['fast', 'balanced', 'deep'];
         const currentMode = validModes.includes(mode) ? mode : 'balanced';
 
-        const BUDGETS = {
+        const defaultBudgets = {
             fast: { maxQueries: 2, limitPerQuery: 3 },
             balanced: { maxQueries: 5, limitPerQuery: 5 },
             deep: { maxQueries: 12, limitPerQuery: 10 }
         };
 
-        const budget = BUDGETS[currentMode as ResearchMode];
+        const budget = budgetOverrides?.[currentMode] || defaultBudgets[currentMode as ResearchMode];
         let queryCount = 0;
 
         for (const strategy of plan.strategies) {

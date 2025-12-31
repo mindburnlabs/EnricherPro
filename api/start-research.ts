@@ -44,6 +44,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
                     inputRaw: input,
                     forceRefresh: !!request.body.forceRefresh,
                     apiKeys: request.body.apiKeys || {},
+                    agentConfig: request.body.agentConfig || {}, // Pass config
                 },
             });
         } catch (inngestError) {
