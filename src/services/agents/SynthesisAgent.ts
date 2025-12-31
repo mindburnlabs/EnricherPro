@@ -19,6 +19,12 @@ export class SynthesisAgent {
     static async extractClaims(sourceText: string, sourceUrl: string, apiKeys?: Record<string, string>, promptOverride?: string, modelOverride?: string | { id: string }, language: string = 'en'): Promise<ExtractedClaim[]> {
         const isRu = language === 'ru';
 
+        // CIRCUIT BREAKER for known broken models
+        let effectiveModel = typeof modelOverride === 'string' ? modelOverride : modelOverride?.id;
+        if (effectiveModel === 'xiaomi/mimo-v2-flash:free') {
+            effectiveModel = 'google/gemini-2.0-flash-exp:free';
+        }
+
         const systemPromptEn = promptOverride || `You are an Extraction Engine.
         Your goal is to parse the input text and extract structured facts (Claims) about a printer consumable (Toners, Ink, Drums).
         
@@ -69,7 +75,7 @@ export class SynthesisAgent {
 
         try {
             const response = await BackendLLMService.complete({
-                model: typeof modelOverride === 'string' ? modelOverride : modelOverride?.id,
+                model: effectiveModel,
                 profile: modelOverride ? undefined : ModelProfile.EXTRACTION, // Use Cheap/Fast model if no override
                 messages: [
                     { role: "system", content: systemPrompt },
@@ -91,6 +97,12 @@ export class SynthesisAgent {
         onLog?.(`Synthesizing data from ${sources.length} sources...`);
 
         const isRu = language === 'ru';
+
+        // CIRCUIT BREAKER for known broken models
+        let effectiveModel = typeof modelOverride === 'string' ? modelOverride : modelOverride?.id;
+        if (effectiveModel === 'xiaomi/mimo-v2-flash:free') {
+            effectiveModel = 'google/gemini-2.0-flash-exp:free';
+        }
 
         const systemPromptEn = promptOverride || `You are the Synthesis Agent for the D² Consumable Database.
         Your mission is to extract PRISTINE, VERIFIED data from the provided raw text evidence.
@@ -177,7 +189,7 @@ export class SynthesisAgent {
 
         try {
             const response = await BackendLLMService.complete({
-                model: typeof modelOverride === 'string' ? modelOverride : modelOverride?.id,
+                model: effectiveModel,
                 profile: modelOverride ? undefined : ModelProfile.REASONING, // Use Smart/Reasoning model if no override
                 messages: [
                     { role: "system", content: systemPrompt },
