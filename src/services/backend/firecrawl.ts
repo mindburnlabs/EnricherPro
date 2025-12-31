@@ -55,4 +55,27 @@ export class BackendFirecrawlService {
         }
         throw new Error(`Firecrawl Extract Failed: ${result?.error || 'Unknown'}`);
     }
+
+    static async crawl(url: string, options: { limit?: number; maxDepth?: number; includePaths?: string[]; excludePaths?: string[] } = {}) {
+        const client = this.getClient();
+        // @ts-ignore
+        const result = await client.crawl(url, {
+            limit: options.limit || 100, // Default conservative
+            scrapeOptions: {
+                formats: ['markdown']
+            },
+            includePaths: options.includePaths,
+            excludePaths: options.excludePaths,
+            maxDepth: options.maxDepth || 2
+        });
+
+        if (result && (result as any).id) {
+            return (result as any).id;
+        } else if (result && (result as any).success) {
+            // For sync crawls if supported or mock
+            return (result as any).id || 'sync-completed';
+        }
+
+        throw new Error(`Firecrawl Crawl Failed: ${result?.error || 'Unknown'}`);
+    }
 }

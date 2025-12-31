@@ -2,7 +2,8 @@ export enum ModelProfile {
     FAST_CHEAP = 'fast_cheap',
     REASONING = 'reasoning',
     BEST = 'best',
-    EXTRACTION = 'extraction'
+    EXTRACTION = 'extraction',
+    PLANNING = 'planning'
 }
 
 export const MODEL_CONFIGS = {
@@ -28,7 +29,15 @@ export const MODEL_CONFIGS = {
             'google/gemini-2.0-flash-thinking-exp-01-21',
             'openai/o3-mini'
         ],
-        description: "Complex planning, conflict resolution, and truth arbitration."
+        description: "Complex reasoning, conflict resolution, and truth arbitration."
+    },
+    [ModelProfile.PLANNING]: {
+        candidates: [
+            'perplexity/sonar-reasoning-pro',
+            'openrouter/perplexity/sonar-reasoning-pro',
+            'deepseek/deepseek-r1'
+        ],
+        description: "Specialized deep search planning and URL discovery."
     },
     [ModelProfile.BEST]: {
         candidates: [

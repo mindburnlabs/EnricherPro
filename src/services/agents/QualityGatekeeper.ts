@@ -107,10 +107,14 @@ export class QualityGatekeeper {
             });
         }
 
-        if (uniqueDomains.size >= 2) {
+        const isOfficialOrNix = uniqueDomains.size > 0 && Array.from(uniqueDomains).some(d =>
+            d.includes('hp.com') || d.includes('canon') || d.includes('kyocera') || d.includes('nix.ru') || d.includes('dns-shop')
+        );
+
+        if (uniqueDomains.size >= 2 || isOfficialOrNix) {
             stages.completeness = true;
         } else if (uniqueDomains.size === 1) {
-            warnings.push("SINGLE_SOURCE: Data relies on a single domain");
+            warnings.push("SINGLE_SOURCE: Data relies on a single retail source without official verification");
         } else {
             warnings.push("NO_SOURCES: Data has no verifiable sources");
         }
@@ -137,15 +141,21 @@ export class QualityGatekeeper {
         let score = 0;
         if (stages.brand) score += 5;
         if (stages.identity) score += 30; // Boosted
-        if (stages.logistics) score += 10;
-        if (stages.compatibility) score += 30; // Boosted
+        if (stages.logistics) score += 20; // Critical for logistics
+        if (stages.compatibility) score += 20; // Critical for usage
         if (stages.attribution) score += 15;
         if (stages.completeness) score += 10;
 
-        // Final Gate
-        // Relaxed: As long as we have Identity OR Compatibility, it's valid enough to show.
-        // It will be "needs_review" if score < 80 or if there are warnings, but "isValid" basically means "Not Junk".
-        const isValid = (stages.identity || stages.compatibility) && uniqueDomains.size > 0;
+        // Final Gate - STRICT
+        // Must have: Identity AND Logistics AND Compatibility AND (Completeness OR Official Source)
+        const isValid = stages.identity && stages.logistics && stages.compatibility && stages.completeness;
+
+        // If not valid, explain broadly
+        if (!isValid && warnings.length === 0) {
+            if (!stages.logistics) warnings.push("STRICT_FAIL: Missing Weight/Dims");
+            if (!stages.compatibility) warnings.push("STRICT_FAIL: Missing Compatibility");
+            if (!stages.completeness) warnings.push("STRICT_FAIL: Insufficient Sources");
+        }
 
         return {
             isValid,
