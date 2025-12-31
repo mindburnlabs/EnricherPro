@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { X, ExternalLink, ShieldCheck, Edit, Check } from 'lucide-react';
 import { EnrichedItem } from '../../types/domain';
 import { CitationDrawer } from './CitationDrawer';
+import { EvidenceTooltip } from './EvidenceTooltip';
 
 interface ItemDetailProps {
     item: EnrichedItem | null;
@@ -20,7 +21,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
     if (!open || !item) return null;
 
     const { data } = item;
-    const evidence = data.evidence || {};
+    const evidence = data._evidence || {};
 
     const openCitations = (field: string) => {
         setCitationField(field);
@@ -113,9 +114,11 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                                     >
                                         <span className="text-sm font-medium text-gray-500 capitalize">{key.replace(/_/g, ' ')}</span>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm text-gray-900 dark:text-gray-100 font-medium">
-                                                {typeof val === 'object' ? JSON.stringify(val) : String(val)}
-                                            </span>
+                                            <EvidenceTooltip evidence={evidence[`specs.${key}`]} label={key}>
+                                                <span className="text-sm text-gray-900 dark:text-gray-100 font-medium border-b border-dotted border-gray-300 dark:border-gray-600">
+                                                    {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                                                </span>
+                                            </EvidenceTooltip>
                                             {/* Evidence Dot */}
                                             {evidence[`specs.${key}`] && (
                                                 <div className="w-2 h-2 rounded-full bg-emerald-500"></div>

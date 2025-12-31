@@ -36,6 +36,11 @@ export interface FieldEvidence<T> {
     confidence: number;
     source_type?: DataSource['sourceType'];
     raw_snippet?: string;
+
+    // Strict Audit Extension
+    timestamp?: string; // ISO string
+    content_hash?: string; // SHA-256 of the snippet
+    source_id?: string; // Link to specific DataSource entry
 }
 
 export interface MpnIdentity {

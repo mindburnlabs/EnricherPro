@@ -8,11 +8,34 @@ import { ConsumableData } from '../types/domain';
 export class ItemsRepository {
 
     static async createOrGet(jobId: string, mpn: string, initialData: ConsumableData) {
-        // Idempotency: Check if item exists for this job
-        const existing = await this.findByJobId(jobId);
-        if (existing) {
+        // 1. Idempotency: Check if item exists for this job
+        const existingInJob = await this.findByJobId(jobId);
+        if (existingInJob) {
             console.log(`[Idempotency] Item already exists for job ${jobId}`);
-            return existing;
+            return existingInJob;
+        }
+
+        // 2. Global Deduplication (if MPN provided)
+        if (mpn) {
+            const { DeduplicationService } = await import("../services/backend/DeduplicationService");
+            const duplicate = await DeduplicationService.findPotentialDuplicate(mpn);
+            if (duplicate) {
+                console.log(`[Dedup] Found existing item ${duplicate.id} for MPN ${mpn}`);
+                // In a real app we might link this job to the existing item or merge.
+                // For this MVP, we will RETURN THE EXISTING ITEM so the frontend sees the "Already Researching/Done" item.
+                // However, the Job ID stored on that item will be OLD.
+                // This means 'useResearchStream' might poll the OLD item if we just return it?
+                // Actually 'check_status' polls by JobID. If we return an item with a DIFFERENT JobID,
+                // the frontend might be confused if it filters by current JobID.
+                // 
+                // Strategy: Update the existing item to point to the NEW JobID? 
+                // No, that breaks history.
+                //
+                // Strategy B: Create a NEW item but copy data?
+                //
+                // Strategy C: For now, strict existing return.
+                return this.findById(duplicate.id);
+            }
         }
 
         const [newItem] = await db.insert(items).values({
@@ -64,10 +87,18 @@ export class ItemsRepository {
         return updated;
     }
 
-    static async setStatus(id: string, status: 'processing' | 'needs_review' | 'published' | 'rejected' | 'failed', reason?: string) {
-        // @ts-ignore - DB schema string enum might need update or cast
+    static async updateStep(id: string, step: string) {
         await db.update(items)
-            .set({ status: status as any, reviewReason: reason, updatedAt: new Date() })
+            .set({
+                currentStep: step,
+                updatedAt: new Date()
+            })
+            .where(eq(items.id, id));
+    }
+
+    static async setStatus(id: string, status: 'processing' | 'needs_review' | 'published' | 'rejected' | 'failed', reason?: string) {
+        await db.update(items)
+            .set({ status: status, reviewReason: reason, updatedAt: new Date() })
             .where(eq(items.id, id));
     }
 }

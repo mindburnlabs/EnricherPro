@@ -30,8 +30,10 @@ export const items = pgTable('items', {
     data: jsonb('data').notNull(), // Stores the full `StrictConsumableData` structure
 
     // Workflow State
-    status: text('status', { enum: ['processing', 'needs_review', 'published', 'rejected'] }).default('processing').notNull(),
+    status: text('status', { enum: ['processing', 'needs_review', 'published', 'rejected', 'failed'] }).default('processing').notNull(),
     reviewReason: text('review_reason'), // e.g. "Low Confidence", "Conflict"
+
+    currentStep: text('current_step'), // 'planning', 'searching', 'enrichment', 'gate_check'
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),

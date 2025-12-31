@@ -7,6 +7,7 @@ export type ResearchStartedEvent = {
         jobId: string;
         inputRaw: string;
         userId?: string;
+        mode?: 'fast' | 'balanced' | 'deep';
     };
 };
 

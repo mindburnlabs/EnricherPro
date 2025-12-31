@@ -7,11 +7,19 @@ const inngest = new Inngest({
 });
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { v4 as uuidv4 } from 'uuid';
+import { RateLimiter } from '../src/lib/rateLimit';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     if (request.method !== 'POST') {
         return response.status(405).json({ error: 'Method Not Allowed' });
     }
+
+    // Rate Limiting
+    const ip = (request.headers['x-forwarded-for'] as string) || request.socket.remoteAddress || 'unknown';
+    if (!RateLimiter.check(ip)) {
+        return response.status(429).json({ error: 'Too Many Requests' });
+    }
+
 
     if (!process.env.INNGEST_EVENT_KEY) {
         console.error("Missing INNGEST_EVENT_KEY");

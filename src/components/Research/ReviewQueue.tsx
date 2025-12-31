@@ -43,6 +43,12 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ items, onApprove }) =>
 
                             <div className="flex justify-end gap-2">
                                 <button
+                                    onClick={() => alert("Merge UI coming in Phase 4.5")}
+                                    className="px-3 py-1.5 text-sm font-medium text-amber-600 hover:bg-amber-50 border border-amber-200 rounded-lg dark:border-amber-900/50"
+                                >
+                                    Merge
+                                </button>
+                                <button
                                     onClick={() => setSelectedItem(item)}
                                     className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"
                                 >

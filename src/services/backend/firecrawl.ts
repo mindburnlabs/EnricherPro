@@ -14,20 +14,27 @@ export class BackendFirecrawlService {
         return this.client;
     }
 
-    static async search(query: string, options: { limit?: number; country?: string } = {}) {
+    static async search(query: string, options: { limit?: number; country?: string; formats?: string[] } = {}) {
         const client = this.getClient();
         // V2 search
-        // @ts-ignore - Types might lag behind V2
-        const result = await client.search(query, {
-            limit: options.limit || 5,
-            // searchOptions: { country: options.country || 'ru' } // Removed if invalid in type
-        });
+        try {
+            // @ts-ignore - Firecrawl JS SDK types might be behind
+            const result = await client.search(query, {
+                limit: options.limit || 5,
+                scrapeOptions: {
+                    formats: (options.formats || ['markdown']) as any
+                },
+                // V2 usually infers country or uses generic settings
+            });
 
-        if (result && (result as any).data) {
-            return (result as any).data;
+            if (result && (result as any).data) {
+                return (result as any).data;
+            }
+            return [];
+        } catch (error) {
+            console.error("Firecrawl Search Error:", error);
+            return [];
         }
-        // Fallback or error
-        return [];
     }
 
     static async extract(urls: string[], schema: any) {

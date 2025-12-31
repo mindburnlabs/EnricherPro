@@ -35,6 +35,8 @@ const createResponse = (res) => {
     return res;
 };
 
+import deepHealth from './api/health/deep';
+
 const server = createServer(async (req, res) => {
     const wrappedRes = createResponse(res);
     const parsedUrl = parse(req.url || '', true);
@@ -61,6 +63,8 @@ const server = createServer(async (req, res) => {
         } else if (pathname === '/api/items' && req.method === 'GET') {
             (req as any).query = query;
             await items(req as any, wrappedRes as any);
+        } else if (pathname === '/api/health/deep' && req.method === 'GET') {
+            await deepHealth(req as any, wrappedRes as any);
         } else {
             res.statusCode = 404;
             res.end('Not Found');
@@ -72,6 +76,7 @@ const server = createServer(async (req, res) => {
     }
 });
 
-server.listen(3002, () => {
-    console.log('Local API Server running on http://localhost:3002');
+const PORT = process.env.PORT || 3002;
+server.listen(PORT, () => {
+    console.log(`Local API Server running on http://localhost:${PORT}`);
 });

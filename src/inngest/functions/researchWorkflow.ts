@@ -1,6 +1,6 @@
 
 import { inngest } from "../client";
-import { ItemsRepository } from "../../repositories/itemsRepository";
+import { OrchestratorAgent } from "../../services/agents/OrchestratorAgent";
 
 export const researchWorkflow = inngest.createFunction(
     {
@@ -11,86 +11,79 @@ export const researchWorkflow = inngest.createFunction(
             // @ts-ignore - Inngest typing quirk
             const { jobId } = event.data;
             console.error(`[Workflow Failed] Job ${jobId}:`, error);
-
-            // Try to find the item and mark it as failed
-            // We can't use step.run here easily as context might be lost or different
-            // But we can try direct DB access if possible, or just log for now.
-            // Better: Load item by jobId and update status.
-            try {
-                const item = await ItemsRepository.findByJobId(jobId);
-                if (item) {
-                    await ItemsRepository.setStatus(item.id, 'failed', error.message);
-                }
-            } catch (e) {
-                console.error("Failed to update status on failure", e);
-            }
+            const agent = new OrchestratorAgent(jobId);
+            await agent.fail(error);
         }
     },
     { event: "app/research.started" },
     async ({ event, step }) => {
-        const { jobId, inputRaw } = event.data;
+        const { jobId, inputRaw, mode = 'balanced' } = event.data;
+        const agent = new OrchestratorAgent(jobId);
 
-        // 1. Initialize DB Record (Idempotent)
+        // 1. Initialize DB Record
         const item = await step.run("create-db-item", async () => {
-            return await ItemsRepository.createOrGet(jobId, "PENDING-MPN", {
-                // @ts-ignore - Minimal skeleton
-                mpn_identity: { mpn: "PENDING", canonical_model_name: inputRaw },
-                brand: null,
-                status: "processing"
-            } as any);
+            return await agent.getOrCreateItem(inputRaw);
         });
 
         // 2. Planning
+        await step.run("transition-planning", () => agent.transition('planning'));
         const plan = await step.run("generate-plan", async () => {
-            // Import dynamically to avoid side-effects in top-level
-            const { plannerStep } = await import("../steps/planner");
-            return await plannerStep(inputRaw);
+            const { DiscoveryAgent } = await import("../../services/agents/DiscoveryAgent");
+            return await DiscoveryAgent.plan(inputRaw, mode);
         });
 
-        // 3. Execution (Real Firecrawl Search)
+        // 3. Execution (Discovery)
+        await step.run("transition-searching", () => agent.transition('searching'));
         const searchResults = await step.run("execute-search", async () => {
-            const { BackendFirecrawlService } = await import("../../services/backend/firecrawl");
+            const { DiscoveryAgent } = await import("../../services/agents/DiscoveryAgent");
+            const { LogisticsAgent } = await import("../../services/agents/LogisticsAgent");
 
-            const queries = plan.searchQueries || [`${inputRaw} specs`];
-            const allResults = [];
+            // Core Search
+            const results = await DiscoveryAgent.execute(plan as any);
 
-            for (const q of queries) {
-                // Limited search for MVP
-                const res = await BackendFirecrawlService.search(q, { limit: 2 });
-                allResults.push(...res);
+            // Logistics Check (if needed)
+            if (mode !== 'fast' && plan.canonical_name) {
+                const logistics = await LogisticsAgent.checkNixRu(plan.canonical_name);
+                if (logistics.url) {
+                    results.push({
+                        url: logistics.url,
+                        title: "Logistics Data (NIX.ru)",
+                        markdown: `Logistics Data:\nWeight: ${logistics.weight}\nDimensions: ${logistics.dimensions}`,
+                        source_type: 'nix_ru',
+                        timestamp: new Date().toISOString()
+                    });
+                }
             }
-            return allResults;
+
+            return results;
         });
 
         // 4. Extraction
+        await step.run("transition-enrichment", () => agent.transition('enrichment'));
         const extractedData = await step.run("extract-data", async () => {
-            const { extractorStep } = await import("../steps/extractor");
-            // Concat text from top 3 results
-            const combinedText = searchResults.slice(0, 3).map((r: any) => r.markdown || "").join("\n\n");
-            return await extractorStep(combinedText, "ConsumableData");
+            const { SynthesisAgent } = await import("../../services/agents/SynthesisAgent");
+            const combinedSources = searchResults.map((r: any) =>
+                `Source: ${r.url} (${r.source_type})\n---\n${r.markdown}`
+            );
+            return await SynthesisAgent.merge(combinedSources, "StrictConsumableData");
         });
 
         // 5. Verification
+        await step.run("transition-gate-check", () => agent.transition('gate_check'));
         const verification = await step.run("verify-data", async () => {
-            const { verifierStep } = await import("../steps/verifier");
+            const { QualityGatekeeper } = await import("../../services/agents/QualityGatekeeper");
             // @ts-ignore
-            return await verifierStep(extractedData);
+            return await QualityGatekeeper.validate(extractedData);
         });
 
-        // 6. DB Update
-        await step.run("finalize-db", async () => {
-            // Save final data to DB
-            // @ts-ignore
-            await ItemsRepository.updateData(item.id, extractedData);
-
-            const status = verification.isValid ? 'published' : 'needs_review';
-            await ItemsRepository.setStatus(item.id, status, verification.errors.join(", "));
+        // 6. DB Update & Finalization
+        const result = await step.run("finalize-db", async () => {
+            return await agent.complete(verification, extractedData);
         });
 
         return {
             success: true,
-            itemId: item.id,
-            status: verification.isValid ? 'published' : 'needs_review'
+            ...result
         };
     }
 );
