@@ -100,10 +100,21 @@ export const researchWorkflow = inngest.createFunction(
                     // Handle Task Type
                     if (task.type === 'query') {
                         try {
-                            const raw = await BackendFirecrawlService.search(task.value, {
+                            const searchOptions: any = {
                                 apiKey: apiKeys?.firecrawl,
                                 limit: budget.limitPerQuery || 5
-                            });
+                            };
+
+                            // Localization
+                            if (language === 'ru') {
+                                searchOptions.country = 'ru';
+                                searchOptions.lang = 'ru';
+                            } else {
+                                searchOptions.country = 'us'; // Default to US for English
+                                searchOptions.lang = 'en';
+                            }
+
+                            const raw = await BackendFirecrawlService.search(task.value, searchOptions);
                             results = raw.map(r => ({ ...r, source_type: 'web' }));
                         } catch (e: any) {
                             // CRITICAL: Explicit Error Handling for User Visibility
@@ -129,12 +140,12 @@ export const researchWorkflow = inngest.createFunction(
                         }
                     } else if (task.type === 'url') {
                         try {
-                            const data = await BackendFirecrawlService.extract([task.value], {});
-                            if (Array.isArray(data) && data[0]) {
+                            const data = await BackendFirecrawlService.scrape(task.value);
+                            if (data) {
                                 results.push({
-                                    url: task.value,
-                                    title: data[0].metadata?.title || "Scraped URL",
-                                    markdown: data[0].markdown || "",
+                                    url: (data as any).metadata?.sourceURL || task.value,
+                                    title: (data as any).metadata?.title || "Scraped Page",
+                                    markdown: (data as any).markdown || "",
                                     source_type: 'direct_scrape'
                                 });
                             }

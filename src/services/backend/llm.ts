@@ -1,4 +1,5 @@
 
+import { OpenRouter } from '@openrouter/sdk';
 import { MODEL_CONFIGS, ModelProfile, DEFAULT_MODEL } from "../../config/models.js";
 
 interface CompletionConfig {
@@ -17,13 +18,12 @@ export class BackendLLMService {
         const apiKey = config.apiKeys?.google || config.apiKeys?.openrouter || this.apiKey;
         if (!apiKey) throw new Error("Missing LLM API Key");
 
+        const client = new OpenRouter({ apiKey });
         const { withRetry } = await import("../../lib/reliability.js");
 
         // Determine specific model to use
         let targetModel = config.model;
         if (!targetModel && config.profile) {
-            // Pick first candidate from profile
-            // In future, we can add logic to rotate or pick based on cost/latency/availability
             targetModel = MODEL_CONFIGS[config.profile].candidates[0];
         }
         if (!targetModel) targetModel = DEFAULT_MODEL;
@@ -38,70 +38,45 @@ export class BackendLLMService {
         for (const model of candidates) {
             try {
                 return await withRetry(async () => {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
-
                     try {
-                        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                            method: "POST",
-                            headers: {
-                                "Authorization": `Bearer ${apiKey}`,
-                                "Content-Type": "application/json",
-                                "HTTP-Referer": "https://d-squared.app",
-                                "X-Title": "D²"
-                            },
-                            body: JSON.stringify({
-                                model: model,
-                                messages: config.messages,
-                                max_tokens: config.maxTokens,
-                                response_format: config.jsonSchema ? { type: "json_object" } : undefined,
-                                // Provider routing preferences for OpenRouter
-                                provider: {
-                                    order: ["DeepSeek", "Google", "OpenAI", "Anthropic"],
-                                    allow_fallbacks: false // We handle fallbacks manually via candidates loop if needed, but OpenRouter has its own too.
-                                }
-                            }),
-                            signal: controller.signal
-                        });
-
-                        clearTimeout(timeoutId);
-
-                        if (!response.ok) {
-                            const errText = await response.text();
-                            // 404 might mean model unavailable on OpenRouter -> Try next candidate
-                            if (response.status === 404) {
-                                throw new Error(`Model ${model} not found/unavailable (404)`);
+                        const result = await client.callModel({
+                            model: model,
+                            input: config.messages as any,
+                            maxTokens: config.maxTokens,
+                            response_format: config.jsonSchema ? { type: "json_object" } : undefined,
+                            provider: {
+                                order: ["DeepSeek", "Google", "OpenAI", "Anthropic"],
+                                allow_fallbacks: false
                             }
-                            if ([400, 401, 403].includes(response.status)) {
-                                throw new Error(`OpenRouter Call Failed (${response.status}): ${errText}`); // Non-retryable
-                            }
-                            throw new Error(`OpenRouter Call Failed (${response.status}): ${errText}`);
-                        }
+                        } as any); // Type assertion for extra params if not strictly typed in beta SDK
 
-                        const json = await response.json();
-                        if (!json.choices || json.choices.length === 0) {
-                            throw new Error("Empty response from LLM provider");
-                        }
-                        return json.choices[0].message.content;
+                        const text = await result.getText();
+                        if (!text) throw new Error("Empty response from LLM");
+                        return text;
 
-                    } catch (e) {
+                    } catch (e: any) {
+                        // Map 404 to explicit error for circuit breakers
+                        if (e.message?.includes("404") || e.status === 404) {
+                            throw new Error(`Model ${model} not found/unavailable (404)`);
+                        }
+                        if (e.message?.includes("402") || e.message?.includes("401") || e.status === 401) {
+                            // Auth/Credits error, do not retry
+                            throw new Error(`OpenRouter Auth/Credit Error: ${e.message}`);
+                        }
                         throw e;
-                    } finally {
-                        clearTimeout(timeoutId);
                     }
 
                 }, {
-                    maxRetries: 2, // Retries per model
+                    maxRetries: 2,
                     baseDelayMs: 1000,
-                    shouldRetry: (err) => !err.message.includes("(401)") && !err.message.includes("(403)") && !err.message.includes("(400)") && !err.message.includes("(404)")
+                    shouldRetry: (err) => !err.message.includes("Auth/Credit") && !err.message.includes("404")
                 });
 
             } catch (err: any) {
                 console.warn(`[LLM] Model ${model} failed`, err.message);
                 lastError = err;
-                // If it's an auth error, don't try other models, key is bad
-                if (err.message.includes("(401)") || err.message.includes("(403)")) throw err;
-                // Otherwise continue to next candidate
+                // If it's an auth error, don't try other models
+                if (err.message.includes("Auth/Credit")) throw err;
             }
         }
 

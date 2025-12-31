@@ -14,15 +14,17 @@ export class BackendFirecrawlService {
         return this.client;
     }
 
-    static async search(query: string, options: { limit?: number; country?: string; formats?: string[]; apiKey?: string } = {}) {
+    static async search(query: string, options: { limit?: number; country?: string; lang?: string; formats?: string[]; apiKey?: string } = {}) {
         const { withRetry } = await import("../../lib/reliability.js");
 
         return withRetry(async () => {
             const client = options.apiKey ? new FirecrawlApp({ apiKey: options.apiKey }) : this.getClient();
             try {
-                // @ts-ignore
+                // @ts-ignore - SDK types might lag behind API
                 const result = await client.search(query, {
                     limit: options.limit || 5,
+                    country: options.country,
+                    lang: options.lang,
                     scrapeOptions: {
                         formats: (options.formats || ['markdown']) as any
                     },
@@ -40,6 +42,19 @@ export class BackendFirecrawlService {
                 throw error; // Let retry handle others
             }
         }, { maxRetries: 3, baseDelayMs: 2000 });
+    }
+
+    static async scrape(url: string, formats: string[] = ['markdown']) {
+        const client = this.getClient();
+        // @ts-ignore
+        const result = await client.scrapeUrl(url, {
+            formats: formats as any
+        });
+
+        if (result && (result as any).success) {
+            return (result as any).data || (result as any);
+        }
+        throw new Error(`Firecrawl Scrape Failed: ${(result as any)?.error || 'Unknown'}`);
     }
 
     static async extract(urls: string[], schema: any) {
