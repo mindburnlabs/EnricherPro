@@ -107,11 +107,11 @@ export const researchWorkflow = inngest.createFunction(
                             results = raw.map(r => ({ ...r, source_type: 'web' }));
                         } catch (e: any) {
                             // CRITICAL: Explicit Error Handling for User Visibility
-                            if (e.statusCode === 402 || e.message?.includes("Payment Required")) {
-                                throw new Error("FAILED: Firecrawl API Credits Exhausted (402). Upgrade plan.");
-                            }
                             if (e.statusCode === 429) {
-                                throw new Error("FAILED: Firecrawl API Rate Limit Exceeded (429). Slow down.");
+                                console.warn("Firecrawl Rate Limit (429), switching to Fallback...");
+                                // Do NOT throw, let it fall through to FallbackSearchService
+                            } else if (e.statusCode === 402 || e.message?.includes("Payment Required")) {
+                                throw new Error("FAILED: Firecrawl API Credits Exhausted (402). Upgrade plan.");
                             }
 
                             console.warn("Firecrawl failed, trying fallback", e);
