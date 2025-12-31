@@ -1,6 +1,6 @@
 
-import { ConsumableData } from '../types/domain';
-import { items } from '../db/schema';
+import { ConsumableData } from '../types/domain.js';
+import { items } from '../db/schema.js';
 import { InferSelectModel } from 'drizzle-orm';
 
 // Type alias for DB Item

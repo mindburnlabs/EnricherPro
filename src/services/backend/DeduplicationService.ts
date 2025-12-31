@@ -1,6 +1,6 @@
 
 import { db } from '../../db/index.js';
-import { items } from "../../db/schema";
+import { items } from "../../db/schema.js";
 import { eq, or, ilike } from "drizzle-orm";
 
 export class DeduplicationService {

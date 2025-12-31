@@ -1,9 +1,9 @@
 
 import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { items, jobs } from '../db/schema';
-import { Transformers } from '../lib/transformers';
-import { ConsumableData } from '../types/domain';
+import { items, jobs } from '../db/schema.js';
+import { Transformers } from '../lib/transformers.js';
+import { ConsumableData } from '../types/domain.js';
 
 export class ItemsRepository {
 
