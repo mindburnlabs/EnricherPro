@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { RateLimiter } from '../src/lib/rateLimit';
 import { getTenantId } from '../src/lib/context';
 
-import { inngest } from '../src/inngest/client';
+import { inngest } from './_lib/inngest';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     if (request.method !== 'POST') {
