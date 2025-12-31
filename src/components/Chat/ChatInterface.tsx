@@ -58,13 +58,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
 
     }, [steps, items, logs, status, error, activeJobId]);
 
-    // Cleanup active job when complete
-    useEffect(() => {
-        if (status === 'completed' || status === 'failed') {
-            // Delay slightly or just clear
-            setActiveJobId(null);
-        }
-    }, [status]);
+
 
 
     const handleSearch = async (input: string | string[], mode: 'fast' | 'balanced' | 'deep', isRefinement?: boolean) => {
