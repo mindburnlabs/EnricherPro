@@ -8,8 +8,8 @@ export class FallbackSearchService {
      */
     static async search(query: string, apiKeys?: Record<string, string>): Promise<RetrieverResult[]> {
         try {
-            // Use sonar-reasoning or sonar-pro for best grounding
-            const model = "perplexity/sonar-reasoning";
+            // Use perplexity/sonar which is generally available and reliable
+            const model = "perplexity/sonar";
 
             const response = await BackendLLMService.complete({
                 model,

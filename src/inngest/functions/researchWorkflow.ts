@@ -80,8 +80,8 @@ export const researchWorkflow = inngest.createFunction(
                 }
             }
 
-            // Loop Config
-            const defaultBudget = { maxQueries: 5, limitPerQuery: 3, concurrency: 3 };
+            // Loop Config - Reduced concurrency to avoid 429s on free tier
+            const defaultBudget = { maxQueries: 5, limitPerQuery: 3, concurrency: 2 };
             const budget = (budgets && budgets[mode]) ? { ...defaultBudget, ...budgets[mode] } : defaultBudget;
 
             // Total Execution Limit (Safety valve) - Increased for Parallelism
