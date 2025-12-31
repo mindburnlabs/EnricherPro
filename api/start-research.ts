@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 import { v4 as uuidv4 } from 'uuid';
-import { RateLimiter } from '../src/lib/rateLimit';
-import { getTenantId } from '../src/lib/context';
+import { RateLimiter } from './_lib/rateLimit';
+import { getTenantId } from './_lib/context';
 
 import { inngest } from './_lib/inngest';
 
