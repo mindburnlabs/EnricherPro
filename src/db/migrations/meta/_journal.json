@@ -15,6 +15,13 @@
       "when": 1767188278316,
       "tag": "0001_freezing_senator_kelly",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1767199141710,
+      "tag": "0002_ancient_black_panther",
+      "breakpoints": true
     }
   ]
 }

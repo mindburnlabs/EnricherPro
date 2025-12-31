@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { X, ExternalLink, ShieldCheck, Edit, Check } from 'lucide-react';
-import { EnrichedItem } from '../../types/domain.js';
+import { X, Check, AlertTriangle, ShieldCheck, Users, Globe } from 'lucide-react';
+import { EnrichedItem, FieldEvidence } from '../../types/domain.js';
 import { CitationDrawer } from './CitationDrawer.js';
 import { EvidenceTooltip } from './EvidenceTooltip.js';
 
@@ -13,6 +13,22 @@ interface ItemDetailProps {
 }
 
 import { useTranslation } from 'react-i18next';
+
+// Trust Badge Component
+const TrustBadge = ({ evidence }: { evidence?: FieldEvidence<any> }) => {
+    if (!evidence) return null;
+
+    if (evidence.method === 'official') {
+        return <span className="flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800"><ShieldCheck className="w-3 h-3" /> Official</span>;
+    }
+    if (evidence.method === 'consensus') {
+        return <span className="flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800"><Users className="w-3 h-3" /> Consensus</span>;
+    }
+    if (evidence.is_conflict) {
+        return <span className="flex items-center gap-1 text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800"><AlertTriangle className="w-3 h-3" /> Conflict</span>;
+    }
+    return <span className="flex items-center gap-1 text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded"><Globe className="w-3 h-3" /> WEB</span>;
+};
 
 export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onApprove }) => {
     const { t } = useTranslation('detail');
@@ -26,6 +42,22 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
     const openCitations = (field: string) => {
         setCitationField(field);
     };
+
+    // Helper to render a row
+    const EvidenceRow = ({ label, value, fieldEnv, fieldKey }: { label: string, value: any, fieldEnv: any, fieldKey: string }) => (
+        <div
+            onClick={() => openCitations(fieldKey)}
+            className={`flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border cursor-pointer transition-colors group ${fieldEnv?.is_conflict ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-500'}`}
+        >
+            <span className="text-sm font-medium text-gray-500 capitalize">{label}</span>
+            <div className="flex items-center gap-2">
+                <TrustBadge evidence={fieldEnv} />
+                <span className="text-sm text-gray-900 dark:text-gray-100 font-medium whitespace-pre-wrap text-right max-w-[200px]">
+                    {typeof value === 'object' ? JSON.stringify(value) : String(value || '-')}
+                </span>
+            </div>
+        </div>
+    );
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -57,78 +89,50 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-8">
 
-                    {/* Images */}
+                    {/* Images Grid */}
                     {data.images && data.images.length > 0 && (
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {data.images.slice(0, 4).map((img, idx) => (
                                 <div key={idx} className="aspect-square bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 relative group">
                                     <img src={img.url} alt="Product" className="w-full h-full object-contain p-2" />
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                                    {img.tags?.includes('primary') && (
-                                        <span className="absolute top-2 left-2 bg-blue-500 text-white text-[10px] uppercase font-bold px-1.5 py-0.5 rounded">{t('images.primary')}</span>
-                                    )}
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {/* Marketing Text */}
-                    {data.marketing?.description && (
-                        <div className="prose dark:prose-invert max-w-none">
-                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('market.eligibility')}</h3>
-                            {/* Reused market eligibility just for header, or better create description key? Using market for now or create description? */}
-                            {/* Actually 'description' is better. I don't have description in detail.json yet? I added identity.title? */}
-                            {/* No, I see I didn't add description key in step 477. I'll rely on hardcode or quick fix? */}
-                            {/* Wait, step 477 added specs but not description. ItemDetail used "Description" hardcoded. */}
-                            {/* I will use 'marketing.description' if key exists? No. */}
-                            {/* I will use a known key or add it. I'll use `t('identity.title')` (Extraction Identity) or just hardcode if I must, but test will fail. */}
-                            {/* I'll use `t('tabs.intelligence')` for Description maybe? Or just add it now? */}
-                            {/* I can't add now without new tool call. I'll use `t('tabs.intelligence')` as "Интеллект" ~ Description? */}
-                            {/* Or `t('identity.alias')`? */}
-                            {/* Let's checks `detail.json` again. `tabs.specs`? */}
-                            {/* I'll use `t('tabs.evidence')`? No. */}
-                            {/* I'll use `t('identity.title')` for now. */}
-                            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                                <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-                                    {data.marketing.description}
+                    {/* Identity Section */}
+                    <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('identity.title')}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <EvidenceRow label={t('identity.brand')} value={data.brand} fieldEnv={evidence['brand']} fieldKey="brand" />
+                            <EvidenceRow label={t('identity.mpn')} value={data.mpn_identity.mpn} fieldEnv={evidence['mpn_identity.mpn']} fieldKey="mpn_identity.mpn" />
+                            <EvidenceRow label={t('specs.yield')} value={`${data.yield?.value} ${data.yield?.unit}`} fieldEnv={evidence['specifications.yield_pages']} fieldKey="specifications.yield_pages" />
+                            <EvidenceRow label={t('specs.color')} value={data.color} fieldEnv={evidence['specifications.color']} fieldKey="specifications.color" />
+                        </div>
+                    </div>
+
+                    {/* Logistics Section */}
+                    <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('logistics.title')}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <EvidenceRow label={t('logistics.weight')} value={data.packaging_from_nix?.weight_g ? `${data.packaging_from_nix.weight_g} g` : '-'} fieldEnv={evidence['packaging.weight_g']} fieldKey="packaging.weight_g" />
+                            <EvidenceRow label={t('logistics.dims')} value={data.packaging_from_nix?.width_mm ? `${data.packaging_from_nix.width_mm}x${data.packaging_from_nix.height_mm}x${data.packaging_from_nix.depth_mm} mm` : '-'} fieldEnv={evidence['packaging.dimensions']} fieldKey="packaging.dimensions" />
+                        </div>
+                    </div>
+
+                    {/* Conflicts Alert */}
+                    {Object.values(evidence).some((e: any) => e.is_conflict) && (
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-xl flex items-start gap-3">
+                            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                            <div>
+                                <h4 className="font-semibold text-amber-900 dark:text-amber-100">Conflicts Detected</h4>
+                                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                                    Some fields have conflicting data from different sources. Review the highlighted fields above.
                                 </p>
                             </div>
                         </div>
                     )}
 
-                    {/* Specs Grid */}
-                    {data.specs && (
-                        <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                                {t('specs.title')}
-                                <span className="text-xs font-normal text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                                    {t('specs.click_hint')}
-                                </span>
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {Object.entries(data.specs).map(([key, val]: [string, any]) => (
-                                    <div
-                                        key={key}
-                                        onClick={() => openCitations(`specs.${key}`)}
-                                        className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-500 cursor-pointer transition-colors group"
-                                    >
-                                        <span className="text-sm font-medium text-gray-500 capitalize">{key.replace(/_/g, ' ')}</span>
-                                        <div className="flex items-center gap-2">
-                                            <EvidenceTooltip evidence={evidence[`specs.${key}`]} label={key}>
-                                                <span className="text-sm text-gray-900 dark:text-gray-100 font-medium border-b border-dotted border-gray-300 dark:border-gray-600">
-                                                    {typeof val === 'object' ? JSON.stringify(val) : String(val)}
-                                                </span>
-                                            </EvidenceTooltip>
-                                            {/* Evidence Dot */}
-                                            {evidence[`specs.${key}`] && (
-                                                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
 

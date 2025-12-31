@@ -1,7 +1,63 @@
+
 import { BackendLLMService } from "../backend/llm.js";
 import { ConsumableData } from "../../types/domain.js";
+import { ModelProfile } from "../../config/models.js";
+
+interface ExtractedClaim {
+    field: string;
+    value: any;
+    confidence: number;
+    rawSnippet: string;
+}
 
 export class SynthesisAgent {
+
+    /**
+     * Extracts atomic claims from a single source document.
+     * PREFERS: High-speed, cheap models (ModelProfile.EXTRACTION)
+     */
+    static async extractClaims(sourceText: string, sourceUrl: string, apiKeys?: Record<string, string>, promptOverride?: string): Promise<ExtractedClaim[]> {
+        const systemPrompt = promptOverride || `You are an Extraction Engine.
+        Your goal is to parse the input text and extract structured facts (Claims) about a printer consumable (Toners, Ink, Drums).
+        
+        Output JSON:
+        [
+            { "field": "brand", "value": "HP", "confidence": 1.0, "rawSnippet": "HP 85A" },
+            { "field": "mpn_identity.mpn", "value": "CE285A", "confidence": 1.0, "rawSnippet": "Model: CE285A" },
+            { "field": "packaging.weight_g", "value": 850, "confidence": 0.8, "rawSnippet": "0.85 kg" }
+        ]
+        
+        Targets:
+        - brand, mpn, series, color
+        - yield (pages)
+        - compatible_printers (array of strings)
+        - logistics (weight_g, dim_width_mm, dim_height_mm, dim_depth_mm)
+        - gtin/ean codes
+        
+        Rules:
+        1. Extract ONLY present data. No guessing.
+        2. Normalize numeric values (e.g. "1 kg" -> 1000).
+        3. Confidence 0.1-1.0 based on clarity.
+        `;
+
+        try {
+            const response = await BackendLLMService.complete({
+                profile: ModelProfile.EXTRACTION, // Use Cheap/Fast model
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: `Source URL: ${sourceUrl}\n\n${sourceText.substring(0, 15000)}` } // Limit context window for cheap models
+                ],
+                jsonSchema: true,
+                apiKeys
+            });
+
+            const parsed = JSON.parse(response || "[]");
+            return Array.isArray(parsed) ? parsed : (parsed.claims || []);
+        } catch (error) {
+            console.error(`Extraction failed for ${sourceUrl}:`, error);
+            return [];
+        }
+    }
 
     static async merge(sources: string[], schemaKey: string = "StrictConsumableData", apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void): Promise<Partial<ConsumableData>> {
         onLog?.(`Synthesizing data from ${sources.length} sources...`);
@@ -36,7 +92,7 @@ export class SynthesisAgent {
 
         try {
             const response = await BackendLLMService.complete({
-                model: "google/gemini-2.0-flash-001",
+                profile: ModelProfile.REASONING, // Use Smart/Reasoning model
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: "Extract data according to StrictConsumableData schema." }

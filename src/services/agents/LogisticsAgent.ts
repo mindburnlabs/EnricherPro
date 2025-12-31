@@ -1,42 +1,78 @@
+
 import { BackendFirecrawlService } from "../backend/firecrawl.js";
+import { BackendLLMService } from "../backend/llm.js";
+import { ModelProfile } from "../../config/models.js";
 
 export class LogisticsAgent {
 
     /**
-     * NIX.ru Exclusive Logic
-     * Searches for specifically "вес брутто" (gross weight) and dimensions.
+     * NIX.ru Specialized Scraper & Parser (No-API)
+     * Scans NIX.ru for comprehensive data: Logistics, Specs, Compatibility.
      */
-    static async checkNixRu(canonicalName: string, apiKeys?: Record<string, string>, onLog?: (msg: string) => void): Promise<{ weight: string | null, dimensions: string | null, url: string | null }> {
-        const query = `site:nix.ru ${canonicalName} вес брутто`;
+    static async checkNixRu(canonicalName: string, apiKeys?: Record<string, string>, onLog?: (msg: string) => void): Promise<{ weight: string | null, dimensions: string | null, url: string | null, fullExtract?: any }> {
+        // Broad search to find the specific product page
+        const queries = [
+            `site:nix.ru ${canonicalName} описание`, // Description
+            `site:nix.ru ${canonicalName} характеристики` // Specs
+        ];
 
         try {
-            const results = await BackendFirecrawlService.search(query, {
-                limit: 1,
-                formats: ['markdown'],
-                apiKey: apiKeys?.firecrawl
-            });
+            let bestPage = null;
 
-            if (onLog) onLog(`Checking NIX.ru for ${canonicalName}...`);
+            for (const query of queries) {
+                const results = await BackendFirecrawlService.search(query, {
+                    limit: 1,
+                    formats: ['markdown'],
+                    apiKey: apiKeys?.firecrawl
+                });
+                if (results.length > 0) {
+                    bestPage = results[0];
+                    break;
+                }
+            }
 
-            if (results.length > 0) {
-                const item = results[0];
-                const text = item.markdown || "";
+            if (bestPage) {
+                if (onLog) onLog(`Found NIX.ru page: ${bestPage.url}`);
+                const text = bestPage.markdown || "";
 
-                // Simple Regex Extraction for NIX specific format
-                // Example: "Вес брутто (измерено в НИКСе) 0.84 кг"
-                const weightMatch = text.match(/Вес брутто.*?([\d\.]+)\s*кг/i);
+                // Use Cheap LLM to parse NIX.ru's specific table format
+                // They often have "Характеристики" (Specs) and "Совместимость" (Compatibility) blocks
+                const systemPrompt = `You are a NIX.ru Data Extractor, expert in parsing Russian technical specs.
+                Extract the following from the text:
+                1. "Вес брутто" (Gross Weight) -> normalized to kg.
+                2. "Размеры упаковки" (Dimensions) -> normalized to cm (W x D x H).
+                3. "Совместимость" (Compatibility) -> list of printer models.
+                4. "Ресурс" (Yield) -> pages.
+                
+                Return JSON:
+                {
+                    "logistics": { "weight": "0.85 kg", "dimensions": "35x15x10 cm" },
+                    "compatibility": ["Printer 1", "Printer 2"],
+                    "specs": { "yield": "1500 pages", "color": "Black" }
+                }
+                `;
 
-                // Example: "Размеры упаковки (измерено в НИКСе) 35 x 15 x 10 см"
-                const dimMatch = text.match(/Размеры упаковки.*?([\d\.\sx]+)\s*см/i);
+                const extract = await BackendLLMService.complete({
+                    profile: ModelProfile.EXTRACTION,
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: text.substring(0, 20000) } // NIX pages can be long
+                    ],
+                    jsonSchema: true,
+                    apiKeys
+                });
+
+                const parsed = JSON.parse(extract || "{}");
 
                 return {
-                    weight: weightMatch ? `${weightMatch[1]} kg` : null,
-                    dimensions: dimMatch ? `${dimMatch[1]} cm` : null,
-                    url: item.url
+                    weight: parsed.logistics?.weight || null,
+                    dimensions: parsed.logistics?.dimensions || null,
+                    url: bestPage.url,
+                    fullExtract: parsed // Return everything found
                 };
             }
         } catch (e) {
-            console.error("Logistics Check Failed:", e);
+            console.error("NIX.ru Check Failed:", e);
         }
 
         return { weight: null, dimensions: null, url: null };

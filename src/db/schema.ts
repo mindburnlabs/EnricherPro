@@ -43,9 +43,7 @@ export const items = pgTable('items', {
     return {};
 });
 
-// --- EVIDENCE (The "Why") ---
-// Granular evidence for specific fields. 
-// "Field X in Item Y says Value Z because Source URL S said so."
+// --- EVIDENCE (Legacy/Simple Table - keeping for backward compat if needed, but 'claims' is the new way) ---
 export const evidence = pgTable('evidence', {
     id: uuid('id').defaultRandom().primaryKey(),
     itemId: uuid('item_id').references(() => items.id).notNull(),
@@ -73,10 +71,67 @@ export const jobEvents = pgTable('job_events', {
     timestamp: timestamp('timestamp').defaultNow().notNull(),
 });
 
+// --- FRONTIER (The Exploration Queue) ---
+export const frontier = pgTable('frontier', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    jobId: uuid('job_id').references(() => jobs.id).notNull(),
+
+    type: text('type', { enum: ['query', 'url', 'domain_crawl'] }).notNull(),
+    value: text('value').notNull(), // The query string or URL
+
+    status: text('status', { enum: ['pending', 'processing', 'completed', 'failed'] }).default('pending').notNull(),
+    depth: integer('depth').default(0).notNull(),
+    priority: integer('priority').default(50).notNull(), // 1-100, higher is first
+
+    meta: jsonb('meta'), // source_id, attempt_count, discovered_from_url
+
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// --- SOURCE DOCUMENTS (Raw Scraped/Crawled content) ---
+// Stores the raw HTML/Markdown before extraction
+export const sourceDocuments = pgTable('source_documents', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    jobId: uuid('job_id').references(() => jobs.id).notNull(),
+
+    url: text('url').notNull(),
+    domain: text('domain').notNull(),
+    contentHash: text('content_hash'), // For deduplication
+
+    rawContent: text('raw_content'), // Markdown or HTML
+    extractedMetadata: jsonb('extracted_metadata'), // SEO title, date, author
+
+    status: text('status', { enum: ['success', 'failed', 'blocked'] }).notNull(),
+    httpCode: integer('http_code'),
+
+    crawledAt: timestamp('crawled_at').defaultNow().notNull(),
+});
+
+// --- CLAIMS (Atomic Facts from Sources) ---
+// Formerly "evidence" but more granular.
+// "Source X claims Field Y is Value Z"
+export const claims = pgTable('claims', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    itemId: uuid('item_id').references(() => items.id).notNull(),
+    sourceDocId: uuid('source_doc_id').references(() => sourceDocuments.id), // Link to raw source
+
+    field: text('field').notNull(), // e.g., 'specs.weight', 'identity.mpn'
+    value: text('value').notNull(),
+    normalizedValue: text('normalized_value'), // e.g. "1.2 kg" -> "1200" (g)
+
+    confidence: integer('confidence').default(0),
+    isAccepted: boolean('is_accepted').default(false),
+
+    extractedAt: timestamp('extracted_at').defaultNow().notNull(),
+});
+
 // --- RELATIONS ---
 export const jobsRelations = relations(jobs, ({ many }) => ({
     items: many(items),
     events: many(jobEvents),
+    frontier: many(frontier),
+    sourceDocuments: many(sourceDocuments),
 }));
 
 export const itemsRelations = relations(items, ({ one, many }) => ({
@@ -85,11 +140,38 @@ export const itemsRelations = relations(items, ({ one, many }) => ({
         references: [jobs.id],
     }),
     evidence: many(evidence),
+    claims: many(claims),
 }));
 
 export const evidenceRelations = relations(evidence, ({ one }) => ({
     item: one(items, {
         fields: [evidence.itemId],
         references: [items.id],
+    }),
+}));
+
+export const frontierRelations = relations(frontier, ({ one }) => ({
+    job: one(jobs, {
+        fields: [frontier.jobId],
+        references: [jobs.id],
+    }),
+}));
+
+export const sourceDocumentsRelations = relations(sourceDocuments, ({ one, many }) => ({
+    job: one(jobs, {
+        fields: [sourceDocuments.jobId],
+        references: [jobs.id],
+    }),
+    claims: many(claims),
+}));
+
+export const claimsRelations = relations(claims, ({ one }) => ({
+    item: one(items, {
+        fields: [claims.itemId],
+        references: [items.id],
+    }),
+    sourceDocument: one(sourceDocuments, {
+        fields: [claims.sourceDocId],
+        references: [sourceDocuments.id],
     }),
 }));

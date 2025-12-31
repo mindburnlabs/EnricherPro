@@ -39,8 +39,8 @@ export interface DataSource {
 
 export interface FieldEvidence<T> {
     value: T;
-    urls: string[];
-    extraction_method: string;
+    urls?: string[]; // Deprecated in favor of source_url
+    extraction_method?: string;
     confidence: number;
     source_type?: DataSource['sourceType'];
     raw_snippet?: string;
@@ -49,6 +49,11 @@ export interface FieldEvidence<T> {
     timestamp?: string; // ISO string
     content_hash?: string; // SHA-256 of the snippet
     source_id?: string; // Link to specific DataSource entry
+    source_url?: string;
+
+    // Truth Engine Extensions
+    is_conflict?: boolean;
+    method?: 'official' | 'consensus' | 'single_source' | 'fallback';
 }
 
 export interface MpnIdentity {

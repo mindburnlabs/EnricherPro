@@ -118,6 +118,53 @@ export class DiscoveryAgent {
         }
     }
 
+    /**
+     * Analyzes search results to find new keyword expansion opportunities.
+     * Uses Fast/Cheap model to keep costs low.
+     */
+    static async analyzeForExpansion(originalQuery: string, searchResults: RetrieverResult[], apiKeys?: Record<string, string>): Promise<string[]> {
+        if (searchResults.length === 0) return [];
+
+        const systemPrompt = `You are a Research Expansion Engine.
+        Your goal is to look at the search snippets and find BETTER or MORE SPECIFIC keywords to find product details.
+        
+        Look for:
+        - Alternative Model Names (e.g. "Canon C-EXV 42" -> "NPG-57", "GPR-43")
+        - OEM Part Numbers (MPNs) if the original query was generic.
+        - Specific Vendor Codes (e.g. "CF287A" -> "87A").
+        - Competitor equivalents if relevant.
+        
+        Return a JSON array of STRINGS only.
+        Example: ["Canon NPG-57 specs", "Canon GPR-43 weight"]
+        
+        If no new useful keywords found, return empty array [].
+        `;
+
+        const context = searchResults.slice(0, 3).map(r =>
+            `Title: ${r.title}\nSnippet: ${r.markdown.substring(0, 300)}`
+        ).join("\n---\n");
+
+        try {
+            const { ModelProfile } = await import("../../config/models.js");
+
+            const response = await BackendLLMService.complete({
+                profile: ModelProfile.FAST_CHEAP,
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: `Original Query: "${originalQuery}"\n\nSearch Results:\n${context}` }
+                ],
+                jsonSchema: true,
+                apiKeys
+            });
+
+            const parsed = JSON.parse(response || "[]");
+            return Array.isArray(parsed) ? parsed : (parsed.queries || []);
+        } catch (e) {
+            console.warn("Expansion analysis failed", e);
+            return [];
+        }
+    }
+
     static async execute(plan: AgentPlan, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, budgetOverrides?: Record<string, { maxQueries: number, limitPerQuery: number }>, onLog?: (msg: string) => void, sourceConfig?: any): Promise<RetrieverResult[]> {
         const allResults: RetrieverResult[] = [];
         const visitedUrls = new Set<string>();
