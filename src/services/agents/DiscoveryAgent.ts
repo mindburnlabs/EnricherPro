@@ -222,8 +222,13 @@ export class DiscoveryAgent {
 
         const systemPrompt = isRu ? systemPromptRu : systemPromptEn;
 
+        // CIRCUIT BREAKER for known broken models (e.g. user selected them in settings previously)
+        if (model === 'xiaomi/mimo-v2-flash:free') {
+            model = 'google/gemini-2.0-flash-exp:free';
+        }
+
         const modelsToTry = [
-            model || "openrouter/auto:free", // Primary - let Auto decide
+            model || "google/gemini-2.0-flash-exp:free", // Primary
             "google/gemini-2.0-flash-exp:free", // Secondary 
             "google/gemini-2.0-flash-thinking-exp:free"
         ];

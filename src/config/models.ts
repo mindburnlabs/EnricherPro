@@ -9,7 +9,7 @@ export enum ModelProfile {
 export const MODEL_CONFIGS = {
     [ModelProfile.FAST_CHEAP]: {
         candidates: [
-            'xiaomi/mimo-v2-flash:free', // Confirmed free high-speed
+            'google/gemini-2.0-flash-exp:free', // Replaced failing Xiaomi
             'google/gemini-2.0-flash-lite-preview-02-05:free',
             'openrouter/auto:free'
         ],
