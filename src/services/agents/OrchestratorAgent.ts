@@ -1,4 +1,6 @@
 import { ItemsRepository } from "../../repositories/itemsRepository";
+import { db } from "../../db";
+import { jobEvents } from "../../db/schema";
 
 export type ResearchState = 'planning' | 'searching' | 'enrichment' | 'gate_check' | 'finalizing';
 
@@ -64,6 +66,20 @@ export class OrchestratorAgent {
             itemId: this.itemId,
             status,
             score: verification.score
+        };
+    }
+
+    async log(agent: string, message: string, type: 'info' | 'warning' | 'error' | 'success' = 'info') {
+        if (!this.jobId) return;
+        try {
+            await db.insert(jobEvents).values({
+                jobId: this.jobId,
+                agent,
+                message,
+                type
+            });
+        } catch (e) {
+            console.error("Failed to log event:", e);
         }
     }
 }

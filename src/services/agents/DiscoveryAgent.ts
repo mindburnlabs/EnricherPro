@@ -32,7 +32,8 @@ const WHITELIST_DOMAINS = [
 
 export class DiscoveryAgent {
 
-    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string): Promise<AgentPlan> {
+    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void): Promise<AgentPlan> {
+        onLog?.(`Planning research for "${inputRaw}" in ${mode} mode...`);
         const systemPrompt = promptOverride || `You are the Lead Research Planner for a Printer Consumables Database.
         Your goal is to analyze the user input and construct a precise search strategy.
         
@@ -87,7 +88,7 @@ export class DiscoveryAgent {
         }
     }
 
-    static async execute(plan: AgentPlan, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, budgetOverrides?: Record<string, { maxQueries: number, limitPerQuery: number }>): Promise<RetrieverResult[]> {
+    static async execute(plan: AgentPlan, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, budgetOverrides?: Record<string, { maxQueries: number, limitPerQuery: number }>, onLog?: (msg: string) => void): Promise<RetrieverResult[]> {
         const allResults: RetrieverResult[] = [];
         const visitedUrls = new Set<string>();
 
@@ -112,11 +113,14 @@ export class DiscoveryAgent {
                 queryCount++;
 
                 try {
+                    onLog?.(`Executing query: "${query}"...`);
                     const searchResults = await BackendFirecrawlService.search(query, {
                         limit: budget.limitPerQuery,
                         formats: ['markdown'],
                         apiKey: apiKeys?.firecrawl
                     });
+
+                    onLog?.(`Found ${searchResults.length} results for "${query}".`);
 
                     for (const item of searchResults) {
                         if (visitedUrls.has(item.url)) continue;

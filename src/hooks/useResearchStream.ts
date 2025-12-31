@@ -14,15 +14,25 @@ interface UseResearchStreamResult {
     reset: () => void;
 }
 
-export const useResearchStream = (): UseResearchStreamResult => {
+export interface ResearchLog {
+    id: string;
+    agent: string;
+    message: string;
+    type: 'info' | 'warning' | 'error' | 'success';
+    timestamp: string;
+}
+
+export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchLog[] } => {
     const [steps, setSteps] = useState<StepStatus[]>([]);
     const [items, setItems] = useState<EnrichedItem[]>([]);
+    const [logs, setLogs] = useState<ResearchLog[]>([]); // New Log State
     const [status, setStatus] = useState<ResearchStatus>('idle');
     const [error, setError] = useState<string | null>(null);
 
     const reset = useCallback(() => {
         setSteps([]);
         setItems([]);
+        setLogs([]);
         setStatus('idle');
         setError(null);
     }, []);
@@ -43,6 +53,16 @@ export const useResearchStream = (): UseResearchStreamResult => {
                 if (data.type === 'connected') {
                     console.log('SSE Connected', data.jobId);
                     return;
+                }
+
+                if (data.type === 'logs') {
+                    // Dedup and append
+                    setLogs(prev => {
+                        const newLogs = (data.logs as ResearchLog[]).filter(l => !prev.some(p => p.id === l.id));
+                        if (newLogs.length === 0) return prev;
+                        // Sort by timestamp
+                        return [...prev, ...newLogs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                    });
                 }
 
                 if (data.type === 'update') {
@@ -118,5 +138,5 @@ export const useResearchStream = (): UseResearchStreamResult => {
         };
     }, [reset]);
 
-    return { steps, items, status, error, startStream, reset };
+    return { steps, items, logs, status, error, startStream, reset };
 };

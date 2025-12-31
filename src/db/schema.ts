@@ -58,9 +58,22 @@ export const evidence = pgTable('evidence', {
     extractedAt: timestamp('extracted_at').defaultNow().notNull(),
 });
 
+// --- EVENTS (The "Live Stream") ---
+export const jobEvents = pgTable('job_events', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    jobId: uuid('job_id').references(() => jobs.id).notNull(),
+
+    agent: text('agent').notNull(), // 'orchestrator', 'discovery', 'synthesis', 'logistics', 'gatekeeper'
+    message: text('message').notNull(),
+    type: text('type', { enum: ['info', 'warning', 'error', 'success'] }).default('info').notNull(),
+
+    timestamp: timestamp('timestamp').defaultNow().notNull(),
+});
+
 // --- RELATIONS ---
 export const jobsRelations = relations(jobs, ({ many }) => ({
     items: many(items),
+    events: many(jobEvents),
 }));
 
 export const itemsRelations = relations(items, ({ one, many }) => ({

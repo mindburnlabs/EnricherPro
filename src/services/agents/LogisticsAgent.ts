@@ -7,7 +7,7 @@ export class LogisticsAgent {
      * NIX.ru Exclusive Logic
      * Searches for specifically "вес брутто" (gross weight) and dimensions.
      */
-    static async checkNixRu(canonicalName: string, apiKeys?: Record<string, string>): Promise<{ weight: string | null, dimensions: string | null, url: string | null }> {
+    static async checkNixRu(canonicalName: string, apiKeys?: Record<string, string>, onLog?: (msg: string) => void): Promise<{ weight: string | null, dimensions: string | null, url: string | null }> {
         const query = `site:nix.ru ${canonicalName} вес брутто`;
 
         try {
@@ -16,6 +16,8 @@ export class LogisticsAgent {
                 formats: ['markdown'],
                 apiKey: apiKeys?.firecrawl
             });
+
+            if (onLog) onLog(`Checking NIX.ru for ${canonicalName}...`);
 
             if (results.length > 0) {
                 const item = results[0];

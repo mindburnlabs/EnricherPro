@@ -30,7 +30,13 @@ export const researchWorkflow = inngest.createFunction(
         await step.run("transition-planning", () => agent.transition('planning'));
         const plan = await step.run("generate-plan", async () => {
             const { DiscoveryAgent } = await import("../../services/agents/DiscoveryAgent");
-            return await DiscoveryAgent.plan(inputRaw, mode, apiKeys, agentConfig?.prompts?.discovery);
+            return await DiscoveryAgent.plan(
+                inputRaw,
+                mode,
+                apiKeys,
+                agentConfig?.prompts?.discovery,
+                (msg) => agent.log('discovery', msg)
+            );
         });
 
         // 3. Execution (Discovery)
@@ -40,11 +46,21 @@ export const researchWorkflow = inngest.createFunction(
             const { LogisticsAgent } = await import("../../services/agents/LogisticsAgent");
 
             // Core Search
-            const results = await DiscoveryAgent.execute(plan as any, mode, apiKeys, agentConfig?.budgets);
+            const results = await DiscoveryAgent.execute(
+                plan as any,
+                mode,
+                apiKeys,
+                agentConfig?.budgets,
+                (msg) => agent.log('discovery', msg)
+            );
 
             // Logistics Check (if needed)
             if (mode !== 'fast' && plan.canonical_name) {
-                const logistics = await LogisticsAgent.checkNixRu(plan.canonical_name, apiKeys);
+                const logistics = await LogisticsAgent.checkNixRu(
+                    plan.canonical_name,
+                    apiKeys,
+                    (msg) => agent.log('logistics', msg)
+                );
                 if (logistics.url) {
                     results.push({
                         url: logistics.url,
@@ -66,7 +82,13 @@ export const researchWorkflow = inngest.createFunction(
             const combinedSources = searchResults.map((r: any) =>
                 `Source: ${r.url} (${r.source_type})\n---\n${r.markdown}`
             );
-            return await SynthesisAgent.merge(combinedSources, "StrictConsumableData", apiKeys, agentConfig?.prompts?.synthesis);
+            return await SynthesisAgent.merge(
+                combinedSources,
+                "StrictConsumableData",
+                apiKeys,
+                agentConfig?.prompts?.synthesis,
+                (msg) => agent.log('synthesis', msg)
+            );
         });
 
         // 5. Verification

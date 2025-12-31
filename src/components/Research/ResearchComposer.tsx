@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Send, Paperclip, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +12,17 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
     const [input, setInput] = useState('');
     const [mode, setMode] = useState<'fast' | 'balanced' | 'deep'>('balanced');
     const [showModes, setShowModes] = useState(false);
+
+    // Get stream data to pass log to RunProgress, 
+    // BUT NOTE: ResearchComposer is usually for *input*. 
+    // RunProgress is rendered in App.tsx. 
+    // However, if we want to show it here contextually we can, but likely the user just wanted it in App.tsx. 
+    // The previous error showed "RunProgress" missing in this file, which implies I added it here erroneously or incomplete.
+    // Given App.tsx renders RunProgress, I should probably REMOVE it from here if it's duplicated, 
+    // OR if the design calls for it here. 
+    // Looking at the broken code, I inserted a block `{ status === 'running' && ... RunProgress }` inside here.
+    // I will remove the RunProgress usage from here since it is already in App.tsx, unless I see a reason to keep it.
+    // Wait, the previous edit removed handleSubmit! I need to put it back.
 
     const suggestions = [
         t('composer.suggestions.1'),
@@ -106,7 +116,6 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
                                 </div>
                             )}
 
-                            {/* Legacy clip button - kept for layout but hidden/disabled or we repurpose? Let's hide for now to declutter */}
                             <label className="p-2 text-gray-500 hover:text-emerald-600 cursor-pointer transition-colors" title="Upload CSV">
                                 <Paperclip className="w-5 h-5" />
                                 <input type="file" accept=".csv,.txt" className="hidden" onChange={handleFileUpload} />

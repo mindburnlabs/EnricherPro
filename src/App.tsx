@@ -16,7 +16,7 @@ import { Settings } from 'lucide-react';
 
 const App: React.FC = () => {
   const { t } = useTranslation('common');
-  const { steps, items, status, startStream, reset } = useResearchStream();
+  const { steps, items, logs, status, startStream, reset } = useResearchStream();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -131,7 +131,7 @@ const App: React.FC = () => {
 
         <ResearchComposer onSubmit={handleSearch} isProcessing={status === 'running'} />
 
-        <RunProgress steps={steps} isVisible={steps.length > 0} />
+        <RunProgress steps={steps} logs={logs} isVisible={steps.length > 0} />
 
         {status === 'completed' && items.length > 0 && (
           <div className="mt-12 w-full max-w-4xl animate-in fade-in slide-in-from-bottom duration-700">
