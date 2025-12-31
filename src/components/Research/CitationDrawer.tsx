@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { X, ExternalLink, ShieldCheck } from 'lucide-react';
+import { X, ExternalLink, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 interface CitationDrawerProps {
     isOpen: boolean;
@@ -13,12 +14,15 @@ export const CitationDrawer: React.FC<CitationDrawerProps> = ({ isOpen, onClose,
 
     // Handle both legacy array and new FieldEvidence object
     const isLegacyArray = Array.isArray(evidence);
+    // Unified Proof handling
     const proofs = isLegacyArray ? evidence : [{
         rawSnippet: evidence.raw_snippet,
-        sourceUrl: evidence.urls?.[0], // Main source
+        sourceUrl: evidence.source_url || (evidence.urls && evidence.urls[0]),
         confidence: evidence.confidence,
         timestamp: evidence.timestamp,
-        urls: evidence.urls
+        urls: evidence.urls || (evidence.source_url ? [evidence.source_url] : []),
+        method: evidence.method,
+        isConflict: evidence.is_conflict
     }];
 
     return (
@@ -39,16 +43,26 @@ export const CitationDrawer: React.FC<CitationDrawerProps> = ({ isOpen, onClose,
 
                 <div className="space-y-6">
                     {proofs.map((ev: any, idx: number) => (
-                        <div key={idx} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 relative overflow-hidden group hover:border-emerald-500/50 transition-colors">
+                        <div key={idx} className={`bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border relative overflow-hidden group hover:border-emerald-500/50 transition-colors ${ev.isConflict ? 'border-amber-300 dark:border-amber-700' : 'border-gray-200 dark:border-gray-700'}`}>
                             {(ev.confidence > 0.8 || ev.confidence > 80) && (
                                 <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg flex items-center gap-1">
                                     <ShieldCheck className="w-3 h-3" /> HIGH CONFIDENCE
                                 </div>
                             )}
 
+                            {ev.isConflict && (
+                                <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3" /> CONFLICT
+                                </div>
+                            )}
+
                             <p className="text-gray-800 dark:text-gray-200 text-sm mb-3 leading-relaxed font-mono bg-white dark:bg-gray-900 p-2 rounded border border-gray-100 dark:border-gray-800">
                                 "{ev.rawSnippet || 'Evidence captured via semantic extraction.'}"
                             </p>
+
+                            {ev.method && (
+                                <p className="text-xs text-gray-500 mb-2 uppercase font-semibold">Method: {ev.method}</p>
+                            )}
 
                             <div className="flex flex-col gap-2 mt-2">
                                 {(ev.urls || (ev.sourceUrl ? [ev.sourceUrl] : [])).map((url: string, i: number) => (

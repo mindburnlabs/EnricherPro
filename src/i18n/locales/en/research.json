@@ -39,5 +39,9 @@
         "button_detail": "View Details",
         "button_approve": "Approve",
         "unknown_reason": "Not specified"
+    },
+    "interface": {
+        "welcome_title": "What do you want to verify?",
+        "welcome_subtitle": "Ask anything about specs, availability, or compatibility."
     }
 }

@@ -41,6 +41,8 @@
     },
     "logistics": {
         "title": "Logistics Protocol",
+        "weight": "Gross Weight",
+        "dims": "Dimensions",
         "mass": "Gross Weight",
         "width": "Width",
         "height": "Height",
@@ -98,6 +100,14 @@
     },
     "specs": {
         "title": "Specifications",
-        "click_hint": "Click to view sources"
+        "click_hint": "Click to view sources",
+        "yield": "Yield",
+        "color": "Color"
+    },
+    "trust": {
+        "official": "Official",
+        "consensus": "Consensus",
+        "conflict": "Conflict",
+        "web": "WEB"
     }
 }

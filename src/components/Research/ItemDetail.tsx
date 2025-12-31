@@ -16,18 +16,19 @@ import { useTranslation } from 'react-i18next';
 
 // Trust Badge Component
 const TrustBadge = ({ evidence }: { evidence?: FieldEvidence<any> }) => {
+    const { t } = useTranslation('detail');
     if (!evidence) return null;
 
     if (evidence.method === 'official') {
-        return <span className="flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800"><ShieldCheck className="w-3 h-3" /> Official</span>;
+        return <span className="flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800"><ShieldCheck className="w-3 h-3" /> {t('trust.official')}</span>;
     }
     if (evidence.method === 'consensus') {
-        return <span className="flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800"><Users className="w-3 h-3" /> Consensus</span>;
+        return <span className="flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800"><Users className="w-3 h-3" /> {t('trust.consensus')}</span>;
     }
     if (evidence.is_conflict) {
-        return <span className="flex items-center gap-1 text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800"><AlertTriangle className="w-3 h-3" /> Conflict</span>;
+        return <span className="flex items-center gap-1 text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800"><AlertTriangle className="w-3 h-3" /> {t('trust.conflict')}</span>;
     }
-    return <span className="flex items-center gap-1 text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded"><Globe className="w-3 h-3" /> WEB</span>;
+    return <span className="flex items-center gap-1 text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded"><Globe className="w-3 h-3" /> {t('trust.web')}</span>;
 };
 
 export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onApprove }) => {

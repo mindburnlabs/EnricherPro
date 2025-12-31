@@ -39,5 +39,9 @@
         "button_detail": "Просмотр",
         "button_approve": "Утвердить",
         "unknown_reason": "Не указана"
+    },
+    "interface": {
+        "welcome_title": "Что вы хотите проверить?",
+        "welcome_subtitle": "Спросите о характеристиках, доступности или совместимости."
     }
 }
