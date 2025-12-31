@@ -1,6 +1,6 @@
-import { ItemsRepository } from "../../repositories/itemsRepository";
-import { db } from "../../db";
-import { jobEvents } from "../../db/schema";
+import { ItemsRepository } from "../../repositories/itemsRepository.js";
+import { db } from "../../db.js";
+import { jobEvents } from "../../db/schema.js";
 
 export type ResearchState = 'planning' | 'searching' | 'enrichment' | 'gate_check' | 'finalizing';
 

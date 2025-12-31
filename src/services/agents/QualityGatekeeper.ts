@@ -1,5 +1,5 @@
 
-import { StrictConsumableData } from '../../types/domain';
+import { StrictConsumableData } from '../../types/domain.js';
 
 export interface VerificationResult {
     isValid: boolean;
@@ -125,7 +125,7 @@ export class QualityGatekeeper {
         // We only check if we have a valid MPN
         stages.deduplication = true;
         if (data.mpn_identity?.mpn) {
-            const duplicate = await import("../backend/DeduplicationService").then(m =>
+            const duplicate = await import("../backend/DeduplicationService.js").then(m =>
                 m.DeduplicationService.findPotentialDuplicate(data.mpn_identity!.mpn!)
             );
 

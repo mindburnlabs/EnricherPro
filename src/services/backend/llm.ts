@@ -15,7 +15,7 @@ export class BackendLLMService {
         const apiKey = config.apiKeys?.google || config.apiKeys?.openrouter || this.apiKey;
         if (!apiKey) throw new Error("Missing LLM API Key");
 
-        const { withRetry } = await import("../../lib/reliability");
+        const { withRetry } = await import("../../lib/reliability.js");
 
         return withRetry(async () => {
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {

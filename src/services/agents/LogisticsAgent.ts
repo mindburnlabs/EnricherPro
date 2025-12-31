@@ -1,5 +1,4 @@
-
-import { BackendFirecrawlService } from "../backend/firecrawl";
+import { BackendFirecrawlService } from "../backend/firecrawl.js";
 
 export class LogisticsAgent {
 

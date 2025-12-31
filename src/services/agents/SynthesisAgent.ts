@@ -1,6 +1,5 @@
-
-import { BackendLLMService } from "../backend/llm";
-import { ConsumableData } from "../../types/domain";
+import { BackendLLMService } from "../backend/llm.js";
+import { ConsumableData } from "../../types/domain.js";
 
 export class SynthesisAgent {
 

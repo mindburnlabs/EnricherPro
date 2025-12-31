@@ -15,7 +15,7 @@ export class BackendFirecrawlService {
     }
 
     static async search(query: string, options: { limit?: number; country?: string; formats?: string[]; apiKey?: string } = {}) {
-        const { withRetry } = await import("../../lib/reliability");
+        const { withRetry } = await import("../../lib/reliability.js");
 
         return withRetry(async () => {
             const client = options.apiKey ? new FirecrawlApp({ apiKey: options.apiKey }) : this.getClient();

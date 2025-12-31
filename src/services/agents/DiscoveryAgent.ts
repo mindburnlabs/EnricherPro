@@ -1,6 +1,5 @@
-
-import { BackendLLMService } from "../backend/llm";
-import { BackendFirecrawlService } from "../backend/firecrawl";
+import { BackendLLMService } from "../backend/llm.js";
+import { BackendFirecrawlService } from "../backend/firecrawl.js";
 
 export type ResearchMode = 'fast' | 'balanced' | 'deep';
 

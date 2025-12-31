@@ -1,6 +1,6 @@
 
-import { inngest } from "../client";
-import { OrchestratorAgent } from "../../services/agents/OrchestratorAgent";
+import { inngest } from "../client.js";
+import { OrchestratorAgent } from "../../services/agents/OrchestratorAgent.js";
 
 export const researchWorkflow = inngest.createFunction(
     {
@@ -37,7 +37,7 @@ export const researchWorkflow = inngest.createFunction(
         // 2. Planning
         await step.run("transition-planning", () => agent.transition('planning'));
         const plan = await step.run("generate-plan", async () => {
-            const { DiscoveryAgent } = await import("../../services/agents/DiscoveryAgent");
+            const { DiscoveryAgent } = await import("../../services/agents/DiscoveryAgent.js");
             return await DiscoveryAgent.plan(
                 inputRaw,
                 mode,
@@ -51,8 +51,8 @@ export const researchWorkflow = inngest.createFunction(
         // 3. Execution (Discovery)
         await step.run("transition-searching", () => agent.transition('searching'));
         const searchResults = await step.run("execute-search", async () => {
-            const { DiscoveryAgent } = await import("../../services/agents/DiscoveryAgent");
-            const { LogisticsAgent } = await import("../../services/agents/LogisticsAgent");
+            const { DiscoveryAgent } = await import("../../services/agents/DiscoveryAgent.js");
+            const { LogisticsAgent } = await import("../../services/agents/LogisticsAgent.js");
 
             // Core Search
             const results = await DiscoveryAgent.execute(
@@ -88,7 +88,7 @@ export const researchWorkflow = inngest.createFunction(
         // 4. Extraction
         await step.run("transition-enrichment", () => agent.transition('enrichment'));
         const extractedData = await step.run("extract-data", async () => {
-            const { SynthesisAgent } = await import("../../services/agents/SynthesisAgent");
+            const { SynthesisAgent } = await import("../../services/agents/SynthesisAgent.js");
             const combinedSources = searchResults.map((r: any) =>
                 `Source: ${r.url} (${r.source_type})\n---\n${r.markdown}`
             );
@@ -104,7 +104,7 @@ export const researchWorkflow = inngest.createFunction(
         // 5. Verification
         await step.run("transition-gate-check", () => agent.transition('gate_check'));
         const verification = await step.run("verify-data", async () => {
-            const { QualityGatekeeper } = await import("../../services/agents/QualityGatekeeper");
+            const { QualityGatekeeper } = await import("../../services/agents/QualityGatekeeper.js");
             // @ts-ignore
             return await QualityGatekeeper.validate(extractedData);
         });
@@ -120,3 +120,4 @@ export const researchWorkflow = inngest.createFunction(
         };
     }
 );
+
