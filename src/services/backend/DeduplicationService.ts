@@ -19,21 +19,67 @@ export class DeduplicationService {
      * Returns the existing item ID if found, or null.
      */
     static async findPotentialDuplicate(mpn: string): Promise<{ id: string, type: 'exact' | 'fuzzy' } | null> {
-        const normalized = this.normalizeMpn(mpn);
-        if (normalized.length < 3) return null; // Too short to match safely
+        const normalizedInput = this.normalizeMpn(mpn);
+        if (normalizedInput.length < 3) return null;
 
-        // We need to fetch all items to normalize and compare because SQL normalization is tricky across DBs
-        // For now, let's try a direct ILIKE match on the raw MPN first (fast path)
-        const exactMatch = await db.select({ id: items.id }).from(items)
-            .where(eq(items.mpn, mpn)) // Assuming we have an MPN column or stored in JSON
-            .limit(1);
+        // 1. Fast Path: Exact Match (DB)
+        const exactMatches = await db.select({ id: items.id, data: items.data }).from(items);
 
-        // Wait, schema has mpn inside `data` JSONB usually, but do we have a column?
-        // Let's check schema. If not, we might need to rely on the 'mpn' top level if exists or extract from JSON.
-        // Checking schema.ts from memory/previous context: we don't seem to have a top-level MPN column indexed yet?
-        // If not, we have to rely on `data->>'mpn_identity'->>'mpn'`.
-        // Let's assume for strict dedup we should use the JSON operator.
+        let bestMatch: { id: string, distance: number } | null = null;
+        const FUZZY_THRESHOLD = 3;
 
-        return null; // Placeholder until we verify schema access for MPN
+        for (const item of exactMatches) {
+            const itemMpn = (item.data as any)?.mpn_identity?.mpn || "";
+            const itemNormalized = this.normalizeMpn(itemMpn);
+
+            if (!itemNormalized) continue;
+
+            if (itemNormalized === normalizedInput) {
+                return { id: item.id, type: 'exact' };
+            }
+
+            const dist = this.levenshtein(normalizedInput, itemNormalized);
+            if (dist < FUZZY_THRESHOLD) {
+                if (!bestMatch || dist < bestMatch.distance) {
+                    bestMatch = { id: item.id, distance: dist };
+                }
+            }
+        }
+
+        if (bestMatch) {
+            return { id: bestMatch.id, type: 'fuzzy' };
+        }
+
+        return null;
+    }
+
+    private static levenshtein(a: string, b: string): number {
+        const matrix = [];
+
+        for (let i = 0; i <= b.length; i++) {
+            matrix[i] = [i];
+        }
+
+        for (let j = 0; j <= a.length; j++) {
+            matrix[0][j] = j;
+        }
+
+        for (let i = 1; i <= b.length; i++) {
+            for (let j = 1; j <= a.length; j++) {
+                if (b.charAt(i - 1) == a.charAt(j - 1)) {
+                    matrix[i][j] = matrix[i - 1][j - 1];
+                } else {
+                    matrix[i][j] = Math.min(
+                        matrix[i - 1][j - 1] + 1,
+                        Math.min(
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        )
+                    );
+                }
+            }
+        }
+
+        return matrix[b.length][a.length];
     }
 }

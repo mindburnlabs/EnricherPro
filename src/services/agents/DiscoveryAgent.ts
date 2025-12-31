@@ -87,16 +87,47 @@ export class DiscoveryAgent {
         }
     }
 
-    static async execute(plan: AgentPlan, apiKeys?: Record<string, string>): Promise<RetrieverResult[]> {
+    static async execute(plan: AgentPlan, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>): Promise<RetrieverResult[]> {
         const allResults: RetrieverResult[] = [];
         const visitedUrls = new Set<string>();
 
-        // Paralellize strategies? Maybe later. For now sequential to avoid rate limits.
+        // Mode-Based Budgets (Inferred from plan doesn't work well if we don't know mode here, 
+        // but wait, execute() doesn't take mode currently. We should pass it or infer.
+        // Let's rely on hard limits for now to prevent runaway costs, but ideally pass mode.)
+        // Actually, let's assume 'balanced' defaults if we can't tell, but better to update signature?
+        // Creating a new signature changes standard interface... let's check callers.
+        // Callers: researchWorkflow.ts calls execute(plan, apiKeys).
+        // Let's update signature to execute(plan, mode, apiKeys).
+
+        // For now, I'll implement a robust default that auto-throttles. 
+        // But the prompt demanded mode budgets. I'll update signature in next step if checking.
+        // Actually, let's look at the plan object. It doesn't have mode.
+        // I will adhere to "Fast/Balanced/Deep" limits by checking the number of queries in the plan 
+        // AND ensuring we don't exceed a global safety cap (e.g. 10 queries).
+
+        const validModes = ['fast', 'balanced', 'deep'];
+        const currentMode = validModes.includes(mode) ? mode : 'balanced';
+
+        const BUDGETS = {
+            fast: { maxQueries: 2, limitPerQuery: 3 },
+            balanced: { maxQueries: 5, limitPerQuery: 5 },
+            deep: { maxQueries: 12, limitPerQuery: 10 }
+        };
+
+        const budget = BUDGETS[currentMode as ResearchMode];
+        let queryCount = 0;
+
         for (const strategy of plan.strategies) {
             for (const query of strategy.queries) {
+                if (queryCount >= budget.maxQueries) {
+                    console.log(`[Discovery] Mode '${currentMode}' budget reached (${queryCount} queries).`);
+                    break;
+                }
+                queryCount++;
+
                 try {
                     const searchResults = await BackendFirecrawlService.search(query, {
-                        limit: 3,
+                        limit: budget.limitPerQuery,
                         formats: ['markdown'],
                         apiKey: apiKeys?.firecrawl
                     });

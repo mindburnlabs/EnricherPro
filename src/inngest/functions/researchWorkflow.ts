@@ -40,7 +40,7 @@ export const researchWorkflow = inngest.createFunction(
             const { LogisticsAgent } = await import("../../services/agents/LogisticsAgent");
 
             // Core Search
-            const results = await DiscoveryAgent.execute(plan as any, apiKeys);
+            const results = await DiscoveryAgent.execute(plan as any, mode, apiKeys);
 
             // Logistics Check (if needed)
             if (mode !== 'fast' && plan.canonical_name) {

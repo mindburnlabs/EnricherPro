@@ -53,10 +53,21 @@ export const RunProgress: React.FC<RunProgressProps> = ({ steps, isVisible }) =>
                                 {getIcon(step.status, step.id)}
                             </div>
                             <div className="flex-1">
-                                <p className={`text-sm font-medium ${step.status === 'pending' ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                                    {/* Attempt to translate key, if missing fallback to label itself */}
-                                    {step.label.includes('.') ? t(step.label) : step.label}
-                                </p>
+                                <div className="flex justify-between items-start">
+                                    <p className={`text-sm font-medium ${step.status === 'pending' ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                        {step.label.includes('.') ? t(step.label) : step.label}
+                                    </p>
+                                    {step.status === 'running' && (
+                                        <span className="text-xs font-mono text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded animate-pulse">
+                                            Running...
+                                        </span>
+                                    )}
+                                    {step.status === 'completed' && (
+                                        <span className="text-xs font-mono text-gray-400">
+                                            Done
+                                        </span>
+                                    )}
+                                </div>
                                 {step.message && (
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{step.message}</p>
                                 )}

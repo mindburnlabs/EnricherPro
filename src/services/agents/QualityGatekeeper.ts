@@ -63,13 +63,30 @@ export class QualityGatekeeper {
         }
 
         // Stage 5: Completeness (Full Evidence Check)
-        // Check if critical fields have evidence
-        const hasEvidence = data._evidence &&
-            data._evidence.brand &&
-            (data._evidence.compatible_printers_ru || data._evidence['compatibility_ru']);
+        // Check if critical fields have evidence AND we have multi-source corroboration
+        let uniqueDomains = new Set<string>();
+        if (data._evidence) {
+            Object.values(data._evidence).forEach((e: any) => {
+                if (e.source_url) {
+                    try {
+                        const url = new URL(e.source_url);
+                        uniqueDomains.add(url.hostname);
+                    } catch (e) { /* ignore invalid url */ }
+                }
+            });
+        }
 
-        if (hasEvidence) {
-            stages.completeness = true;
+        const hasIdentityEvidence = data._evidence?.mpn_identity || data._evidence?.['mpn'];
+        const hasCompatEvidence = data._evidence?.compatible_printers_ru || data._evidence?.['compatibility_ru'];
+
+        // Rule: Must have evidence for Identity + Compat, AND distinct sources > 1 to be high quality
+        if (hasIdentityEvidence && hasCompatEvidence) {
+            if (uniqueDomains.size >= 2) {
+                stages.completeness = true;
+            } else {
+                warnings.push("SINGLE_SOURCE: Data relies on a single domain");
+                // We don't fail completeness, but we score lower
+            }
         } else {
             warnings.push("WEAK_EVIDENCE: Critical fields lack citation");
         }
@@ -77,14 +94,15 @@ export class QualityGatekeeper {
         // Scoring
         let score = 0;
         if (stages.brand) score += 10;
-        if (stages.identity) score += 40; // High weight
-        if (stages.logistics) score += 10;
+        if (stages.identity) score += 30;
+        if (stages.logistics) score += 20;
         if (stages.compatibility) score += 30;
-        if (stages.completeness) score += 10;
+        if (stages.completeness) score += 10; // Bonus for multi-source
 
         // Final Gate
-        // Must have Identity and Compatibility to be "Published"
-        const isValid = stages.identity && stages.compatibility;
+        // Must have Identity, Compatibility, AND Evidence to be strictly "Published"
+        // We allow Logistics to be missing but it lowers score.
+        const isValid = stages.identity && stages.compatibility && (!!hasIdentityEvidence && !!hasCompatEvidence);
 
         return {
             isValid,

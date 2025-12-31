@@ -36,6 +36,32 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
         }
     };
 
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Dynamic import to avoid SSR issues if any, mostly just cleaner
+        import('papaparse').then((Papa) => {
+            Papa.parse(file, {
+                complete: (results) => {
+                    // Assume first column is what we want, or try to find 'mpn', 'sku', or 'model' header
+                    const data = results.data as string[][];
+                    const flatList: string[] = [];
+
+                    data.forEach(row => {
+                        // Simple strategy: take first non-empty cell
+                        if (row[0] && row[0].trim()) flatList.push(row[0].trim());
+                    });
+
+                    if (flatList.length > 0) {
+                        setInput(flatList.join('\n'));
+                    }
+                },
+                header: false // Simple mode
+            });
+        });
+    };
+
     const modes = [
         { id: 'fast', label: '⚡ Fast', desc: 'Quick specs check' },
         { id: 'balanced', label: '⚖️ Balanced', desc: 'Scrape & Verify' },
@@ -81,7 +107,10 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
                             )}
 
                             {/* Legacy clip button - kept for layout but hidden/disabled or we repurpose? Let's hide for now to declutter */}
-                            {/* <button type="button" className="p-2 text-gray-500 hover:text-emerald-600 ..."><Paperclip ... /></button> */}
+                            <label className="p-2 text-gray-500 hover:text-emerald-600 cursor-pointer transition-colors" title="Upload CSV">
+                                <Paperclip className="w-5 h-5" />
+                                <input type="file" accept=".csv,.txt" className="hidden" onChange={handleFileUpload} />
+                            </label>
                         </div>
 
                         <button
