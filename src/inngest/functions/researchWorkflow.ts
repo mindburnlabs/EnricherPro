@@ -46,7 +46,8 @@ export const researchWorkflow = inngest.createFunction(
                 (msg) => agent.log('discovery', msg),
                 context, // Pass context
                 language, // Pass language
-                model // Pass selected model
+                model, // Pass selected model
+                sourceConfig // Pass source configuration for prompt injection
             );
         });
 
@@ -137,7 +138,9 @@ export const researchWorkflow = inngest.createFunction(
                                     source_type: 'direct_scrape'
                                 });
                             }
-                        } catch (e) { console.warn("URL scrape failed", e); }
+                        } catch (e) {
+                            console.warn("URL scrape failed", e);
+                        }
                     } else if (task.type === 'firecrawl_agent') {
                         agent.log('discovery', `Deploying Autonomous Agent: ${task.value}`);
                         try {
@@ -153,6 +156,22 @@ export const researchWorkflow = inngest.createFunction(
                             }
                         } catch (e) {
                             console.error("Firecrawl Agent failed", e);
+                        }
+                    }
+
+                    // STRICT FILTERING: Blocked Domains
+                    if (sourceConfig?.blockedDomains?.length > 0) {
+                        const originalCount = results.length;
+                        results = results.filter(r => {
+                            try {
+                                const hostname = new URL(r.url).hostname;
+                                return !sourceConfig.blockedDomains.some(domain => hostname.includes(domain));
+                            } catch (e) {
+                                return false; // Invalid URL, drop safely
+                            }
+                        });
+                        if (results.length < originalCount) {
+                            agent.log('discovery', `Filtered ${originalCount - results.length} results matching blocked domains.`);
                         }
                     }
 

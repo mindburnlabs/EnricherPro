@@ -63,7 +63,7 @@ export class DiscoveryAgent {
         return result;
     }
 
-    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string, language: string = 'en', model?: string): Promise<AgentPlan> {
+    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string, language: string = 'en', model?: string, sourceConfig?: { official: boolean, marketplace: boolean, community: boolean }): Promise<AgentPlan> {
         onLog?.(`Planning research for "${inputRaw}" in ${mode} mode (${language.toUpperCase()})...`);
 
         // 1. Pre-process Input
@@ -80,6 +80,14 @@ export class DiscoveryAgent {
             Analyze the input in relation to this context. If the user asks to "correct" or "find more", use the previous data as a baseline.
             `;
         }
+
+        // Source Constraints
+        const sourceRules = sourceConfig ? `
+        SOURCE CONSTRAINTS (USER OVERRIDES):
+        - Official Sources (hp.com, canon.com, etc): ${sourceConfig.official ? "ALLOWED" : "FORBIDDEN (Do not generate queries for official sites)"}
+        - Marketplaces (Amazon, Alibaba, Wildberries): ${sourceConfig.marketplace ? "ALLOWED" : "FORBIDDEN (Do not generate queries for marketplaces)"}
+        - Community/Forums (Reddit, FixYourOwnPrinter): ${sourceConfig.community ? "ALLOWED" : "FORBIDDEN (Do not generate queries for forums)"}
+        ` : "";
 
         // Dynamic Language Rules
         const isRu = language === 'ru';
@@ -106,6 +114,8 @@ export class DiscoveryAgent {
 
         Current Mode: ${mode.toUpperCase()}
         Target Language: ${language.toUpperCase()}
+        
+        ${sourceRules}
 
         Input: "${inputRaw}"
         Known Metadata: ${JSON.stringify(knowns)}
@@ -158,10 +168,12 @@ export class DiscoveryAgent {
         Режимы Исследования:
         - Fast: Быстрая идентификация. 2-3 запроса.
         - Balanced: Проверка. 4-6 запросов, проверка официальных данных против ритейлеров.
-        - Deep: "Не оставить камня на камне". 8-12 запросов. ОБЯЗАТЕЛЬНО искать в Английских (Официальные), Русских (Местные) и Китайских (OEM) источниках.
+    - Deep: "Не оставить камня на камне". 8-12 запросов. ОБЯЗАТЕЛЬНО искать в Английских (Официальные), Русских (Местные) и Китайских (OEM) источниках.
 
-        Текущий Режим: ${mode.toUpperCase()}
-        Целевой Язык: РУССКИЙ (RU)
+    ${sourceRules}
+
+    Текущий Режим: ${mode.toUpperCase()}
+    Целевой Язык: РУССКИЙ (RU)
 
         Входные данные: "${inputRaw}"
         Известные Метаданные: ${JSON.stringify(knowns)}
