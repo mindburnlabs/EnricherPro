@@ -9,43 +9,42 @@ export enum ModelProfile {
 export const MODEL_CONFIGS = {
     [ModelProfile.FAST_CHEAP]: {
         candidates: [
-            'openrouter/xiaomi/mimo-v2-flash:free',
-            'google/gemini-2.0-flash-lite',
-            'google/gemini-2.0-flash-001'
+            'xiaomi/mimo-v2-flash:free', // Confirmed free high-speed
+            'google/gemini-2.0-flash-lite-preview-02-05:free',
+            'openrouter/auto:free'
         ],
         description: "High speed, low cost. Ideal for keyword generation, simple classification, and content scraping."
     },
     [ModelProfile.EXTRACTION]: {
         candidates: [
-            'google/gemini-2.0-flash-001',
-            'openrouter/minimax/minimax-01',
-            'openai/gpt-4o-mini'
+            'google/gemini-2.0-pro-exp-02-05:free',
+            'meta-llama/llama-3.3-70b-instruct:free',
+            'deepseek/deepseek-r1:free'
         ],
         description: "Reliable JSON extraction capabilities from noisy text."
     },
     [ModelProfile.REASONING]: {
         candidates: [
-            'deepseek/deepseek-r1',
-            'google/gemini-2.0-flash-thinking-exp-01-21',
-            'openai/o3-mini'
+            'deepseek/deepseek-r1:free', // Major reasoning model
+            'google/gemini-2.0-flash-thinking-exp:free',
+            'google/gemini-2.0-pro-exp-02-05:free'
         ],
         description: "Complex reasoning, conflict resolution, and truth arbitration."
     },
     [ModelProfile.PLANNING]: {
         candidates: [
-            'perplexity/sonar-reasoning-pro',
-            'openrouter/perplexity/sonar-reasoning-pro',
-            'deepseek/deepseek-r1'
+            'deepseek/deepseek-r1:free',
+            'google/gemini-2.0-flash-thinking-exp:free'
         ],
         description: "Specialized deep search planning and URL discovery."
     },
     [ModelProfile.BEST]: {
         candidates: [
-            'anthropic/claude-3-5-sonnet',
-            'openai/gpt-4o'
+            'google/gemini-2.0-pro-exp-02-05:free',
+            'meta-llama/llama-3.3-70b-instruct:free'
         ],
         description: "Highest general capability fallback."
     }
 };
 
-export const DEFAULT_MODEL = 'google/gemini-2.0-flash-001';
+export const DEFAULT_MODEL = 'google/gemini-2.0-flash-lite-preview-02-05:free';

@@ -16,7 +16,7 @@ export class SynthesisAgent {
      * Extracts atomic claims from a single source document.
      * PREFERS: High-speed, cheap models (ModelProfile.EXTRACTION)
      */
-    static async extractClaims(sourceText: string, sourceUrl: string, apiKeys?: Record<string, string>, promptOverride?: string): Promise<ExtractedClaim[]> {
+    static async extractClaims(sourceText: string, sourceUrl: string, apiKeys?: Record<string, string>, promptOverride?: string, modelOverride?: string | { id: string }): Promise<ExtractedClaim[]> {
         const systemPrompt = promptOverride || `You are an Extraction Engine.
         Your goal is to parse the input text and extract structured facts (Claims) about a printer consumable (Toners, Ink, Drums).
         
@@ -42,7 +42,8 @@ export class SynthesisAgent {
 
         try {
             const response = await BackendLLMService.complete({
-                profile: ModelProfile.EXTRACTION, // Use Cheap/Fast model
+                model: typeof modelOverride === 'string' ? modelOverride : modelOverride?.id,
+                profile: modelOverride ? undefined : ModelProfile.EXTRACTION, // Use Cheap/Fast model if no override
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: `Source URL: ${sourceUrl}\n\n${sourceText.substring(0, 15000)}` } // Limit context window for cheap models
@@ -59,7 +60,7 @@ export class SynthesisAgent {
         }
     }
 
-    static async merge(sources: string[], schemaKey: string = "StrictConsumableData", apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void): Promise<Partial<ConsumableData>> {
+    static async merge(sources: string[], schemaKey: string = "StrictConsumableData", apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, modelOverride?: string | { id: string }): Promise<Partial<ConsumableData>> {
         onLog?.(`Synthesizing data from ${sources.length} sources...`);
         const systemPrompt = promptOverride || `You are the Synthesis Agent for the D² Consumable Database.
         Your mission is to extract PRISTINE, VERIFIED data from the provided raw text evidence.
@@ -92,7 +93,8 @@ export class SynthesisAgent {
 
         try {
             const response = await BackendLLMService.complete({
-                profile: ModelProfile.REASONING, // Use Smart/Reasoning model
+                model: typeof modelOverride === 'string' ? modelOverride : modelOverride?.id,
+                profile: modelOverride ? undefined : ModelProfile.REASONING, // Use Smart/Reasoning model if no override
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: "Extract data according to StrictConsumableData schema." }

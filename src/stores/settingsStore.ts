@@ -85,7 +85,7 @@ CRITICAL RULES (Evidence-First):
 export const useSettingsStore = create<SettingsState>()(
     persist(
         (set) => ({
-            model: { id: 'google/gemini-2.0-flash-001', name: 'Gemini 2.0 Flash' },
+            model: { id: 'google/gemini-2.0-flash-lite-preview-02-05:free', name: 'Gemini 2.0 Flash Lite (Free)' },
             apiKeys: {
                 openRouter: '',
                 firecrawl: '',

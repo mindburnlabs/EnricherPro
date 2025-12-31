@@ -34,7 +34,7 @@ const WHITELIST_DOMAINS = [
 
 export class DiscoveryAgent {
 
-    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string, language: string = 'en'): Promise<AgentPlan> {
+    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string, language: string = 'en', model?: string): Promise<AgentPlan> {
         onLog?.(`Planning research for "${inputRaw}" in ${mode} mode (${language.toUpperCase()})...`);
 
         let contextInstruction = "";
@@ -106,7 +106,7 @@ export class DiscoveryAgent {
 
         try {
             const response = await BackendLLMService.complete({
-                model: "google/gemini-2.0-flash-001",
+                model: model || "google/gemini-2.0-flash-lite-preview-02-05:free",
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: inputRaw }

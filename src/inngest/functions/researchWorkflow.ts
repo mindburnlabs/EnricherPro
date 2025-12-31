@@ -18,7 +18,7 @@ export const researchWorkflow = inngest.createFunction(
     { event: "app/research.started" },
     async ({ event, step }) => {
         // @ts-ignore - Custom event prop
-        const { jobId, tenantId, inputRaw, mode = 'balanced', forceRefresh, apiKeys, agentConfig, sourceConfig, budgets, previousJobId, language = 'en' } = event.data;
+        const { jobId, tenantId, inputRaw, mode = 'balanced', forceRefresh, apiKeys, agentConfig, sourceConfig, budgets, previousJobId, language = 'en', model } = event.data;
         const agent = new OrchestratorAgent(jobId, apiKeys, tenantId);
 
         // 1. Initialize DB Record
@@ -45,7 +45,8 @@ export const researchWorkflow = inngest.createFunction(
                 agentConfig?.prompts?.discovery,
                 (msg) => agent.log('discovery', msg),
                 context, // Pass context
-                language // Pass language
+                language, // Pass language
+                model // Pass selected model
             );
         });
 
@@ -154,7 +155,7 @@ export const researchWorkflow = inngest.createFunction(
                             sourceDocId = sourceDoc.id;
 
                             // 2. Extract Claims (Evidence-First)
-                            const claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys);
+                            const claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model);
 
                             // 3. Persist Claims
                             if (claims && claims.length > 0) {
@@ -280,7 +281,9 @@ export const researchWorkflow = inngest.createFunction(
                     combinedSources,
                     "StrictConsumableData",
                     apiKeys,
-                    agentConfig?.prompts?.synthesis
+                    agentConfig?.prompts?.synthesis,
+                    undefined,
+                    model
                 );
                 // Merge synthesized info where missing, allowing resolvedData to win
                 return { ...synthesized, ...resolvedData };
