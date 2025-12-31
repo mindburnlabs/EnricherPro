@@ -12,8 +12,9 @@ export interface AgentPlan {
         name: string;
         queries: string[];
         target_domain?: string;
-        type?: "query" | "domain_crawl";
+        type?: "query" | "domain_crawl" | "firecrawl_agent";
         target_url?: string;
+        schema?: any;
     }>;
 }
 
@@ -52,24 +53,24 @@ export class DiscoveryAgent {
         const isRu = language === 'ru';
         const regionRules = isRu
             ? `
-            - PRIMARY MARKET: Russia/CIS.
-            - Use Russian keywords for generic terms (e.g., "купить", "характеристики", "совместимость", "вес").
-            - Prioritize domains: nix.ru, dns-shop.ru, citilink.ru.
-            - Maintain English for Model Names and MPNs (e.g., "Canon C-EXV 42").
+            - TARGET MARKET: Russia (Primary), Global (Secondary), China (OEM).
+            - Use Russian for local retailer availability (nix.ru, dns-shop.ru).
+            - Use English for Official Specs and Datasheets (hp.com, canon.com).
+            - Use Chinese for OEM/Factory sourcing if DEEP mode (1688.com, alibaba).
             `
             : `
-            - PRIMARY MARKET: Global/US/EU.
-            - Use English keywords.
-            - Prioritize domains: hp.com, canon.com, amazon.com, staples.com.
+            - TARGET MARKET: Global (Primary), China (OEM).
+            - Use English for all standard queries.
+            - Use Chinese for OEM/Factory sourcing if DEEP mode.
             `;
 
         const systemPrompt = promptOverride || `You are the Lead Research Planner for a Printer Consumables Database.
-        Your goal is to analyze the user input and construct a precise search strategy.
+        Your goal is to analyze the user input and construct a precise, HIGH-RECALL search strategy.
         
         Research Modes:
-        - Fast: Focus on quick identification and basic specs. 1-2 generic queries.
-        - Balanced: Verify against ${isRu ? "NIX.ru and local retailers" : "Official Sources and major retailers"}. 3-4 queries.
-        - Deep: Exhaustive search. Include Chinese marketplaces (Alibaba/Taobao) for OEM parts, and Legacy Forums (FixYourOwnPrinter) for obscure specs. 5-7 queries.
+        - Fast: Quick identification. 2-3 queries (EN/RU mixed).
+        - Balanced: Verification. 4-6 queries testing Official vs Retailer data.
+        - Deep: "Leave No Stone Unturned". 8-12 queries. MUST traverse English (Official), Russian (Local), and Chinese (OEM) sources.
 
         Current Mode: ${mode.toUpperCase()}
         Target Language: ${language.toUpperCase()}
@@ -79,29 +80,67 @@ export class DiscoveryAgent {
 
         Return a JSON object with:
         - type: "single_sku" | "list" | "unknown"
-        - mpn: string (if explicitly present)
-        - canonical_name: string (normalized model name)
-        - strategies: An array of steps. Each step has:
-            - name: string (e.g. "Primary Specs", "Logistics Check", "Chinese Suppliers", "Forum Deep Dive")
-            - type: "query" | "domain_crawl" (Default is "query". Use "domain_crawl" for deep site enumeration)
-            - queries: string[] (The exact Firecrawl queries if type is "query")
-            - target_domain: string (optional, e.g. "nix.ru")
-            - target_url: string (optional, ONLY if type is "domain_crawl", e.g. "https://nix.ru/comp/...")
+        - mpn: string
+        - canonical_name: string
+        - strategies: Array<{
+            name: string;
+            type: "query" | "domain_crawl" | "firecrawl_agent";
+            queries: string[];
+            target_domain?: string;
+            schema?: any; // JSON Schema for Agent Structured Output
+        }>
+
+        CRITICAL SEARCH RULES (99% Recall Protocol):
+        1. **Multi-Lingual Triangulation**:
+           - ALWAYS generate at least one query in English (e.g. "[Model] specs datasheet").
+           - If target is RU, ALWAYS generate Russian commercial queries (e.g. "[Model] купить характеристики").
+           - If DEEP mode, ALWAYS generate Chinese OEM queries (e.g. "[Model] 耗材", "[Model] 规格").
+        2. **Logistics Mandatory**:
+           - Include "weight", "dimensions", "packaging" terms in queries.
+        3. **Source Diversity**:
+           - Target Official Sites (HP, Canon).
+           - Target Marketplaces (Amazon, Wildberries).
+        4. **Autonomous Agent (Firecrawl Agent)**:
+           - In DEEP mode, use "firecrawl_agent" type for complex navigation tasks.
+           - MUST provide a JSON schema for the agent to extract structured data.
+           - Example prompt: "Find valid datasheet for [Model] on official site and extract all tables".
         
-        Rules:
-        ${regionRules}
-        1. ALWAYS include a specific logistics query (e.g. "weight", "dimensions", "вес").
-        2. If the input is a list, set type to "list" and suggest splitting.
-        3. In DEEP mode, you MUST include a 'domain_crawl' strategy for high-value targets if identified (e.g. "nix.ru", "hp.com").
-        
-        Example Strategy Item:
-        {
-            "name": "NIX.ru Deep Scan",
-            "queries": [], 
-            "target_domain": "nix.ru",
-            "type": "domain_crawl", 
-            "target_url": "https://nix.ru/..." 
-        }
+        Example Deep Strategy:
+        [
+          { "name": "Official Specs (EN)", "queries": ["Canon C-EXV 42 datasheet pdf"], "type": "query" },
+          { 
+            "name": "Autonomous Navigation (Strict)", 
+            "queries": ["Navigate to Canon support page for C-EXV 42 and extract technical specifications"], 
+            "type": "firecrawl_agent",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "yield": { 
+                        "type": "object",
+                        "properties": {
+                            "value": { "type": "number", "description": "Numeric yield" },
+                            "unit": { "type": "string", "enum": ["pages", "copies", "ml"] }
+                        }
+                    },
+                    "packaging_from_nix": {
+                        "type": "object",
+                        "properties": {
+                            "weight_g": { "type": "number", "description": "Weight in grams" },
+                            "width_mm": { "type": "number" },
+                            "height_mm": { "type": "number" },
+                            "depth_mm": { "type": "number" }
+                        }
+                    },
+                    "compatible_printers_ru": { 
+                        "type": "array", 
+                        "items": { "type": "object", "properties": { "model": { "type": "string" } } }
+                    },
+                    "brand": { "type": "string" },
+                    "consumable_type": { "type": "string" }
+                }
+            }
+          }
+        ]
         `;
 
         try {

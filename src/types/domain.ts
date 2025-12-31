@@ -53,7 +53,7 @@ export interface FieldEvidence<T> {
 
     // Truth Engine Extensions
     is_conflict?: boolean;
-    method?: 'official' | 'consensus' | 'single_source' | 'fallback';
+    method?: 'official' | 'consensus' | 'single_source' | 'fallback' | 'agent_result';
 }
 
 export interface MpnIdentity {

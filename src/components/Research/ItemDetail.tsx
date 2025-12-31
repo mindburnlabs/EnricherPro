@@ -22,6 +22,10 @@ const TrustBadge = ({ evidence }: { evidence?: FieldEvidence<any> }) => {
     if (evidence.method === 'official') {
         return <span className="flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800"><ShieldCheck className="w-3 h-3" /> {t('trust.official')}</span>;
     }
+    if (evidence.method === 'agent_result' || evidence.source_url?.includes('agent-session')) {
+        // Firecrawl Agent - High Trust
+        return <span className="flex items-center gap-1 text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800"><Users className="w-3 h-3" /> AI Agent</span>;
+    }
     if (evidence.method === 'consensus') {
         return <span className="flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800"><Users className="w-3 h-3" /> {t('trust.consensus')}</span>;
     }

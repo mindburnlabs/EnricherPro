@@ -7,7 +7,7 @@ interface ResolvedField<T> {
     confidence: number;
     sources: string[];
     isConflict: boolean;
-    method: 'official' | 'consensus' | 'single_source' | 'fallback';
+    method: 'official' | 'consensus' | 'single_source' | 'fallback' | 'agent_result';
 }
 
 export class TrustEngine {
@@ -15,6 +15,7 @@ export class TrustEngine {
     // Domain Trust Tiers
     private static TRUST_TIERS: Record<string, number> = {
         'hp.com': 100, 'canon.com': 100, 'brother.com': 100, 'xerox.com': 100, // Official
+        'firecrawl_agent': 95, // AI Agent (High Trust due to structured schema)
         'nix.ru': 90, // Trusted Retailer (Spec-Heavy)
         'dns-shop.ru': 80, 'citilink.ru': 80, // Major Retailers
         'amazon.com': 70, // Marketplaces (high noise)
@@ -43,9 +44,12 @@ export class TrustEngine {
             if (claim.sourceDomain) {
                 // partial match check
                 for (const [domain, score] of Object.entries(this.TRUST_TIERS)) {
-                    if (claim.sourceDomain.includes(domain)) {
-                        trustStart = score;
-                        break;
+                    if (claim.sourceDomain.includes(domain) || claim.sourceType === 'firecrawl_agent') {
+                        if (claim.sourceType === 'firecrawl_agent') trustStart = 95;
+                        else if (claim.sourceDomain.includes(domain)) {
+                            trustStart = score;
+                            break;
+                        }
                     }
                 }
             }
@@ -80,6 +84,9 @@ export class TrustEngine {
             return d.includes('hp.com') || d.includes('canon') || d.includes('epson');
         });
 
+        // Agent Rule
+        const hasAgent = winnerStats.claims.some(c => c.sourceType === 'firecrawl_agent');
+
         // NIX Rule for Logistics
         const fieldName = fieldClaims[0].field; // assume all same field
         const isLogistics = fieldName.includes('weight') || fieldName.includes('dim');
@@ -89,6 +96,10 @@ export class TrustEngine {
             confidence = 1.0;
             method = 'official';
             isConflict = false; // Official overrides conflict usually
+        } else if (hasAgent) {
+            confidence = 0.95;
+            method = 'agent_result'; // High trust for Agent
+            isConflict = false; // Trust Agent over consensus
         } else if (isLogistics && hasNix) {
             confidence = 0.95;
             method = 'official'; // Treat NIX as official for logistics

@@ -71,17 +71,21 @@ export const researchWorkflow = inngest.createFunction(
                     if (strategy.type === 'domain_crawl' && strategy.target_domain) {
                         // Seed explicit crawl if present in plan
                         // We seed a root URL or search to find root
-                        await FrontierService.add(jobId, 'domain_crawl', strategy.target_url || strategy.target_domain, 100, 0, { strategy: strategy.name, target_domain: strategy.target_domain });
+                        await FrontierService.add(jobId, 'domain_crawl', strategy.target_url || strategy.target_domain, 100, 0, { strategy: strategy.name, target_domain: strategy.target_domain, schema: strategy.schema });
                     } else {
                         for (const query of strategy.queries) {
-                            await FrontierService.add(jobId, 'query', query, 50, 0, { strategy: strategy.name, target_domain: strategy.target_domain });
+                            // Pass schema if present (for firecrawl_agent)
+                            await FrontierService.add(jobId, (strategy.type as any) || 'query', query, 50, 0, { strategy: strategy.name, target_domain: strategy.target_domain, schema: strategy.schema });
                         }
                     }
                 }
             }
 
             // Loop Config
-            const MAX_STEPS = mode === 'deep' ? 20 : (mode === 'balanced' ? 10 : 5);
+            const defaultBudget = { maxQueries: 5, limitPerQuery: 3 };
+            const budget = (budgets && budgets[mode]) ? budgets[mode] : defaultBudget;
+
+            const MAX_STEPS = budget.maxQueries || (mode === 'deep' ? 20 : 10);
             const allResults: any[] = [];
             let stepsCount = 0;
 
@@ -97,7 +101,10 @@ export const researchWorkflow = inngest.createFunction(
                     // Handle Task Type
                     if (task.type === 'query') {
                         try {
-                            const raw = await BackendFirecrawlService.search(task.value, { apiKey: apiKeys?.firecrawl, limit: 3 });
+                            const raw = await BackendFirecrawlService.search(task.value, {
+                                apiKey: apiKeys?.firecrawl,
+                                limit: budget.limitPerQuery || 5
+                            });
                             results = raw.map(r => ({ ...r, source_type: 'web' }));
                         } catch (e) {
                             console.warn("Firecrawl failed, trying fallback", e);
@@ -129,8 +136,30 @@ export const researchWorkflow = inngest.createFunction(
                                 });
                             }
                         } catch (e) { console.warn("URL scrape failed", e); }
+                    } else if (task.type === 'firecrawl_agent') {
+                        // Autonomous Agent
+                        agent.log('discovery', `Deploying Autonomous Agent: ${task.value}`);
+                        try {
+                            // Extract schema from task metadata if available
+                            const schema = task.meta && (task.meta as any).schema;
+                            if (schema) {
+                                agent.log('discovery', `Agent Schema: ${JSON.stringify(schema, null, 2)}`);
+                            }
+                            const data = await BackendFirecrawlService.agent(task.value, { apiKey: apiKeys?.firecrawl, schema });
+                            if (data) {
+                                results.push({
+                                    url: (data as any).metadata?.sourceURL || "agent-session",
+                                    title: (data as any).metadata?.title || "Agent Result",
+                                    markdown: (data as any).markdown || JSON.stringify(data),
+                                    source_type: 'agent_result'
+                                });
+                            }
+                        } catch (e) {
+                            console.error("Firecrawl Agent failed", e);
+                        }
                     }
 
+                    // Process Results & Evidence Persistence
                     // Process Results & Evidence Persistence
                     for (const r of results) {
                         allResults.push({
@@ -142,7 +171,7 @@ export const researchWorkflow = inngest.createFunction(
                         });
 
                         // 1. Save Raw Source Document
-                        let sourceDocId;
+                        let sourceDocId: string | undefined;
                         try {
                             const sourceDoc = await SourceDocumentRepository.create({
                                 jobId,
@@ -155,18 +184,56 @@ export const researchWorkflow = inngest.createFunction(
                             sourceDocId = sourceDoc.id;
 
                             // 2. Extract Claims (Evidence-First)
-                            const claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model);
+                            // OPTIMIZATION: If source is 'agent_result' with structured JSON, ingest directly!
+                            // "Can we do better?" -> Yes, by trusting the Agent's structured output.
+                            let claims: any[] = [];
+
+                            if (r.source_type === 'agent_result') {
+                                try {
+                                    // Agent returns stringified JSON in markdown field for storage
+                                    const parsed = JSON.parse(r.markdown);
+                                    agent.log('synthesis', `Directly ingesting structured data from Agent...`);
+
+                                    // Map structured JSON to Claim objects
+                                    // Flatten object to claims
+                                    const flatten = (obj: any, prefix = '') => {
+                                        let res: any[] = [];
+                                        for (const [key, val] of Object.entries(obj)) {
+                                            const fieldKey = prefix ? `${prefix}.${key}` : key;
+                                            if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+                                                res = res.concat(flatten(val, fieldKey));
+                                            } else {
+                                                // It's a value (string, number, array of strings)
+                                                res.push({
+                                                    field: fieldKey,
+                                                    value: val,
+                                                    confidence: 0.95, // High confidence in Agent
+                                                    rawSnippet: "Agent Structured Output"
+                                                });
+                                            }
+                                        }
+                                        return res;
+                                    };
+                                    claims = flatten(parsed);
+                                } catch (e) {
+                                    console.warn("Failed to parse Agent JSON, falling back to LLM extraction", e);
+                                    claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model);
+                                }
+                            } else {
+                                // Standard Path: LLM Extraction from raw text
+                                claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model);
+                            }
 
                             // 3. Persist Claims
                             if (claims && claims.length > 0) {
                                 await ClaimsRepository.createBatch(claims.map(c => ({
                                     itemId: item.id,
-                                    sourceDocId: sourceDoc.id,
+                                    sourceDocId: sourceDocId || sourceDoc.id, // Ensure ID availability
                                     field: c.field,
                                     value: typeof c.value === 'object' ? JSON.stringify(c.value) : String(c.value),
-                                    confidence: Math.round(c.confidence * 100)
+                                    confidence: Math.round((c.confidence || 0.5) * 100)
                                 })));
-                                agent.log('synthesis', `Extracted ${claims.length} claims from ${r.url}`);
+                                agent.log('synthesis', `Persisted ${claims.length} claims from ${r.url}`);
                             }
                         } catch (err) {
                             console.warn(`Failed to process evidence for ${r.url}`, err);

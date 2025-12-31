@@ -78,4 +78,46 @@ export class BackendFirecrawlService {
 
         throw new Error(`Firecrawl Crawl Failed: ${(result as any)?.error || 'Unknown'}`);
     }
+    /**
+     * Uses Firecrawl's /agent endpoint for autonomous extraction + navigation
+     * 100% Feature Utilization
+     */
+    static async agent(prompt: string, options: { apiKey?: string; timeout?: number; schema?: any } = {}) {
+        const { withRetry } = await import("../../lib/reliability.js");
+
+        return withRetry(async () => {
+            const client = options.apiKey ? new FirecrawlApp({ apiKey: options.apiKey }) : this.getClient();
+            try {
+                // @ts-ignore
+                const agentFn = (client as any).agent;
+                if (!agentFn) {
+                    throw new Error("Firecrawl SDK does not support .agent() yet. Update dependency.");
+                }
+
+                // Map options to Firecrawl Agent params
+                const agentParams: any = {
+                    timeout: options.timeout || 60000
+                };
+
+                if (options.schema) {
+                    agentParams.responseFormat = {
+                        type: "json_object",
+                        schema: options.schema
+                    };
+                }
+
+                const result = await agentFn.call(client, prompt, agentParams);
+
+                if (result && result.data) {
+                    return result.data; // Markdown, etc.
+                }
+                throw new Error("Firecrawl Agent returned no data");
+            } catch (error) {
+                if ((error as any).statusCode === 402 || (error as any).statusCode === 401) {
+                    throw error;
+                }
+                throw error;
+            }
+        }, { maxRetries: 1, baseDelayMs: 5000 }); // Agent is expensive, retry carefully
+    }
 }
