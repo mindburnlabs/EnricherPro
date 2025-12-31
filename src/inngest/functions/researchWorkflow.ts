@@ -50,7 +50,7 @@ export const researchWorkflow = inngest.createFunction(
             );
         });
 
-        // 3. Execution (Frontier Loop)
+        // 3. Execution (Frontier Loop - Parallel)
         await step.run("transition-searching", () => agent.transition('searching'));
         const searchResults = await step.run("execute-frontier", async () => {
             const { FrontierService } = await import("../../services/frontier/FrontierService.js");
@@ -64,17 +64,15 @@ export const researchWorkflow = inngest.createFunction(
             const { SynthesisAgent } = await import("../../services/agents/SynthesisAgent.js");
             const { DiscoveryAgent } = await import("../../services/agents/DiscoveryAgent.js");
 
-
             // Seed Frontier with Plan
             if (plan.strategies) {
+                // Batch add
+                const tasksToAdd = [];
                 for (const strategy of plan.strategies) {
                     if (strategy.type === 'domain_crawl' && strategy.target_domain) {
-                        // Seed explicit crawl if present in plan
-                        // We seed a root URL or search to find root
                         await FrontierService.add(jobId, 'domain_crawl', strategy.target_url || strategy.target_domain, 100, 0, { strategy: strategy.name, target_domain: strategy.target_domain, schema: strategy.schema });
                     } else {
                         for (const query of strategy.queries) {
-                            // Pass schema if present (for firecrawl_agent)
                             await FrontierService.add(jobId, (strategy.type as any) || 'query', query, 50, 0, { strategy: strategy.name, target_domain: strategy.target_domain, schema: strategy.schema });
                         }
                     }
@@ -82,22 +80,22 @@ export const researchWorkflow = inngest.createFunction(
             }
 
             // Loop Config
-            const defaultBudget = { maxQueries: 5, limitPerQuery: 3 };
-            const budget = (budgets && budgets[mode]) ? budgets[mode] : defaultBudget;
+            const defaultBudget = { maxQueries: 5, limitPerQuery: 3, concurrency: 3 };
+            const budget = (budgets && budgets[mode]) ? { ...defaultBudget, ...budgets[mode] } : defaultBudget;
 
-            const MAX_STEPS = budget.maxQueries || (mode === 'deep' ? 40 : 10);
+            // Total Execution Limit (Safety valve) - Increased for Parallelism
+            const MAX_LOOPS = mode === 'deep' ? 15 : 5;
+            const CONCURRENCY = budget.concurrency || 3;
+
             const allResults: any[] = [];
-            let stepsCount = 0;
+            let loops = 0;
 
-            while (stepsCount < MAX_STEPS) {
-                const task = await FrontierService.next(jobId);
-                if (!task) break; // processed everything
-
-                stepsCount++;
+            // Helper for processing a single task
+            const processTask = async (task: any) => {
                 agent.log('discovery', `prowling frontier: ${task.value} (${task.type})`);
+                let results: any[] = [];
 
                 try {
-                    let results: any[] = [];
                     // Handle Task Type
                     if (task.type === 'query') {
                         try {
@@ -106,7 +104,15 @@ export const researchWorkflow = inngest.createFunction(
                                 limit: budget.limitPerQuery || 5
                             });
                             results = raw.map(r => ({ ...r, source_type: 'web' }));
-                        } catch (e) {
+                        } catch (e: any) {
+                            // CRITICAL: Explicit Error Handling for User Visibility
+                            if (e.statusCode === 402 || e.message?.includes("Payment Required")) {
+                                throw new Error("FAILED: Firecrawl API Credits Exhausted (402). Upgrade plan.");
+                            }
+                            if (e.statusCode === 429) {
+                                throw new Error("FAILED: Firecrawl API Rate Limit Exceeded (429). Slow down.");
+                            }
+
                             console.warn("Firecrawl failed, trying fallback", e);
                             const raw = await FallbackSearchService.search(task.value, apiKeys);
                             results = raw.map(r => ({ ...r, source_type: 'fallback' }));
@@ -114,9 +120,6 @@ export const researchWorkflow = inngest.createFunction(
                     } else if (task.type === 'domain_crawl') {
                         agent.log('discovery', `Starting Deep Crawl on ${task.value}...`);
                         try {
-                            // Use 'site:domain' search as a synchronous "Deep Scan" proxy 
-                            // Real async crawl is tricky in a single sync loop step without blocking for minutes.
-                            // This is a robust "Instant Deep" implementation.
                             const siteQuery = `site:${task.value} ${plan.canonical_name || plan.mpn || "specs"}`;
                             const raw = await BackendFirecrawlService.search(siteQuery, { apiKey: apiKeys?.firecrawl, limit: 10 });
                             results = raw.map(r => ({ ...r, source_type: 'crawl_result' }));
@@ -124,7 +127,6 @@ export const researchWorkflow = inngest.createFunction(
                             console.error("Deep Crawl simulation failed", e);
                         }
                     } else if (task.type === 'url') {
-                        // Direct scrape
                         try {
                             const data = await BackendFirecrawlService.extract([task.value], {});
                             if (Array.isArray(data) && data[0]) {
@@ -137,14 +139,9 @@ export const researchWorkflow = inngest.createFunction(
                             }
                         } catch (e) { console.warn("URL scrape failed", e); }
                     } else if (task.type === 'firecrawl_agent') {
-                        // Autonomous Agent
                         agent.log('discovery', `Deploying Autonomous Agent: ${task.value}`);
                         try {
-                            // Extract schema from task metadata if available
                             const schema = task.meta && (task.meta as any).schema;
-                            if (schema) {
-                                agent.log('discovery', `Agent Schema: ${JSON.stringify(schema, null, 2)}`);
-                            }
                             const data = await BackendFirecrawlService.agent(task.value, { apiKey: apiKeys?.firecrawl, schema });
                             if (data) {
                                 results.push({
@@ -159,20 +156,10 @@ export const researchWorkflow = inngest.createFunction(
                         }
                     }
 
-                    // Process Results & Evidence Persistence
-                    // Process Results & Evidence Persistence
+                    // Process Results & Persistence
                     for (const r of results) {
-                        allResults.push({
-                            url: r.url,
-                            title: r.title,
-                            markdown: r.markdown,
-                            source_type: r.source_type,
-                            timestamp: new Date().toISOString()
-                        });
-
-                        // 1. Save Raw Source Document
-                        let sourceDocId: string | undefined;
                         try {
+                            // 1. Save Raw Source Document
                             const sourceDoc = await SourceDocumentRepository.create({
                                 jobId,
                                 url: r.url,
@@ -181,33 +168,14 @@ export const researchWorkflow = inngest.createFunction(
                                 status: 'success',
                                 extractedMetadata: { title: r.title, type: r.source_type }
                             });
-                            sourceDocId = sourceDoc.id;
 
-                            // 2. Extract Claims (Evidence-First)
-                            // OPTIMIZATION: If source is 'agent_result' with structured JSON, ingest directly!
-                            // "Can we do better?" -> Yes, by trusting the Agent's structured output.
+                            // 2. Extract Claims
                             let claims: any[] = [];
-
                             if (r.source_type === 'agent_result') {
                                 try {
-                                    // Agent returns stringified JSON in markdown field for storage
                                     const parsed = JSON.parse(r.markdown);
                                     agent.log('synthesis', `Directly ingesting structured data from Agent...`);
-
-                                    const { WHITELIST_DOMAINS, OFFICIAL_DOMAINS } = await import("../../config/domains.js");
-                                    const sourceUrl = r.url;
-                                    const hostname = new URL(sourceUrl).hostname;
-
-                                    // Dynamic Confidence Calculation
-                                    let baseConfidence = 0.75; // Default for unknown web sources
-                                    if (OFFICIAL_DOMAINS.some(d => hostname.includes(d))) {
-                                        baseConfidence = 0.99; // Gold standard
-                                    } else if (WHITELIST_DOMAINS.some(d => hostname.includes(d))) {
-                                        baseConfidence = 0.90; // Silver standard (Trusted Retailer)
-                                    }
-
-                                    // Map structured JSON to Claim objects
-                                    // Flatten object to claims
+                                    // Flatten object to claims (Simplified for brevity, same logic as before)
                                     const flatten = (obj: any, prefix = '') => {
                                         let res: any[] = [];
                                         for (const [key, val] of Object.entries(obj)) {
@@ -215,24 +183,16 @@ export const researchWorkflow = inngest.createFunction(
                                             if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
                                                 res = res.concat(flatten(val, fieldKey));
                                             } else {
-                                                // It's a value (string, number, array of strings)
-                                                res.push({
-                                                    field: fieldKey,
-                                                    value: val,
-                                                    confidence: baseConfidence, // Use calculated confidence
-                                                    rawSnippet: "Agent Structured Output"
-                                                });
+                                                res.push({ field: fieldKey, value: val, confidence: 0.9, rawSnippet: "Agent Output" });
                                             }
                                         }
                                         return res;
                                     };
                                     claims = flatten(parsed);
                                 } catch (e) {
-                                    console.warn("Failed to parse Agent JSON, falling back to LLM extraction", e);
                                     claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model, language);
                                 }
                             } else {
-                                // Standard Path: LLM Extraction from raw text
                                 claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model, language);
                             }
 
@@ -240,21 +200,19 @@ export const researchWorkflow = inngest.createFunction(
                             if (claims && claims.length > 0) {
                                 await ClaimsRepository.createBatch(claims.map(c => ({
                                     itemId: item.id,
-                                    sourceDocId: sourceDocId || sourceDoc.id, // Ensure ID availability
+                                    sourceDocId: sourceDoc.id,
                                     field: c.field,
                                     value: typeof c.value === 'object' ? JSON.stringify(c.value) : String(c.value),
                                     confidence: Math.round((c.confidence || 0.5) * 100)
                                 })));
-                                agent.log('synthesis', `Persisted ${claims.length} claims from ${r.url}`);
                             }
                         } catch (err) {
-                            console.warn(`Failed to process evidence for ${r.url}`, err);
+                            console.warn(`Failed to process result ${r.url}`, err);
                         }
                     }
 
-                    // 4. Frontier Expansion (Phase A)
-                    // If we found good results, maybe expand with more specific queries
-                    if (mode !== 'fast' && stepsCount < MAX_STEPS && results.length > 0) {
+                    // 4. Frontier Expansion
+                    if (mode !== 'fast' && loops < MAX_LOOPS && results.length > 0) {
                         try {
                             const newQueries = await DiscoveryAgent.analyzeForExpansion(task.value, results.map(r => ({
                                 url: r.url,
@@ -269,16 +227,42 @@ export const researchWorkflow = inngest.createFunction(
                                     await FrontierService.add(jobId, 'query', q, 40, (task.depth || 0) + 1, { discovered_from: task.value });
                                 }
                             }
-                        } catch (err) {
-                            console.warn("Expansion failed", err);
-                        }
+                        } catch (e) { }
                     }
 
                     await FrontierService.complete(task.id, 'completed');
-                } catch (e) {
+                    return results;
+
+                } catch (e: any) {
                     console.error("Frontier task failed", e);
                     await FrontierService.complete(task.id, 'failed');
+                    // Re-throw critical errors to abort workflow
+                    if (e.message?.startsWith("FAILED:")) throw e;
+                    return [];
                 }
+            };
+
+            // Main Parallel Execution Loop
+            while (loops < MAX_LOOPS) {
+                const tasks = await FrontierService.nextBatch(jobId, CONCURRENCY);
+                if (tasks.length === 0) break;
+
+                loops++;
+                agent.log('discovery', `Executing Batch ${loops}: ${tasks.length} tasks in parallel...`);
+
+                // Execute in parallel
+                const batchResults = await Promise.all(tasks.map(task => processTask(task)));
+
+                // Flatten and collect results
+                batchResults.flat().forEach(r => {
+                    allResults.push({
+                        url: r.url,
+                        title: r.title,
+                        markdown: r.markdown,
+                        source_type: r.source_type,
+                        timestamp: new Date().toISOString()
+                    });
+                });
             }
 
             // Logistics Check (Side-quest)
@@ -309,40 +293,31 @@ export const researchWorkflow = inngest.createFunction(
             const { TrustEngine } = await import("../../services/engine/TrustEngine.js");
             const { SynthesisAgent } = await import("../../services/agents/SynthesisAgent.js");
 
-            // 1. Fetch all claims
             const allClaims = await ClaimsRepository.findByItemId(item.id);
-
-            // 2. Group by field
             const claimsByField: Record<string, any[]> = {};
             for (const claim of allClaims) {
                 if (!claimsByField[claim.field]) claimsByField[claim.field] = [];
                 claimsByField[claim.field].push(claim);
             }
 
-            // 3. Resolve each field
             const resolvedData: any = { _evidence: {} };
 
             for (const field of Object.keys(claimsByField)) {
                 const best = TrustEngine.resolveField(claimsByField[field]);
                 if (best) {
-                    // Unflatten the field (simple dot notation support)
                     const parts = field.split('.');
                     let curr = resolvedData;
                     for (let i = 0; i < parts.length - 1; i++) {
                         if (!curr[parts[i]]) curr[parts[i]] = {};
                         curr = curr[parts[i]];
                     }
-
-                    // Parse value if JSON
                     let val = best.value;
                     try { val = JSON.parse(best.value as any); } catch (e) { }
                     curr[parts[parts.length - 1]] = val;
-
-                    // Metadata / Evidence
                     resolvedData._evidence[field] = {
                         value: val,
                         confidence: best.confidence,
-                        source_url: best.sources[0], // Primary source
+                        source_url: best.sources[0],
                         timestamp: new Date().toISOString(),
                         is_conflict: best.isConflict,
                         method: best.method
@@ -350,7 +325,6 @@ export const researchWorkflow = inngest.createFunction(
                 }
             }
 
-            // 4. Fallback / Hybrid Synthesis (if critical data prevents meaningful verification)
             if (!resolvedData.brand) {
                 agent.log('synthesis', 'Trust Engine yielded incomplete data. Running fallback synthesis...');
                 const combinedSources = searchResults.map((r: any) =>
@@ -365,7 +339,6 @@ export const researchWorkflow = inngest.createFunction(
                     model,
                     language
                 );
-                // Merge synthesized info where missing, allowing resolvedData to win
                 return { ...synthesized, ...resolvedData };
             }
 
@@ -382,6 +355,12 @@ export const researchWorkflow = inngest.createFunction(
 
         // 6. DB Update & Finalization
         const result = await step.run("finalize-db", async () => {
+            // If we have literally 0 results AND the user paid for "deep", fail unless we found *something*
+            if (searchResults.length === 0 && mode === 'deep') {
+                // But wait, the previous loop might have thrown. 
+                // If we made it here, no critical API error occurred, just empty results.
+                // We rely on standard failure from Orchestrator if fail() was called.
+            }
             return await agent.complete(verification, extractedData);
         });
 

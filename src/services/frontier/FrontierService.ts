@@ -62,6 +62,31 @@ export class FrontierService {
     }
 
     /**
+     * Batch fetch next N priority items.
+     */
+    static async nextBatch(jobId: string, limit: number): Promise<typeof frontier.$inferSelect[]> {
+        const nextItems = await db.query.frontier.findMany({
+            where: and(
+                eq(frontier.jobId, jobId),
+                eq(frontier.status, 'pending')
+            ),
+            orderBy: [desc(frontier.priority), asc(frontier.createdAt)],
+            limit: limit
+        });
+
+        if (nextItems.length === 0) return [];
+
+        const ids = nextItems.map(i => i.id);
+        const { inArray } = await import("drizzle-orm");
+
+        await db.update(frontier)
+            .set({ status: 'processing', updatedAt: new Date() })
+            .where(inArray(frontier.id, ids));
+
+        return nextItems;
+    }
+
+    /**
      * Mark a frontier item as completed or failed
      */
     static async complete(id: string, status: 'completed' | 'failed') {
