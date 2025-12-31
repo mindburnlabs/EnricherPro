@@ -24,7 +24,12 @@ export class SynthesisAgent {
         - value: The extracted value
         - raw_snippet: The exact substring from the text where you found it (citability).
         - source_url: The URL of the source text.
-        - confidence: 0.0 to 1.0 based on how clear the text was.
+        - confidence: 0.0 to 1.0. 
+            * 1.0 = Explicitly stated in NIX.ru or Official Specs.
+            * 0.8 = Explicitly stated in retailer store.
+            * 0.5 = Inferred or vague.
+            * 0.1 = Guessed (AVOID).
+        8. CONSENSUS SCORING: If you find the same data in >1 source, boost confidence of the merged value.
         
         Input Text:
         ${sources.join("\n\n")}

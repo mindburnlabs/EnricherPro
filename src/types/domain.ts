@@ -169,6 +169,11 @@ export interface ConsumableData {
     // 4. Logistics (NIX.ru critical)
     packaging_from_nix: PackagingInfo | null;
 
+    connectivity?: {
+        connection_interfaces: string[];
+        ports: string[];
+    };
+
     // 5. Relations
     related_consumables_display?: EnhancedRelatedItem[];
     related_consumables_full?: EnhancedRelatedItem[];
@@ -200,6 +205,7 @@ export interface ConsumableData {
         model?: FieldEvidence<string>;
         yield?: FieldEvidence<YieldInfo>;
         packaging_from_nix?: FieldEvidence<PackagingInfo>;
+        connectivity?: FieldEvidence<any>;
         compatible_printers_ru?: FieldEvidence<PrinterCompatibility[]>;
         images?: FieldEvidence<ImageCandidate[]>;
         [key: string]: FieldEvidence<any> | undefined;

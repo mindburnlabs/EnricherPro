@@ -9,9 +9,12 @@ export interface VerificationResult {
     stages: {
         brand: boolean;
         identity: boolean;
+        consistency: boolean;
         logistics: boolean;
         compatibility: boolean;
+        attribution: boolean;
         completeness: boolean;
+        deduplication: boolean;
     };
 }
 
@@ -25,7 +28,10 @@ export class QualityGatekeeper {
             identity: false,
             logistics: false,
             compatibility: false,
-            completeness: false
+            completeness: false,
+            consistency: false,
+            attribution: false,
+            deduplication: false
         };
 
         // Stage 1: Brand (Basic Sanity)
@@ -43,17 +49,38 @@ export class QualityGatekeeper {
             errors.push("MISSING_MPN: Cannot identify product");
         }
 
-        // Stage 3: Logistics (NIX.ru requirement)
-        // We check if specifically packaging data is present
-        // Support both old and new schema locations just in case, but prefer strict schema
-        if (data.packaging_from_nix?.weight_g || (data as any).packaging?.package_weight_g || (data as any).logistics?.weight) {
+        // Stage 3: Consistency (Physical & Logical)
+        let consistencyPass = true;
+
+        // 3a. Weight vs Dimensions
+        const hasWeight = !!(data.packaging_from_nix?.weight_g || (data as any).packaging?.package_weight_g || (data as any).logistics?.weight);
+        const hasDims = !!(data.packaging_from_nix?.width_mm || (data as any).logistics?.dimensions);
+
+        if (hasDims && !hasWeight) {
+            warnings.push("INCONSISTENT_LOGISTICS: Dimensions exist but weight is missing");
+            consistencyPass = false;
+        }
+
+        // 3b. Connectivity Matches Ports (Heuristic)
+        const connectivity = (data.connectivity?.connection_interfaces || []).join(" ").toLowerCase();
+        if (connectivity.includes("ethernet") || connectivity.includes("lan")) {
+            const ports = (data.connectivity?.ports || []).join(" ").toLowerCase();
+            if (!ports.includes("rj-45") && !ports.includes("rj45") && !ports.includes("ethernet")) {
+                // Not a hard fail, but suspicious
+                // warnings.push("INCONSISTENT_CONNECTIVITY: Claims LAN but missing RJ-45 port"); 
+            }
+        }
+        stages.consistency = consistencyPass;
+
+
+        // Stage 4: Logistics (NIX.ru requirement)
+        if (hasWeight || hasDims) {
             stages.logistics = true;
         } else {
-            // Not a hard error for 'published', but reduces score
             warnings.push("MISSING_LOGISTICS: Weight/Dimensions not found");
         }
 
-        // Stage 4: Compatibility (RU Market Consensus)
+        // Stage 5: Compatibility (RU Market Consensus)
         if (data.compatible_printers_ru && data.compatible_printers_ru.length > 0) {
             stages.compatibility = true;
         } else if ((data as any).compatibility_ru?.printers && (data as any).compatibility_ru.printers.length > 0) {
@@ -62,8 +89,19 @@ export class QualityGatekeeper {
             errors.push("MISSING_COMPATIBILITY: No compatible printers found");
         }
 
-        // Stage 5: Completeness (Full Evidence Check)
-        // Check if critical fields have evidence AND we have multi-source corroboration
+        // Stage 6: Attribution (Strict Evidence Linking)
+        // Check if critical fields (Identity, Compatibility, Specs) have evidence
+        const hasIdentityEvidence = !!(data._evidence?.mpn_identity || data._evidence?.['mpn']);
+        const hasCompatEvidence = !!(data._evidence?.compatible_printers_ru || data._evidence?.['compatibility_ru']);
+
+        let attributionPass = true;
+        if (!hasIdentityEvidence) { attributionPass = false; warnings.push("UNATTRIBUTED: Identity"); }
+        if (!hasCompatEvidence) { attributionPass = false; warnings.push("UNATTRIBUTED: Compatibility"); }
+
+        stages.attribution = attributionPass;
+
+
+        // Stage 7: Completeness (Multi-Source Corroboration)
         let uniqueDomains = new Set<string>();
         if (data._evidence) {
             Object.values(data._evidence).forEach((e: any) => {
@@ -76,33 +114,42 @@ export class QualityGatekeeper {
             });
         }
 
-        const hasIdentityEvidence = data._evidence?.mpn_identity || data._evidence?.['mpn'];
-        const hasCompatEvidence = data._evidence?.compatible_printers_ru || data._evidence?.['compatibility_ru'];
-
-        // Rule: Must have evidence for Identity + Compat, AND distinct sources > 1 to be high quality
-        if (hasIdentityEvidence && hasCompatEvidence) {
-            if (uniqueDomains.size >= 2) {
-                stages.completeness = true;
-            } else {
-                warnings.push("SINGLE_SOURCE: Data relies on a single domain");
-                // We don't fail completeness, but we score lower
-            }
-        } else {
-            warnings.push("WEAK_EVIDENCE: Critical fields lack citation");
+        if (attributionPass && uniqueDomains.size >= 2) {
+            stages.completeness = true;
+        } else if (attributionPass && uniqueDomains.size < 2) {
+            warnings.push("SINGLE_SOURCE: Data relies on a single domain");
         }
+
+
+        // Stage 8: Final Deduplication Guard
+        // We only check if we have a valid MPN
+        stages.deduplication = true;
+        if (data.mpn_identity?.mpn) {
+            const duplicate = await import("../backend/DeduplicationService").then(m =>
+                m.DeduplicationService.findPotentialDuplicate(data.mpn_identity!.mpn!)
+            );
+
+            if (duplicate) {
+                warnings.push(`POSSIBLE_DUPLICATE: Found similar item ${duplicate.id} (${duplicate.type})`);
+                stages.deduplication = false;
+            }
+        }
+
 
         // Scoring
         let score = 0;
-        if (stages.brand) score += 10;
-        if (stages.identity) score += 30;
-        if (stages.logistics) score += 20;
-        if (stages.compatibility) score += 30;
-        if (stages.completeness) score += 10; // Bonus for multi-source
+        if (stages.brand) score += 5;
+        if (stages.identity) score += 20;
+        if (stages.logistics) score += 10;
+        if (stages.compatibility) score += 20;
+        if (stages.consistency) score += 10;
+        if (stages.attribution) score += 20;
+        if (stages.completeness) score += 10;
+        if (stages.deduplication) score += 5;
 
         // Final Gate
-        // Must have Identity, Compatibility, AND Evidence to be strictly "Published"
-        // We allow Logistics to be missing but it lowers score.
-        const isValid = stages.identity && stages.compatibility && (!!hasIdentityEvidence && !!hasCompatEvidence);
+        // Must have Identity, Compatibility, Attribution
+        const isValid = stages.identity && stages.compatibility && stages.attribution;
 
         return {
             isValid,

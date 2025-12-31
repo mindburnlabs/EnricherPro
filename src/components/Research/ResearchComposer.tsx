@@ -13,16 +13,8 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
     const [mode, setMode] = useState<'fast' | 'balanced' | 'deep'>('balanced');
     const [showModes, setShowModes] = useState(false);
 
-    // Get stream data to pass log to RunProgress, 
-    // BUT NOTE: ResearchComposer is usually for *input*. 
-    // RunProgress is rendered in App.tsx. 
-    // However, if we want to show it here contextually we can, but likely the user just wanted it in App.tsx. 
-    // The previous error showed "RunProgress" missing in this file, which implies I added it here erroneously or incomplete.
-    // Given App.tsx renders RunProgress, I should probably REMOVE it from here if it's duplicated, 
-    // OR if the design calls for it here. 
-    // Looking at the broken code, I inserted a block `{ status === 'running' && ... RunProgress }` inside here.
-    // I will remove the RunProgress usage from here since it is already in App.tsx, unless I see a reason to keep it.
-    // Wait, the previous edit removed handleSubmit! I need to put it back.
+    // ResearchComposer handles input submission.
+    // Live logs (RunProgress) are displayed in App.tsx.
 
     const suggestions = [
         t('composer.suggestions.1'),
