@@ -1,25 +1,26 @@
-# Consumable Enricher Pro 🚀
+# D² (Deep Discovery) v2.7 🚀
 
-> **The State-of-the-Art Consumables Database Enrichment System**
+> **The State-of-the-Art Autonomous Research Engine**
 
-Enricher Pro is an agentic AI system designed to autonomously research, verify, and enrich printer consumable data (toners, cartridges) with high precision (99%+ target). It leverages a multi-agent architecture to cross-reference data from official manufacturer sites and trusted marketplaces like NIX.ru.
+**D² (Deep Discovery)** is an advanced agentic AI system designed for high-precision, "Evidence-First" data enrichment. Unlike traditional scrapers, it uses a multi-agent swarm to autonomously plan, navigate, and verify information across the deep web, strictly adhering to a "No Hallucination" policy.
 
 ![Status](https://img.shields.io/badge/Status-Production_Ready-green)
-![Tech](https://img.shields.io/badge/Stack-React_|_Node.js_|_Inngest-blue)
+![Version](https://img.shields.io/badge/Version-2.7.0-blue)
+![Stack](https://img.shields.io/badge/Stack-Firecrawl_v2_|_Neon_|_Inngest-violet)
 
-## ✨ Key Features
+## ✨ Key Capabilities
 
--   **Autonomous Research Agents**: A swarm of specialized AI agents (Discovery, Logistics, Synthesis) orchestrate the research process.
--   **Multi-Source Verification**: cross-references official datasheets with marketplace data to ensure accuracy.
--   **NIX.ru Logistics Integration**: Specifically targets verified weight and dimension data from NIX.ru.
--   **Quality Gatekeeper**: A strict 5-stage validation pipeline ensures only complete and consistent data is published.
--   **Real-time Streaming**: Live research progress updates via Server-Sent Events (SSE).
--   **Batch Processing**: Queue hundreds of SKUs for background enrichment.
--   **Dynamic Configuration**: BYOK (Bring Your Own Key) support for Firecrawl, OpenRouter, and Google Gemini via the UI.
+-   **🔎 Autonomous Deep Web Agents**: A swarm of specialized agents (Discovery, Enrichment, Logistics) that navigate websites like human analysts.
+-   **🕷️ Firecrawl v2 Native**: Built on the latest Firecrawl SDK with support for **Deep Crawl**, **Map**, **Interactive Actions**, and **Batch Scrape**.
+-   **🛡️ Evidence-First Architecture**: Every data point is backed by a specific source URL and confidence score. Zero-trust verification.
+-   **⚖️ Truth Settlement**: A deterministic "Quorum & Truth" resolution engine that arbitrates between conflicting data sources (e.g., OEM vs Marketplace).
+-   **⚡ Frontier Exploration Loop**: A parallelized graph traversal focused on high-recall discovery of hidden specs.
+-   **🌍 Multi-Lingual Native**: Full `i18n` support (UI & prompts) for English and Russian (`ru`, `en`), with locale-specific search strategies.
+-   **🔄 Global Analyst Loop**: Iterative re-planning that continues until specific "Knowledge Gaps" are filled.
 
 ## 🏗️ Architecture
 
-The system follows a durable execution model using **Inngest**:
+The system follows a durable execution model using **Inngest** for reliable, long-running agent workflows:
 
 ```mermaid
 graph TD
@@ -27,17 +28,19 @@ graph TD
     API --> Inngest[Inngest Event Bus]
     Inngest --> Workflow[Research Workflow]
     
-    subgraph Agents
-        Workflow --> Planning[Discovery Agent (Plan)]
-        Workflow --> Execution[Discovery Agent (Execute)]
-        Execution --> Firecrawl[Firecrawl Search]
-        Workflow --> Logistics[Logistics Agent (NIX.ru)]
-        Workflow --> Synthesis[Synthesis Agent (LLM Merge)]
-        Workflow --> Gatekeeper[Quality Gatekeeper (Validation)]
+    subgraph "Agentic Engine (D²)"
+        Workflow --> Planning[Discovery Agent (Strategic Plan)]
+        Planning --> Frontier[Frontier Loop]
+        
+        Frontier --> Firecrawl[Firecrawl v2 (Crawl/Map/Agent)]
+        Frontier --> Extraction[LLM Extraction (Strict JSON)]
+        
+        Frontier --> Validation[Quality Gatekeeper]
+        Validation --> Truth[Truth & Quorum]
     end
     
-    Gatekeeper --> DB[(PostgreSQL DB)]
-    DB --> UI[React Frontend]
+    Truth --> DB[(Neon PostgreSQL)]
+    DB --> UI[React Frontend (Streaming)]
 ```
 
 ## 🚀 Getting Started
@@ -46,29 +49,30 @@ graph TD
 
 -   Node.js 18+
 -   PostgreSQL (Neon.tech recommended)
--   API Keys:
-    -   **Firecrawl** (for web search)
-    -   **OpenRouter / Google Gemini** (for LLM reasoning)
+-   **Firecrawl API Key** (Critical for v2 Agents)
+-   **OpenRouter / Gemini Key** (For heavy reasoning)
 
 ### Installation
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-org/enricher-pro.git
+    git clone https://github.com/mindburnlabs/unique-enricher.git
     cd enricher-pro
     ```
 
 2.  **Install dependencies:**
     ```bash
     npm install
+    # Ensure Firecrawl SDK is v2 compat
+    npm list @mendable/firecrawl-js
     ```
 
 3.  **Configure Environment:**
-    Copy `.env.local.example` to `.env.local`:
+    Copy `.env.example` to `.env.local` and populate keys:
     ```bash
-    cp .env.local.example .env.local
+    cp .env.example .env.local
     ```
-    Fill in your database URL and default API keys.
+    *Required*: `FIRECRAWL_API_KEY`, `DATABASE_URL`, `OPENROUTER_API_KEY`, `INNGEST_EVENT_KEY`.
 
 4.  **Initialize Database:**
     ```bash
@@ -80,17 +84,21 @@ graph TD
     npm run dev
     ```
 
-### 🌍 BYOK (Bring Your Own Key)
-
-You can configure API keys directly in the **Settings** UI (Top right gear icon). These keys are stored in your browser's `localStorage` and passed securely to the backend for each request, overriding the server defaults.
-
 ## 🛠️ Operational Guide
 
-See [docs/operations.md](docs/operations.md) for detailed deployment, monitoring, and troubleshooting instructions.
+### Firecrawl v2 Integration
+D² uses the strict v2 SDK. The `BackendFirecrawlService` handles:
+-   **Map**: High-recall URL discovery.
+-   **Crawl**: Recursive deep indexing with `maxDiscoveryDepth`.
+-   **Agent**: Autonomous navigation for complex interaction.
+-   **Batch Scrape**: High-throughput validation.
+
+### Localization
+The system auto-detects locale but favors `en` for technical specs. Modify `src/i18n/config.ts` to add supported languages.
 
 ## 🧪 Testing
 
-Run the test suite to verify agent logic:
+Run the rigorous agent verification suite:
 
 ```bash
 npm test
@@ -98,4 +106,4 @@ npm test
 
 ## 📜 License
 
-Private / Proprietary.
+Proprietary & Confidential. Mindburn Labs.

@@ -1,66 +1,83 @@
-# Target System Architecture
+# D² System Architecture (v2.7)
 
-## 1. High-Level Stack
+## 1. Core Philosophy: Evidence-First
+D² is built on a "Zero Trust" data model. Every piece of data (e.g., "Weight: 1.2kg") is treated as a **Claim**, not a fact.
+- **Claim**: A value + Source URL + Confidence Score.
+- **Fact**: A resolved value derived from multiple claims via the "Truth & Quorum" engine.
 
-| Component | Technology | Rationale |
+## 2. High-Level Stack
+
+| Component | Technology | Role |
 | :--- | :--- | :--- |
-| **Frontend** | Next.js 14+ (React) | Server Components, API Routes, easy deployment. |
-| **Orchestration** | Inngest | Durable execution, retries, step functions, serverless-friendly. |
-| **Database** | Postgres (Neon/Supabase) | Structured data, relational queries, vector ready. |
-| **Queue/Workers** | Inngest (via HTTP) | Handles long-running "Deep Research" jobs without timeout. |
-| **Search Engine** | Firecrawl | Specialized for extracting clean markdown/JSON from web. |
-| **LLM Gateway** | OpenRouter | Access to best models (Gemini 1.5 Pro, Sonar, GPT-4o) with failover. |
-| **Cache** | Redis (Upstash) | Rate limiting, shared state, dedup locks. |
+| **Frontend** | React, Tailwind, Zustand | Real-time streaming UI, "Thinking" blocks. |
+| **API** | Next.js 14+ (Serverless) | Lightweight handlers, SSE stream endpoints. |
+| **Orchestrator** | Inngest | Durable execution, "Global Analyst" loops, retries. |
+| **Search/Crawl** | **Firecrawl v2** | Deep recursive crawling, batch scraping, map. |
+| **Intelligence** | OpenRouter (Gemini/Sonar) | Multi-model reasoning (Router -> Planner -> Extractor). |
+| **Storage** | Neon (PostgreSQL) | Relational + JSONB for claims/evidence. |
 
-## 2. Component Diagram
+## 3. The "Frontier" Engine
+The core discovery logic is a **Graph Traversal Loop** managed by Inngest.
 
 ```mermaid
 graph TD
-    User[User / Browser] -- "Submit SKU / Batch" --> API[Next.js API Routes]
-    User -- "Streaming Updates (SSE)" --> API
+    Start[User Request] --> Planner[Strategic Planner Agent]
+    Planner -->|Initial Seeds| Frontier[Frontier Queue]
     
-    subgraph "Server Plane (Vercel)"
-        API -- "Trigger Event" --> Inngest
-        API -- "Read/Write" --> DB[(Postgres)]
-        API -- "Read/Write" --> Redis[(Redis Cache)]
+    subgraph "Global Analyst Loop"
+        Frontier -->|Next Batch| Firecrawl[Firecrawl v2]
+        
+        Firecrawl -->|Map/Crawl| Discovery[URL Discovery]
+        Firecrawl -->|Batch Scrape| Content[Content Extraction]
+        
+        Content -->|HTML/MD| Extractor[LLM Extraction Agent]
+        Extractor -->|New Claims| DB_Claims[(Claims Table)]
+        
+        Discovery -->|New Links| Frontier
     end
-
-    subgraph "Worker Plane (Inngest)"
-        W_Orch[Orchestrator] -- "Plan" --> W_Plan[Planner Agent]
-        W_Orch -- "Execute" --> W_Run[Research Agent]
-    end
-
-    subgraph "External Services"
-        W_Plan -- "LLM Call" --> OpenRouter
-        W_Run -- "Search/Scrape" --> Firecrawl
-        W_Run -- "Extract" --> OpenRouter
-    end
+    
+    DB_Claims --> Gatekeeper[Quality Gatekeeper]
+    Gatekeeper -->|Sufficient Data?| Truth[Truth & Quorum Engine]
+    Gatekeeper -->|Gaps Found?| Planner
 ```
 
-## 3. Data Flow (The "Deep Research" Loop)
+## 4. Agent Swarm
 
-1.  **Initiation:** User submits input -> Saved to DB (`Job` table) -> Inngest Event sent.
-2.  **Planning:** Inngest function `research-planner` runs. Calls LLM to decide: "Is this a SKU? What attributes do I need?". Output: `ResearchPlan`.
-3.  **Execution (Fan-out):**
-    - Step 1: `firecrawl_search` (Search for SKU + "specs", SKU + "packaging").
-    - Step 2: `firecrawl_extract` (Visit top 3 URLs, extract JSON).
-    - Step 3: `normalization` (Standardize units, translate text).
-4.  **Synthesis:**
-    - Aggregates all extracted JSONs.
-    - Runs "Conflict Resolution" logic (weighted voting based on Source Tier).
-    - Updates DB with `ConsumableData`.
-5.  **Completion:**
-    - Status updated to `COMPLETED` or `NEEDS_REVIEW`.
-    - SSE push to frontend to notify "Done".
+### 🧠 Discovery Agent (The Strategist)
+- **Role**: Plans the research path.
+- **Capabilities**: Understands "Knowledge Gaps". Decides between `search`, `crawl`, or `deep_crawl` based on site authority.
+- **Tools**: Firecrawl `/search`, `/map`.
 
-## 4. Key Primitives
+### ⚡ Enrichment Agent (The Extractor)
+- **Role**: Extracts precise schema-compliant data from pages.
+- **Capabilities**: Schema generation on-the-fly.
+- **Tools**: Firecrawl `/scrape`, `/batchScrape`.
 
-- **Sources:**
-    - **Tier A (OEM):** hp.com, kyocera.ru (Authority).
-    - **Tier B (Retail):** nix.ru, dns-shop.ru (High Trust).
-    - **Tier C (General):** Random e-commerce (Verification only).
+### 🚚 Logistics Agent (Specialist)
+- **Role**: Targeted extraction from logistics partners (e.g., NIX.ru).
+- **Capabilities**: Known verification of dimensional data.
 
-- **Conflict Resolution Strategy:**
-    - If Tier A present: Win.
-    - If Consensus (Tier B + Tier B): Win.
-    - Else: Flag for review.
+## 5. Truth & Quorum Resolution
+The system does not just "pick the last value". It invokes an arbitration layer:
+1.  **Authority Check**: Is the source OEM (Tier A)? -> **Auto-Win**.
+2.  **Consensus Check**: Do 2+ Tier B sources agree? -> **Quorum Win**.
+3.  **Conflict**: Disagreement between similar trusted sources? -> **Flag for Human Review**.
+
+## 6. Data Model (Evidence-First)
+```typescript
+interface EnrichedItem {
+  identity: {
+    mpn: string; // "CF226A"
+  };
+  attributes: {
+    weight: {
+      value: "0.8kg";
+      source_id: "url_xyz"; // Link to Evidence
+      confidence: 0.95;
+    }[]; // Array of Claims
+  };
+  meta: {
+    verification_status: "verified" | "needs_review";
+  }
+}
+```
