@@ -178,16 +178,66 @@ export const researchWorkflow = inngest.createFunction(
                                 results = raw.map(r => ({ ...r, source_type: 'crawl_result' }));
                             }
                         } catch (e) {
-                            console.error("Deep Crawl/Map failed", e);
+                            console.error("Deep Map failed", e);
+                        }
+                    } else if (task.type === 'deep_crawl') {
+                        agent.log('discovery', `Starting Recursive Crawl on ${task.value}`);
+                        try {
+                            // Fire-and-forget crawl job
+                            const crawlId = await BackendFirecrawlService.crawl(task.value, { limit: 100, maxDepth: 2 });
+
+                            // Add "crawl_status" task to Frontier to check later
+                            await FrontierService.add(jobId, 'crawl_status', crawlId, 50, task.depth, { originalUrl: task.value });
+
+                            results = []; // No results yet
+                        } catch (e) {
+                            console.error("Deep Crawl Start Failed", e);
+                        }
+                    } else if (task.type === 'crawl_status') {
+                        // Poll for status
+                        const crawlId = task.value;
+                        const status = await BackendFirecrawlService.checkCrawlStatus(crawlId);
+
+                        if (status && (status as any).status === 'completed') {
+                            agent.log('discovery', `Crawl ${crawlId} Completed! Processing ${(status as any).data?.length || 0} pages.`);
+                            const data = (status as any).data || [];
+                            results = data.map((d: any) => ({
+                                url: d.metadata?.sourceURL || d.url,
+                                title: d.metadata?.title || "Crawled Page",
+                                markdown: d.markdown || "",
+                                source_type: 'deep_crawl'
+                            }));
+                        } else if (status && (status as any).status === 'failed') {
+                            console.warn(`Crawl ${crawlId} Failed.`);
+                            results = [];
+                        } else {
+                            // Still running, re-queue
+                            // We can use the Frontier to re-queue. 
+                            // CAUTION: Infinite loop if not careful. Add 'checks' count meta?
+                            const checks = (task.meta?.checks || 0) + 1;
+                            if (checks < 20) { // Give it 20 * loop_time (approx 10 mins?)
+                                await FrontierService.add(jobId, 'crawl_status', crawlId, 50, task.depth, { ...task.meta, checks });
+                            } else {
+                                agent.log('discovery', `Crawl ${crawlId} timed out.`);
+                            }
+                            results = [];
                         }
                     } else if (task.type === 'url') {
                         try {
-                            const data = await BackendFirecrawlService.scrape(task.value);
+                            // Omni-Integration: Request Screenshot for verification
+                            const data = await BackendFirecrawlService.scrape(task.value, {
+                                formats: ['markdown', 'screenshot'],
+                                actions: task.meta?.actions,
+                                location: task.meta?.location,
+                                waitFor: task.meta?.waitFor,
+                                mobile: task.meta?.mobile
+                            });
                             if (data) {
                                 results.push({
                                     url: (data as any).metadata?.sourceURL || task.value,
                                     title: (data as any).metadata?.title || "Scraped Page",
                                     markdown: (data as any).markdown || "",
+                                    screenshot: (data as any).screenshot || null, // Capture screenshot URL
                                     source_type: 'direct_scrape'
                                 });
                             }
@@ -209,6 +259,57 @@ export const researchWorkflow = inngest.createFunction(
                             }
                         } catch (e) {
                             console.error("Firecrawl Agent failed", e);
+                        }
+                    } else if (task.type === 'enrichment') {
+                        let success = false;
+                        try {
+                            const { EnrichmentAgent } = await import("../../services/agents/EnrichmentAgent.js");
+                            const goal = task.meta?.goal || "Extract all product details";
+                            agent.log('discovery', `running enrichment on ${task.value} for: ${goal}`);
+
+                            // 1. Generate Schema
+                            const schema = await EnrichmentAgent.generateSchema(goal, task.value, language, model);
+
+                            // 2. Execute Firecrawl Enrich (Extract)
+                            const data = await BackendFirecrawlService.enrich(task.value, schema);
+
+                            if (data) {
+                                results.push({
+                                    url: task.value,
+                                    title: "Enriched Data",
+                                    markdown: JSON.stringify(data), // Save as JSON string for synthesis to parse
+                                    source_type: 'agent_result' // Treat as high-quality agent result
+                                });
+                                success = true;
+                            }
+                        } catch (e) {
+                            console.warn(`Enrichment failed for ${task.value}`, e);
+                        }
+
+                        // 3. FALLBACK: If Enrichment failed, Scrape the page so we don't lose the source.
+                        // We use the actions/location here to ensure we get the Interactive content.
+                        if (!success) {
+                            try {
+                                agent.log('discovery', `Enrichment failed, falling back to standard scrape for ${task.value}`);
+                                const actions = task.meta?.actions;
+                                const location = task.meta?.location;
+
+                                const raw = await BackendFirecrawlService.scrape(task.value, {
+                                    actions,
+                                    location
+                                });
+
+                                if (raw && (raw as any).markdown) {
+                                    results.push({
+                                        url: task.value,
+                                        title: (raw as any).metadata?.title || "Scraped Page (Fallback)",
+                                        markdown: (raw as any).markdown,
+                                        source_type: 'direct_scrape'
+                                    });
+                                }
+                            } catch (fallbackErr) {
+                                console.warn(`Fallback scrape also failed for ${task.value}`, fallbackErr);
+                            }
                         }
                     }
 
@@ -238,7 +339,11 @@ export const researchWorkflow = inngest.createFunction(
                                 domain: new URL(r.url).hostname,
                                 rawContent: r.markdown,
                                 status: 'success',
-                                extractedMetadata: { title: r.title, type: r.source_type }
+                                extractedMetadata: {
+                                    title: r.title,
+                                    type: r.source_type,
+                                    screenshot: (r as any).screenshot // Save Screenshot URL
+                                }
                             });
 
                             // 2. Extract Claims
@@ -317,6 +422,36 @@ export const researchWorkflow = inngest.createFunction(
             // Main Parallel Execution Loop
             while (loops < MAX_LOOPS) {
                 const tasks = await FrontierService.nextBatch(jobId, CONCURRENCY);
+
+                // DEEP MODE: Global Analyst Check (The "Thinking" Step)
+                if (tasks.length === 0 && mode === 'deep' && loops > 0 && loops < MAX_LOOPS) {
+                    agent.log('discovery', '🧠 Global Analyst is analyzing progress...');
+
+                    const analysis = await DiscoveryAgent.analyzeProgress(
+                        jobId,
+                        inputRaw,
+                        allResults,
+                        language,
+                        model
+                    );
+
+                    if (analysis.action === 'stop') {
+                        agent.log('discovery', '🧠 Global Analyst decided we have sufficient data.');
+                        break;
+                    }
+
+                    if (analysis.new_tasks && analysis.new_tasks.length > 0) {
+                        agent.log('discovery', `🧠 Global Analyst generated ${analysis.new_tasks.length} new tasks.`);
+                        for (const t of analysis.new_tasks) {
+                            // If enrichment, we might need to resolve the schema now or later.
+                            // The task processor handles "enrichment" type.
+                            await FrontierService.add(jobId, t.type as any, t.value, 40, loops + 1, t.meta);
+                        }
+                        // Continue loop to pick up new tasks
+                        continue;
+                    }
+                }
+
                 if (tasks.length === 0) break;
 
                 loops++;

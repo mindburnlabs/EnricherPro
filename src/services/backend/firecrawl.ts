@@ -14,24 +14,31 @@ export class BackendFirecrawlService {
         return this.client;
     }
 
-    static async search(query: string, options: { limit?: number; country?: string; lang?: string; formats?: string[]; apiKey?: string } = {}) {
+    static async search(query: string, options: { limit?: number; country?: string; lang?: string; formats?: string[]; apiKey?: string; timeout?: number; tbs?: string; filter?: string; scrapeOptions?: any } = {}) {
         const { withRetry } = await import("../../lib/reliability.js");
 
         return withRetry(async () => {
             const client = options.apiKey ? new FirecrawlApp({ apiKey: options.apiKey }) : this.getClient();
             try {
-                // @ts-ignore - SDK types might lag behind API
+                // Map top-level options to SDK structure
                 const result = await client.search(query, {
                     limit: options.limit || 5,
-                    country: options.country,
-                    lang: options.lang,
                     scrapeOptions: {
-                        formats: (options.formats || ['markdown']) as any
+                        formats: (options.formats || ['markdown']) as any,
+                        ...((options.country || options.lang) && {
+                            location: {
+                                country: options.country,
+                                languages: options.lang ? [options.lang] : undefined
+                            }
+                        }),
+                        ...options.scrapeOptions
                     },
-                } as any);
+                    timeout: options.timeout,
+                    tbs: options.tbs as any,
+                });
 
-                if (result && (result as any).data) {
-                    return (result as any).data;
+                if (result && result.web) {
+                    return result.web;
                 }
                 return [];
             } catch (error) {
@@ -54,55 +61,88 @@ export class BackendFirecrawlService {
         });
     }
 
-    static async scrape(url: string, formats: string[] = ['markdown']) {
+    static async scrape(url: string, options: {
+        formats?: string[],
+        schema?: any,
+        waitFor?: number,
+        actions?: any[],
+        location?: { country?: string; languages?: string[] },
+        mobile?: boolean,
+        maxAge?: number,
+        timeout?: number,
+        onlyMainContent?: boolean
+    } = {}) {
         const client = this.getClient();
-        // @ts-ignore
-        const result = await client.scrapeUrl(url, {
-            formats: formats as any
+
+        // Construct formats array
+        const formats: any[] = options.formats || ['markdown'];
+
+        // If schema is provided, we MUST use type: 'json' with schema
+        if (options.schema) {
+            // Remove 'json' string if present to avoiding duplication, then add object
+            const cleanFormats = formats.filter(f => f !== 'json');
+            cleanFormats.push({
+                type: 'json',
+                schema: options.schema
+            });
+            // Reassign
+            formats.length = 0;
+            formats.push(...cleanFormats);
+        }
+
+        const result = await client.scrape(url, {
+            formats: formats,
+            waitFor: options.waitFor || 0,
+            actions: options.actions,
+            location: options.location,
+            mobile: options.mobile,
+            maxAge: options.maxAge,
+            timeout: options.timeout,
+            onlyMainContent: options.onlyMainContent
         });
 
         if (result && (result as any).success) {
             return (result as any).data || (result as any);
         }
+        // If not success but valid response is returned directly (sometimes SDK does this)
+        if (result && (result as any).markdown) return result;
+
         throw new Error(`Firecrawl Scrape Failed: ${(result as any)?.error || 'Unknown'}`);
     }
 
     static async extract(urls: string[], schema: any) {
-        const client = this.getClient();
-        // V2 extract
-        // @ts-ignore
-        const result = await client.extract(urls, {
-            schema: schema // check SDK, usually 'schema' or 'jsonSchema'
-        });
+        const { withRetry } = await import("../../lib/reliability.js");
 
-        if (result && (result as any).data) {
-            return (result as any).data;
-        }
-        throw new Error(`Firecrawl Extract Failed: ${result?.error || 'Unknown'}`);
+        return withRetry(async () => {
+            const client = this.getClient();
+            try {
+                // V2 extract: extract(args: { urls, schema })
+                const result = await client.extract({
+                    urls: urls,
+                    schema: schema
+                });
+
+                if (result && result.data) {
+                    return result.data;
+                }
+                throw new Error(`Firecrawl Extract Failed: ${(result as any)?.error || 'Unknown'}`);
+            } catch (error) {
+                // No retry on billing/auth issues
+                if ((error as any).statusCode === 402 || (error as any).statusCode === 401) {
+                    throw error;
+                }
+                throw error;
+            }
+        }, { maxRetries: 3, baseDelayMs: 2000 });
     }
 
-    static async crawl(url: string, options: { limit?: number; maxDepth?: number; includePaths?: string[]; excludePaths?: string[] } = {}) {
-        const client = this.getClient();
-        // @ts-ignore
-        const result = await client.crawl(url, {
-            limit: options.limit || 100, // Default conservative
-            scrapeOptions: {
-                formats: ['markdown']
-            },
-            includePaths: options.includePaths,
-            excludePaths: options.excludePaths,
-            maxDepth: options.maxDepth || 2
-        } as any);
-
-        if (result && (result as any).id) {
-            return (result as any).id;
-        } else if (result && (result as any).success) {
-            // For sync crawls if supported or mock
-            return (result as any).id || 'sync-completed';
-        }
-
-        throw new Error(`Firecrawl Crawl Failed: ${(result as any)?.error || 'Unknown'}`);
+    /**
+     * Semantic wrapper for extract to "Enrich" a specific URL with a schema
+     */
+    static async enrich(url: string, schema: any) {
+        return this.extract([url], schema);
     }
+
     /**
      * Uses Firecrawl's /agent endpoint for autonomous extraction + navigation
      * 100% Feature Utilization
@@ -113,20 +153,11 @@ export class BackendFirecrawlService {
         return withRetry(async () => {
             const client = options.apiKey ? new FirecrawlApp({ apiKey: options.apiKey }) : this.getClient();
             try {
-                // @ts-ignore
-                const agentFn = (client as any).agent;
-                if (!agentFn) {
-                    throw new Error("Firecrawl SDK does not support .agent() yet. Update dependency.");
-                }
-
-                // Correct Signature: agent({ prompt, ...options })
-                const result = await agentFn.call(client, {
+                // Use public SDK method
+                const result = await client.agent({
                     prompt: prompt,
                     timeout: options.timeout || 60000,
-                    responseFormat: options.schema ? {
-                        type: "json_object",
-                        schema: options.schema
-                    } : undefined
+                    schema: options.schema
                 });
 
                 if (result && result.data) {
@@ -142,49 +173,119 @@ export class BackendFirecrawlService {
         }, { maxRetries: 1, baseDelayMs: 5000 }); // Agent is expensive, retry carefully
     }
     /**
+     * Recursive Crawl (Deep Indexing)
+     * returns crawl ID
+     */
+    static async crawl(url: string, options: {
+        limit?: number;
+        maxDepth?: number;
+        includePaths?: string[];
+        excludePaths?: string[];
+        scrapeOptions?: any;
+        allowBackwardLinks?: boolean;
+        ignoreSitemap?: boolean;
+        webhook?: string | { url: string; events?: string[]; metadata?: any };
+    } = {}) {
+        const client = this.getClient();
+
+        // Handle webhook structure
+        let webhook = options.webhook;
+        if (typeof webhook === 'string') {
+            webhook = { url: webhook, events: ['completed', 'failed'] }; // Default events
+        }
+
+        const result = await client.crawl(url, {
+            limit: options.limit || 100, // Default conservative
+            scrapeOptions: options.scrapeOptions || {
+                formats: ['markdown']
+            },
+            includePaths: options.includePaths,
+            excludePaths: options.excludePaths,
+            maxDiscoveryDepth: options.maxDepth || 2, // Mapped to SDK expectation
+            sitemap: options.ignoreSitemap ? 'skip' : 'include',
+            webhook: webhook as any
+        });
+
+        if (result && result.id) {
+            return result.id;
+        } else if (result && (result as any).success) {
+            return (result as any).id || 'sync-completed';
+        }
+
+        throw new Error(`Firecrawl Crawl Failed: ${(result as any)?.error || 'Unknown'}`);
+    }
+
+    /**
      * Maps a website to find all URLs (High Recall)
      */
-    static async map(url: string, options: { search?: string; limit?: number; country?: string; lang?: string } = {}) {
+    static async map(url: string, options: { search?: string; limit?: number; country?: string; lang?: string; sitemap?: boolean } = {}) {
         const client = this.getClient();
         try {
-            // @ts-ignore - SDK types lag
             const result = await client.map(url, {
                 search: options.search,
                 limit: options.limit || 50,
-                country: options.country,
-                lang: options.lang
+                // country: options.country, // Check if supported in MapOptions
+                // lang: options.lang,       // Check if supported in MapOptions
+                sitemap: options.sitemap ? 'include' : 'skip'
             });
 
             if (result && (result as any).success) {
                 return (result as any).links || [];
             }
-            return [];
+            return (result as any).links || [];
         } catch (error) {
             console.warn(`Firecrawl Map failed for ${url}`, error);
             return [];
         }
     }
 
-    /**
-     * Batch Scrape multiple URLs (High Throughput)
-     */
-    static async batchScrape(urls: string[], options: { formats?: string[], country?: string; lang?: string } = {}) {
+
+    static async checkCrawlStatus(id: string) {
         const client = this.getClient();
         try {
-            // @ts-ignore
-            const result = await client.batchScrape(urls, {
-                formats: options.formats || ['markdown'],
-                country: options.country,
-                lang: options.lang
-            });
-
-            if (result && (result as any).success) {
-                return (result as any).data || [];
-            }
-            return [];
+            const result = await client.getCrawlStatus(id);
+            return result;
         } catch (error) {
-            console.error("Firecrawl Batch Scrape failed", error);
-            throw error;
+            console.error(`Check Crawl Status failed for ${id}`, error);
+            return null;
         }
+    }
+
+    /**
+     * Batch Scrape for high-volume synchronous URL verification
+     */
+    static async batchScrape(urls: string[], options: {
+        formats?: string[];
+        schema?: any;
+        waitFor?: number;
+        location?: { country?: string; languages?: string[] };
+        ignoreInvalidURLs?: boolean;
+        timeout?: number;
+    } = {}) {
+        const client = this.getClient();
+
+        // Construct formats array logic (same as scrape)
+        const formats: any[] = options.formats || ['markdown'];
+        if (options.schema) {
+            const cleanFormats = formats.filter(f => f !== 'json');
+            cleanFormats.push({ type: 'json', schema: options.schema });
+            formats.length = 0;
+            formats.push(...cleanFormats);
+        }
+
+        const result = await client.batchScrape(urls, {
+            options: {
+                formats: formats,
+                waitFor: options.waitFor || 0,
+                location: options.location,
+            },
+            ignoreInvalidURLs: options.ignoreInvalidURLs,
+            timeout: options.timeout
+        });
+
+        if (result && (result as any).success) {
+            return (result as any).data || [];
+        }
+        throw new Error(`Firecrawl Batch Scrape Failed: ${(result as any)?.error || 'Unknown'}`);
     }
 }

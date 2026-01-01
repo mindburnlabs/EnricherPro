@@ -28,7 +28,7 @@ export class BackendLLMService {
         }
         if (!targetModel) targetModel = DEFAULT_MODEL;
 
-        console.log(`[LLM] Using model: ${targetModel} (Profile: ${config.profile || 'Custom'})`);
+
 
         // We can iterate through candidates if one fails
         const candidates = config.profile ? MODEL_CONFIGS[config.profile].candidates : [targetModel];

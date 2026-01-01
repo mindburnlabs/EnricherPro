@@ -44,19 +44,8 @@ export const items = pgTable('items', {
 });
 
 // --- EVIDENCE (Legacy/Simple Table - keeping for backward compat if needed, but 'claims' is the new way) ---
-export const evidence = pgTable('evidence', {
-    id: uuid('id').defaultRandom().primaryKey(),
-    itemId: uuid('item_id').references(() => items.id).notNull(),
-
-    fieldPath: text('field_path').notNull(), // e.g. "yield.value"
-    rawSnippet: text('raw_snippet'),
-    sourceUrl: text('source_url').notNull(),
-
-    confidence: integer('confidence'), // 0-100
-    isSelected: boolean('is_selected').default(false), // Is this the active truth?
-
-    extractedAt: timestamp('extracted_at').defaultNow().notNull(),
-});
+// --- EVIDENCE (Legacy/Simple Table - keeping for backward compat if needed, but 'claims' is the new way) ---
+// DELETED
 
 // --- EVENTS (The "Live Stream") ---
 export const jobEvents = pgTable('job_events', {
@@ -76,7 +65,7 @@ export const frontier = pgTable('frontier', {
     id: uuid('id').defaultRandom().primaryKey(),
     jobId: uuid('job_id').references(() => jobs.id).notNull(),
 
-    type: text('type', { enum: ['query', 'url', 'domain_crawl', 'firecrawl_agent'] }).notNull(),
+    type: text('type', { enum: ['query', 'url', 'domain_crawl', 'firecrawl_agent', 'deep_crawl', 'crawl_status'] }).notNull(),
     value: text('value').notNull(), // The query string or URL
 
     status: text('status', { enum: ['pending', 'processing', 'completed', 'failed'] }).default('pending').notNull(),
@@ -139,16 +128,10 @@ export const itemsRelations = relations(items, ({ one, many }) => ({
         fields: [items.jobId],
         references: [jobs.id],
     }),
-    evidence: many(evidence),
     claims: many(claims),
 }));
 
-export const evidenceRelations = relations(evidence, ({ one }) => ({
-    item: one(items, {
-        fields: [evidence.itemId],
-        references: [items.id],
-    }),
-}));
+
 
 export const frontierRelations = relations(frontier, ({ one }) => ({
     job: one(jobs, {

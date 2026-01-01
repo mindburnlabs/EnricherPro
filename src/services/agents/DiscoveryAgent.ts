@@ -12,9 +12,11 @@ export interface AgentPlan {
         name: string;
         queries: string[];
         target_domain?: string;
-        type?: "query" | "domain_crawl" | "firecrawl_agent";
+        type?: "query" | "domain_crawl" | "firecrawl_agent" | "deep_crawl";
         target_url?: string;
         schema?: any;
+        actions?: any[];
+        location?: { country?: string; languages?: string[] };
     }>;
 }
 
@@ -127,7 +129,7 @@ export class DiscoveryAgent {
         - canonical_name: string
         - strategies: Array<{
             name: string;
-            type: "query" | "domain_crawl" | "firecrawl_agent";
+            type: "query" | "domain_crawl" | "firecrawl_agent" | "deep_crawl";
             queries: string[];
             target_domain?: string;
             schema?: any; // JSON Schema for Agent Structured Output
@@ -140,9 +142,25 @@ export class DiscoveryAgent {
         2. **RU Compatibility (Strict)**:
            - MUST find printers sold in Russia.
            - Query: "site:nix.ru ${knowns.model || inputRaw} совместимые принтеры", "site:dns-shop.ru ${knowns.model || inputRaw} подходит для".
-        3. **FAQ & Pain Points**:
-           - Find common problems to generate FAQ.
-           - Query: "${knowns.model || inputRaw} problems error defect", "${knowns.model || inputRaw} проблемы форум".
+        3. **FAQ & Pain Points (AGENT TASK)**:
+           - Use "firecrawl_agent" to find common problems and generate FAQ.
+           - Strategy: { type: "firecrawl_agent", queries: ["Find common problems and error codes for ${knowns.model || inputRaw}"], schema: { problems: [{ issue: string, solution: string }] } }
+        4. **Official Specs (DEEP CRAWL - SCOPED)**:
+           - In DEEP mode, find the *specific* product page or support section to crawl. DO NOT crawl "hp.com" root.
+           - Strategy: { type: "query", queries: ["site:hp.com ${knowns.model || inputRaw} support", "site:canon.com ${knowns.model || inputRaw} specifications"] }
+           - OR if deeply confident: { type: "deep_crawl", target_domain: "hp.com/support", queries: [] }
+
+        5. **Interactive Enrichment (Interactions)**:
+           - If data is hidden behind tabs (e.g. "Specs", "Details") or requires specific location.
+           - Strategy: { 
+               type: "url", 
+               target_url: "https://example.com/product",
+               meta: {
+                   actions: [{ type: "click", selector: "#specs-tab" }, { type: "wait", milliseconds: 1000 }],
+                   location: { country: "US" }
+               } 
+             }
+
         4. **Related Products**:
            - Find cross-sell items (drums, maintenance kits).
            - Query: "${knowns.model || inputRaw} drum unit", "${knowns.model || inputRaw} фотобарабан".
@@ -198,9 +216,10 @@ export class DiscoveryAgent {
         2. **Совместимость в РФ (Строго)**:
            - ОБЯЗАТЕЛЬНО найти принтеры, продаваемые в России.
            - Запрос: "site:nix.ru ${knowns.model || inputRaw} совместимые принтеры", "site:dns-shop.ru ${knowns.model || inputRaw} подходит для".
-        3. **FAQ и Проблемы**:
-           - Найти частые проблемы для генерации FAQ.
-           - Запрос: "${knowns.model || inputRaw} проблемы форум", "${knowns.model || inputRaw} common problems".
+        3. **FAQ и Проблемы (АГЕНТ)**:
+           - Использовать "firecrawl_agent" для поиска частых проблем.
+           - Стратегия: { type: "firecrawl_agent", queries: ["Найти проблемы и коды ошибок для ${knowns.model || inputRaw}"], schema: { problems: [{ issue: string, solution: string }] } }
+
         4. **Связанные Товары**:
            - Искать кросс-продажи (барабаны, ремкомплекты).
            - Запрос: "${knowns.model || inputRaw} фотобарабан", "${knowns.model || inputRaw} drum unit".
@@ -218,6 +237,13 @@ export class DiscoveryAgent {
         4. **Автономный Агент (Firecrawl Agent)**:
            - В режиме DEEP использовать тип "firecrawl_agent" для сложной навигации.
            - ОБЯЗАТЕЛЬНО предоставить JSON схему.
+        5. **Глубокое Сканирование (Deep Crawl - Focused)**:
+           - В режиме DEEP, найдите *конкретную* страницу поддержки или продукта. НЕ сканируйте корень "hp.com".
+           - Стратегия: { type: "query", queries: ["site:hp.com ${knowns.model || inputRaw} support", "site:kyocera.ru ${knowns.model || inputRaw} характеристики"] }
+           - ИЛИ если уверены: { type: "deep_crawl", target_domain: "hp.com/support", queries: [] }
+        6. **Интерактивное Обогащение (Interactions)**:
+           - Если данные скрыты за вкладками или требуют локации.
+           - Стратегия: { type: "url", target_url: "...", meta: { actions: [{ type: "click", selector: "#specs" }], location: { country: "RU" } } }
         `;
 
         const systemPrompt = isRu ? systemPromptRu : systemPromptEn;
@@ -321,6 +347,94 @@ export class DiscoveryAgent {
             }]
         };
     }
+    /**
+     * "Global Analyst" - The brain of the Deep Research Loop.
+     * Analyzes current findings vs. original goal to decide "What's next?"
+     * Can trigger:
+     * - New Queries (Expansion)
+     * - Structured Enrichment (Extraction)
+     * - Stop (Sufficient Data)
+     */
+    static async analyzeProgress(
+        jobId: string,
+        originalInput: string,
+        currentResults: RetrieverResult[],
+        language: string = 'en',
+        model: string = "google/gemini-2.0-flash-exp:free"
+    ): Promise<{
+        action: 'continue' | 'stop';
+        new_tasks?: Array<{ type: 'query' | 'enrichment' | 'domain_crawl', value: string, meta?: any }>
+    }> {
+        // Circuit Breaker for empty results
+        if (currentResults.length === 0) return { action: 'continue', new_tasks: [] };
+
+        const systemPrompt = `You are a Global Research Analyst.
+        Your goal is to ensure we have "100% Strict" data for the user's request: "${originalInput}".
+        
+        Current Progress: ${currentResults.length} items found.
+        Target Language: ${language.toUpperCase()}
+
+        Analyze the "Snippet" of the top results. 
+        - If we found a High-Authority Domain (nix.ru, dns-shop.ru, hp.com, canon.com) but only have the URL, we MUST "enrich" it to get exact specs.
+        - If we have "fuzzy" matches, we need specific queries for the MPN.
+        - If we have everything (Weight, Dims, Compatibility, Image), we STOP.
+
+        Return JSON:
+        {
+            "thoughts": "String explaining your reasoning",
+            "action": "continue" | "stop",
+            "new_tasks": [
+                { 
+                    "type": "enrichment", 
+                    "value": "https://nix.ru/exact-url", 
+                    "goal": "Extract weight and printer compatibility. Click 'Specs' tab if needed.",
+                    "meta": {
+                        "actions": [
+                            { "type": "click", "selector": "#specs-tab" },
+                            { "type": "wait", "milliseconds": 2000 }
+                        ],
+                        "location": { "country": "RU" }
+                    }
+                },
+                { "type": "query", "value": "Canon GPR-43 specs pdf" }
+            ]
+        }
+        `;
+
+        const context = currentResults.slice(0, 5).map(r =>
+            `Domain: ${new URL(r.url).hostname}\nTitle: ${r.title}\nType: ${r.source_type}\nSnippet: ${r.markdown.substring(0, 200)}...`
+        ).join("\n---\n");
+
+        try {
+            const response = await BackendLLMService.complete({
+                model,
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: `Analyze these results:\n${context}` }
+                ],
+                jsonSchema: true
+            });
+
+            const parsed = JSON.parse(response || "{}");
+
+            // Map "enrichment" goals to schemas immediately? 
+            // Better: Return the goal, let the workflow use EnrichmentAgent to build the schema.
+            // We return "meta.goal" for the workflow to handle.
+
+            return {
+                action: parsed.action || 'continue',
+                new_tasks: parsed.new_tasks?.map((t: any) => ({
+                    type: t.type,
+                    value: t.value,
+                    meta: t.type === 'enrichment' ? { goal: t.goal } : undefined
+                })) || []
+            };
+
+        } catch (e) {
+            console.warn("Global Analyst failed", e);
+            return { action: 'continue', new_tasks: [] };
+        }
+    }
 
     /**
      * Analyzes search results to find new keyword expansion opportunities.
@@ -387,9 +501,5 @@ export class DiscoveryAgent {
         }
     }
 
-    // Legacy execute kept for compatibility if used elsewhere, but workflow manages loop.
-    static async execute(plan: AgentPlan, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, budgetOverrides?: Record<string, { maxQueries: number, limitPerQuery: number }>, onLog?: (msg: string) => void, sourceConfig?: any): Promise<RetrieverResult[]> {
-        // Simple shim for compatibility - focused on queries only
-        return [];
-    }
+
 }
