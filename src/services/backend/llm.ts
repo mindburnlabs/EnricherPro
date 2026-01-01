@@ -1,87 +1,263 @@
 
-import { OpenRouter } from '@openrouter/sdk';
 import { MODEL_CONFIGS, ModelProfile, DEFAULT_MODEL } from "../../config/models.js";
+
+interface OpenRouterPlugin {
+    id: "web" | "response-healing" | "file-parser";
+    max_results?: number; // for web
+    search_prompt?: string; // for web
+    engine?: "native" | "exa"; // for web
+    pdf?: { engine: "mistral-ocr" | "pdf-text" | "native" }; // for file-parser
+}
+
+interface OpenRouterProviderConfig {
+    order?: string[];
+    sort?: "price" | "throughput" | "latency";
+    allow_fallbacks?: boolean;
+    require_parameters?: boolean;
+    data_collection?: "deny" | "allow";
+}
+
+export enum RoutingStrategy {
+    FAST = "fast",   // Uses :nitro or latency sort
+    CHEAP = "cheap", // Uses price sort
+    SMART = "smart", // Uses openrouter/auto
+    BALANCED = "balanced" // Default
+}
 
 interface CompletionConfig {
     model?: string;
-    profile?: ModelProfile; // Preferred way to select model
-    messages: { role: 'system' | 'user' | 'assistant', content: string }[];
-    jsonSchema?: any;
+    profile?: ModelProfile;
+    messages: { role: 'system' | 'user' | 'assistant', content: string | any[] }[]; // relaxed content type for multimodal
+    jsonSchema?: any; // If present, uses 'json_schema' response format with strict mode
     maxTokens?: number;
+    temperature?: number;
     apiKeys?: Record<string, string>;
+
+    // SOTA Features
+    plugins?: OpenRouterPlugin[]; // Web, Healing, PDF
+    transforms?: ("middle-out")[]; // Compression
+    models?: string[]; // Fallback models array
+    provider?: OpenRouterProviderConfig; // Routing preferences
+    routingStrategy?: RoutingStrategy;
+
+    // Broadcast / Observability
+    sessionId?: string;
+    userId?: string;
+
+    // Feature Flags
+    useSota?: boolean; // Enable new features
 }
 
 export class BackendLLMService {
     private static apiKey = process.env.OPENROUTER_API_KEY;
+    private static modelCache: { models: string[], timestamp: number } | null = null;
+    private static CACHE_TTL = 3600 * 1000; // 1 hour
 
-    static async complete(config: CompletionConfig) {
-        const apiKey = config.apiKeys?.google || config.apiKeys?.openrouter || this.apiKey;
-        if (!apiKey) throw new Error("Missing LLM API Key");
+    /**
+     * Dynamically fetches free models from OpenRouter.
+     * Filters for pricing.input === '0' and sorts by context length.
+     */
+    static async fetchFreeModels(): Promise<string[]> {
+        if (this.modelCache && (Date.now() - this.modelCache.timestamp < this.CACHE_TTL)) {
+            return this.modelCache.models;
+        }
 
-        const client = new OpenRouter({ apiKey });
+        try {
+
+            const response = await fetch("https://openrouter.ai/api/v1/models");
+            if (!response.ok) throw new Error("Failed to fetch models");
+
+            const data = await response.json();
+
+            const freeModels = data.data
+                .filter((m: any) => m.pricing?.prompt === '0' && m.pricing?.completion === '0')
+                .map((m: any) => ({
+                    id: m.id,
+                    context_length: m.context_length || 4096,
+                    description: m.description,
+                    name: m.name
+                }))
+                // Sort by context length (descending) as proxy for "capability"
+                .sort((a: any, b: any) => b.context_length - a.context_length);
+
+            const modelIds = freeModels.map((m: any) => m.id);
+            this.modelCache = { models: modelIds, timestamp: Date.now() };
+
+
+            return modelIds;
+
+        } catch (error) {
+            console.warn("[LLM] Failed to fetch free models, using fallback list.", error);
+            return [
+                'google/gemini-2.0-pro-exp-02-05:free',
+                'google/gemini-2.0-flash-exp:free',
+                'deepseek/deepseek-r1:free',
+                'meta-llama/llama-3.3-70b-instruct:free'
+            ];
+        }
+    }
+
+    static async complete(config: CompletionConfig): Promise<string> {
+        const apiKey = config.apiKeys?.openrouter || this.apiKey;
+        if (!apiKey) throw new Error("Missing OpenRouter API Key");
+
         const { withRetry } = await import("../../lib/reliability.js");
 
-        // Determine specific model to use
+        // 1. Resolve Primary Model
         let targetModel = config.model;
-        if (!targetModel && config.profile) {
+
+        // Routing Strategy Overrides
+        if (config.routingStrategy === RoutingStrategy.SMART && !targetModel) {
+            targetModel = 'openrouter/auto';
+        }
+
+        // Auto/Smart Logic
+        if (!targetModel || targetModel === 'openrouter/auto:free') {
+            const freeModels = await this.fetchFreeModels();
+            targetModel = freeModels[0] || DEFAULT_MODEL;
+        } else if (config.profile && !config.model) {
             targetModel = MODEL_CONFIGS[config.profile].candidates[0];
         }
         if (!targetModel) targetModel = DEFAULT_MODEL;
 
+        // Nitro Injection for FAST strategy
+        if (config.routingStrategy === RoutingStrategy.FAST && !targetModel.includes(':nitro') && !targetModel.includes(':free')) {
+            targetModel += ':nitro';
+        }
 
+        // 2. Resolve Fallbacks (SOTA: models array)
+        let fallbackModels: string[] = [];
+        if (config.models && config.models.length > 0) {
+            fallbackModels = config.models.filter(m => m !== targetModel);
+        } else if (config.profile) {
+            // Use profile candidates as fallbacks
+            fallbackModels = MODEL_CONFIGS[config.profile].candidates.filter(m => m !== targetModel);
+        }
 
-        // We can iterate through candidates if one fails
-        const candidates = config.profile ? MODEL_CONFIGS[config.profile].candidates : [targetModel];
+        // 3. Construct Request Body
+        // If useSota is true (or implied by presence of advanced fields), use advanced structure
+        const body: any = {
+            model: targetModel,
+            messages: config.messages, // System prompt should be first for effective caching!
+            max_tokens: config.maxTokens,
+            temperature: config.temperature,
+            // Observability
+            // OpenRouter supports mapping 'user' field in root.
+            user: config.userId || 'anonymous_user',
+        };
 
-        let lastError: Error | null = null;
+        // Fallbacks
+        if (fallbackModels.length > 0) {
+            body.models = [targetModel, ...fallbackModels];
+        }
 
-        for (const model of candidates) {
-            try {
-                return await withRetry(async () => {
-                    try {
-                        // callModel is synchronous in SDK (returns builder/result)
-                        const result = client.callModel({
-                            model: model,
-                            input: config.messages as any,
-                            maxTokens: config.maxTokens,
-                            response_format: config.jsonSchema ? { type: "json_object" } : undefined,
-                            provider: {
-                                order: ["DeepSeek", "Google", "OpenAI", "Anthropic"],
-                                allow_fallbacks: false
-                            }
-                        } as any, { timeoutMs: 60000 }); // 60s timeout
+        // Session ID via HTTP Header usually, but some docs say body? 
+        // Docs say: "Session ID: ... by including the session_id field ... You can also pass this via the x-session-id HTTP header."
+        // We will do both for robustness.
+        if (config.sessionId) {
+            body.session_id = config.sessionId;
+        }
 
-                        // Actual network request happens here
-                        const text = await result.getText();
-                        if (!text) throw new Error("Empty response from LLM");
-                        return text;
+        // Response Format & Structured Outputs
+        if (config.jsonSchema) {
+            body.response_format = {
+                type: "json_schema",
+                json_schema: {
+                    name: "output_schema", // Generic name, required by OpenAI/OR
+                    strict: true,
+                    schema: config.jsonSchema
+                }
+            };
+        }
 
-                    } catch (e: any) {
-                        // Map 404 to explicit error for circuit breakers
-                        if (e.message?.includes("404") || e.status === 404) {
-                            throw new Error(`Model ${model} not found/unavailable (404)`);
-                        }
-                        if (e.message?.includes("402") || e.message?.includes("401") || e.status === 401) {
-                            // Auth/Credits error, do not retry
-                            throw new Error(`OpenRouter Auth/Credit Error: ${e.message}`);
-                        }
-                        throw e;
-                    }
+        // Plugins & Transforms
+        const plugins = config.plugins || [];
+        const transforms = config.transforms || [];
 
-                }, {
-                    maxRetries: 2,
-                    baseDelayMs: 1000,
-                    shouldRetry: (err) => !err.message.includes("Auth/Credit") && !err.message.includes("404")
-                });
+        // Auto-Enable Response Healing if requesting JSON
+        if (config.jsonSchema && !plugins.find(p => p.id === 'response-healing')) {
+            plugins.push({ id: 'response-healing' });
+        }
 
-            } catch (err: any) {
-                console.warn(`[LLM] Model ${model} failed`, err.message);
-                lastError = err;
-                // If it's an auth error, don't try other models
-                if (err.message.includes("Auth/Credit")) throw err;
+        // Auto-Enable Middle-Out if not specified (Standard SOTA behavior)
+        if (!transforms.includes('middle-out')) {
+            transforms.push('middle-out');
+        }
+
+        if (plugins.length > 0) body.plugins = plugins;
+        if (transforms.length > 0) body.transforms = transforms;
+
+        // Provider Routing
+        // Apply routing strategy if no explicit provider config is present
+        if (config.provider) {
+            body.provider = config.provider;
+        } else if (config.routingStrategy) {
+            if (config.routingStrategy === RoutingStrategy.CHEAP) {
+                body.provider = { sort: "price" };
+            } else if (config.routingStrategy === RoutingStrategy.FAST) {
+                body.provider = { sort: "latency" }; // If not using :nitro or fallback
             }
         }
 
-        throw lastError || new Error("All LLM candidates failed");
+        // 4. Execute Fetch
+        return await withRetry(async () => {
+            try {
+                const headers: any = {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://enricher.pro", // Required by OpenRouter
+                    "X-Title": "EnricherPro (Deep Research)"
+                };
+
+                if (config.sessionId) {
+                    headers["X-Session-Id"] = config.sessionId;
+                }
+
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    let errMsg = errText;
+                    try {
+                        const jsonErr = JSON.parse(errText);
+                        errMsg = jsonErr.error?.message || errText;
+                    } catch (e) { /* ignore */ }
+
+                    // Map errors
+                    if (response.status === 402 || response.status === 401) {
+                        throw new Error(`OpenRouter Auth/Credit Error: ${errMsg}`);
+                    }
+                    throw new Error(`OpenRouter API Error (${response.status}): ${errMsg}`);
+                }
+
+                const data = await response.json();
+
+                // Handle non-choice response (should stay robust)
+                if (!data.choices || data.choices.length === 0) {
+                    // Check if it's a processing error or similar
+                    throw new Error("Empty response from LLM (No choices)");
+                }
+
+                const content = data.choices[0].message?.content;
+                if (!content) throw new Error("Empty content in LLM response");
+
+                return content;
+
+            } catch (e: any) {
+                // Determine if retryable
+                // Auth/Credit errors - Stop immediately
+                if (e.message?.includes("Auth/Credit")) throw e;
+                throw e;
+            }
+        }, {
+            maxRetries: 2,
+            baseDelayMs: 1000,
+            shouldRetry: (err) => !err.message.includes("Auth/Credit")
+        });
     }
 }
+

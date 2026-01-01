@@ -43,6 +43,8 @@ export interface SettingsState {
 
     // Preferences
     language: 'en' | 'ru';
+    useSota: boolean;
+    routingPreference: 'performance' | 'cost';
 
     // Actions
     setModel: (model: ModelConfig) => void;
@@ -54,6 +56,7 @@ export interface SettingsState {
     setBlockedDomains: (domains: string[]) => void;
     removeBlockedDomain: (domain: string) => void;
     setLanguage: (lang: 'en' | 'ru') => void;
+    setRoutingPreference: (pref: 'performance' | 'cost') => void;
     resetPrompts: () => void;
 }
 
@@ -231,6 +234,8 @@ export const useSettingsStore = create<SettingsState>()(
                 deep: { maxQueries: 15, limitPerQuery: 8 }
             },
             language: 'en',
+            useSota: false,
+            routingPreference: 'performance',
 
             setModel: (model) => set({ model }),
             setApiKey: (key, value) => set((state) => ({ apiKeys: { ...state.apiKeys, [key]: value } })),
@@ -257,6 +262,7 @@ export const useSettingsStore = create<SettingsState>()(
                 sources: { ...state.sources, blockedDomains: state.sources.blockedDomains.filter(d => d !== domain) }
             })),
             setLanguage: (lang) => set({ language: lang }),
+            setRoutingPreference: (pref) => set({ routingPreference: pref }),
             resetPrompts: () => {
                 const lang = get().language;
                 set((state) => ({

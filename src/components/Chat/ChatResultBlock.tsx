@@ -54,8 +54,8 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                                 </div>
 
                                 <span className={`flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shadow-sm border ${(item.status as any) === 'needs_review'
-                                        ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30'
-                                        : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30'
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30'
+                                    : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30'
                                     }`}>
                                     {(item.status as any) === 'needs_review' && <AlertTriangle className="w-3 h-3" />}
                                     {(item.status as any).replace('_', ' ')}
@@ -82,6 +82,36 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                                     <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">{item.data.consumable_type || 'N/A'}</div>
                                 </div>
                             </div>
+
+                            {/* SOTA: Screenshot & Evidence Preview */}
+                            {(item.data._evidence?.screenshot || Object.keys(item.data._evidence || {}).length > 0) && (
+                                <div className="mb-4 flex gap-2">
+                                    {(item.data._evidence as any)?.screenshot?.value && (
+                                        <div className="relative w-16 h-12 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden group/img cursor-pointer">
+                                            <img
+                                                src={(item.data._evidence as any).screenshot.value}
+                                                alt="Source"
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110"
+                                            />
+                                        </div>
+                                    )}
+                                    <div className="flex-1 flex flex-col justify-center">
+                                        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">
+                                            Evidence
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="flex -space-x-1.5">
+                                                {[1, 2, 3].slice(0, Math.min(3, Object.keys(item.data._evidence || {}).length)).map(i => (
+                                                    <div key={i} className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-900 border border-white dark:border-gray-800 flex items-center justify-center text-[8px] font-bold text-emerald-700 dark:text-emerald-400" />
+                                                ))}
+                                            </div>
+                                            <span className="text-xs text-gray-500">
+                                                {Object.keys(item.data._evidence || {}).length} Verified Points
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Actions Footer */}
                             <div className="mt-auto flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-gray-800/50">

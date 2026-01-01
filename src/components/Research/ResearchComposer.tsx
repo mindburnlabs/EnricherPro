@@ -112,7 +112,7 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
                                         {mode === 'balanced' && '⚖️'}
                                         {mode === 'deep' && '🧠'}
                                     </span>
-                                    <span>{modes.find(m => m.id === mode)?.label.split(' ')[1]}</span>
+                                    <span className="hidden sm:inline">{modes.find(m => m.id === mode)?.label.split(' ')[1]}</span>
                                 </button>
 
                                 {/* Dropdown Menu - Positioned Absolute/Z-Index High */}

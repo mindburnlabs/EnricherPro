@@ -1,6 +1,7 @@
 
 import { BackendLLMService } from "./llm.js";
 import { RetrieverResult } from "../agents/DiscoveryAgent.js";
+import { FallbackResultSchema } from "../../schemas/agent_schemas.js";
 
 export class FallbackSearchService {
     /**
@@ -32,7 +33,7 @@ export class FallbackSearchService {
                     },
                     { role: "user", content: `Search for: "${query}"` }
                 ],
-                jsonSchema: true,
+                jsonSchema: FallbackResultSchema,
                 apiKeys
             });
 

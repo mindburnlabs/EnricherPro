@@ -1,5 +1,6 @@
 
-import { BackendLLMService } from "../backend/llm.js";
+import { BackendLLMService, RoutingStrategy } from "../backend/llm.js";
+import { FirecrawlSchemaSchema } from "../../schemas/agent_schemas.js";
 
 export class EnrichmentAgent {
     /**
@@ -36,7 +37,8 @@ export class EnrichmentAgent {
                     { role: "system", content: systemPrompt },
                     { role: "user", content: "Generate schema." }
                 ],
-                jsonSchema: true
+                jsonSchema: FirecrawlSchemaSchema,
+                routingStrategy: RoutingStrategy.SMART
             });
 
             return JSON.parse(response || "{}");

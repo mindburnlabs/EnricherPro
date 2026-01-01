@@ -2,6 +2,8 @@
 import { BackendFirecrawlService } from "../backend/firecrawl.js";
 import { BackendLLMService } from "../backend/llm.js";
 import { ModelProfile } from "../../config/models.js";
+import { LogisticsSchema } from "../../schemas/agent_schemas.js";
+import { RoutingStrategy } from "../backend/llm.js";
 
 export class LogisticsAgent {
 
@@ -43,13 +45,6 @@ export class LogisticsAgent {
                 2. "Размеры упаковки" (Dimensions) -> normalized to cm (W x D x H).
                 3. "Совместимость" (Compatibility) -> list of printer models.
                 4. "Ресурс" (Yield) -> pages.
-                
-                Return JSON:
-                {
-                    "logistics": { "weight": "0.85 kg", "dimensions": "35x15x10 cm" },
-                    "compatibility": ["Printer 1", "Printer 2"],
-                    "specs": { "yield": "1500 pages", "color": "Black" }
-                }
                 `;
 
                 const extract = await BackendLLMService.complete({
@@ -58,7 +53,8 @@ export class LogisticsAgent {
                         { role: "system", content: systemPrompt },
                         { role: "user", content: text.substring(0, 20000) } // NIX pages can be long
                     ],
-                    jsonSchema: true,
+                    jsonSchema: LogisticsSchema,
+                    routingStrategy: RoutingStrategy.CHEAP, // High volume, low complexity -> CHEAP
                     apiKeys
                 });
 

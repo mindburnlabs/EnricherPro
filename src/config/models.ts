@@ -26,7 +26,6 @@ export const MODEL_CONFIGS = {
     [ModelProfile.REASONING]: {
         candidates: [
             'deepseek/deepseek-r1:free', // Major reasoning model
-            'google/gemini-2.0-flash-thinking-exp:free',
             'google/gemini-2.0-pro-exp-02-05:free'
         ],
         description: "Complex reasoning, conflict resolution, and truth arbitration."
@@ -34,7 +33,7 @@ export const MODEL_CONFIGS = {
     [ModelProfile.PLANNING]: {
         candidates: [
             'deepseek/deepseek-r1:free',
-            'google/gemini-2.0-flash-thinking-exp:free'
+            'google/gemini-2.0-pro-exp-02-05:free'
         ],
         description: "Specialized deep search planning and URL discovery."
     },

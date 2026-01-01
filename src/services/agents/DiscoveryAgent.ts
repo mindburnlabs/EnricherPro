@@ -1,6 +1,8 @@
 
-import { BackendLLMService } from "../backend/llm.js";
+import { BackendLLMService, RoutingStrategy } from "../backend/llm.js";
 import { BackendFirecrawlService } from "../backend/firecrawl.js";
+import { safeJsonParse } from "../../lib/json.js";
+import { ComplexityAnalysisSchema, AgentPlanSchema, ProgressAnalysisSchema, ExpansionSchema } from "../../schemas/agent_schemas.js";
 
 export type ResearchMode = 'fast' | 'balanced' | 'deep';
 
@@ -18,6 +20,11 @@ export interface AgentPlan {
         actions?: any[];
         location?: { country?: string; languages?: string[] };
     }>;
+    suggestedBudget?: {
+        mode: ResearchMode;
+        concurrency: number;
+        depth: number;
+    };
 }
 
 export interface RetrieverResult {
@@ -65,8 +72,67 @@ export class DiscoveryAgent {
         return result;
     }
 
+    static async analyzeRequestComplexity(input: string, apiKeys?: Record<string, string>, model: string = "google/gemini-2.0-flash-exp:free"): Promise<{ mode: ResearchMode, reason: string }> {
+        try {
+            const systemPrompt = `You are a Research Strategist. 
+            Analyze the user's request complexity to determine the optimal research mode.
+            
+            Modes:
+            - FAST: Simple fact lookup, single model ID, specific part number (e.g. "HP 12A weight", "Q2612A specs").
+            - BALANCED: Comparisons, lists of items, generic terms (e.g. "Canon A3 printers", "HP substitutes").
+            - DEEP: Obscure parts, legacy items, complex compatibility, "find all" requests, or detailed technical analysis.
+
+            Return JSON: { "mode": "fast" | "balanced" | "deep", "reason": "..." }
+            `;
+
+            const { ModelProfile } = await import("../../config/models.js");
+            const response = await BackendLLMService.complete({
+                model: model, // Use specific model or fall back to profile if needed
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: input }
+                ],
+                jsonSchema: ComplexityAnalysisSchema,
+                routingStrategy: RoutingStrategy.FAST,
+                apiKeys
+            });
+
+            const parsed = safeJsonParse(response || "{}");
+            return {
+                mode: (parsed.mode as ResearchMode) || 'balanced',
+                reason: parsed.reason || "Default classification"
+            };
+
+        } catch (e) {
+            console.warn("Complexity analysis failed, defaulting to balanced", e);
+            return { mode: 'balanced', reason: "Analysis failed" };
+        }
+    }
+
     static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string, language: string = 'en', model?: string, sourceConfig?: { official: boolean, marketplace: boolean, community: boolean }): Promise<AgentPlan> {
-        onLog?.(`Planning research for "${inputRaw}" in ${mode} mode (${language.toUpperCase()})...`);
+
+        // 0. Auto-Detect Mode (Adaptive Strategy)
+        // If mode is 'balanced' (default), we check if we should upgrade/downgrade based on complexity.
+        // We do not override 'deep' or 'fast' if explicitly requested (assuming strict user intent),
+        // UNLESS the prompt explicitly asks for "smart" behavior which we are baking in.
+        // For now, let's log the suggestion and optionally upgrade 'balanced' -> 'deep' if needed.
+
+        let effectiveMode = mode;
+        let suggestion = null;
+
+        if (mode === 'balanced') {
+            suggestion = await this.analyzeRequestComplexity(inputRaw, apiKeys, "google/gemini-2.0-flash-exp:free");
+            onLog?.(`🧠 Adaptive Strategy: Analyzed request as '${suggestion.mode}' (${suggestion.reason})`);
+            if (suggestion.mode === 'deep') {
+                effectiveMode = 'deep';
+                onLog?.(`🚀 Upgrading mode to DEEP based on complexity.`);
+            } else if (suggestion.mode === 'fast') {
+                effectiveMode = 'fast';
+                onLog?.(`⚡ Optimizing mode to FAST for simple query.`);
+            }
+        }
+
+        onLog?.(`Planning research for "${inputRaw}" in ${effectiveMode} mode (${language.toUpperCase()})...`);
 
         // 1. Pre-process Input
         const knowns = this.parseInput(inputRaw);
@@ -113,8 +179,8 @@ export class DiscoveryAgent {
         - Fast: Quick identification. 2-3 queries.
         - Balanced: Verification. 4-6 queries testing Official vs Retailer data.
         - Deep: "Leave No Stone Unturned". 8-12 queries. MUST traverse English (Official), Russian (Local), and Chinese (OEM) sources.
-
-        Current Mode: ${mode.toUpperCase()}
+        
+        Current Mode: ${effectiveMode.toUpperCase()}
         Target Language: ${language.toUpperCase()}
         
         ${sourceRules}
@@ -190,7 +256,7 @@ export class DiscoveryAgent {
 
     ${sourceRules}
 
-    Текущий Режим: ${mode.toUpperCase()}
+    Текущий Режим: ${effectiveMode.toUpperCase()}
     Целевой Язык: РУССКИЙ (RU)
 
         Входные данные: "${inputRaw}"
@@ -256,7 +322,7 @@ export class DiscoveryAgent {
         const modelsToTry = [
             model || "google/gemini-2.0-flash-exp:free", // Primary
             "google/gemini-2.0-flash-exp:free", // Secondary 
-            "google/gemini-2.0-flash-thinking-exp:free"
+            "google/gemini-2.0-pro-exp-02-05:free" // Replaced invalid 'thinking' model
         ];
 
         // Deduplicate
@@ -270,17 +336,20 @@ export class DiscoveryAgent {
                         { role: "system", content: systemPrompt },
                         { role: "user", content: inputRaw }
                     ],
-                    jsonSchema: true,
+                    jsonSchema: AgentPlanSchema,
+                    // SOTA: Use Web Plugin for Fast mode to better ground strategies
+                    plugins: effectiveMode === 'fast' ? [{ id: "web", max_results: 3 }] : [],
+                    routingStrategy: RoutingStrategy.SMART,
                     maxTokens: 4096, // Cap to fit free tier
                     apiKeys // Pass to service
                 });
 
-                const plan = JSON.parse(response || "{}");
+                const plan = safeJsonParse(response || "{}");
 
                 // ---------------------------------------------------------
                 // "Smarter" Safeguard: Enforce Language Protocol (User: "ALWAYS")
                 // ---------------------------------------------------------
-                if (mode === 'deep' && plan.strategies) {
+                if (effectiveMode === 'deep' && plan.strategies) {
                     const allQueries = plan.strategies.flatMap((s: any) => s.queries || []).join(' ');
 
                     const hasChinese = /[\u4e00-\u9fa5]/.test(allQueries);
@@ -328,6 +397,15 @@ export class DiscoveryAgent {
                     }
                 }
 
+                // Attach suggested budget based on effective mode
+                if (effectiveMode === 'deep') {
+                    plan.suggestedBudget = { mode: 'deep', concurrency: 4, depth: 2 };
+                } else if (effectiveMode === 'fast') {
+                    plan.suggestedBudget = { mode: 'fast', concurrency: 2, depth: 0 };
+                } else {
+                    plan.suggestedBudget = { mode: 'balanced', concurrency: 3, depth: 1 };
+                }
+
                 return plan;
 
             } catch (error) {
@@ -363,7 +441,7 @@ export class DiscoveryAgent {
         model: string = "google/gemini-2.0-flash-exp:free"
     ): Promise<{
         action: 'continue' | 'stop';
-        new_tasks?: Array<{ type: 'query' | 'enrichment' | 'domain_crawl', value: string, meta?: any }>
+        new_tasks?: Array<{ type: 'query' | 'enrichment' | 'domain_crawl' | 'firecrawl_agent', value: string, meta?: any }>
     }> {
         // Circuit Breaker for empty results
         if (currentResults.length === 0) return { action: 'continue', new_tasks: [] };
@@ -396,7 +474,12 @@ export class DiscoveryAgent {
                         "location": { "country": "RU" }
                     }
                 },
-                { "type": "query", "value": "Canon GPR-43 specs pdf" }
+                { "type": "query", "value": "Canon GPR-43 specs pdf" },
+                { 
+                   "type": "firecrawl_agent", 
+                   "value": "Find specific compatibility list for Canon GPR-43 on official site",
+                   "meta": { "schema": { "type": "object", "properties": { "printers": { "type": "array", "items": { "type": "string" } } } } }
+                }
             ]
         }
         `;
@@ -412,10 +495,11 @@ export class DiscoveryAgent {
                     { role: "system", content: systemPrompt },
                     { role: "user", content: `Analyze these results:\n${context}` }
                 ],
-                jsonSchema: true
+                jsonSchema: ProgressAnalysisSchema,
+                routingStrategy: RoutingStrategy.SMART
             });
 
-            const parsed = JSON.parse(response || "{}");
+            const parsed = safeJsonParse(response || "{}");
 
             // Map "enrichment" goals to schemas immediately? 
             // Better: Return the goal, let the workflow use EnrichmentAgent to build the schema.
@@ -489,11 +573,12 @@ export class DiscoveryAgent {
                     { role: "system", content: systemPrompt },
                     { role: "user", content: `Original Query: "${originalQuery}"\n\nSearch Results:\n${context}` }
                 ],
-                jsonSchema: true,
+                jsonSchema: ExpansionSchema,
+                routingStrategy: RoutingStrategy.CHEAP,
                 apiKeys
             });
 
-            const parsed = JSON.parse(response || "[]");
+            const parsed = safeJsonParse(response || "[]");
             return Array.isArray(parsed) ? parsed : (parsed.queries || []);
         } catch (e) {
             console.warn("Expansion analysis failed", e);

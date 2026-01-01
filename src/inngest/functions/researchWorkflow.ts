@@ -81,11 +81,24 @@ export const researchWorkflow = inngest.createFunction(
             }
 
             // Loop Config - Reduced concurrency to avoid 429s on free tier
-            const defaultBudget = { maxQueries: 5, limitPerQuery: 3, concurrency: 2 };
+            // Loop Config - Reduced concurrency to avoid 429s on free tier
+            let defaultBudget = { maxQueries: 5, limitPerQuery: 3, concurrency: 2 };
+            let MAX_LOOPS = mode === 'deep' ? 15 : 5;
+
+            // ADAPTIVE UPGRADE: Override with Agent's suggested budget
+            if (plan.suggestedBudget) {
+                agent.log('discovery', `🎯 Adopting Agent's strategic budget: ${plan.suggestedBudget.mode.toUpperCase()} (Concurrency: ${plan.suggestedBudget.concurrency})`);
+                defaultBudget.concurrency = plan.suggestedBudget.concurrency;
+
+                // Adjust loops/depth based on agent suggestion
+                if (plan.suggestedBudget.mode === 'deep') MAX_LOOPS = 15;
+                else if (plan.suggestedBudget.mode === 'fast') MAX_LOOPS = 2; // Very fast
+                else MAX_LOOPS = 7; // Balanced+
+            }
+
             const budget = (budgets && budgets[mode]) ? { ...defaultBudget, ...budgets[mode] } : defaultBudget;
 
             // Total Execution Limit (Safety valve) - Increased for Parallelism
-            const MAX_LOOPS = mode === 'deep' ? 15 : 5;
             const CONCURRENCY = budget.concurrency || 3;
 
             const allResults: any[] = [];
@@ -458,18 +471,58 @@ export const researchWorkflow = inngest.createFunction(
                 agent.log('discovery', `Executing Batch ${loops}: ${tasks.length} tasks in parallel...`);
 
                 // Execute in parallel
-                const batchResults = await Promise.all(tasks.map(task => processTask(task)));
+                // OPTIMIZATION: Opportunistic Batching for 'url' tasks
+                const urlTasks = tasks.filter(t => t.type === 'url');
+                const otherTasks = tasks.filter(t => t.type !== 'url');
 
-                // Flatten and collect results
-                batchResults.flat().forEach(r => {
-                    allResults.push({
-                        url: r.url,
-                        title: r.title,
-                        markdown: r.markdown,
-                        source_type: r.source_type,
-                        timestamp: new Date().toISOString()
+                // 1. Process Batchable URL Tasks
+                if (urlTasks.length > 0) {
+                    agent.log('discovery', `⚡ Batching ${urlTasks.length} URL scrapes for efficiency...`);
+                    try {
+                        const urls = urlTasks.map(t => t.value);
+                        const batchResults = await BackendFirecrawlService.batchScrape(urls, {
+                            formats: ['markdown'],
+                            // Use meta from first task as representative (imperfect but pragmatic for batches)
+                            location: (urlTasks[0].meta as any)?.location,
+                        });
+
+                        // Map back to results
+                        batchResults.forEach(r => {
+                            if ((r as any).markdown) {
+                                allResults.push({
+                                    url: (r as any).metadata?.sourceURL || (r as any).url, // Fallback
+                                    title: (r as any).metadata?.title || "Batch Scraped Page",
+                                    markdown: (r as any).markdown,
+                                    source_type: 'direct_scrape',
+                                    timestamp: new Date().toISOString()
+                                });
+                            }
+                        });
+
+                        // Mark all as completed
+                        await Promise.all(urlTasks.map(t => FrontierService.complete(t.id, 'completed')));
+
+                    } catch (e) {
+                        console.error("Batch Scrape Failed, falling back to individual processing", e);
+                        // Fallback: Add them back to 'otherTasks' to be processed individually by processTask
+                        otherTasks.push(...urlTasks);
+                    }
+                }
+
+                // 2. Process Other Tasks (and failed batch tasks) individually
+                if (otherTasks.length > 0) {
+                    const batchResults = await Promise.all(otherTasks.map(task => processTask(task)));
+                    // Flatten and collect results
+                    batchResults.flat().forEach(r => {
+                        allResults.push({
+                            url: r.url,
+                            title: r.title,
+                            markdown: r.markdown,
+                            source_type: r.source_type,
+                            timestamp: new Date().toISOString()
+                        });
                     });
-                });
+                }
             }
 
             // Logistics Check (Side-quest)
