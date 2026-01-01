@@ -199,6 +199,15 @@ export class BackendLLMService {
             }
         }
 
+        // Force allow data collection for free models if not explicitly set
+        // Fixes: "No endpoints found matching your data policy (Free model publication)"
+        if (targetModel.endsWith(':free')) {
+            if (!body.provider) body.provider = {};
+            if (!body.provider.data_collection) {
+                body.provider.data_collection = "allow";
+            }
+        }
+
         // 4. Execute Fetch
         return await withRetry(async () => {
             try {
