@@ -39,7 +39,8 @@ export class BackendLLMService {
             try {
                 return await withRetry(async () => {
                     try {
-                        const result = await client.callModel({
+                        // callModel is synchronous in SDK (returns builder/result)
+                        const result = client.callModel({
                             model: model,
                             input: config.messages as any,
                             maxTokens: config.maxTokens,
@@ -48,8 +49,9 @@ export class BackendLLMService {
                                 order: ["DeepSeek", "Google", "OpenAI", "Anthropic"],
                                 allow_fallbacks: false
                             }
-                        } as any); // Type assertion for extra params if not strictly typed in beta SDK
+                        } as any, { timeoutMs: 60000 }); // 60s timeout
 
+                        // Actual network request happens here
                         const text = await result.getText();
                         if (!text) throw new Error("Empty response from LLM");
                         return text;
