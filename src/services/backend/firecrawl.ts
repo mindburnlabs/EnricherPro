@@ -28,7 +28,7 @@ export class BackendFirecrawlService {
                     scrapeOptions: {
                         formats: (options.formats || ['markdown']) as any
                     },
-                });
+                } as any);
 
                 if (result && (result as any).data) {
                     return (result as any).data;
@@ -41,7 +41,17 @@ export class BackendFirecrawlService {
                 }
                 throw error; // Let retry handle others
             }
-        }, { maxRetries: 3, baseDelayMs: 2000 });
+        }, {
+            maxRetries: 3,
+            baseDelayMs: 2000,
+            shouldRetry: (error: any) => {
+                const status = error.status || error.statusCode;
+                // Don't retry client errors (4xx) except 429
+                if (status === 429) return true;
+                if (status >= 400 && status < 500) return false;
+                return true;
+            }
+        });
     }
 
     static async scrape(url: string, formats: string[] = ['markdown']) {
@@ -130,5 +140,51 @@ export class BackendFirecrawlService {
                 throw error;
             }
         }, { maxRetries: 1, baseDelayMs: 5000 }); // Agent is expensive, retry carefully
+    }
+    /**
+     * Maps a website to find all URLs (High Recall)
+     */
+    static async map(url: string, options: { search?: string; limit?: number; country?: string; lang?: string } = {}) {
+        const client = this.getClient();
+        try {
+            // @ts-ignore - SDK types lag
+            const result = await client.map(url, {
+                search: options.search,
+                limit: options.limit || 50,
+                country: options.country,
+                lang: options.lang
+            });
+
+            if (result && (result as any).success) {
+                return (result as any).links || [];
+            }
+            return [];
+        } catch (error) {
+            console.warn(`Firecrawl Map failed for ${url}`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Batch Scrape multiple URLs (High Throughput)
+     */
+    static async batchScrape(urls: string[], options: { formats?: string[], country?: string; lang?: string } = {}) {
+        const client = this.getClient();
+        try {
+            // @ts-ignore
+            const result = await client.batchScrape(urls, {
+                formats: options.formats || ['markdown'],
+                country: options.country,
+                lang: options.lang
+            });
+
+            if (result && (result as any).success) {
+                return (result as any).data || [];
+            }
+            return [];
+        } catch (error) {
+            console.error("Firecrawl Batch Scrape failed", error);
+            throw error;
+        }
     }
 }

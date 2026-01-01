@@ -114,8 +114,18 @@ export const researchWorkflow = inngest.createFunction(
                                 searchOptions.lang = 'en';
                             }
 
+                            // FIRESEARCH UPGRADE: Request Markdown in Search
+                            // This allows us to skip the subsequent 'scrape' step for high-quality results.
+                            searchOptions.formats = ['markdown'];
+
                             const raw = await BackendFirecrawlService.search(task.value, searchOptions);
-                            results = raw.map(r => ({ ...r, source_type: 'web' }));
+
+                            // Map results. If markdown is present, mark as 'distilled_source' or 'direct_scrape'
+                            results = raw.map(r => ({
+                                ...r,
+                                source_type: (r as any).markdown ? 'direct_scrape' : 'web', // Promote to direct_scrape if content exists
+                                markdown: (r as any).markdown // Ensure markdown is passed through
+                            }));
                         } catch (e: any) {
                             // CRITICAL: Explicit Error Handling for User Visibility
                             if (e.statusCode === 429) {
@@ -130,13 +140,45 @@ export const researchWorkflow = inngest.createFunction(
                             results = raw.map(r => ({ ...r, source_type: 'fallback' }));
                         }
                     } else if (task.type === 'domain_crawl') {
-                        agent.log('discovery', `Starting Deep Crawl on ${task.value}...`);
+                        agent.log('discovery', `Starting Deep Map on ${task.value}...`);
                         try {
-                            const siteQuery = `site:${task.value} ${plan.canonical_name || plan.mpn || "specs"}`;
-                            const raw = await BackendFirecrawlService.search(siteQuery, { apiKey: apiKeys?.firecrawl, limit: 10 });
-                            results = raw.map(r => ({ ...r, source_type: 'crawl_result' }));
+                            // FIRESEARCH UPGRADE: Use /map endpoint for high recall
+                            const mapResults = await BackendFirecrawlService.map(task.value, {
+                                limit: 50,
+                                search: plan.canonical_name || undefined // Optional filter
+                            });
+
+                            if (mapResults && mapResults.length > 0) {
+                                agent.log('discovery', `Mapped ${mapResults.length} pages on ${task.value}`);
+                                // We don't have content yet, so we must add them as URL tasks to be scraped.
+                                // Unlike Search+Scrape, Map just gives links.
+                                // We filter them and add to results so the Frontier logic adds them as 'url' tasks?
+                                // No, the current logic adds 'newQueries' to Frontier. 
+                                // We should probably manually inject them into Frontier here or return them as "partial" results 
+                                // that the Expansion logic picks up? 
+
+                                // Better approach: Add them directly to Frontier here to avoid "Analysis" overhead on just links.
+                                const newTasksArg = mapResults.map(l => ({
+                                    type: 'url',
+                                    value: l.url,
+                                    depth: (task.depth || 0) + 1,
+                                    meta: { source: 'map', title: l.title }
+                                }));
+
+                                // Batch add to Frontier (we need to expose batchAdd or just loop)
+                                for (const subTask of newTasksArg) {
+                                    await FrontierService.add(jobId, 'url', subTask.value, 40, subTask.depth, subTask.meta);
+                                }
+
+                                results = []; // We handled them by scheduling tasks.
+                            } else {
+                                // Fallback to site: search if map fails or strictly 0
+                                const siteQuery = `site:${task.value} ${plan.canonical_name || plan.mpn || "specs"}`;
+                                const raw = await BackendFirecrawlService.search(siteQuery, { apiKey: apiKeys?.firecrawl, limit: 10 });
+                                results = raw.map(r => ({ ...r, source_type: 'crawl_result' }));
+                            }
                         } catch (e) {
-                            console.error("Deep Crawl simulation failed", e);
+                            console.error("Deep Crawl/Map failed", e);
                         }
                     } else if (task.type === 'url') {
                         try {
