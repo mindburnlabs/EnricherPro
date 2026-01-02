@@ -369,10 +369,42 @@ export const researchWorkflow = inngest.createFunction(
                                         let res: any[] = [];
                                         for (const [key, val] of Object.entries(obj)) {
                                             const fieldKey = prefix ? `${prefix}.${key}` : key;
-                                            if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-                                                res = res.concat(flatten(val, fieldKey));
+
+                                            // SMART MAPPING: If object has value + evidence + url, map strictly
+                                            if (typeof val === 'object' && val !== null && 'value' in val && ('evidence_snippet' in val || 'source_url' in val)) {
+                                                const v = val as any;
+                                                res.push({
+                                                    field: fieldKey.replace('.value', ''), // Strip .value if caught in recursion, but usually this block handles the parent key
+                                                    value: v.value,
+                                                    confidence: 0.95, // High confidence for Agent extraction
+                                                    rawSnippet: v.evidence_snippet || "Agent Extraction",
+                                                    sourceUrl: v.source_url || r.url
+                                                });
+                                            }
+                                            // Recursion for arrays or nested objects
+                                            else if (typeof val === 'object' && val !== null) {
+                                                if (Array.isArray(val)) {
+                                                    // For arrays, if items are objects with evidence, we might need complex handling.
+                                                    // For now, simple recursion.
+                                                    val.forEach((item, idx) => {
+                                                        if (typeof item === 'object' && ('evidence_snippet' in item || 'source_url' in item)) {
+                                                            // It's a structured item in a list (e.g. faq item)
+                                                            // We can't flatten list items easily into single KV pairs without ID. 
+                                                            // So we treat the whole item as the value, but try to attach evidence?
+                                                            // Actually, for FAQs, we usually store the whole array.
+                                                            // Let's just push the whole array as one claim if it's a known complex type?
+                                                            // Or recurse with index.
+                                                            res = res.concat(flatten(item, `${fieldKey}[${idx}]`));
+                                                        } else {
+                                                            res = res.concat(flatten(item, `${fieldKey}[${idx}]`));
+                                                        }
+                                                    });
+                                                } else {
+                                                    res = res.concat(flatten(val, fieldKey));
+                                                }
                                             } else {
-                                                res.push({ field: fieldKey, value: val, confidence: 0.9, rawSnippet: "Agent Output" });
+                                                // Primitive value
+                                                res.push({ field: fieldKey, value: val, confidence: 0.9, rawSnippet: "Agent Extraction", sourceUrl: r.url });
                                             }
                                         }
                                         return res;
