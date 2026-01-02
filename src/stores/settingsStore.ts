@@ -31,6 +31,9 @@ export interface SettingsState {
         marketplace: boolean;
         community: boolean;
         blockedDomains: string[];
+        specificOfficial: string[];
+        specificMarketplace: string[];
+        specificCommunity: string[];
     };
 
     // Budgets/Modes
@@ -63,6 +66,9 @@ export interface SettingsState {
     setRoutingPreference: (pref: 'performance' | 'cost') => void;
     setUseSota: (enabled: boolean) => void;
     setAgentModel: (agent: 'planning' | 'extraction' | 'reasoning', model: string) => void;
+    // Granular Source Control
+    setSpecificDomains: (type: 'official' | 'marketplace' | 'community', domains: string[]) => void;
+
     resetPrompts: () => void;
 }
 
@@ -231,7 +237,10 @@ export const useSettingsStore = create<SettingsState>()(
                 official: true,
                 marketplace: true,
                 community: true,
-                blockedDomains: ['pinterest.com', 'youtube.com']
+                blockedDomains: ['pinterest.com', 'youtube.com'],
+                specificOfficial: [],
+                specificMarketplace: [],
+                specificCommunity: []
             },
             budgets: {
                 fast: { maxQueries: 3, limitPerQuery: 3 },
@@ -249,10 +258,7 @@ export const useSettingsStore = create<SettingsState>()(
             setModel: (model) => set({ model }),
             setApiKey: (key, value) => set((state) => ({ apiKeys: { ...state.apiKeys, [key]: value } })),
             setPrompt: (agent, value) => set((state) => ({ prompts: { ...state.prompts, [agent]: value } })),
-            setAgentModel: (agent, model) => set((state) => {
-                const key = `${agent}Model` as keyof SettingsState;
-                return { [key]: model } as Partial<SettingsState>;
-            }),
+            // setAgentModel handled below
             setBudget: (mode, field, value) => set((state) => ({
                 budgets: {
                     ...state.budgets,
@@ -277,6 +283,15 @@ export const useSettingsStore = create<SettingsState>()(
             setLanguage: (lang) => set({ language: lang }),
             setRoutingPreference: (pref) => set({ routingPreference: pref }),
             setUseSota: (useSota) => set({ useSota }),
+            setAgentModel: (agent, model) => set((state) => ({
+                [agent === 'planning' ? 'planningModel' : agent === 'extraction' ? 'extractionModel' : 'reasoningModel']: model
+            })),
+            setSpecificDomains: (type, domains) => set((state) => ({
+                sources: {
+                    ...state.sources,
+                    [type === 'official' ? 'specificOfficial' : type === 'marketplace' ? 'specificMarketplace' : 'specificCommunity']: domains
+                }
+            })),
             resetPrompts: () => {
                 const lang = get().language;
                 set((state) => ({
@@ -300,6 +315,11 @@ export const useSettingsStore = create<SettingsState>()(
                     if (!state.extractionModel) state.extractionModel = 'openrouter/auto';
                     if (!state.reasoningModel) state.reasoningModel = 'openrouter/auto';
                     if (state.useSota === undefined) state.useSota = false;
+
+                    // Migration for Specific Domains
+                    if (!state.sources.specificOfficial) state.sources.specificOfficial = [];
+                    if (!state.sources.specificMarketplace) state.sources.specificMarketplace = [];
+                    if (!state.sources.specificCommunity) state.sources.specificCommunity = [];
 
                     // SCRUBBER: Remove phantom 'openai/gpt-5.2' and legacy Gemini defaults
                     const invalidModelIds = ['openai/gpt-5.2', 'google/gemini-2.0-pro-exp-02-05:free', 'google/gemini-2.0-flash-exp:free'];

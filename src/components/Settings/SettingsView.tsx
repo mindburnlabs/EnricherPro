@@ -71,7 +71,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
             localConfig.extractionModel !== store.extractionModel ||
             localConfig.reasoningModel !== store.reasoningModel ||
             localConfig.language !== store.language ||
-            (localConfig.useSota ?? false) !== (store.useSota ?? false);
+            (localConfig.useSota ?? false) !== (store.useSota ?? false) ||
+            JSON.stringify(localConfig.sources.specificOfficial) !== JSON.stringify(store.sources.specificOfficial) ||
+            JSON.stringify(localConfig.sources.specificMarketplace) !== JSON.stringify(store.sources.specificMarketplace) ||
+            JSON.stringify(localConfig.sources.specificCommunity) !== JSON.stringify(store.sources.specificCommunity);
         setHasChanges(isDifferent);
     }, [localConfig, store]);
 
@@ -95,6 +98,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
         if (localConfig.sources.official !== store.sources.official) store.toggleSource('official');
         if (localConfig.sources.marketplace !== store.sources.marketplace) store.toggleSource('marketplace');
         if (localConfig.sources.community !== store.sources.community) store.toggleSource('community');
+
+        store.setSpecificDomains('official', localConfig.sources.specificOfficial);
+        store.setSpecificDomains('marketplace', localConfig.sources.specificMarketplace);
+        store.setSpecificDomains('community', localConfig.sources.specificCommunity);
 
         // Budgets
         (['fast', 'balanced', 'deep'] as const).forEach(mode => {
@@ -396,23 +403,32 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                             <div className="space-y-8 max-w-2xl animate-in slide-in-from-right-4 duration-300">
                                 <Section title={t('settings:sources.allowed_types')}>
                                     <div className="grid grid-cols-1 gap-3">
-                                        <ToggleRow
+                                        <SourceCard
                                             label={t('settings:sources.official')}
                                             desc={t('settings:sources.official_desc')}
                                             active={localConfig.sources.official}
                                             onToggle={() => setLocalConfig(prev => ({ ...prev, sources: { ...prev.sources, official: !prev.sources.official } }))}
+                                            specificDomains={localConfig.sources.specificOfficial || []}
+                                            onSpecificDomainsChange={(domains) => setLocalConfig(prev => ({ ...prev, sources: { ...prev.sources, specificOfficial: domains } }))}
+                                            placeholder="hp.com, canon.com, support.epson.ru"
                                         />
-                                        <ToggleRow
+                                        <SourceCard
                                             label={t('settings:sources.marketplace')}
                                             desc={t('settings:sources.marketplace_desc')}
                                             active={localConfig.sources.marketplace}
                                             onToggle={() => setLocalConfig(prev => ({ ...prev, sources: { ...prev.sources, marketplace: !prev.sources.marketplace } }))}
+                                            specificDomains={localConfig.sources.specificMarketplace || []}
+                                            onSpecificDomainsChange={(domains) => setLocalConfig(prev => ({ ...prev, sources: { ...prev.sources, specificMarketplace: domains } }))}
+                                            placeholder="amazon.com, wildberries.ru, ozon.ru"
                                         />
-                                        <ToggleRow
+                                        <SourceCard
                                             label={t('settings:sources.community')}
                                             desc={t('settings:sources.community_desc')}
                                             active={localConfig.sources.community}
                                             onToggle={() => setLocalConfig(prev => ({ ...prev, sources: { ...prev.sources, community: !prev.sources.community } }))}
+                                            specificDomains={localConfig.sources.specificCommunity || []}
+                                            onSpecificDomainsChange={(domains) => setLocalConfig(prev => ({ ...prev, sources: { ...prev.sources, specificCommunity: domains } }))}
+                                            placeholder="reddit.com, fixyourownprinter.com, startcopy.ru"
                                         />
                                     </div>
                                 </Section>
