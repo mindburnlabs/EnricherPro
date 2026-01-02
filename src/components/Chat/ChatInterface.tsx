@@ -113,7 +113,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
                         community: config.sources.community,
                         search: true
                     },
-                    blockedDomains: config.sources.blockedDomains
+                    blockedDomains: config.sources.blockedDomains,
+                    specificOfficial: config.sources.specificOfficial,
+                    specificMarketplace: config.sources.specificMarketplace,
+                    specificCommunity: config.sources.specificCommunity
                 },
                 budgets: config.budgets,
                 previousJobId,
