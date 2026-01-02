@@ -109,7 +109,7 @@ export class DiscoveryAgent {
         }
     }
 
-    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string, language: string = 'en', model?: string, sourceConfig?: { official: boolean, marketplace: boolean, community: boolean }): Promise<AgentPlan> {
+    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string, language: string = 'en', model?: string, sourceConfig?: { official: boolean, marketplace: boolean, community: boolean, specificOfficial?: string[], specificMarketplace?: string[], specificCommunity?: string[] }): Promise<AgentPlan> {
 
         // 0. Auto-Detect Mode (Adaptive Strategy)
         // If mode is 'balanced' (default), we check if we should upgrade/downgrade based on complexity.
@@ -150,11 +150,17 @@ export class DiscoveryAgent {
         }
 
         // Source Constraints
+        const formatSourceRule = (name: string, allowed: boolean, specifics?: string[], forbiddenMsg: string = "FORBIDDEN") => {
+            if (!allowed) return `- ${name}: ${forbiddenMsg}`;
+            if (specifics && specifics.length > 0) return `- ${name}: ALLOWED (STRICTLY FOCUS ON: ${specifics.join(', ')})`;
+            return `- ${name}: ALLOWED`;
+        };
+
         const sourceRules = sourceConfig ? `
         SOURCE CONSTRAINTS (USER OVERRIDES):
-        - Official Sources (hp.com, canon.com, etc): ${sourceConfig.official ? "ALLOWED" : "FORBIDDEN (Do not generate queries for official sites)"}
-        - Marketplaces (Amazon, Alibaba, Wildberries): ${sourceConfig.marketplace ? "ALLOWED" : "FORBIDDEN (Do not generate queries for marketplaces)"}
-        - Community/Forums (Reddit, FixYourOwnPrinter): ${sourceConfig.community ? "ALLOWED" : "FORBIDDEN (Do not generate queries for forums)"}
+        ${formatSourceRule("Official Sources (hp.com, canon.com, etc)", sourceConfig.official, sourceConfig.specificOfficial, "FORBIDDEN (Do not generate queries for official sites)")}
+        ${formatSourceRule("Marketplaces (Amazon, Alibaba, Wildberries)", sourceConfig.marketplace, sourceConfig.specificMarketplace, "FORBIDDEN (Do not generate queries for marketplaces)")}
+        ${formatSourceRule("Community/Forums (Reddit, FixYourOwnPrinter)", sourceConfig.community, sourceConfig.specificCommunity, "FORBIDDEN (Do not generate queries for forums)")}
         ` : "";
 
         // Dynamic Language Rules

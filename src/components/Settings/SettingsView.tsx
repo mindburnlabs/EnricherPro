@@ -587,3 +587,51 @@ const PromptEditor: React.FC<{ label: string; value: string; onChange: (v: strin
         />
     </div>
 );
+
+const SourceCard: React.FC<{
+    label: string;
+    desc: string;
+    active: boolean;
+    onToggle: () => void;
+    specificDomains: string[];
+    onSpecificDomainsChange: (domains: string[]) => void;
+    placeholder: string;
+}> = ({ label, desc, active, onToggle, specificDomains, onSpecificDomainsChange, placeholder }) => (
+    <div className={`rounded-xl border transition-all ${active
+        ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'
+        : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 opacity-75 grayscale'
+        }`}>
+        <button
+            onClick={onToggle}
+            className="w-full flex items-start justify-between p-4 text-left"
+        >
+            <div>
+                <div className="flex items-center gap-2">
+                    <span className={`text-sm font-bold ${active ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{label}</span>
+                    {active && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold">ON</span>}
+                </div>
+                <p className="text-xs text-gray-500 mt-1 max-w-[200px] sm:max-w-xs">{desc}</p>
+            </div>
+            <div className={`w-11 h-6 rounded-full flex items-center transition-colors p-1 mt-1 ${active ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${active ? 'translate-x-5' : ''}`} />
+            </div>
+        </button>
+
+        {active && (
+            <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-200">
+                <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/30">
+                    <label className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 mb-1.5 block">
+                        Allow Only Specific Domains (Optional)
+                    </label>
+                    <textarea
+                        value={specificDomains.join(', ')}
+                        onChange={(e) => onSpecificDomainsChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                        placeholder={placeholder}
+                        className="w-full bg-white dark:bg-black border border-emerald-100 dark:border-emerald-900/50 rounded-lg p-2 text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none h-16 resize-none"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">Leave empty to allow all {label} sources.</p>
+                </div>
+            </div>
+        )}
+    </div>
+);
