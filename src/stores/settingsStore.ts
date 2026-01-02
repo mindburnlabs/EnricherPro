@@ -299,6 +299,7 @@ export const useSettingsStore = create<SettingsState>()(
                     if (!state.planningModel) state.planningModel = 'openrouter/auto';
                     if (!state.extractionModel) state.extractionModel = 'openrouter/auto';
                     if (!state.reasoningModel) state.reasoningModel = 'openrouter/auto';
+                    if (state.useSota === undefined) state.useSota = false;
 
                     // SCRUBBER: Remove phantom 'openai/gpt-5.2' and legacy Gemini defaults
                     const invalidModelIds = ['openai/gpt-5.2', 'google/gemini-2.0-pro-exp-02-05:free', 'google/gemini-2.0-flash-exp:free'];

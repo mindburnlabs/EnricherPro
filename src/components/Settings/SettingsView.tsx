@@ -71,7 +71,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
             localConfig.extractionModel !== store.extractionModel ||
             localConfig.reasoningModel !== store.reasoningModel ||
             localConfig.language !== store.language ||
-            localConfig.useSota !== store.useSota;
+            (localConfig.useSota ?? false) !== (store.useSota ?? false);
         setHasChanges(isDifferent);
     }, [localConfig, store]);
 
