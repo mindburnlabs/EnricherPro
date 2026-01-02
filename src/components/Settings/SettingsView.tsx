@@ -273,107 +273,60 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
 
                         {activeTab === 'models' && (
                             <div className="space-y-6 max-w-2xl animate-in slide-in-from-right-4 duration-300">
-                                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10 rounded-2xl p-6 border border-emerald-100 dark:border-emerald-900/30">
-                                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                        <Database className="w-5 h-5 text-emerald-600" />
-                                        {t('settings:models.title')}
-                                    </h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 mb-4">
-                                        {t('settings:models.desc')}
-                                    </p>
-
-                                    <div className="flex gap-2">
-                                        <div className="flex-1 relative group">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
-                                            <input
-                                                type="text"
-                                                value={modelSearch}
-                                                onChange={(e) => setModelSearch(e.target.value)}
-                                                placeholder={localConfig.model.id}
-                                                className="w-full bg-white dark:bg-black border border-emerald-200 dark:border-emerald-800 rounded-xl pl-10 pr-4 py-3 text-sm font-mono shadow-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                                            />
-                                            {!modelSearch && (
-                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium pointer-events-none opacity-60">
-                                                    {t('settings:models.active')}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <button
-                                            onClick={fetchModels}
-                                            disabled={isFetchingModels}
-                                            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                        >
-                                            {isFetchingModels ? <RefreshCw className="w-5 h-5 animate-spin text-emerald-500" /> : <RefreshCw className="w-5 h-5 text-gray-500" />}
-                                        </button>
-                                    </div>
-
-                                    {availableModels.length > 0 && (
-                                        <div className="mt-4 max-h-64 overflow-y-auto border border-gray-100 dark:border-gray-800 rounded-xl custom-scrollbar">
-                                            {availableModels
-                                                .filter(m => !modelSearch || m.id.toLowerCase().includes(modelSearch.toLowerCase()) || (m.name && m.name.toLowerCase().includes(modelSearch.toLowerCase())))
-                                                .map(model => (
-                                                    <button
-                                                        key={model.id}
-                                                        onClick={() => {
-                                                            setLocalConfig({ ...localConfig, model: { id: model.id, name: model.name } });
-                                                            setModelSearch(''); // Clear search to show new active model as placeholder
-                                                        }}
-                                                        className={`w-full text-left px-4 py-3 text-xs font-mono border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 flex justify-between group ${localConfig.model.id === model.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400'}`}
-                                                    >
-                                                        <span className="truncate pr-4">{model.id}</span>
-                                                        {localConfig.model.id === model.id && <Check className="w-3 h-3 flex-shrink-0" />}
-                                                    </button>
-                                                ))}
-                                            {availableModels.filter(m => !modelSearch || m.id.toLowerCase().includes(modelSearch.toLowerCase())).length === 0 && (
-                                                <div className="p-4 text-center text-xs text-gray-400 italic">
-                                                    No models match "{modelSearch}"
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {availableModels.length === 0 && !isFetchingModels && (
-                                        <p className="text-xs text-gray-500 mt-2">
-                                            {t('settings:models.fetch_tip')}
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                            <Brain className="w-5 h-5 text-emerald-600" />
+                                            {t('settings:models.title')}
+                                        </h4>
+                                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                            Configure the intelligence engine for each specific agent.
                                         </p>
-                                    )}
+                                    </div>
+                                    <button
+                                        onClick={fetchModels}
+                                        disabled={isFetchingModels}
+                                        className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                        title={t('settings:models.fetch_tip')}
+                                    >
+                                        {isFetchingModels ? <RefreshCw className="w-4 h-4 animate-spin text-emerald-500" /> : <RefreshCw className="w-4 h-4 text-gray-500" />}
+                                    </button>
                                 </div>
 
-                                {/* Agent Specific Models */}
                                 <div className="space-y-4">
-                                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                        <Brain className="w-5 h-5 text-purple-600" />
-                                        For Advanced Users: Agent-Specific Models
-                                    </h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                                        Override models for specific stages of the research pipeline.
-                                    </p>
+                                    <ModelSelector
+                                        label="Discovery Agent (Planner)"
+                                        desc="Responsible for analyzing requests, generating search strategies, and coordinating deep crawls."
+                                        value={localConfig.planningModel}
+                                        onChange={(val) => setLocalConfig(prev => ({ ...prev, planningModel: val }))}
+                                        models={availableModels}
+                                        defaultModel="openrouter/auto"
+                                    />
+                                    <ModelSelector
+                                        label="Extraction Agent (Parser)"
+                                        desc="Responsible for cleaning messy HTML and extracting strict data (Logistics, Specs) from NIX.ru, HP, etc."
+                                        value={localConfig.extractionModel}
+                                        onChange={(val) => setLocalConfig(prev => ({ ...prev, extractionModel: val }))}
+                                        models={availableModels}
+                                        defaultModel="google/gemini-2.0-pro-exp-02-05:free"
+                                    />
+                                    <ModelSelector
+                                        label="Synthesis Agent (Reasoner)"
+                                        desc="Responsible for merging conflicting data, resolving duplications, and writing the final answer."
+                                        value={localConfig.reasoningModel}
+                                        onChange={(val) => setLocalConfig(prev => ({ ...prev, reasoningModel: val, model: { id: val, name: val } }))} // Sync main model with reasoning for now
+                                        models={availableModels}
+                                        defaultModel="openrouter/auto"
+                                    />
+                                </div>
 
-                                    <div className="grid grid-cols-1 gap-4">
-                                        <ModelSelector
-                                            label="Planning Agent"
-                                            desc="Responsible for search strategy and query generation."
-                                            value={localConfig.planningModel}
-                                            onChange={(val) => setLocalConfig(prev => ({ ...prev, planningModel: val }))}
-                                            models={availableModels}
-                                            defaultModel="openrouter/auto"
-                                        />
-                                        <ModelSelector
-                                            label="Extraction Agent"
-                                            desc="Parses messy HTML into structured JSON. Stronger models recommended for Russian/Chinese data."
-                                            value={localConfig.extractionModel}
-                                            onChange={(val) => setLocalConfig(prev => ({ ...prev, extractionModel: val }))}
-                                            models={availableModels}
-                                            defaultModel="google/gemini-2.0-pro-exp-02-05:free"
-                                        />
-                                        <ModelSelector
-                                            label="Reasoning Agent"
-                                            desc="Synthesizes data, resolves conflicts, and generates final output."
-                                            value={localConfig.reasoningModel}
-                                            onChange={(val) => setLocalConfig(prev => ({ ...prev, reasoningModel: val }))}
-                                            models={availableModels}
-                                            defaultModel="openrouter/auto"
-                                        />
+                                <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-xl flex gap-3">
+                                    <Zap className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                                    <div>
+                                        <p className="text-sm font-bold text-blue-900 dark:text-blue-100">Pro Tip</p>
+                                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                                            Use <b>google/gemini-2.0-flash-exp:free</b> for Planning (Speed) and <b>anthropic/claude-3.5-sonnet</b> for Synthesis (Quality).
+                                        </p>
                                     </div>
                                 </div>
                             </div>
