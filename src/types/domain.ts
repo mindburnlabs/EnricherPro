@@ -30,7 +30,7 @@ export interface DataSource {
     timestamp: Date;
     dataConfirmed: string[];
     confidence: number;
-    sourceType: 'nix_ru' | 'official' | 'compatibility_db' | 'marketplace' | 'google_search' | 'perplexity_sonar' | 'firecrawl_agent' | 'other';
+    sourceType: 'nix_ru' | 'official' | 'compatibility_db' | 'marketplace' | 'google_search' | 'firecrawl_agent' | 'other';
     extractionMethod: string;
     rawData?: string;
     processingDuration?: number;

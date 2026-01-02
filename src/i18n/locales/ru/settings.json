@@ -27,8 +27,7 @@
     "api": {
         "security_note": "API ключи хранятся в вашем браузере.",
         "firecrawl": "API Ключ Firecrawl",
-        "openrouter": "API Ключ OpenRouter",
-        "perplexity": "API Ключ Perplexity"
+        "openrouter": "API Ключ OpenRouter"
     },
     "modes": {
         "fast": "Быстрый",

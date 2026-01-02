@@ -101,8 +101,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
             const res = await triggerResearch(queryText, mode, {
                 apiKeys: {
                     firecrawl: config.apiKeys.firecrawl,
-                    openrouter: config.apiKeys.openRouter,
-                    perplexity: config.apiKeys.perplexity
+                    openrouter: config.apiKeys.openRouter
                 },
                 agentConfig: {
                     prompts: config.prompts

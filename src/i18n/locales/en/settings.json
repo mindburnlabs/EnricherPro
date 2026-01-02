@@ -27,8 +27,7 @@
     "api": {
         "security_note": "API keys are stored in your browser.",
         "firecrawl": "Firecrawl API Key",
-        "openrouter": "OpenRouter API Key",
-        "perplexity": "Perplexity API Key"
+        "openrouter": "OpenRouter API Key"
     },
     "modes": {
         "fast": "Fast",
