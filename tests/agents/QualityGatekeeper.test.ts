@@ -1,6 +1,11 @@
-
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { QualityGatekeeper } from '../../src/services/agents/QualityGatekeeper.js';
+
+vi.mock('../../src/services/backend/DeduplicationService.js', () => ({
+    DeduplicationService: {
+        findPotentialDuplicate: vi.fn().mockResolvedValue(null)
+    }
+}));
 
 describe('QualityGatekeeper', () => {
 

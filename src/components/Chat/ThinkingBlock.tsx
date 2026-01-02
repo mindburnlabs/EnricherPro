@@ -10,7 +10,10 @@ interface ThinkingBlockProps {
     isExpandedDefault?: boolean;
 }
 
+import { useTranslation } from 'react-i18next';
+
 export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({ steps, logs, status, isExpandedDefault = false }) => {
+    const { t } = useTranslation('common');
     const [isExpanded, setIsExpanded] = useState(isExpandedDefault || status === 'running');
     const [elapsed, setElapsed] = useState(0);
 
@@ -53,7 +56,9 @@ export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({ steps, logs, statu
 
                     <div className="flex flex-col items-start gap-0.5">
                         <span className="font-semibold text-sm text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                            {status === 'running' ? activeStep?.label || 'Thinking...' : 'Research Complete'}
+                            {status === 'running'
+                                ? (activeStep?.label ? t(`progress.steps.${activeStep.id}`, activeStep.label) : t('progress.thinking', 'Thinking...'))
+                                : t('progress.complete', 'Research Complete')}
                             {status === 'running' && (
                                 <span className="text-xs font-mono text-gray-400 font-normal ml-1">
                                     {elapsed.toFixed(1)}s
@@ -61,7 +66,7 @@ export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({ steps, logs, statu
                             )}
                         </span>
                         <span className="text-xs text-gray-400 font-medium">
-                            {completedCount} steps &bull; {sourcesFound} sources found
+                            {completedCount} {t('progress.steps_count', 'steps')} &bull; {sourcesFound} {t('progress.sources_found', 'sources found')}
                         </span>
                     </div>
                 </div>
@@ -112,7 +117,7 @@ export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({ steps, logs, statu
                                         </div>
 
                                         <span className={`text-sm font-medium transition-colors duration-300 ${isCurrent ? 'text-emerald-700 dark:text-emerald-400' : isDone ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600'}`}>
-                                            {step.label}
+                                            {t(`progress.steps.${step.id}`, step.label)}
                                         </span>
 
                                         {/* Show relevant logs for this step using a Carousel-like fade effect */}

@@ -48,5 +48,27 @@
         "save": "Сохранить",
         "search": "Поиск",
         "clear": "Очистить"
+    },
+    "progress": {
+        "thinking": "Думаю...",
+        "complete": "Исследование завершено",
+        "steps_count": "этапов",
+        "sources_found": "источников найдено",
+        "steps": {
+            "normalization": "Нормализация",
+            "parsing": "Парсинг запроса",
+            "discovery": "Первичное обнаружение",
+            "searching": "Поиск",
+            "filtering": "Фильтрация",
+            "scraping_nix": "Сканирование NIX.ru",
+            "scraping_compat": "Анализ совместимости",
+            "enrichment": "Глубокое обогащение",
+            "analyzing": "Синтез данных",
+            "auditing_images": "Аудит изображений",
+            "finalizing": "Финализация",
+            "gate_check": "Контроль качества",
+            "complete": "Готово",
+            "failed": "Ошибка"
+        }
     }
 }

@@ -5,36 +5,46 @@ export const safeJsonParse = <T = any>(text: string, fallback: T | null = null):
 
         // Strip Common "Note:" or generic conversational text if mostly code
         // Simple heuristic: If it starts with "Here is", find the first { or [
+        // Type-aware Bracket Matching
         const firstBrace = clean.indexOf('{');
         const firstBracket = clean.indexOf('[');
 
-        let startIdx = 0;
+        // Determine type based on what comes first
+        let isObject = false;
+        let startIdx = -1;
+
+        // If both exist
         if (firstBrace > -1 && firstBracket > -1) {
-            startIdx = Math.min(firstBrace, firstBracket);
+            if (firstBrace < firstBracket) {
+                isObject = true;
+                startIdx = firstBrace;
+            } else {
+                isObject = false;
+                startIdx = firstBracket;
+            }
         } else if (firstBrace > -1) {
+            isObject = true;
             startIdx = firstBrace;
         } else if (firstBracket > -1) {
+            isObject = false;
             startIdx = firstBracket;
         }
 
-        if (startIdx > 0) {
+        if (startIdx > -1) {
             clean = clean.substring(startIdx);
-        }
 
-        // Handle trailing text
-        const lastBrace = clean.lastIndexOf('}');
-        const lastBracket = clean.lastIndexOf(']');
-        let endIdx = clean.length;
+            // Re-calculate end index based on type
+            const lastBrace = clean.lastIndexOf('}');
+            const lastBracket = clean.lastIndexOf(']');
 
-        if (lastBrace > -1 && lastBracket > -1) {
-            endIdx = Math.max(lastBrace, lastBracket) + 1;
-        } else if (lastBrace > -1) {
-            endIdx = lastBrace + 1;
-        } else if (lastBracket > -1) {
-            endIdx = lastBracket + 1;
-        }
+            let endIdx = clean.length;
 
-        if (endIdx < clean.length) {
+            if (isObject && lastBrace > -1) {
+                endIdx = lastBrace + 1;
+            } else if (!isObject && lastBracket > -1) {
+                endIdx = lastBracket + 1;
+            }
+
             clean = clean.substring(0, endIdx);
         }
 

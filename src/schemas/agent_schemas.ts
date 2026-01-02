@@ -210,6 +210,10 @@ export const ConsumableDataSchema = {
             type: "array",
             items: { type: "string" }
         },
+        gtin: {
+            type: "array",
+            items: { type: "string" }
+        },
         compatible_printers_ru: {
             type: "array",
             items: {
@@ -257,6 +261,34 @@ export const ConsumableDataSchema = {
     },
     required: ["brand", "mpn_identity", "aliases", "compatible_printers_ru", "logistics", "_evidence"],
     additionalProperties: false
+};
+
+// Extend the schema for High-Fidelity Data (FAQ, Related, Short Model)
+(ConsumableDataSchema.properties as any).short_model = { type: ["string", "null"] };
+(ConsumableDataSchema.properties as any).faq = {
+    type: "array",
+    items: {
+        type: "object",
+        properties: {
+            question: { type: "string" },
+            answer: { type: "string" }
+        },
+        required: ["question", "answer"],
+        additionalProperties: false
+    }
+};
+(ConsumableDataSchema.properties as any).related_ids = {
+    type: "array",
+    items: {
+        type: "object",
+        properties: {
+            id: { type: "string", description: "MPN or Short Name" },
+            type: { type: "string", enum: ["drum", "toner", "maintenance", "chip", "other"] },
+            reason: { type: "string" }
+        },
+        required: ["id", "type"],
+        additionalProperties: false
+    }
 };
 
 // --- SOTA: Strict Meta-Schema for EnrichmentAgent (Schema-of-a-Schema) ---

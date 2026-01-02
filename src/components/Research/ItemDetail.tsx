@@ -67,139 +67,250 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
         </div>
     );
 
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+        <div className="h-full w-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col shadow-2xl z-40 relative">
 
-            <div className="bg-white dark:bg-gray-900 w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden relative animate-in zoom-in-95 duration-200 flex flex-col">
+            {/* Header */}
+            <div className="flex-none p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-start bg-white dark:bg-gray-900">
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {data.mpn_identity.mpn || t('identity.mpn')}
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-1">{data.mpn_identity.canonical_model_name}</p>
+                </div>
+                <div className="flex gap-2">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-500 transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
 
-                {/* Header */}
-                <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-start bg-white dark:bg-gray-900 sticky top-0 z-10">
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {data.mpn_identity.mpn || t('identity.mpn')}
-                        </h2>
-                        <p className="text-gray-500">{data.mpn_identity.canonical_model_name}</p>
+            {/* Sticky Action Bar */}
+            <div className="flex-none p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 flex justify-end">
+                <button
+                    onClick={() => onApprove(item.id)}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-2"
+                >
+                    <Check className="w-4 h-4" /> {t('header.approve')}
+                </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+
+                // Images Grid with Error Handling
+                {data.images && data.images.filter(img => img.url).length > 0 && (
+                    <div className="grid grid-cols-2 gap-4">
+                        {data.images.slice(0, 4).map((img, idx) => (
+                            <div key={idx} className="aspect-square bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 relative group">
+                                <img
+                                    src={img.url}
+                                    alt={t('image.alt', 'Product Image')}
+                                    referrerPolicy="no-referrer"
+                                    className="w-full h-full object-contain p-2 hover:scale-105 transition-transform"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                        (e.target as HTMLImageElement).parentElement!.classList.add('hidden');
+                                    }}
+                                />
+                            </div>
+                        ))}
                     </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => onApprove(item.id)}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
-                        >
-                            <Check className="w-4 h-4" /> {t('header.approve')}
-                        </button>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-500">
-                            <X className="w-5 h-5" />
-                        </button>
+                )}
+
+                {/* Identity Section */}
+                <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
+                        {t('identity.title')}
+                    </h3>
+                    <div className="grid grid-cols-1 gap-3">
+                        <EvidenceRow
+                            label={t('identity.brand')}
+                            value={data.brand || t('common.unknown_brand', 'Unknown')}
+                            fieldEnv={evidence['brand']}
+                            fieldKey="brand"
+                        />
+                        <EvidenceRow
+                            label={t('identity.mpn')}
+                            value={data.mpn_identity.mpn}
+                            fieldEnv={evidence['mpn_identity.mpn']}
+                            fieldKey="mpn_identity.mpn"
+                        />
+                        {data.short_model && (
+                            <EvidenceRow
+                                label={t('identity.short_model', 'Short Model')}
+                                value={data.short_model}
+                                fieldEnv={evidence['short_model']}
+                                fieldKey="short_model"
+                            />
+                        )}
+                        <EvidenceRow
+                            label={t('specs.yield')}
+                            value={data.yield && data.yield.value ? `${data.yield.value} ${data.yield.unit || ''}`.trim() : '-'}
+                            fieldEnv={evidence['specifications.yield_pages']}
+                            fieldKey="specifications.yield_pages"
+                        />
+                        <EvidenceRow
+                            label={t('specs.color')}
+                            value={data.color}
+                            fieldEnv={evidence['specifications.color']}
+                            fieldKey="specifications.color"
+                        />
+                        {data.aliases && data.aliases.length > 0 && (
+                            <EvidenceRow
+                                label={t('identity.aliases', 'Aliases')}
+                                value={data.aliases.join(", ")}
+                                fieldEnv={evidence['aliases']}
+                                fieldKey="aliases"
+                            />
+                        )}
                     </div>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                {/* Technical Architecture */}
+                <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-indigo-500 rounded-full"></span>
+                        {t('specs.tech_title', 'Technical Architecture')}
+                    </h3>
+                    <div className="grid grid-cols-1 gap-3">
+                        <EvidenceRow
+                            label={t('specs.chip', 'Chip')}
+                            value={data.has_chip === true ? 'Yes' : data.has_chip === false ? 'No' : 'Unknown'}
+                            fieldEnv={evidence['has_chip']}
+                            fieldKey="has_chip"
+                        />
+                        <EvidenceRow
+                            label={t('specs.counter', 'Page Counter')}
+                            value={data.has_page_counter === true ? 'Yes' : data.has_page_counter === false ? 'No' : 'Unknown'}
+                            fieldEnv={evidence['has_page_counter']}
+                            fieldKey="has_page_counter"
+                        />
+                        {data.gtin && data.gtin.length > 0 && (
+                            <EvidenceRow
+                                label={t('specs.gtin', 'Barcodes (GTIN)')}
+                                value={data.gtin.join(", ")}
+                                fieldEnv={evidence['gtin']}
+                                fieldKey="gtin"
+                            />
+                        )}
+                    </div>
+                </div>
 
-                    {/* Images Grid */}
-                    {data.images && data.images.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {data.images.slice(0, 4).map((img, idx) => (
-                                <div key={idx} className="aspect-square bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 relative group">
-                                    <img src={img.url} alt="Product" className="w-full h-full object-contain p-2" />
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Identity Section */}
+                {/* Connectivity (If present) */}
+                {data.connectivity && (
                     <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('identity.title')}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <EvidenceRow label={t('identity.brand')} value={data.brand} fieldEnv={evidence['brand']} fieldKey="brand" />
-                            <EvidenceRow label={t('identity.mpn')} value={data.mpn_identity.mpn} fieldEnv={evidence['mpn_identity.mpn']} fieldKey="mpn_identity.mpn" />
-                            <EvidenceRow label={t('specs.yield')} value={`${data.yield?.value} ${data.yield?.unit}`} fieldEnv={evidence['specifications.yield_pages']} fieldKey="specifications.yield_pages" />
-                            <EvidenceRow label={t('specs.color')} value={data.color} fieldEnv={evidence['specifications.color']} fieldKey="specifications.color" />
-                            {data.aliases && data.aliases.length > 0 && (
-                                <EvidenceRow label="Aliases" value={data.aliases.join(", ")} fieldEnv={evidence['aliases']} fieldKey="aliases" />
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                            <span className="w-1 h-4 bg-cyan-500 rounded-full"></span>
+                            {t('connectivity.title', 'Connectivity')}
+                        </h3>
+                        <div className="grid grid-cols-1 gap-3">
+                            {data.connectivity.ports && data.connectivity.ports.length > 0 && (
+                                <EvidenceRow
+                                    label={t('connectivity.ports', 'Ports')}
+                                    value={data.connectivity.ports.join(", ")}
+                                    fieldEnv={evidence['connectivity.ports']}
+                                    fieldKey="connectivity.ports"
+                                />
                             )}
                         </div>
                     </div>
+                )}
 
-                    {/* Compatibility (RU) */}
-                    {data.compatible_printers_ru && data.compatible_printers_ru.length > 0 && (
-                        <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                                Compatibility <span className="text-xs font-normal text-gray-500">(RU Region)</span>
-                                {data.compatible_printers_ru.some(p => p.canonicalName?.includes('nix')) && (
-                                    <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 rounded-full">NIX Checked</span>
-                                )}
-                            </h3>
-                            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 max-h-40 overflow-y-auto">
-                                <div className="flex flex-wrap gap-2">
-                                    {data.compatible_printers_ru.map((p, i) => (
-                                        <span key={i} className="px-2 py-1 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 text-sm">
-                                            {p.model}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* FAQ Section */}
-                    {data.faq && data.faq.length > 0 && (
-                        <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">FAQ & Troubleshooting</h3>
-                            <div className="space-y-3">
-                                {data.faq.map((item, idx) => (
-                                    <div key={idx} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                                        <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">{item.question}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">{item.answer}</p>
-                                        {item.source_url && (
-                                            <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline mt-2 block truncate">
-                                                Source: {new URL(item.source_url).hostname}
-                                            </a>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Related SKUs */}
-                    {data.related_skus && data.related_skus.length > 0 && (
-                        <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Related Products</h3>
+                {/* Compatibility (RU) */}
+                {data.compatible_printers_ru && data.compatible_printers_ru.length > 0 && (
+                    <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                            <span className="w-1 h-4 bg-blue-500 rounded-full"></span>
+                            {t('compatibility', 'Compatibility')} <span className="text-xs font-normal text-gray-500">(RU Region)</span>
+                            {data.compatible_printers_ru.some(p => p.canonicalName?.includes('nix')) && (
+                                <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 rounded-full">
+                                    {t('compatibility.nix_verified', 'NIX Checked')}
+                                </span>
+                            )}
+                        </h3>
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto">
                             <div className="flex flex-wrap gap-2">
-                                {data.related_skus.map((sku, i) => (
-                                    <span key={i} className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm border border-blue-100 dark:border-blue-800">
-                                        {sku}
+                                {data.compatible_printers_ru.map((p, i) => (
+                                    <span key={i} className="px-2 py-1 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 text-sm">
+                                        {p.model}
                                     </span>
                                 ))}
                             </div>
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    {/* Logistics Section */}
+                {/* FAQ Section */}
+                {data.faq && data.faq.length > 0 && (
                     <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('logistics.title')}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <EvidenceRow label={t('logistics.weight')} value={data.packaging_from_nix?.weight_g ? `${data.packaging_from_nix.weight_g} g` : '-'} fieldEnv={evidence['packaging.weight_g']} fieldKey="packaging.weight_g" />
-                            <EvidenceRow label={t('logistics.dims')} value={data.packaging_from_nix?.width_mm ? `${data.packaging_from_nix.width_mm}x${data.packaging_from_nix.height_mm}x${data.packaging_from_nix.depth_mm} mm` : '-'} fieldEnv={evidence['packaging.dimensions']} fieldKey="packaging.dimensions" />
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                            <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
+                            {t('faq', 'FAQ & Troubleshooting')}
+                        </h3>
+                        <div className="space-y-3">
+                            {data.faq.map((item, idx) => (
+                                <div key={idx} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                                    <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">{item.question}</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">{item.answer}</p>
+                                    {item.source_url && (
+                                        <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline mt-2 block truncate">
+                                            Source: {new URL(item.source_url).hostname}
+                                        </a>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     </div>
+                )}
 
-                    {/* Conflicts Alert */}
-                    {Object.values(evidence).some((e: any) => e.is_conflict) && (
-                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-xl flex items-start gap-3">
-                            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-                            <div>
-                                <h4 className="font-semibold text-amber-900 dark:text-amber-100">Conflicts Detected</h4>
-                                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                                    Some fields have conflicting data from different sources. Review the highlighted fields above.
-                                </p>
-                            </div>
+                {/* Related SKUs (Enhanced) */}
+                {(data.related_ids || (data.related_skus && data.related_skus.length > 0)) && (
+                    <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('related_products', 'Related Products')}</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {/* Prefer Structured related_ids if available, else standard string array */}
+                            {data.related_ids ? data.related_ids.map((item, i) => (
+                                <span key={i} className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm border border-blue-100 dark:border-blue-800 flex items-center gap-2">
+                                    <span className="font-bold">{item.id}</span>
+                                    <span className="text-xs opacity-70">{item.type}</span>
+                                </span>
+                            )) : data.related_skus!.map((sku, i) => (
+                                <span key={i} className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm border border-blue-100 dark:border-blue-800">
+                                    {sku}
+                                </span>
+                            ))}
                         </div>
-                    )}
+                    </div>
+                )}
 
+                {/* Logistics Section */}
+                <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-orange-500 rounded-full"></span>
+                        {t('logistics.title')}
+                    </h3>
+                    <div className="grid grid-cols-1 gap-3">
+                        <EvidenceRow label={t('logistics.weight')} value={data.packaging_from_nix?.weight_g ? `${data.packaging_from_nix.weight_g} g` : '-'} fieldEnv={evidence['packaging.weight_g']} fieldKey="packaging.weight_g" />
+                        <EvidenceRow label={t('logistics.dims')} value={data.packaging_from_nix?.width_mm ? `${data.packaging_from_nix.width_mm}x${data.packaging_from_nix.height_mm}x${data.packaging_from_nix.depth_mm} mm` : '-'} fieldEnv={evidence['packaging.dimensions']} fieldKey="packaging.dimensions" />
+                    </div>
                 </div>
+
+                {/* Conflicts Alert */}
+                {Object.values(evidence).some((e: any) => e.is_conflict) && (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-xl flex items-start gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                        <div>
+                            <h4 className="font-semibold text-amber-900 dark:text-amber-100">{t('conflicts', 'Conflicts Detected')}</h4>
+                            <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                                Some fields have conflicting data from different sources. Review the highlighted fields above.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
             </div>
 
             <CitationDrawer

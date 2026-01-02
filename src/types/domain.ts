@@ -178,6 +178,8 @@ export interface ConsumableData {
     has_chip: boolean | 'unknown';
     has_page_counter: boolean | 'unknown';
 
+    gtin?: string[]; // EAN/UPC codes
+
     // 3. Compatibility (Printers)
     printers_ru: string[]; // Final display list (names only)
     compatible_printers_ru: PrinterCompatibility[]; // Full objects
@@ -223,6 +225,7 @@ export interface ConsumableData {
         yield?: FieldEvidence<YieldInfo>;
         packaging_from_nix?: FieldEvidence<PackagingInfo>;
         connectivity?: FieldEvidence<any>;
+        gtin?: FieldEvidence<string[]>;
         compatible_printers_ru?: FieldEvidence<PrinterCompatibility[]>;
         images?: FieldEvidence<ImageCandidate[]>;
         [key: string]: FieldEvidence<any> | undefined;

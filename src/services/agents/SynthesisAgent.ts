@@ -21,10 +21,20 @@ export class SynthesisAgent {
     static async extractClaims(sourceText: string, sourceUrl: string, apiKeys?: Record<string, string>, promptOverride?: string, modelOverride?: string | { id: string }, language: string = 'en'): Promise<ExtractedClaim[]> {
         const isRu = language === 'ru';
 
-        // Resolve model: override > store > default
+        // Resolve model: explicit override > settings store > default
         const { useSettingsStore } = await import('../../stores/settingsStore.js');
-        const storeModel = useSettingsStore.getState().extractionModel;
-        let effectiveModel = (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel || 'openrouter/auto';
+        const state = useSettingsStore.getState(); // Access state directly
+        // Note: extractionModel is the key in settingsStore for the Parser agent
+        const storeModel = state.extractionModel;
+
+        let effectiveModel = (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel;
+
+        // Fallback only if BOTH are missing
+        if (!effectiveModel) {
+            effectiveModel = 'google/gemini-2.0-flash-exp:free'; // 2026 Default Free Fallback
+        }
+
+        console.log(`[SynthesisAgent] Extracting with model: ${effectiveModel}`);
 
 
 
@@ -37,6 +47,9 @@ export class SynthesisAgent {
         - compatible_printers (array of strings)
         - logistics (weight_g, dim_width_mm, dim_height_mm, dim_depth_mm)
         - gtin/ean codes
+        - short_model (e.g. "12A", "CF218A" -> "18A")
+        - faq (3-5 common questions/problems)
+        - related_consumables (drums, chips, maintenance)
         
         Rules:
         1. Extract ONLY present data. No guessing.
@@ -53,6 +66,9 @@ export class SynthesisAgent {
         - compatible_printers (массив моделей принтеров)
         - logistics (weight_g, dim_width_mm, dim_height_mm, dim_depth_mm)
         - gtin/ean codes
+        - short_model (короткий номер, напр. "12A")
+        - faq (3-5 частых вопросов/проблем)
+        - related_consumables (барабаны, чипы)
         
         Правила:
         1. Извлекать ТОЛЬКО присутствующие данные. Не гадать.
@@ -83,43 +99,63 @@ export class SynthesisAgent {
         }
     }
 
-    static async merge(sources: string[], schemaKey: string = "StrictConsumableData", apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, modelOverride?: string | { id: string }, language: string = 'en'): Promise<Partial<ConsumableData>> {
+    static async merge(sources: string[], schemaKey: string = "StrictConsumableData", apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, modelOverride?: string | { id: string }, language: string = 'en', originalInput?: string): Promise<Partial<ConsumableData>> {
         onLog?.(`Synthesizing data from ${sources.length} sources...`);
 
         const isRu = language === 'ru';
 
-        let effectiveModel = typeof modelOverride === 'string' ? modelOverride : modelOverride?.id;
+        const { useSettingsStore } = await import('../../stores/settingsStore.js');
+        const state = useSettingsStore.getState();
+        const storeModel = state.reasoningModel; // Synthesis uses the Reasoning/Reasoning model
 
+        let effectiveModel = (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel;
 
+        if (!effectiveModel) {
+            effectiveModel = 'google/gemini-2.0-flash-exp:free';
+        }
+
+        onLog?.(`Synthesizing data with ${effectiveModel}...`);
+
+        const inputGroundingPrompt = originalInput ? `
+        CRITICAL INPUT GROUNDING:
+        The User explicitly requested: "${originalInput}"
+        TRUST this input as a HIGH-CONFIDENCE source. 
+        - If the user says "W1331X", then the Model IS "W1331X".
+        - If the user says "HP", then the Brand IS "HP".
+        - If the user says "15K", then the Yield IS "15000 pages".
+        DO NOT return "Unknown" for these fields if they are in the input.
+        ` : "";
 
         const systemPromptEn = promptOverride || `You are the Synthesis Agent for the D² Consumable Database.
         Your mission is to extract PRISTINE, VERIFIED data from the provided raw text evidence.
         
+        ${inputGroundingPrompt}
+
         CRITICAL RULES (Evidence-First):
-        1. ONLY output data explicitly present in the text. Do not guess.
-        2. If a field is missing, leave it null.
-        3. 'mpn_identity.mpn' is the Manufacturer Part Number. It must be exact.
-        
-        4. PRIORITIZE data from NIX.ru for logistics (weight, dimensions).
-        5. PRIORITIZE data from Official sources (hp.com, etc) for technical specs (yield, color).
-        
-        You must populate the '_evidence' object for every extracted field.
+        1. ONLY output data explicitly present in the text OR in the Inputs.
+        2. 'mpn_identity.mpn': Manufacturer Part Number. Must be exact.
+        3. 'brand': HIGH PRIORITY. Infer from MPN if needed.
+        4. 'yield': Extract value and unit. Default to "pages" if number implies yield.
+        5. 'short_model': Extract the short alias (e.g. "CF218A" -> "18A").
+        6. 'faq': Extract 3-5 common user questions/problems (e.g. "How to reset chip?").
+        7. 'related_ids': Extract list of related consumables (drums, maintenance).
+
         Input Text:
         ${sources.join("\n\n")}
         `;
 
-        const systemPromptRu = `Вы - Агент Синтеза для Базы Данных Расходных Материалов D².
-        Ваша миссия - извлечь ЧИСТЫЕ, ПРОВЕРЕННЫЕ данные из предоставленных текстов.
+        const systemPromptRu = `Вы - Агент Синтеза D².
+        Ваша миссия - извлечь ЧИСТЫЕ данные.
         
-        КРИТИЧЕСКИЕ ПРАВИЛА (Доказательства превыше всего):
-        1. Извлекать ТОЛЬКО данные, явно присутствующие в тексте. Не угадывать.
-        2. Если поле отсутствует, оставить его null.
-        3. 'mpn_identity.mpn' - это Артикул производителя (Part Number). Он должен быть точным.
-        
-        4. ПРИОРИТЕТ NIX.ru для логистики (вес, габариты).
-        5. ПРИОРИТЕТ Официальным сайтам (HP, и т.д.) для тех. характеристик (ресурс, цвет).
-        
-        Вы должны заполнить объект '_evidence' для каждого извлеченного поля.
+        ${inputGroundingPrompt}
+
+        КРИТИЧЕСКИЕ ПРАВИЛА:
+        1. Использовать данные из Текста И Ввода пользователя.
+        2. 'brand', 'model', 'yield' - НЕ МОГУТ БЫТЬ NULL, если они есть во вводе.
+        3. 'short_model': Извлечь короткий алиас (напр. "CF218A" -> "18A").
+        4. 'faq': Извлечь 3-5 частых вопросов/проблем (напр. "Как сбросить чип?").
+        5. 'related_ids': Список связанных расходников (барабаны, чипы).
+
         Входной Текст:
         ${sources.join("\n\n")}
         `;

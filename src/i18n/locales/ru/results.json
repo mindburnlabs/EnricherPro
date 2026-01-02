@@ -1,4 +1,17 @@
 {
+    "results": {
+        "title": "РЕЗУЛЬТАТЫ ИССЛЕДОВАНИЯ",
+        "verified": "ПРОВЕРЕНО",
+        "refresh_data": "Обновить данные",
+        "download_csv": "Скачать CSV",
+        "download_json": "Скачать JSON",
+        "back_to_list": "Назад к списку"
+    },
+    "actions": {
+        "details": "Подробнее",
+        "approve": "Утвердить",
+        "approved": "Утверждено"
+    },
     "stats": {
         "total": "Всего",
         "ok": "Успешно",

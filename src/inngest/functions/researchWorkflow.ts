@@ -1,11 +1,19 @@
 
 import { inngest } from "../client.js";
 import { OrchestratorAgent } from "../../services/agents/OrchestratorAgent.js";
+import { z } from "zod";
+
+// Strict Schema for DB Claims
+const SafeClaimSchema = z.object({
+    field: z.string().min(1),
+    value: z.any().transform(v => typeof v === 'object' ? JSON.stringify(v) : String(v)),
+    confidence: z.number().default(50),
+});
 
 export const researchWorkflow = inngest.createFunction(
     {
         id: "research-workflow",
-        concurrency: { limit: 20 },
+        concurrency: { limit: 5 },
         retries: 3,
         onFailure: async ({ event, error }) => {
             // @ts-ignore - Inngest typing quirk
@@ -21,9 +29,21 @@ export const researchWorkflow = inngest.createFunction(
         const agent = new OrchestratorAgent(jobId, apiKeys, tenantId);
 
         // 1. Initialize DB Record
-        const item = await step.run("create-db-item", async () => {
+        const { item, isCached } = await step.run("create-db-item", async () => {
             return await agent.getOrCreateItem(inputRaw, forceRefresh);
         });
+
+        // EFFICIENCY UPGRADE: Cache Hit
+        if (isCached) {
+            await step.run("log-cache-hit", () => agent.log('orchestrator', '⚡ Using cached data from Database. Skipping research.'));
+            return {
+                success: true,
+                itemId: item.id,
+                status: item.status,
+                cached: true,
+                _evidence: item.data?._evidence // Pass through evidence if needed for UI immediate render
+            };
+        }
 
         // REFINEMENT CONTEXT
         let context = undefined;
@@ -131,6 +151,13 @@ export const researchWorkflow = inngest.createFunction(
                                 searchOptions.country = 'us'; // Default to US for English
                                 searchOptions.lang = 'en';
                             }
+
+                            // VISIBILITY UPGRADE: Log Retry/Pauses
+                            searchOptions.onRetry = (attempt: number, error: any, delay: number) => {
+                                if (delay > 2000) {
+                                    agent.log('system', `⏳ Rate Limit Hit. Pausing research for ${Math.round(delay / 1000)}s...`);
+                                }
+                            };
 
                             // FIRESEARCH UPGRADE: Request Markdown in Search
                             // This allows us to skip the subsequent 'scrape' step for high-quality results.
@@ -281,7 +308,12 @@ export const researchWorkflow = inngest.createFunction(
                                 location: task.meta?.location,
                                 waitFor: task.meta?.waitFor,
                                 mobile: task.meta?.mobile,
-                                apiKey: apiKeys?.firecrawl
+                                apiKey: apiKeys?.firecrawl,
+                                onRetry: (attempt: number, error: any, delay: number) => {
+                                    if (delay > 2000) {
+                                        agent.log('system', `⏳ Rate Limit Hit for ${task.value}. Pausing for ${Math.round(delay / 1000)}s...`);
+                                    }
+                                }
                             });
                             if (data) {
                                 results.push({
@@ -547,15 +579,28 @@ export const researchWorkflow = inngest.createFunction(
                                 claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model, language);
                             }
 
-                            // 3. Persist Claims
+                            // 3. Persist Claims (Strict Validation)
                             if (claims && claims.length > 0) {
-                                await ClaimsRepository.createBatch(claims.filter(c => c.field).map(c => ({
-                                    itemId: item.id,
-                                    sourceDocId: sourceDoc.id,
-                                    field: c.field,
-                                    value: typeof c.value === 'object' ? JSON.stringify(c.value) : String(c.value),
-                                    confidence: Math.round((c.confidence || 0.5) * 100)
-                                })));
+                                const validClaims = claims
+                                    .map(c => {
+                                        const result = SafeClaimSchema.safeParse(c);
+                                        if (!result.success) {
+                                            console.warn(`[Validation] Dropping invalid claim for ${r.url}:`, result.error.format());
+                                            return null;
+                                        }
+                                        return {
+                                            itemId: item.id,
+                                            sourceDocId: sourceDoc.id,
+                                            field: result.data.field,
+                                            value: result.data.value,
+                                            confidence: Math.round(result.data.confidence)
+                                        };
+                                    })
+                                    .filter(Boolean); // Clean out nulls
+
+                                if (validClaims.length > 0) {
+                                    await ClaimsRepository.createBatch(validClaims as any);
+                                }
                             }
                         } catch (err) {
                             console.warn(`Failed to process result ${r.url}`, err);
@@ -630,7 +675,12 @@ export const researchWorkflow = inngest.createFunction(
                             formats: ['markdown'],
                             // Use meta from first task as representative (imperfect but pragmatic for batches)
                             location: (urlTasks[0].meta as any)?.location,
-                            apiKey: apiKeys?.firecrawl
+                            apiKey: apiKeys?.firecrawl,
+                            onRetry: (attempt: number, error: any, delay: number) => {
+                                if (delay > 2000) {
+                                    agent.log('system', `⏳ Batch Rate Limit Hit. Pausing for ${Math.round(delay / 1000)}s...`);
+                                }
+                            }
                         });
 
                         // Map back to results
@@ -829,7 +879,8 @@ export const researchWorkflow = inngest.createFunction(
                     agentConfig?.prompts?.synthesis,
                     undefined,
                     model,
-                    language
+                    language,
+                    inputRaw // Pass original input for grounding
                 );
                 return { ...synthesized, ...resolvedData };
             }

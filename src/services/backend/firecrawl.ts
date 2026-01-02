@@ -11,7 +11,7 @@ export class BackendFirecrawlService {
         return new FirecrawlApp({ apiKey });
     }
 
-    static async search(query: string, options: { limit?: number; country?: string; lang?: string; formats?: string[]; apiKey?: string; timeout?: number; tbs?: string; filter?: string; scrapeOptions?: any } = {}) {
+    static async search(query: string, options: { limit?: number; country?: string; lang?: string; formats?: string[]; apiKey?: string; timeout?: number; tbs?: string; filter?: string; scrapeOptions?: any; onRetry?: (attempt: number, error: any, delay: number) => void } = {}) {
         const { withRetry } = await import("../../lib/reliability.js");
 
         return withRetry(async () => {
@@ -54,7 +54,8 @@ export class BackendFirecrawlService {
                 if (status === 429) return true;
                 if (status >= 400 && status < 500) return false;
                 return true;
-            }
+            },
+            onRetry: options.onRetry
         });
     }
 
@@ -68,44 +69,53 @@ export class BackendFirecrawlService {
         maxAge?: number,
         timeout?: number,
         onlyMainContent?: boolean,
-        apiKey?: string
+        apiKey?: string;
+        onRetry?: (attempt: number, error: any, delay: number) => void;
     } = {}) {
-        const client = this.getClient(options.apiKey);
+        const { withRetry } = await import("../../lib/reliability.js");
 
-        // Construct formats array
-        const formats: any[] = options.formats || ['markdown'];
+        return withRetry(async () => {
+            const client = this.getClient(options.apiKey);
 
-        // If schema is provided, we MUST use type: 'json' with schema
-        if (options.schema) {
-            // Remove 'json' string if present to avoiding duplication, then add object
-            const cleanFormats = formats.filter(f => f !== 'json');
-            cleanFormats.push({
-                type: 'json',
-                schema: options.schema
+            // Construct formats array
+            const formats: any[] = options.formats || ['markdown'];
+
+            // If schema is provided, we MUST use type: 'json' with schema
+            if (options.schema) {
+                // Remove 'json' string if present to avoiding duplication, then add object
+                const cleanFormats = formats.filter(f => f !== 'json');
+                cleanFormats.push({
+                    type: 'json',
+                    schema: options.schema
+                });
+                // Reassign
+                formats.length = 0;
+                formats.push(...cleanFormats);
+            }
+
+            const result = await client.scrape(url, {
+                formats: formats,
+                waitFor: options.waitFor || 0,
+                actions: options.actions,
+                location: options.location,
+                mobile: options.mobile,
+                maxAge: options.maxAge,
+                timeout: options.timeout,
+                onlyMainContent: options.onlyMainContent
             });
-            // Reassign
-            formats.length = 0;
-            formats.push(...cleanFormats);
-        }
 
-        const result = await client.scrape(url, {
-            formats: formats,
-            waitFor: options.waitFor || 0,
-            actions: options.actions,
-            location: options.location,
-            mobile: options.mobile,
-            maxAge: options.maxAge,
-            timeout: options.timeout,
-            onlyMainContent: options.onlyMainContent
+            if (result && (result as any).success) {
+                return (result as any).data || (result as any);
+            }
+            // If not success but valid response is returned directly (sometimes SDK does this)
+            if (result && (result as any).markdown) return result;
+
+            throw new Error(`Firecrawl Scrape Failed: ${(result as any)?.error || 'Unknown'}`);
+        }, {
+            maxRetries: 3,
+            baseDelayMs: 2000,
+            onRetry: options.onRetry
         });
-
-        if (result && (result as any).success) {
-            return (result as any).data || (result as any);
-        }
-        // If not success but valid response is returned directly (sometimes SDK does this)
-        if (result && (result as any).markdown) return result;
-
-        throw new Error(`Firecrawl Scrape Failed: ${(result as any)?.error || 'Unknown'}`);
     }
 
     static async extract(urls: string[], schema: any, options: { apiKey?: string } = {}) {
@@ -261,31 +271,40 @@ export class BackendFirecrawlService {
         ignoreInvalidURLs?: boolean;
         timeout?: number;
         apiKey?: string;
+        onRetry?: (attempt: number, error: any, delay: number) => void;
     } = {}) {
-        const client = this.getClient(options.apiKey);
+        const { withRetry } = await import("../../lib/reliability.js");
 
-        // Construct formats array logic (same as scrape)
-        const formats: any[] = options.formats || ['markdown'];
-        if (options.schema) {
-            const cleanFormats = formats.filter(f => f !== 'json');
-            cleanFormats.push({ type: 'json', schema: options.schema });
-            formats.length = 0;
-            formats.push(...cleanFormats);
-        }
+        return withRetry(async () => {
+            const client = this.getClient(options.apiKey);
 
-        const result = await client.batchScrape(urls, {
-            options: {
-                formats: formats,
-                waitFor: options.waitFor || 0,
-                location: options.location,
-            },
-            ignoreInvalidURLs: options.ignoreInvalidURLs,
-            timeout: options.timeout
+            // Construct formats array logic (same as scrape)
+            const formats: any[] = options.formats || ['markdown'];
+            if (options.schema) {
+                const cleanFormats = formats.filter(f => f !== 'json');
+                cleanFormats.push({ type: 'json', schema: options.schema });
+                formats.length = 0;
+                formats.push(...cleanFormats);
+            }
+
+            const result = await client.batchScrape(urls, {
+                options: {
+                    formats: formats,
+                    waitFor: options.waitFor || 0,
+                    location: options.location,
+                },
+                ignoreInvalidURLs: options.ignoreInvalidURLs,
+                timeout: options.timeout
+            });
+
+            if (result && (result as any).success) {
+                return (result as any).data || [];
+            }
+            throw new Error(`Firecrawl Batch Scrape Failed: ${(result as any)?.error || 'Unknown'}`);
+        }, {
+            maxRetries: 3,
+            baseDelayMs: 2000,
+            onRetry: options.onRetry
         });
-
-        if (result && (result as any).success) {
-            return (result as any).data || [];
-        }
-        throw new Error(`Firecrawl Batch Scrape Failed: ${(result as any)?.error || 'Unknown'}`);
     }
 }

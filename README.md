@@ -1,18 +1,20 @@
-# D² (Deep Discovery) v2.7 🚀
+# D² (Deep Discovery) v3.0 🚀
 
 > **The State-of-the-Art Autonomous Research Engine**
 
 **D² (Deep Discovery)** is an advanced agentic AI system designed for high-precision, "Evidence-First" data enrichment. Unlike traditional scrapers, it uses a multi-agent swarm to autonomously plan, navigate, and verify information across the deep web, strictly adhering to a "No Hallucination" policy.
 
 ![Status](https://img.shields.io/badge/Status-Production_Ready-green)
-![Version](https://img.shields.io/badge/Version-2.7.0-blue)
+![Version](https://img.shields.io/badge/Version-3.0.0-blue)
 ![Stack](https://img.shields.io/badge/Stack-Firecrawl_v2_|_Neon_|_Inngest-violet)
 
 ## ✨ Key Capabilities
 
 -   **🔎 Autonomous Deep Web Agents**: A swarm of specialized agents (Discovery, Enrichment, Logistics) that navigate websites like human analysts.
+-   **💎 Input Grounding**: Treats user feedback as the "Golden Source" of truth, preventing "Unknown" fields when the user provides data.
 -   **🕷️ Firecrawl v2 Native**: Built on the latest Firecrawl SDK with support for **Deep Crawl**, **Map**, **Interactive Actions**, and **Batch Scrape**.
 -   **🛡️ Evidence-First Architecture**: Every data point is backed by a specific source URL and confidence score. Zero-trust verification.
+-   **🧠 High-Fidelity Extraction**: Extracts deep fields including **Short Models** (Aliases), **FAQs**, **Related Products**, and **Tech Specs** (Chips, Counters).
 -   **⚖️ Truth Settlement**: A deterministic "Quorum & Truth" resolution engine that arbitrates between conflicting data sources (e.g., OEM vs Marketplace).
 -   **⚡ Frontier Exploration Loop**: A parallelized graph traversal focused on high-recall discovery of hidden specs.
 -   **🌍 Multi-Lingual Native**: Full `i18n` support (UI & prompts) for English and Russian (`ru`, `en`), with locale-specific search strategies.

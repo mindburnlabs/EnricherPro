@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { EnrichedItem } from '../../types/domain.js';
-import { Check, AlertTriangle, ExternalLink, Box, Tag, Layers, Download, FileJson, Loader2 } from 'lucide-react';
-import { ItemDetail } from '../Research/ItemDetail.js';
+import { Check, AlertTriangle, ExternalLink, Box, Layers, Download, FileJson, Loader2, RefreshCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface ChatResultBlockProps {
     items: EnrichedItem[];
     onApprove: (id: string) => Promise<void>;
     onMerge?: (item: EnrichedItem) => void;
+    onRefresh?: () => void;
+    onSelectItem: (item: EnrichedItem) => void;
     status: 'running' | 'completed' | 'failed';
 }
 
-export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onApprove, onMerge, status }) => {
-    const { t } = useTranslation('research'); // Using research namespace
-    const [selectedItem, setSelectedItem] = useState<EnrichedItem | null>(null);
+export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onApprove, onMerge, onRefresh, onSelectItem, status }) => {
+    const { t } = useTranslation('research');
     const [approvingId, setApprovingId] = useState<string | null>(null);
 
     if (!items || items.length === 0) return null;
@@ -28,7 +28,6 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
         } else {
-            // Flatten generic CSV
             const headers = ['ID', 'MPN', 'Brand', 'Model', 'Confidence', 'Status'];
             const rows = items.map(i => [
                 i.id,
@@ -59,6 +58,7 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
         setApprovingId(null);
     };
 
+    // --- List View ---
     return (
         <div className="mt-8 space-y-4 animate-in slide-in-from-bottom-4 duration-500 delay-100">
             <div className="flex items-center justify-between pl-1 mb-2">
@@ -69,6 +69,15 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                     </h3>
                 </div>
                 <div className="flex gap-2">
+                    {onRefresh && (
+                        <button
+                            onClick={onRefresh}
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mr-2 border border-transparent hover:border-blue-100"
+                            title={t('results.refresh_data', "Force Refresh Data")}
+                        >
+                            <RefreshCcw className="w-4 h-4" />
+                        </button>
+                    )}
                     <button
                         onClick={() => handleDownload('csv')}
                         className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
@@ -90,7 +99,7 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                 {items.map(item => (
                     <div
                         key={item.id}
-                        onClick={() => setSelectedItem(item)}
+                        onClick={() => onSelectItem(item)}
                         className="group relative rounded-2xl p-5 border border-gray-200 dark:border-gray-800 bg-white/40 dark:bg-gray-800/20 backdrop-blur-xl hover:bg-white/60 dark:hover:bg-gray-800/40 hover:border-emerald-500/30 transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1 overflow-hidden cursor-pointer"
                     >
                         {/* Background Gradient Effect */}
@@ -104,7 +113,6 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                                         <Layers className="w-4 h-4" />
                                     </div>
 
-                                    {/* Verification Badge (Mock logic based on score or source) */}
                                     {(item.data.confidence_score?.overall || 0) > 85 && (
                                         <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-[10px] font-bold text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30" title="High Confidence">
                                             <Check className="w-3 h-3" />
@@ -131,7 +139,6 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                                 </p>
                             </div>
 
-                            {/* Specs / Metadata Grid */}
                             <div className="grid grid-cols-2 gap-2 mb-4">
                                 <div className="bg-gray-50/80 dark:bg-gray-900/40 rounded-lg p-2 border border-gray-100 dark:border-gray-800/50">
                                     <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-0.5">{t('specs.brand', 'Brand')}</div>
@@ -143,7 +150,6 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                                 </div>
                             </div>
 
-                            {/* SOTA: Screenshot & Evidence Preview */}
                             {(item.data._evidence?.screenshot || Object.keys(item.data._evidence || {}).length > 0) && (
                                 <div className="mb-4 flex gap-2">
                                     {(item.data._evidence as any)?.screenshot?.value && (
@@ -173,12 +179,11 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                                 </div>
                             )}
 
-                            {/* Actions Footer */}
                             <div className="mt-auto flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-gray-800/50">
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        setSelectedItem(item);
+                                        onSelectItem(item);
                                     }}
                                     className="flex-1 px-3 py-2 text-xs font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
                                 >
@@ -190,34 +195,32 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                                     onClick={(e) => handleApproveClick(item.id, e)}
                                     disabled={approvingId === item.id || item.status === 'ok'}
                                     className={`flex-1 px-3 py-2 text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2 ${item.status === 'ok'
-                                            ? 'bg-emerald-100 text-emerald-700 cursor-default'
-                                            : 'text-white bg-gray-900 dark:bg-white dark:text-black hover:bg-emerald-600 dark:hover:bg-emerald-400 hover:shadow-emerald-500/20'
-                                        }`}
+                                        ? 'bg-emerald-100 text-emerald-700 cursor-default'
+                                        : 'text-white bg-gray-900 dark:bg-white dark:text-black hover:bg-emerald-600 dark:hover:bg-emerald-400 hover:shadow-emerald-500/20'
+                                        } ${approvingId === item.id ? 'animate-pulse' : ''}`}
                                 >
                                     {approvingId === item.id ? (
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        <>
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            {t('actions.approving', 'Approving...')}
+                                        </>
                                     ) : item.status === 'ok' ? (
-                                        <Check className="w-3.5 h-3.5" />
+                                        <>
+                                            <Check className="w-3.5 h-3.5" />
+                                            {t('actions.approved', 'Approved')}
+                                        </>
                                     ) : (
-                                        <Check className="w-3.5 h-3.5" />
+                                        <>
+                                            <Check className="w-3.5 h-3.5" />
+                                            {t('actions.approve', 'Approve')}
+                                        </>
                                     )}
-                                    {item.status === 'ok' ? t('actions.approved', 'Approved') : t('actions.approve', 'Approve')}
                                 </button>
                             </div>
                         </div>
                     </div>
                 ))}
             </div>
-
-            <ItemDetail
-                item={selectedItem}
-                open={!!selectedItem}
-                onClose={() => setSelectedItem(null)}
-                onApprove={async (id) => {
-                    await onApprove(id);
-                    setSelectedItem(null);
-                }}
-            />
         </div>
     );
 };

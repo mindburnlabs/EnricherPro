@@ -4,6 +4,7 @@
         "network": "Network & Relations",
         "images": "Visual Audit",
         "evidence": "Evidence & Sources",
+        "related_products": "Related Products",
         "intelligence": "Intelligence",
         "faq": "AI Support FAQ"
     },
@@ -23,6 +24,7 @@
         "title": "Identity Extraction",
         "brand": "Brand (Authority)",
         "mpn": "Entity Identity (MPN)",
+        "short_model": "Short Model",
         "alias": "Semantic Alias",
         "alias_placeholder": "short identifier",
         "yield": "Yield Matrix",
