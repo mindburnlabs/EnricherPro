@@ -449,7 +449,8 @@ export class DiscoveryAgent {
         originalInput: string,
         currentResults: RetrieverResult[],
         language: string = 'en',
-        model: string = "openrouter/auto"
+        model: string = "openrouter/auto",
+        apiKeys?: Record<string, string>
     ): Promise<{
         action: 'continue' | 'stop';
         new_tasks?: Array<{ type: 'query' | 'enrichment' | 'domain_crawl' | 'firecrawl_agent', value: string, meta?: any }>
@@ -507,7 +508,8 @@ export class DiscoveryAgent {
                     { role: "user", content: `Analyze these results:\n${context}` }
                 ],
                 jsonSchema: ProgressAnalysisSchema,
-                routingStrategy: RoutingStrategy.SMART
+                routingStrategy: RoutingStrategy.SMART,
+                apiKeys
             });
 
             const parsed = safeJsonParse(response || "{}");

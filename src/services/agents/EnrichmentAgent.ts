@@ -12,7 +12,8 @@ export class EnrichmentAgent {
         goal: string,
         url: string,
         language: string = 'en',
-        model: string = "openrouter/auto"
+        model: string = "openrouter/auto",
+        apiKeys?: Record<string, string>
     ): Promise<any> {
 
         const systemPrompt = `You are a Schema Architect for Data Extraction.
@@ -38,7 +39,8 @@ export class EnrichmentAgent {
                     { role: "user", content: "Generate schema." }
                 ],
                 jsonSchema: FirecrawlSchemaSchema,
-                routingStrategy: RoutingStrategy.SMART
+                routingStrategy: RoutingStrategy.SMART,
+                apiKeys
             });
 
             return JSON.parse(response || "{}");

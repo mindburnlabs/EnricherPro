@@ -163,7 +163,8 @@ export const researchWorkflow = inngest.createFunction(
                             // FIRESEARCH UPGRADE: Use /map endpoint for high recall
                             const mapResults = await BackendFirecrawlService.map(task.value, {
                                 limit: 50,
-                                search: plan.canonical_name || undefined // Optional filter
+                                search: plan.canonical_name || undefined, // Optional filter
+                                apiKey: apiKeys?.firecrawl
                             });
 
                             if (mapResults && mapResults.length > 0) {
@@ -202,7 +203,7 @@ export const researchWorkflow = inngest.createFunction(
                         agent.log('discovery', `Starting Recursive Crawl on ${task.value}`);
                         try {
                             // Fire-and-forget crawl job
-                            const crawlId = await BackendFirecrawlService.crawl(task.value, { limit: 100, maxDepth: 2 });
+                            const crawlId = await BackendFirecrawlService.crawl(task.value, { limit: 100, maxDepth: 2, apiKey: apiKeys?.firecrawl });
 
                             // Add "crawl_status" task to Frontier to check later
                             await FrontierService.add(jobId, 'crawl_status', crawlId, 50, task.depth, { originalUrl: task.value });
@@ -214,7 +215,7 @@ export const researchWorkflow = inngest.createFunction(
                     } else if (task.type === 'crawl_status') {
                         // Poll for status
                         const crawlId = task.value;
-                        const status = await BackendFirecrawlService.checkCrawlStatus(crawlId);
+                        const status = await BackendFirecrawlService.checkCrawlStatus(crawlId, apiKeys?.firecrawl);
 
                         if (status && (status as any).status === 'completed') {
                             agent.log('discovery', `Crawl ${crawlId} Completed! Processing ${(status as any).data?.length || 0} pages.`);
@@ -248,7 +249,8 @@ export const researchWorkflow = inngest.createFunction(
                                 actions: task.meta?.actions,
                                 location: task.meta?.location,
                                 waitFor: task.meta?.waitFor,
-                                mobile: task.meta?.mobile
+                                mobile: task.meta?.mobile,
+                                apiKey: apiKeys?.firecrawl
                             });
                             if (data) {
                                 results.push({
@@ -287,7 +289,8 @@ export const researchWorkflow = inngest.createFunction(
 
                             const mapResults = await BackendFirecrawlService.map(task.value, {
                                 limit: 5, // Map top 5 pages (reduced from 20 to save credits)
-                                search: searchFilter
+                                search: searchFilter,
+                                apiKey: apiKeys?.firecrawl
                             });
 
                             if (mapResults && mapResults.length > 0) {
@@ -323,10 +326,10 @@ export const researchWorkflow = inngest.createFunction(
                             agent.log('discovery', `running enrichment on ${task.value} for: ${goal}`);
 
                             // 1. Generate Schema
-                            const schema = await EnrichmentAgent.generateSchema(goal, task.value, language, model);
+                            const schema = await EnrichmentAgent.generateSchema(goal, task.value, language, model, apiKeys);
 
                             // 2. Execute Firecrawl Enrich (Extract)
-                            const data = await BackendFirecrawlService.enrich(task.value, schema);
+                            const data = await BackendFirecrawlService.enrich(task.value, schema, { apiKey: apiKeys?.firecrawl });
 
                             if (data) {
                                 results.push({
@@ -351,7 +354,8 @@ export const researchWorkflow = inngest.createFunction(
 
                                 const raw = await BackendFirecrawlService.scrape(task.value, {
                                     actions,
-                                    location
+                                    location,
+                                    apiKey: apiKeys?.firecrawl
                                 });
 
                                 if (raw && (raw as any).markdown) {
@@ -519,7 +523,8 @@ export const researchWorkflow = inngest.createFunction(
                         inputRaw,
                         allResults,
                         language,
-                        model
+                        model,
+                        apiKeys
                     );
 
                     if (analysis.action === 'stop') {
@@ -558,6 +563,7 @@ export const researchWorkflow = inngest.createFunction(
                             formats: ['markdown'],
                             // Use meta from first task as representative (imperfect but pragmatic for batches)
                             location: (urlTasks[0].meta as any)?.location,
+                            apiKey: apiKeys?.firecrawl
                         });
 
                         // Map back to results

@@ -3,22 +3,19 @@ import FirecrawlApp from '@mendable/firecrawl-js';
 
 // Server-side only client
 export class BackendFirecrawlService {
-    private static client: FirecrawlApp;
+    // REMOVED: Singleton client with process.env fallback.
+    // Each request MUST provide an API key.
 
-    private static getClient() {
-        if (!this.client) {
-            const apiKey = process.env.FIRECRAWL_API_KEY;
-            if (!apiKey) throw new Error("Missing FIRECRAWL_API_KEY");
-            this.client = new FirecrawlApp({ apiKey });
-        }
-        return this.client;
+    private static getClient(apiKey?: string) {
+        if (!apiKey) throw new Error("Missing Firecrawl API Key. Please configure it in the UI Settings.");
+        return new FirecrawlApp({ apiKey });
     }
 
     static async search(query: string, options: { limit?: number; country?: string; lang?: string; formats?: string[]; apiKey?: string; timeout?: number; tbs?: string; filter?: string; scrapeOptions?: any } = {}) {
         const { withRetry } = await import("../../lib/reliability.js");
 
         return withRetry(async () => {
-            const client = options.apiKey ? new FirecrawlApp({ apiKey: options.apiKey }) : this.getClient();
+            const client = this.getClient(options.apiKey);
             try {
                 // Map top-level options to SDK structure
                 const result = await client.search(query, {
@@ -70,9 +67,10 @@ export class BackendFirecrawlService {
         mobile?: boolean,
         maxAge?: number,
         timeout?: number,
-        onlyMainContent?: boolean
+        onlyMainContent?: boolean,
+        apiKey?: string
     } = {}) {
-        const client = this.getClient();
+        const client = this.getClient(options.apiKey);
 
         // Construct formats array
         const formats: any[] = options.formats || ['markdown'];
@@ -110,11 +108,11 @@ export class BackendFirecrawlService {
         throw new Error(`Firecrawl Scrape Failed: ${(result as any)?.error || 'Unknown'}`);
     }
 
-    static async extract(urls: string[], schema: any) {
+    static async extract(urls: string[], schema: any, options: { apiKey?: string } = {}) {
         const { withRetry } = await import("../../lib/reliability.js");
 
         return withRetry(async () => {
-            const client = this.getClient();
+            const client = this.getClient(options.apiKey);
             try {
                 // V2 extract: extract(args: { urls, schema })
                 const result = await client.extract({
@@ -139,8 +137,8 @@ export class BackendFirecrawlService {
     /**
      * Semantic wrapper for extract to "Enrich" a specific URL with a schema
      */
-    static async enrich(url: string, schema: any) {
-        return this.extract([url], schema);
+    static async enrich(url: string, schema: any, options: { apiKey?: string } = {}) {
+        return this.extract([url], schema, options);
     }
 
     /**
@@ -151,7 +149,7 @@ export class BackendFirecrawlService {
         const { withRetry } = await import("../../lib/reliability.js");
 
         return withRetry(async () => {
-            const client = options.apiKey ? new FirecrawlApp({ apiKey: options.apiKey }) : this.getClient();
+            const client = this.getClient(options.apiKey);
             try {
                 // Use public SDK method
                 const result = await client.agent({
@@ -185,8 +183,9 @@ export class BackendFirecrawlService {
         allowBackwardLinks?: boolean;
         ignoreSitemap?: boolean;
         webhook?: string | { url: string; events?: string[]; metadata?: any };
+        apiKey?: string;
     } = {}) {
-        const client = this.getClient();
+        const client = this.getClient(options.apiKey);
 
         // Handle webhook structure
         let webhook = options.webhook;
@@ -218,8 +217,8 @@ export class BackendFirecrawlService {
     /**
      * Maps a website to find all URLs (High Recall)
      */
-    static async map(url: string, options: { search?: string; limit?: number; country?: string; lang?: string; sitemap?: boolean } = {}) {
-        const client = this.getClient();
+    static async map(url: string, options: { search?: string; limit?: number; country?: string; lang?: string; sitemap?: boolean; apiKey?: string } = {}) {
+        const client = this.getClient(options.apiKey);
         try {
             const result = await client.map(url, {
                 search: options.search,
@@ -240,8 +239,8 @@ export class BackendFirecrawlService {
     }
 
 
-    static async checkCrawlStatus(id: string) {
-        const client = this.getClient();
+    static async checkCrawlStatus(id: string, apiKey?: string) {
+        const client = this.getClient(apiKey);
         try {
             const result = await client.getCrawlStatus(id);
             return result;
@@ -261,8 +260,9 @@ export class BackendFirecrawlService {
         location?: { country?: string; languages?: string[] };
         ignoreInvalidURLs?: boolean;
         timeout?: number;
+        apiKey?: string;
     } = {}) {
-        const client = this.getClient();
+        const client = this.getClient(options.apiKey);
 
         // Construct formats array logic (same as scrape)
         const formats: any[] = options.formats || ['markdown'];
