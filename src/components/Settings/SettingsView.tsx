@@ -36,6 +36,132 @@ const ModelSelector: React.FC<{ label: string; desc: string; value: string; onCh
     </div>
 );
 
+// --- Subcomponents ---
+
+const Section: React.FC<{ title: string; children?: React.ReactNode }> = ({ title, children }) => (
+    <div className="space-y-4">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-500">{title}</h4>
+        {children}
+    </div>
+);
+
+const ThemeCard: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string }> = ({ active, onClick, icon, label }) => (
+    <button
+        onClick={onClick}
+        className={`flex items-center gap-3 p-4 rounded-xl border transition-all duration-200 ${active
+            ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-500 dark:border-emerald-500 ring-1 ring-emerald-500'
+            : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700'
+            }`}
+    >
+        <div className={`p-2 rounded-full ${active ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>
+            {icon}
+        </div>
+        <span className={`font-medium ${active ? 'text-emerald-900 dark:text-emerald-100' : 'text-gray-700 dark:text-gray-300'}`}>{label}</span>
+        {active && <Check className="w-4 h-4 text-emerald-500 ml-auto" />}
+    </button>
+);
+
+const InputGroup: React.FC<{ label: string; desc?: string; value: string; onChange: (v: string) => void; placeholder: string; type?: string }> = ({ label, desc, value, onChange, placeholder, type = 'text' }) => (
+    <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-gray-900 dark:text-gray-200">{label}</label>
+        {desc && <p className="text-xs text-gray-500 mb-2">{desc}</p>}
+        <div className="relative group">
+            <input
+                type={type}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-mono text-sm group-hover:bg-white dark:group-hover:bg-black"
+            />
+            {value && <Check className="absolute right-3 top-3 w-4 h-4 text-emerald-500" />}
+        </div>
+    </div>
+);
+
+const ToggleRow: React.FC<{ label: string; desc: string; active: boolean; onToggle: () => void }> = ({ label, desc, active, onToggle }) => (
+    <button
+        onClick={onToggle}
+        className={`flex items-start justify-between p-4 rounded-xl border transition-all text-left ${active
+            ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'
+            : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 opacity-75 grayscale'
+            }`}
+    >
+        <div>
+            <div className="flex items-center gap-2">
+                <span className={`text-sm font-bold ${active ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{label}</span>
+                {active && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold">ON</span>}
+            </div>
+            <p className="text-xs text-gray-500 mt-1 max-w-[200px] sm:max-w-xs">{desc}</p>
+        </div>
+        <div className={`w-11 h-6 rounded-full flex items-center transition-colors p-1 mt-1 ${active ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
+            <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${active ? 'translate-x-5' : ''}`} />
+        </div>
+    </button>
+);
+
+const PromptEditor: React.FC<{ label: string; value: string; onChange: (v: string) => void }> = ({ label, value, onChange }) => (
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-100/50 dark:bg-gray-900 flex justify-between items-center">
+            <span className="text-xs font-bold uppercase text-gray-500">{label}</span>
+            <History className="w-3.5 h-3.5 text-gray-400 cursor-pointer hover:text-gray-600" />
+        </div>
+        <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="flex-1 w-full p-4 bg-transparent outline-none font-mono text-xs leading-relaxed resize-none text-gray-700 dark:text-gray-300 h-64"
+            placeholder="// System prompt instructions..."
+        />
+    </div>
+);
+
+const SourceCard: React.FC<{
+    label: string;
+    desc: string;
+    active: boolean;
+    onToggle: () => void;
+    specificDomains: string[];
+    onSpecificDomainsChange: (domains: string[]) => void;
+    placeholder: string;
+}> = ({ label, desc, active, onToggle, specificDomains, onSpecificDomainsChange, placeholder }) => (
+    <div className={`rounded-xl border transition-all ${active
+        ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'
+        : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 opacity-75 grayscale'
+        }`}>
+        <button
+            onClick={onToggle}
+            className="w-full flex items-start justify-between p-4 text-left"
+        >
+            <div>
+                <div className="flex items-center gap-2">
+                    <span className={`text-sm font-bold ${active ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{label}</span>
+                    {active && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold">ON</span>}
+                </div>
+                <p className="text-xs text-gray-500 mt-1 max-w-[200px] sm:max-w-xs">{desc}</p>
+            </div>
+            <div className={`w-11 h-6 rounded-full flex items-center transition-colors p-1 mt-1 ${active ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${active ? 'translate-x-5' : ''}`} />
+            </div>
+        </button>
+
+        {active && (
+            <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-200">
+                <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/30">
+                    <label className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 mb-1.5 block">
+                        Allow Only Specific Domains (Optional)
+                    </label>
+                    <textarea
+                        value={specificDomains.join(', ')}
+                        onChange={(e) => onSpecificDomainsChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                        placeholder={placeholder}
+                        className="w-full bg-white dark:bg-black border border-emerald-100 dark:border-emerald-900/50 rounded-lg p-2 text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none h-16 resize-none"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">Leave empty to allow all {label} sources.</p>
+                </div>
+            </div>
+        )}
+    </div>
+);
+
 export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onThemeChange, currentTheme }) => {
     if (!isOpen) return null;
 
@@ -509,129 +635,3 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
         </div>
     );
 };
-
-// --- Subcomponents ---
-
-const Section: React.FC<{ title: string; children?: React.ReactNode }> = ({ title, children }) => (
-    <div className="space-y-4">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-500">{title}</h4>
-        {children}
-    </div>
-);
-
-const ThemeCard: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string }> = ({ active, onClick, icon, label }) => (
-    <button
-        onClick={onClick}
-        className={`flex items-center gap-3 p-4 rounded-xl border transition-all duration-200 ${active
-            ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-500 dark:border-emerald-500 ring-1 ring-emerald-500'
-            : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700'
-            }`}
-    >
-        <div className={`p-2 rounded-full ${active ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>
-            {icon}
-        </div>
-        <span className={`font-medium ${active ? 'text-emerald-900 dark:text-emerald-100' : 'text-gray-700 dark:text-gray-300'}`}>{label}</span>
-        {active && <Check className="w-4 h-4 text-emerald-500 ml-auto" />}
-    </button>
-);
-
-const InputGroup: React.FC<{ label: string; desc?: string; value: string; onChange: (v: string) => void; placeholder: string; type?: string }> = ({ label, desc, value, onChange, placeholder, type = 'text' }) => (
-    <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-gray-900 dark:text-gray-200">{label}</label>
-        {desc && <p className="text-xs text-gray-500 mb-2">{desc}</p>}
-        <div className="relative group">
-            <input
-                type={type}
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={placeholder}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-mono text-sm group-hover:bg-white dark:group-hover:bg-black"
-            />
-            {value && <Check className="absolute right-3 top-3 w-4 h-4 text-emerald-500" />}
-        </div>
-    </div>
-);
-
-const ToggleRow: React.FC<{ label: string; desc: string; active: boolean; onToggle: () => void }> = ({ label, desc, active, onToggle }) => (
-    <button
-        onClick={onToggle}
-        className={`flex items-start justify-between p-4 rounded-xl border transition-all text-left ${active
-            ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'
-            : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 opacity-75 grayscale'
-            }`}
-    >
-        <div>
-            <div className="flex items-center gap-2">
-                <span className={`text-sm font-bold ${active ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{label}</span>
-                {active && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold">ON</span>}
-            </div>
-            <p className="text-xs text-gray-500 mt-1 max-w-[200px] sm:max-w-xs">{desc}</p>
-        </div>
-        <div className={`w-11 h-6 rounded-full flex items-center transition-colors p-1 mt-1 ${active ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
-            <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${active ? 'translate-x-5' : ''}`} />
-        </div>
-    </button>
-);
-
-const PromptEditor: React.FC<{ label: string; value: string; onChange: (v: string) => void }> = ({ label, value, onChange }) => (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-100/50 dark:bg-gray-900 flex justify-between items-center">
-            <span className="text-xs font-bold uppercase text-gray-500">{label}</span>
-            <History className="w-3.5 h-3.5 text-gray-400 cursor-pointer hover:text-gray-600" />
-        </div>
-        <textarea
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="flex-1 w-full p-4 bg-transparent outline-none font-mono text-xs leading-relaxed resize-none text-gray-700 dark:text-gray-300 h-64"
-            placeholder="// System prompt instructions..."
-        />
-    </div>
-);
-
-const SourceCard: React.FC<{
-    label: string;
-    desc: string;
-    active: boolean;
-    onToggle: () => void;
-    specificDomains: string[];
-    onSpecificDomainsChange: (domains: string[]) => void;
-    placeholder: string;
-}> = ({ label, desc, active, onToggle, specificDomains, onSpecificDomainsChange, placeholder }) => (
-    <div className={`rounded-xl border transition-all ${active
-        ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'
-        : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 opacity-75 grayscale'
-        }`}>
-        <button
-            onClick={onToggle}
-            className="w-full flex items-start justify-between p-4 text-left"
-        >
-            <div>
-                <div className="flex items-center gap-2">
-                    <span className={`text-sm font-bold ${active ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{label}</span>
-                    {active && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold">ON</span>}
-                </div>
-                <p className="text-xs text-gray-500 mt-1 max-w-[200px] sm:max-w-xs">{desc}</p>
-            </div>
-            <div className={`w-11 h-6 rounded-full flex items-center transition-colors p-1 mt-1 ${active ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
-                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${active ? 'translate-x-5' : ''}`} />
-            </div>
-        </button>
-
-        {active && (
-            <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-200">
-                <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/30">
-                    <label className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 mb-1.5 block">
-                        Allow Only Specific Domains (Optional)
-                    </label>
-                    <textarea
-                        value={specificDomains.join(', ')}
-                        onChange={(e) => onSpecificDomainsChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                        placeholder={placeholder}
-                        className="w-full bg-white dark:bg-black border border-emerald-100 dark:border-emerald-900/50 rounded-lg p-2 text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none h-16 resize-none"
-                    />
-                    <p className="text-[10px] text-gray-400 mt-1">Leave empty to allow all {label} sources.</p>
-                </div>
-            </div>
-        )}
-    </div>
-);
