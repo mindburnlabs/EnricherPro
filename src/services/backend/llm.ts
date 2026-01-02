@@ -156,65 +156,90 @@ export class BackendLLMService {
             }
         }
 
-        // 4. Execute Fetch
-        return await withRetry(async () => {
-            try {
-                const headers: any = {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://enricher.pro", // Required by OpenRouter
-                    "X-Title": "EnricherPro (Deep Research)"
-                };
+        // 4. Refactored Execution with Smart Fallback for 400s
+        const executeFetch = async (currentBody: any) => {
+            return await withRetry(async () => {
+                try {
+                    const headers: any = {
+                        "Authorization": `Bearer ${apiKey}`,
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://enricher.pro", // Required by OpenRouter
+                        "X-Title": "EnricherPro (Deep Research)"
+                    };
 
-                if (config.sessionId) {
-                    headers["X-Session-Id"] = config.sessionId;
-                }
-
-                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                    method: "POST",
-                    headers: headers,
-                    body: JSON.stringify(body)
-                });
-
-                if (!response.ok) {
-                    const errText = await response.text();
-                    let errMsg = errText;
-                    try {
-                        const jsonErr = JSON.parse(errText);
-                        errMsg = jsonErr.error?.message || errText;
-                    } catch (e) { /* ignore */ }
-
-                    // Map errors
-                    if (response.status === 402 || response.status === 401) {
-                        throw new Error(`OpenRouter Auth/Credit Error: ${errMsg}`);
+                    if (config.sessionId) {
+                        headers["X-Session-Id"] = config.sessionId;
                     }
-                    throw new Error(`OpenRouter API Error (${response.status}): ${errMsg}`);
+
+                    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                        method: "POST",
+                        headers: headers,
+                        body: JSON.stringify(currentBody)
+                    });
+
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        let errMsg = errText;
+                        try {
+                            const jsonErr = JSON.parse(errText);
+                            errMsg = jsonErr.error?.message || errText;
+                        } catch (e) { /* ignore */ }
+
+                        // Map errors
+                        if (response.status === 402 || response.status === 401) {
+                            throw new Error(`OpenRouter Auth/Credit Error: ${errMsg}`);
+                        }
+                        if (response.status === 400) {
+                            throw new Error(`OpenRouter Bad Request (400): ${errMsg}`);
+                        }
+                        throw new Error(`OpenRouter API Error (${response.status}): ${errMsg}`);
+                    }
+
+                    const data = await response.json();
+
+                    // Handle non-choice response (should stay robust)
+                    if (!data.choices || data.choices.length === 0) {
+                        // Check if it's a processing error or similar
+                        throw new Error("Empty response from LLM (No choices)");
+                    }
+
+                    const content = data.choices[0].message?.content;
+                    if (!content) throw new Error("Empty content in LLM response");
+
+                    return content;
+
+                } catch (e: any) {
+                    // Determine if retryable
+                    // Auth/Credit errors - Stop immediately
+                    if (e.message?.includes("Auth/Credit")) throw e;
+                    if (e.message?.includes("(400)")) throw e; // Don't retry 400s in the inner loop, handle in outer
+                    throw e;
+                }
+            }, {
+                maxRetries: 2,
+                baseDelayMs: 1000,
+                shouldRetry: (err) => !err.message.includes("Auth/Credit") && !err.message.includes("(400)")
+            });
+        };
+
+        try {
+            return await executeFetch(body);
+        } catch (e: any) {
+            // SOTA Fallback: If 400 Error AND we used json_schema, try again without it.
+            // Many providers (Anthropic, Gemini via OR) fail hard on 'json_schema' even with strict:false
+            if (e.message?.includes("(400)") && body.response_format?.type === 'json_schema') {
+                console.warn("LLM Service: 400 Error with json_schema. Retrying with RAW prompt fallback...", e.message);
+                delete body.response_format;
+
+                // Append instruction to system prompt to ensure JSON
+                if (body.messages[0].role === 'system') {
+                    body.messages[0].content += "\n\nCRITICAL: Return VALID JSON only. No markdown formatting. No preamble.";
                 }
 
-                const data = await response.json();
-
-                // Handle non-choice response (should stay robust)
-                if (!data.choices || data.choices.length === 0) {
-                    // Check if it's a processing error or similar
-                    throw new Error("Empty response from LLM (No choices)");
-                }
-
-                const content = data.choices[0].message?.content;
-                if (!content) throw new Error("Empty content in LLM response");
-
-                return content;
-
-            } catch (e: any) {
-                // Determine if retryable
-                // Auth/Credit errors - Stop immediately
-                if (e.message?.includes("Auth/Credit")) throw e;
-                throw e;
+                return await executeFetch(body);
             }
-        }, {
-            maxRetries: 2,
-            baseDelayMs: 1000,
-            shouldRetry: (err) => !err.message.includes("Auth/Credit")
-        });
+            throw e;
+        }
     }
 }
 
