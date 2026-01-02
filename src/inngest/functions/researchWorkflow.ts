@@ -286,7 +286,7 @@ export const researchWorkflow = inngest.createFunction(
                             const searchFilter = queries.join(' ');
 
                             const mapResults = await BackendFirecrawlService.map(task.value, {
-                                limit: 20, // Map top 20 pages
+                                limit: 5, // Map top 5 pages (reduced from 20 to save credits)
                                 search: searchFilter
                             });
 

@@ -14,7 +14,7 @@ export interface AgentPlan {
         name: string;
         queries: string[];
         target_domain?: string;
-        type?: "query" | "domain_crawl" | "firecrawl_agent" | "deep_crawl";
+        type?: "query" | "domain_crawl" | "firecrawl_agent" | "deep_crawl" | "domain_map";
         target_url?: string;
         schema?: any;
         actions?: any[];
@@ -325,7 +325,7 @@ export class DiscoveryAgent {
 
 
         const modelsToTry = [
-            useFlashPlanner ? "google/gemini-2.0-flash-lite-preview-02-05:free" : (model || "openrouter/auto"), // Primary - Flash First!
+            useFlashPlanner ? "google/gemini-2.0-flash-exp:free" : (model || "openrouter/auto"), // Primary - Flash First!
             model || "openrouter/auto", // Secondary 
             "openrouter/auto" // Fallback 
         ];
