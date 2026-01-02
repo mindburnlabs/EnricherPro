@@ -9,7 +9,7 @@ export class FallbackSearchService {
      */
     static async search(query: string, apiKeys?: Record<string, string>): Promise<RetrieverResult[]> {
         try {
-            // Use reliable online model via Auto
+            // Use reliable online model via Auto (with web plugin)
             const model = "openrouter/auto";
 
             const response = await BackendLLMService.complete({
@@ -33,7 +33,8 @@ export class FallbackSearchService {
                     { role: "user", content: `Search for: "${query}"` }
                 ],
                 jsonSchema: FallbackResultSchema,
-                apiKeys
+                apiKeys,
+                plugins: [{ id: 'web' }] // Enable OpenRouter Web Search
             });
 
             const parsed = JSON.parse(response || "{}");

@@ -82,7 +82,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
         store.setAgentModel('reasoning', localConfig.reasoningModel);
         store.setApiKey('firecrawl', localConfig.apiKeys.firecrawl);
         store.setApiKey('openRouter', localConfig.apiKeys.openRouter);
-        store.setApiKey('perplexity', localConfig.apiKeys.perplexity);
+
         store.setPrompt('discovery', localConfig.prompts.discovery);
         store.setPrompt('synthesis', localConfig.prompts.synthesis);
         store.setPrompt('logistics', localConfig.prompts.logistics);
@@ -397,13 +397,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                     value={localConfig.apiKeys.openRouter}
                                     onChange={(v) => setLocalConfig({ ...localConfig, apiKeys: { ...localConfig.apiKeys, openRouter: v } })}
                                     placeholder="sk-or-..."
-                                    type="password"
-                                />
-                                <InputGroup
-                                    label={t('settings:api.perplexity')}
-                                    value={localConfig.apiKeys.perplexity}
-                                    onChange={(v) => setLocalConfig({ ...localConfig, apiKeys: { ...localConfig.apiKeys, perplexity: v } })}
-                                    placeholder="pplx-..."
                                     type="password"
                                 />
                             </div>

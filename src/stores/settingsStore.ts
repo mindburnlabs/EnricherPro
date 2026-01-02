@@ -16,7 +16,6 @@ export interface SettingsState {
     apiKeys: {
         openRouter: string;
         firecrawl: string;
-        perplexity: string;
     };
 
     // System Prompts
@@ -53,7 +52,7 @@ export interface SettingsState {
 
     // Actions
     setModel: (model: ModelConfig) => void;
-    setApiKey: (key: 'openRouter' | 'firecrawl' | 'perplexity', value: string) => void;
+    setApiKey: (key: 'openRouter' | 'firecrawl', value: string) => void;
     setPrompt: (agent: 'discovery' | 'synthesis' | 'logistics', value: string) => void;
     setBudget: (mode: 'fast' | 'balanced' | 'deep', field: 'maxQueries' | 'limitPerQuery', value: number) => void;
     toggleSource: (type: 'official' | 'marketplace' | 'community') => void;
@@ -220,8 +219,7 @@ export const useSettingsStore = create<SettingsState>()(
             model: { id: 'openrouter/auto', name: 'OpenRouter Auto' },
             apiKeys: {
                 openRouter: '',
-                firecrawl: '',
-                perplexity: ''
+                firecrawl: ''
             },
             prompts: {
                 discovery: DEFAULT_DISCOVERY_PROMPT,
@@ -244,7 +242,7 @@ export const useSettingsStore = create<SettingsState>()(
             routingPreference: 'performance',
 
             planningModel: 'openrouter/auto',
-            extractionModel: 'google/gemini-2.0-pro-exp-02-05:free', // Stronger default for extraction
+            extractionModel: 'openrouter/auto',
             reasoningModel: 'openrouter/auto',
 
             setModel: (model) => set({ model }),
@@ -297,17 +295,18 @@ export const useSettingsStore = create<SettingsState>()(
                         state.prompts.logistics = state.language === 'ru' ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT;
                     }
                     if (!state.planningModel) state.planningModel = 'openrouter/auto';
-                    if (!state.extractionModel) state.extractionModel = 'google/gemini-2.0-pro-exp-02-05:free';
+                    if (!state.extractionModel) state.extractionModel = 'openrouter/auto';
                     if (!state.reasoningModel) state.reasoningModel = 'openrouter/auto';
 
-                    // SCRUBBER: Remove phantom 'openai/gpt-5.2' from corrupted state
-                    const invalidModelId = 'openai/gpt-5.2';
-                    if (state.model?.id === invalidModelId) {
+                    // SCRUBBER: Remove phantom 'openai/gpt-5.2' and legacy Gemini defaults
+                    const invalidModelIds = ['openai/gpt-5.2', 'google/gemini-2.0-pro-exp-02-05:free', 'google/gemini-2.0-flash-exp:free'];
+
+                    if (state.model?.id && invalidModelIds.includes(state.model.id)) {
                         state.model = { id: 'openrouter/auto', name: 'OpenRouter Auto' };
                     }
-                    if (state.planningModel === invalidModelId) state.planningModel = 'openrouter/auto';
-                    if (state.extractionModel === invalidModelId) state.extractionModel = 'openrouter/auto';
-                    if (state.reasoningModel === invalidModelId) state.reasoningModel = 'openrouter/auto';
+                    if (state.planningModel && invalidModelIds.includes(state.planningModel)) state.planningModel = 'openrouter/auto';
+                    if (state.extractionModel && invalidModelIds.includes(state.extractionModel)) state.extractionModel = 'openrouter/auto';
+                    if (state.reasoningModel && invalidModelIds.includes(state.reasoningModel)) state.reasoningModel = 'openrouter/auto';
                 }
             }
         }
