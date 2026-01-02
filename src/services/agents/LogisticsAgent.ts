@@ -22,14 +22,26 @@ export class LogisticsAgent {
             let bestPage = null;
 
             for (const query of queries) {
-                const results = await BackendFirecrawlService.search(query, {
-                    limit: 1,
-                    formats: ['markdown'],
-                    apiKey: apiKeys?.firecrawl
-                });
-                if (results.length > 0) {
-                    bestPage = results[0];
-                    break;
+                try {
+                    const results = await BackendFirecrawlService.search(query, {
+                        limit: 1,
+                        formats: ['markdown'],
+                        apiKey: apiKeys?.firecrawl
+                    });
+                    if (results.length > 0) {
+                        bestPage = results[0];
+                        break;
+                    }
+                } catch (e: any) {
+                    if (e.message?.includes("Missing Firecrawl API Key") || e.statusCode === 402 || e.statusCode === 429) {
+                        // Fallback to OpenRouter
+                        const { FallbackSearchService } = await import("../backend/fallback.js");
+                        const results = await FallbackSearchService.search(query, apiKeys);
+                        if (results.length > 0) {
+                            bestPage = results[0];
+                            break;
+                        }
+                    }
                 }
             }
 

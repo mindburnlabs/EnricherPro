@@ -146,18 +146,28 @@ export const researchWorkflow = inngest.createFunction(
                             }));
                         } catch (e: any) {
                             // CRITICAL: Explicit Error Handling for User Visibility
-                            if (e.statusCode === 429) {
-                                console.warn("Firecrawl Rate Limit (429), switching to Fallback...");
-                                // Do NOT throw, let it fall through to FallbackSearchService
-                            } else if (e.statusCode === 402 || e.message?.includes("Payment Required")) {
-                                throw new Error("FAILED: Firecrawl API Credits Exhausted (402). Upgrade plan.");
-                            } else if (e.statusCode === 500) {
-                                console.warn("Firecrawl 500 Error, falling back...");
+                            const isMissingKey = e.message?.includes("Missing Firecrawl API Key");
+                            const isAuthError = e.statusCode === 401 || e.statusCode === 403;
+                            const isPaymentError = e.statusCode === 402 || e.message?.includes("Payment Required");
+                            const isRateLimit = e.statusCode === 429;
+
+                            // If it's a "Missing Key" or "Auth" error, we AUTOMATICALLY fallback without warning spam.
+                            // If it's Payment (402), we also fallback but maybe warn?
+                            // Plan: If Firecrawl is down/missing/unpaid, we use OpenRouter.
+
+                            if (isMissingKey || isAuthError || isPaymentError || isRateLimit) {
+                                agent.log('discovery', `⚠️ Firecrawl unavailable (${isMissingKey ? 'No Key' : e.statusCode || 'Error'}). Switching to Fallback Search.`);
+                            } else {
+                                console.warn("Firecrawl failed with unexpected error, trying fallback", e);
                             }
 
-                            console.warn("Firecrawl failed, trying fallback", e);
-                            const raw = await FallbackSearchService.search(task.value, apiKeys);
-                            results = raw.map(r => ({ ...r, source_type: 'fallback' }));
+                            try {
+                                const raw = await FallbackSearchService.search(task.value, apiKeys);
+                                results = raw.map(r => ({ ...r, source_type: 'fallback' }));
+                            } catch (fallbackErr) {
+                                console.error("Fallback search also failed", fallbackErr);
+                                results = [];
+                            }
                         }
                     } else if (task.type === 'domain_crawl') {
                         agent.log('discovery', `Starting Deep Map on ${task.value}...`);
@@ -198,8 +208,17 @@ export const researchWorkflow = inngest.createFunction(
                                 const raw = await BackendFirecrawlService.search(siteQuery, { apiKey: apiKeys?.firecrawl, limit: 10 });
                                 results = raw.map(r => ({ ...r, source_type: 'crawl_result' }));
                             }
-                        } catch (e) {
-                            console.error("Deep Map failed", e);
+                        } catch (e: any) {
+                            console.warn("Deep Map failed", e);
+                            // FALLBACK: Use generic site search
+                            const siteQuery = `site:${task.value} ${plan.canonical_name || plan.mpn || "specs"}`;
+                            agent.log('discovery', `⚠️ Map failed or No Key. Falling back to site-search: ${siteQuery}`);
+                            try {
+                                const raw = await FallbackSearchService.search(siteQuery, apiKeys);
+                                results = raw.map(r => ({ ...r, source_type: 'fallback_map' }));
+                            } catch (fallbackErr) {
+                                console.error("Fallback map search failed", fallbackErr);
+                            }
                         }
                     } else if (task.type === 'deep_crawl') {
                         agent.log('discovery', `Starting Recursive Crawl on ${task.value}`);
@@ -211,8 +230,18 @@ export const researchWorkflow = inngest.createFunction(
                             await FrontierService.add(jobId, 'crawl_status', crawlId, 50, task.depth, { originalUrl: task.value });
 
                             results = []; // No results yet
-                        } catch (e) {
-                            console.error("Deep Crawl Start Failed", e);
+                        } catch (e: any) {
+                            console.warn("Deep Crawl Start Failed", e);
+                            // FALLBACK: User wanted deep crawl, but we can't.
+                            // We should try to at least "search" the domain extensively?
+                            agent.log('discovery', `⚠️ Deep Crawl unavailable. Falling back to targeted site search on ${task.value}`);
+                            try {
+                                const siteQuery = `site:${task.value} ${plan.canonical_name || "product details"}`;
+                                const raw = await FallbackSearchService.search(siteQuery, apiKeys);
+                                results = raw.map(r => ({ ...r, source_type: 'fallback_crawl' }));
+                            } catch (fallbackErr) {
+                                console.error("Fallback deep crawl search failed", fallbackErr);
+                            }
                         }
                     } else if (task.type === 'crawl_status') {
                         // Poll for status
@@ -263,8 +292,27 @@ export const researchWorkflow = inngest.createFunction(
                                     source_type: 'direct_scrape'
                                 });
                             }
-                        } catch (e) {
+                        } catch (e: any) {
                             console.warn("URL scrape failed", e);
+                            // FALLBACK: If we can't scrape, we might try to ask LLM about it?
+                            // This is "Direct URL" task.
+                            // If Firecrawl is missing, we can try FallbackSearch with the URL as query.
+                            if (e.message?.includes("Missing Firecrawl API Key") || e.statusCode === 402) {
+                                try {
+                                    agent.log('discovery', `⚠️ Scrape disabled (No Key). Asking Fallback Agent about: ${task.value}`);
+                                    const raw = await FallbackSearchService.search(`summarize content of ${task.value}`, apiKeys);
+                                    if (raw && raw.length > 0) {
+                                        results.push({
+                                            url: task.value,
+                                            title: raw[0].title || "Fallback Summary",
+                                            markdown: raw[0].markdown,
+                                            source_type: 'fallback_scrape'
+                                        });
+                                    }
+                                } catch (fbErr) {
+                                    console.warn("Fallback scrape failed", fbErr);
+                                }
+                            }
                         }
                     } else if (task.type === 'firecrawl_agent') {
                         agent.log('discovery', `Deploying Autonomous Agent: ${task.value}`);
@@ -279,8 +327,16 @@ export const researchWorkflow = inngest.createFunction(
                                     source_type: 'agent_result'
                                 });
                             }
-                        } catch (e) {
+                        } catch (e: any) {
                             console.error("Firecrawl Agent failed", e);
+                            // FALLBACK: Just standard fallback search for the prompt
+                            try {
+                                agent.log('discovery', `⚠️ Firecrawl Agent unavailable. Falling back to standard search.`);
+                                const raw = await FallbackSearchService.search(task.value, apiKeys);
+                                results = raw.map(r => ({ ...r, source_type: 'fallback_agent' }));
+                            } catch (fbErr) {
+                                console.warn("Fallback failed", fbErr);
+                            }
                         }
                     } else if (task.type === 'domain_map') {
                         agent.log('discovery', `🗺️ Mapping domain: ${task.value}`);
@@ -319,6 +375,16 @@ export const researchWorkflow = inngest.createFunction(
                             }
                         } catch (e) {
                             console.warn("Domain Map failed", e);
+                            // FALLBACK: Use generic site search
+                            const queries = task.meta?.queries || [plan.canonical_name || inputRaw];
+                            const searchFilter = queries.join(' ');
+                            agent.log('discovery', `⚠️ Domain Map unavailable. Falling back to site-search: ${searchFilter}`);
+
+                            try {
+                                const siteQuery = `site:${task.value} ${searchFilter}`;
+                                const raw = await FallbackSearchService.search(siteQuery, apiKeys);
+                                results = raw.map(r => ({ ...r, source_type: 'fallback_map' }));
+                            } catch (fbErr) { }
                         }
                     } else if (task.type === 'enrichment') {
                         let success = false;
@@ -368,8 +434,23 @@ export const researchWorkflow = inngest.createFunction(
                                         source_type: 'direct_scrape'
                                     });
                                 }
-                            } catch (fallbackErr) {
+                            } catch (fallbackErr: any) {
                                 console.warn(`Fallback scrape also failed for ${task.value}`, fallbackErr);
+                                // FINAL FALLBACK: OpenRouter Summary
+                                if (fallbackErr.message?.includes("Missing Firecrawl API Key") || fallbackErr.statusCode === 402) {
+                                    try {
+                                        agent.log('discovery', `⚠️ Enrichment Scrape disabled. Asking Fallback Agent about: ${task.value}`);
+                                        const raw = await FallbackSearchService.search(`summarize content of ${task.value}`, apiKeys);
+                                        if (raw && raw.length > 0) {
+                                            results.push({
+                                                url: task.value,
+                                                title: raw[0].title || "Fallback Summary",
+                                                markdown: raw[0].markdown,
+                                                source_type: 'fallback_enrichment'
+                                            });
+                                        }
+                                    } catch (finalErr) { }
+                                }
                             }
                         }
                     }
@@ -570,6 +651,7 @@ export const researchWorkflow = inngest.createFunction(
 
                     } catch (e) {
                         console.error("Batch Scrape Failed, falling back to individual processing", e);
+                        // If it failed due to missing key, individual 'processTask' will now handle the fallback!
                         // Fallback: Add them back to 'otherTasks' to be processed individually by processTask
                         otherTasks.push(...urlTasks);
                     }
