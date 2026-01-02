@@ -112,7 +112,7 @@ export class BackendLLMService {
                 type: "json_schema",
                 json_schema: {
                     name: "output_schema", // Generic name, required by OpenAI/OR
-                    strict: true,
+                    // strict: true, // REMOVED: Causes 400 on non-OpenAI models (e.g. Anthropic, Gemini via OpenRouter)
                     schema: config.jsonSchema
                 }
             };
