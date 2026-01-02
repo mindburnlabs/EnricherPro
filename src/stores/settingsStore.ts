@@ -61,6 +61,7 @@ export interface SettingsState {
     removeBlockedDomain: (domain: string) => void;
     setLanguage: (lang: 'en' | 'ru') => void;
     setRoutingPreference: (pref: 'performance' | 'cost') => void;
+    setUseSota: (enabled: boolean) => void;
     setAgentModel: (agent: 'planning' | 'extraction' | 'reasoning', model: string) => void;
     resetPrompts: () => void;
 }
@@ -275,6 +276,7 @@ export const useSettingsStore = create<SettingsState>()(
             })),
             setLanguage: (lang) => set({ language: lang }),
             setRoutingPreference: (pref) => set({ routingPreference: pref }),
+            setUseSota: (useSota) => set({ useSota }),
             resetPrompts: () => {
                 const lang = get().language;
                 set((state) => ({

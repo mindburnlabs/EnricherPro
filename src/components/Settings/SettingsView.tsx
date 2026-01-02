@@ -70,7 +70,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
             localConfig.planningModel !== store.planningModel ||
             localConfig.extractionModel !== store.extractionModel ||
             localConfig.reasoningModel !== store.reasoningModel ||
-            localConfig.language !== store.language;
+            localConfig.language !== store.language ||
+            localConfig.useSota !== store.useSota;
         setHasChanges(isDifferent);
     }, [localConfig, store]);
 
@@ -87,6 +88,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
         store.setPrompt('synthesis', localConfig.prompts.synthesis);
         store.setPrompt('logistics', localConfig.prompts.logistics);
         store.setLanguage(localConfig.language);
+        store.setUseSota(localConfig.useSota);
 
         store.setBlockedDomains(localConfig.sources.blockedDomains);
 
