@@ -2,16 +2,16 @@
 import { config } from 'dotenv';
 config({ path: '.env.local' });
 import { createServer } from 'http';
-import { parse } from 'url';
+
 import startResearch from './api/start-research';
 import items from './api/items';
 import status from './api/status';
 // import approve from './api/approve'; // Uncomment if needed
 
 // Helper to parse body
-const getBody = (req) => new Promise((resolve) => {
+const getBody = (req: any) => new Promise((resolve) => {
     let body = '';
-    req.on('data', chunk => body += chunk);
+    req.on('data', (chunk: any) => body += chunk);
     req.on('end', () => {
         try {
             resolve(body ? JSON.parse(body) : {});
@@ -22,12 +22,12 @@ const getBody = (req) => new Promise((resolve) => {
 });
 
 // Mock Vercel Response
-const createResponse = (res) => {
-    res.status = (code) => {
+const createResponse = (res: any) => {
+    res.status = (code: any) => {
         res.statusCode = code;
         return res;
     };
-    res.json = (data) => {
+    res.json = (data: any) => {
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify(data));
         return res;
@@ -39,8 +39,10 @@ import deepHealth from './api/health/deep';
 
 const server = createServer(async (req, res) => {
     const wrappedRes = createResponse(res);
-    const parsedUrl = parse(req.url || '', true);
-    const { pathname, query } = parsedUrl;
+    const baseURL = `http://${req.headers.host || 'localhost'}`;
+    const parsedUrl = new URL(req.url || '', baseURL);
+    const pathname = parsedUrl.pathname;
+    const query = Object.fromEntries(parsedUrl.searchParams);
 
     // CORS for local dev
     res.setHeader('Access-Control-Allow-Origin', '*');
