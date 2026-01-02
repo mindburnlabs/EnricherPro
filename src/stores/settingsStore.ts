@@ -299,6 +299,15 @@ export const useSettingsStore = create<SettingsState>()(
                     if (!state.planningModel) state.planningModel = 'openrouter/auto';
                     if (!state.extractionModel) state.extractionModel = 'google/gemini-2.0-pro-exp-02-05:free';
                     if (!state.reasoningModel) state.reasoningModel = 'openrouter/auto';
+
+                    // SCRUBBER: Remove phantom 'openai/gpt-5.2' from corrupted state
+                    const invalidModelId = 'openai/gpt-5.2';
+                    if (state.model?.id === invalidModelId) {
+                        state.model = { id: 'openrouter/auto', name: 'OpenRouter Auto' };
+                    }
+                    if (state.planningModel === invalidModelId) state.planningModel = 'openrouter/auto';
+                    if (state.extractionModel === invalidModelId) state.extractionModel = 'openrouter/auto';
+                    if (state.reasoningModel === invalidModelId) state.reasoningModel = 'openrouter/auto';
                 }
             }
         }

@@ -64,6 +64,12 @@ export class BackendLLMService {
             // Keep specific logic for free models if needed later, currently handled in provider config below.
         }
 
+        // SANITIZER: Catch phantom models that don't exist
+        if (targetModel === 'openai/gpt-5.2') {
+            console.warn("LLM Service: Detected invalid model 'openai/gpt-5.2'. Auto-correcting to 'openrouter/auto'.");
+            targetModel = 'openrouter/auto';
+        }
+
         // Routing Strategy Overrides - now irrelevant as profiles are all 'openrouter/auto'
         if (config.routingStrategy === RoutingStrategy.SMART && !targetModel) {
             targetModel = 'openrouter/auto';
