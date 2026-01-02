@@ -323,9 +323,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                 <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-xl flex gap-3">
                                     <Zap className="w-5 h-5 text-blue-600 flex-shrink-0" />
                                     <div>
-                                        <p className="text-sm font-bold text-blue-900 dark:text-blue-100">Pro Tip</p>
+                                        <p className="text-sm font-bold text-blue-900 dark:text-blue-100">Pro Tip (2026 SOTA)</p>
                                         <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                                            Use <b>google/gemini-2.0-flash-exp:free</b> for Planning (Speed) and <b>anthropic/claude-3.5-sonnet</b> for Synthesis (Quality).
+                                            Use <b>google/gemini-2.5-flash</b> for Planning (Speed) and <b>anthropic/claude-opus-4.5</b> for Synthesis (Deep Reasoning).
                                         </p>
                                     </div>
                                 </div>
