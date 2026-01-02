@@ -2,7 +2,7 @@ import { db } from "../../db/index.js";
 import { frontier } from "../../db/schema.js";
 import { eq, and, desc, asc, ne } from "drizzle-orm";
 
-export type FrontierType = 'query' | 'url' | 'domain_crawl' | 'deep_crawl' | 'crawl_status' | 'firecrawl_agent';
+export type FrontierType = 'query' | 'url' | 'domain_crawl' | 'deep_crawl' | 'crawl_status' | 'firecrawl_agent' | 'domain_map';
 
 export class FrontierService {
 

@@ -65,7 +65,7 @@ export const frontier = pgTable('frontier', {
     id: uuid('id').defaultRandom().primaryKey(),
     jobId: uuid('job_id').references(() => jobs.id).notNull(),
 
-    type: text('type', { enum: ['query', 'url', 'domain_crawl', 'firecrawl_agent', 'deep_crawl', 'crawl_status'] }).notNull(),
+    type: text('type', { enum: ['query', 'url', 'domain_crawl', 'firecrawl_agent', 'deep_crawl', 'crawl_status', 'domain_map'] }).notNull(),
     value: text('value').notNull(), // The query string or URL
 
     status: text('status', { enum: ['pending', 'processing', 'completed', 'failed'] }).default('pending').notNull(),

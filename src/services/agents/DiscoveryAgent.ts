@@ -109,7 +109,7 @@ export class DiscoveryAgent {
         }
     }
 
-    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string, language: string = 'en', model?: string, sourceConfig?: { official: boolean, marketplace: boolean, community: boolean, specificOfficial?: string[], specificMarketplace?: string[], specificCommunity?: string[] }): Promise<AgentPlan> {
+    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string, language: string = 'en', model?: string, sourceConfig?: { official: boolean, marketplace: boolean, community: boolean, specificOfficial?: string[], specificMarketplace?: string[], specificCommunity?: string[] }, useFlashPlanner: boolean = true): Promise<AgentPlan> {
 
         // 0. Auto-Detect Mode (Adaptive Strategy)
         // If mode is 'balanced' (default), we check if we should upgrade/downgrade based on complexity.
@@ -201,7 +201,9 @@ export class DiscoveryAgent {
         - canonical_name: string
         - strategies: Array<{
             name: string;
-            type: "query" | "domain_crawl" | "firecrawl_agent" | "deep_crawl";
+            name: string;
+            type: "query" | "domain_crawl" | "firecrawl_agent" | "deep_crawl" | "domain_map";
+            queries: string[];
             queries: string[];
             target_domain?: string;
             schema?: any; // JSON Schema for Agent Structured Output
@@ -323,9 +325,9 @@ export class DiscoveryAgent {
 
 
         const modelsToTry = [
-            model || "openrouter/auto", // Primary
-            "openrouter/auto", // Secondary 
-            "openrouter/auto" // Replaced invalid 'thinking' model
+            useFlashPlanner ? "google/gemini-2.0-flash-lite-preview-02-05:free" : (model || "openrouter/auto"), // Primary - Flash First!
+            model || "openrouter/auto", // Secondary 
+            "openrouter/auto" // Fallback 
         ];
 
         // Deduplicate

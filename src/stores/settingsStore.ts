@@ -38,14 +38,15 @@ export interface SettingsState {
 
     // Budgets/Modes
     budgets: {
-        fast: { maxQueries: number; limitPerQuery: number };
-        balanced: { maxQueries: number; limitPerQuery: number };
-        deep: { maxQueries: number; limitPerQuery: number };
+        fast: { maxQueries: number; limitPerQuery: number; concurrency: number };
+        balanced: { maxQueries: number; limitPerQuery: number; concurrency: number };
+        deep: { maxQueries: number; limitPerQuery: number; concurrency: number };
     };
 
     // Preferences
     language: 'en' | 'ru';
     useSota: boolean;
+    useFlashPlanner: boolean; // New Performance Toggle
     routingPreference: 'performance' | 'cost';
 
     // Per-Agent Model Config
@@ -57,7 +58,7 @@ export interface SettingsState {
     setModel: (model: ModelConfig) => void;
     setApiKey: (key: 'openRouter' | 'firecrawl', value: string) => void;
     setPrompt: (agent: 'discovery' | 'synthesis' | 'logistics', value: string) => void;
-    setBudget: (mode: 'fast' | 'balanced' | 'deep', field: 'maxQueries' | 'limitPerQuery', value: number) => void;
+    setBudget: (mode: 'fast' | 'balanced' | 'deep', field: 'maxQueries' | 'limitPerQuery' | 'concurrency', value: number) => void;
     toggleSource: (type: 'official' | 'marketplace' | 'community') => void;
     addBlockedDomain: (domain: string) => void;
     setBlockedDomains: (domains: string[]) => void;
@@ -65,6 +66,7 @@ export interface SettingsState {
     setLanguage: (lang: 'en' | 'ru') => void;
     setRoutingPreference: (pref: 'performance' | 'cost') => void;
     setUseSota: (enabled: boolean) => void;
+    setUseFlashPlanner: (enabled: boolean) => void;
     setAgentModel: (agent: 'planning' | 'extraction' | 'reasoning', model: string) => void;
     // Granular Source Control
     setSpecificDomains: (type: 'official' | 'marketplace' | 'community', domains: string[]) => void;
@@ -243,12 +245,13 @@ export const useSettingsStore = create<SettingsState>()(
                 specificCommunity: []
             },
             budgets: {
-                fast: { maxQueries: 3, limitPerQuery: 3 },
-                balanced: { maxQueries: 6, limitPerQuery: 5 },
-                deep: { maxQueries: 15, limitPerQuery: 8 }
+                fast: { maxQueries: 3, limitPerQuery: 3, concurrency: 5 },
+                balanced: { maxQueries: 6, limitPerQuery: 5, concurrency: 8 },
+                deep: { maxQueries: 15, limitPerQuery: 8, concurrency: 12 }
             },
             language: 'en',
             useSota: false,
+            useFlashPlanner: true, // Default to true for speed
             routingPreference: 'performance',
 
             planningModel: 'openrouter/auto',
@@ -283,6 +286,7 @@ export const useSettingsStore = create<SettingsState>()(
             setLanguage: (lang) => set({ language: lang }),
             setRoutingPreference: (pref) => set({ routingPreference: pref }),
             setUseSota: (useSota) => set({ useSota }),
+            setUseFlashPlanner: (useFlashPlanner) => set({ useFlashPlanner }),
             setAgentModel: (agent, model) => set((state) => ({
                 [agent === 'planning' ? 'planningModel' : agent === 'extraction' ? 'extractionModel' : 'reasoningModel']: model
             })),
@@ -315,6 +319,11 @@ export const useSettingsStore = create<SettingsState>()(
                     if (!state.extractionModel) state.extractionModel = 'openrouter/auto';
                     if (!state.reasoningModel) state.reasoningModel = 'openrouter/auto';
                     if (state.useSota === undefined) state.useSota = false;
+                    if (state.useFlashPlanner === undefined) state.useFlashPlanner = true;
+                    // Migration for budgets concurrency
+                    (['fast', 'balanced', 'deep'] as const).forEach(m => {
+                        if (!state.budgets[m].concurrency) state.budgets[m].concurrency = m === 'deep' ? 10 : 5;
+                    });
 
                     // Migration for Specific Domains
                     if (!state.sources.specificOfficial) state.sources.specificOfficial = [];

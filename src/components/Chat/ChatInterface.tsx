@@ -120,7 +120,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
                 },
                 budgets: config.budgets,
                 previousJobId,
-                model: config.model.id
+                model: config.model.id,
+                useFlashPlanner: config.useFlashPlanner
             });
 
             if (res.success && res.jobId) {

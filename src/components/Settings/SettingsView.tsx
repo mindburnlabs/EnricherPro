@@ -200,7 +200,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
             (localConfig.useSota ?? false) !== (store.useSota ?? false) ||
             JSON.stringify(localConfig.sources.specificOfficial) !== JSON.stringify(store.sources.specificOfficial) ||
             JSON.stringify(localConfig.sources.specificMarketplace) !== JSON.stringify(store.sources.specificMarketplace) ||
-            JSON.stringify(localConfig.sources.specificCommunity) !== JSON.stringify(store.sources.specificCommunity);
+            JSON.stringify(localConfig.sources.specificOfficial) !== JSON.stringify(store.sources.specificOfficial) ||
+            JSON.stringify(localConfig.sources.specificMarketplace) !== JSON.stringify(store.sources.specificMarketplace) ||
+            JSON.stringify(localConfig.sources.specificCommunity) !== JSON.stringify(store.sources.specificCommunity) ||
+            (localConfig.useFlashPlanner ?? true) !== (store.useFlashPlanner ?? true);
         setHasChanges(isDifferent);
     }, [localConfig, store]);
 
@@ -217,7 +220,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
         store.setPrompt('synthesis', localConfig.prompts.synthesis);
         store.setPrompt('logistics', localConfig.prompts.logistics);
         store.setLanguage(localConfig.language);
+        store.setLanguage(localConfig.language);
         store.setUseSota(localConfig.useSota);
+        store.setUseFlashPlanner(localConfig.useFlashPlanner);
 
         store.setBlockedDomains(localConfig.sources.blockedDomains);
 
@@ -232,7 +237,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
         // Budgets
         (['fast', 'balanced', 'deep'] as const).forEach(mode => {
             store.setBudget(mode, 'maxQueries', localConfig.budgets[mode].maxQueries);
+            store.setBudget(mode, 'maxQueries', localConfig.budgets[mode].maxQueries);
             store.setBudget(mode, 'limitPerQuery', localConfig.budgets[mode].limitPerQuery);
+            store.setBudget(mode, 'concurrency', localConfig.budgets[mode].concurrency || 5);
         });
 
         if (localConfig.language !== i18n.language) {
@@ -398,6 +405,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                             desc="Show routing strategies, token usage, and strict schema validation status in the UI."
                                             active={localConfig.useSota || false}
                                             onToggle={() => setLocalConfig(prev => ({ ...prev, useSota: !prev.useSota }))}
+                                        />
+                                        <div className="h-px bg-gray-200 dark:bg-gray-800 my-2" />
+                                        <ToggleRow
+                                            label="Flash Planner (Speed)"
+                                            desc="Use Gem 2.0 Flash for planning (0.5s latency). Disable for higher quality logic (2s latency)."
+                                            active={localConfig.useFlashPlanner ?? true}
+                                            onToggle={() => setLocalConfig(prev => ({ ...prev, useFlashPlanner: !(prev.useFlashPlanner ?? true) }))}
                                         />
                                     </div>
                                 </Section>

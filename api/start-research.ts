@@ -68,6 +68,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
                     previousJobId: request.body.previousJobId || undefined,
                     mode: request.body.mode || 'balanced',
                     model: request.body.model,
+                    useFlashPlanner: request.body.useFlashPlanner,
                 },
             });
         } catch (inngestError) {

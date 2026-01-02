@@ -1,4 +1,4 @@
-export const triggerResearch = async (input: string, mode: 'fast' | 'balanced' | 'deep' = 'balanced', options?: { forceRefresh?: boolean, apiKeys?: Record<string, string>, agentConfig?: any, sourceConfig?: any, budgets?: any, previousJobId?: string, model?: string }) => {
+export const triggerResearch = async (input: string, mode: 'fast' | 'balanced' | 'deep' = 'balanced', options?: { forceRefresh?: boolean, apiKeys?: Record<string, string>, agentConfig?: any, sourceConfig?: any, budgets?: any, previousJobId?: string, model?: string, useFlashPlanner?: boolean }) => {
     const res = await fetch('/api/start-research', { method: 'POST', body: JSON.stringify({ input, mode, ...options }), headers: { 'Content-Type': 'application/json' } });
     if (!res.ok) {
         const text = await res.text();

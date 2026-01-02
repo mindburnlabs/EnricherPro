@@ -17,7 +17,7 @@ export const researchWorkflow = inngest.createFunction(
     },
     { event: "app/research.started" },
     async ({ event, step }) => {
-        const { jobId, tenantId, inputRaw, mode = 'balanced', forceRefresh, apiKeys, agentConfig, sourceConfig, budgets, previousJobId, language = 'en', model } = event.data as any; // Cast to any to handle custom event payload
+        const { jobId, tenantId, inputRaw, mode = 'balanced', forceRefresh, apiKeys, agentConfig, sourceConfig, budgets, previousJobId, language = 'en', model, useFlashPlanner = true } = event.data as any; // Cast to any to handle custom event payload
         const agent = new OrchestratorAgent(jobId, apiKeys, tenantId);
 
         // 1. Initialize DB Record
@@ -46,7 +46,8 @@ export const researchWorkflow = inngest.createFunction(
                 context, // Pass context
                 language, // Pass language
                 model, // Pass selected model
-                sourceConfig // Pass source configuration for prompt injection
+                sourceConfig, // Pass source configuration for prompt injection
+                useFlashPlanner // Pass Flash Planner configuration
             );
         });
 
@@ -71,6 +72,9 @@ export const researchWorkflow = inngest.createFunction(
                 for (const strategy of plan.strategies) {
                     if (strategy.type === 'domain_crawl' && strategy.target_domain) {
                         await FrontierService.add(jobId, 'domain_crawl', strategy.target_url || strategy.target_domain, 100, 0, { strategy: strategy.name, target_domain: strategy.target_domain, schema: strategy.schema });
+                    } else if (strategy.type === 'domain_map' && strategy.target_domain) {
+                        // NEW: Domain Map Strategy
+                        await FrontierService.add(jobId, 'domain_map', strategy.target_domain, 100, 0, { strategy: strategy.name, queries: strategy.queries, schema: strategy.schema });
                     } else {
                         for (const query of strategy.queries) {
                             await FrontierService.add(jobId, (strategy.type as any) || 'query', query, 50, 0, { strategy: strategy.name, target_domain: strategy.target_domain, schema: strategy.schema });
@@ -145,6 +149,8 @@ export const researchWorkflow = inngest.createFunction(
                                 // Do NOT throw, let it fall through to FallbackSearchService
                             } else if (e.statusCode === 402 || e.message?.includes("Payment Required")) {
                                 throw new Error("FAILED: Firecrawl API Credits Exhausted (402). Upgrade plan.");
+                            } else if (e.statusCode === 500) {
+                                console.warn("Firecrawl 500 Error, falling back...");
                             }
 
                             console.warn("Firecrawl failed, trying fallback", e);
@@ -271,6 +277,43 @@ export const researchWorkflow = inngest.createFunction(
                             }
                         } catch (e) {
                             console.error("Firecrawl Agent failed", e);
+                        }
+                    } else if (task.type === 'domain_map') {
+                        agent.log('discovery', `🗺️ Mapping domain: ${task.value}`);
+                        try {
+                            // Use Firecrawl /map endpoint to get ALL links relevant to the queries
+                            const queries = task.meta?.queries || [plan.canonical_name || inputRaw];
+                            const searchFilter = queries.join(' ');
+
+                            const mapResults = await BackendFirecrawlService.map(task.value, {
+                                limit: 20, // Map top 20 pages
+                                search: searchFilter
+                            });
+
+                            if (mapResults && mapResults.length > 0) {
+                                agent.log('discovery', `✅ Mapped ${mapResults.length} relevant pages from ${task.value}`);
+
+                                // Add these as "URL" tasks to the frontier.
+                                // The Frontier batcher will pick them up and batchScrape them.
+                                for (const l of mapResults) {
+                                    // Check if URL is valid and not excluded
+                                    if (l.url) {
+                                        await FrontierService.add(jobId, 'url', l.url, 60, (task.depth || 0) + 1, {
+                                            source: 'domain_map',
+                                            title: l.title || "Mapped Page",
+                                            // Inherit location/actions if needed (less likely for full map)
+                                        });
+                                    }
+                                }
+                                results = []; // No direct content results, just scheduled tasks
+                            } else {
+                                agent.log('discovery', `⚠️ Map found 0 pages for search "${searchFilter}" on ${task.value}. Fallback to Query.`);
+                                // Fallback: Add a simple query task for this domain
+                                await FrontierService.add(jobId, 'query', `site:${task.value} ${searchFilter}`, 50, task.depth || 0);
+                                results = [];
+                            }
+                        } catch (e) {
+                            console.warn("Domain Map failed", e);
                         }
                     } else if (task.type === 'enrichment') {
                         let success = false;
