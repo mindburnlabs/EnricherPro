@@ -252,6 +252,9 @@ export class DiscoveryAgent {
         4. **Autonomous Agent (Firecrawl Agent)**:
            - In DEEP mode, use "firecrawl_agent" type for complex navigation tasks.
            - MUST provide a JSON schema for the agent to extract structured data.
+        5. **Map & Batch (High-Volume Discovery)**:
+            - If the target is a known list page or category (e.g. "hp.com/cartridges"), use "domain_map" to find all relevant product sub-pages.
+            - Strategy: { type: "domain_map", target_domain: "https://www.hp.com/us-en/shop/sitesearch", queries: ["${knowns.model || inputRaw}"] }
         `;
 
         const systemPromptRu = `Вы - Ведущий Планировщик Исследований для Базы Данных Расходных Материалов.
@@ -277,7 +280,7 @@ export class DiscoveryAgent {
         - canonical_name: string (Каноническое имя)
         - strategies: Array<{
             name: string; (Название стратегии на русском)
-            type: "query" | "domain_crawl" | "firecrawl_agent";
+            type: "query" | "domain_crawl" | "firecrawl_agent" | "domain_map";
             queries: string[]; (Массив поисковых запросов)
             target_domain?: string;
             schema?: any; // JSON схема для агента
@@ -310,12 +313,15 @@ export class DiscoveryAgent {
            - Маркетплейсы (Wildberries, Ozon, DNS, NIX).
         4. **Автономный Агент (Firecrawl Agent)**:
            - В режиме DEEP использовать тип "firecrawl_agent" для сложной навигации.
-           - ОБЯЗАТЕЛЬНО предоставить JSON схему.
-        5. **Глубокое Сканирование (Deep Crawl - Focused)**:
+            - ОБЯЗАТЕЛЬНО предоставить JSON схему.
+         5. **Map & Batch (Массовое Обнаружение)**:
+             - Если цель - известная страница списка или категории, используйте "domain_map" для поиска всех подстраниц.
+             - Стратегия: { type: "domain_map", target_domain: "https://www.nix.ru/price", queries: ["${knowns.model || inputRaw}"] }
+        6. **Глубокое Сканирование (Deep Crawl - Focused)**:
            - В режиме DEEP, найдите *конкретную* страницу поддержки или продукта. НЕ сканируйте корень "hp.com".
            - Стратегия: { type: "query", queries: ["site:hp.com ${knowns.model || inputRaw} support", "site:kyocera.ru ${knowns.model || inputRaw} характеристики"] }
            - ИЛИ если уверены: { type: "deep_crawl", target_domain: "hp.com/support", queries: [] }
-        6. **Интерактивное Обогащение (Interactions)**:
+        7. **Интерактивное Обогащение (Interactions)**:
            - Если данные скрыты за вкладками или требуют локации.
            - Стратегия: { type: "url", target_url: "...", meta: { actions: [{ type: "click", selector: "#specs" }], location: { country: "RU" } } }
         `;

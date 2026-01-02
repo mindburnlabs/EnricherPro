@@ -49,9 +49,17 @@ interface CompletionConfig {
 }
 
 export class BackendLLMService {
-    private static apiKey = process.env.OPENROUTER_API_KEY;
+    // private static apiKey = process.env.OPENROUTER_API_KEY; // DEPRECATED: Strict UI Control Enforced
     static async complete(config: CompletionConfig): Promise<string> {
-        const apiKey = config.apiKeys?.openrouter || this.apiKey;
+        let apiKey = config.apiKeys?.openrouter;
+
+        // Strict UI Control:
+        // We do NOT fall back to process.env.
+        // If the key is missing from config, we FAIL.
+        if (!apiKey) {
+            throw new Error("Missing OpenRouter API Key. Please configure it in the UI Settings.");
+        }
+
         if (!apiKey) throw new Error("Missing OpenRouter API Key");
 
         const { withRetry } = await import("../../lib/reliability.js");
