@@ -12,7 +12,7 @@ export class EnrichmentAgent {
         goal: string,
         url: string,
         language: string = 'en',
-        model: string = "google/gemini-2.0-flash-exp:free"
+        model: string = "openrouter/auto"
     ): Promise<any> {
 
         const systemPrompt = `You are a Schema Architect for Data Extraction.

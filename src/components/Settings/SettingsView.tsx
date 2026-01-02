@@ -13,6 +13,29 @@ interface SettingsViewProps {
 
 type Tab = 'general' | 'models' | 'api' | 'prompts' | 'modes' | 'sources';
 
+const ModelSelector: React.FC<{ label: string; desc: string; value: string; onChange: (v: string) => void; models: any[]; defaultModel: string }> = ({ label, desc, value, onChange, models, defaultModel }) => (
+    <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+        <label className="block text-sm font-bold text-gray-900 dark:text-white mb-1">{label}</label>
+        <p className="text-xs text-gray-500 mb-3">{desc}</p>
+        <div className="relative">
+            <input
+                type="text"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                list={`models-${label.replace(/\s+/g, '-')}`}
+                placeholder={defaultModel}
+                className="w-full bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none"
+            />
+            <datalist id={`models-${label.replace(/\s+/g, '-')}`}>
+                {models.map(m => (
+                    <option key={m.id} value={m.id} />
+                ))}
+            </datalist>
+            {!value && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none">Default: {defaultModel.split('/')[1] || defaultModel}</span>}
+        </div>
+    </div>
+);
+
 export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onThemeChange, currentTheme }) => {
     if (!isOpen) return null;
 
@@ -44,6 +67,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
             JSON.stringify(localConfig.sources) !== JSON.stringify(store.sources) ||
             JSON.stringify(localConfig.budgets) !== JSON.stringify(store.budgets) ||
             localConfig.model.id !== store.model.id ||
+            localConfig.planningModel !== store.planningModel ||
+            localConfig.extractionModel !== store.extractionModel ||
+            localConfig.reasoningModel !== store.reasoningModel ||
             localConfig.language !== store.language;
         setHasChanges(isDifferent);
     }, [localConfig, store]);
@@ -51,6 +77,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
     const handleSave = () => {
         // Commit changes to store
         store.setModel(localConfig.model);
+        store.setAgentModel('planning', localConfig.planningModel);
+        store.setAgentModel('extraction', localConfig.extractionModel);
+        store.setAgentModel('reasoning', localConfig.reasoningModel);
         store.setApiKey('firecrawl', localConfig.apiKeys.firecrawl);
         store.setApiKey('openRouter', localConfig.apiKeys.openRouter);
         store.setApiKey('perplexity', localConfig.apiKeys.perplexity);
@@ -306,6 +335,44 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                             {t('settings:models.fetch_tip')}
                                         </p>
                                     )}
+                                </div>
+
+                                {/* Agent Specific Models */}
+                                <div className="space-y-4">
+                                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <Brain className="w-5 h-5 text-purple-600" />
+                                        For Advanced Users: Agent-Specific Models
+                                    </h4>
+                                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                                        Override models for specific stages of the research pipeline.
+                                    </p>
+
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <ModelSelector
+                                            label="Planning Agent"
+                                            desc="Responsible for search strategy and query generation."
+                                            value={localConfig.planningModel}
+                                            onChange={(val) => setLocalConfig(prev => ({ ...prev, planningModel: val }))}
+                                            models={availableModels}
+                                            defaultModel="openrouter/auto"
+                                        />
+                                        <ModelSelector
+                                            label="Extraction Agent"
+                                            desc="Parses messy HTML into structured JSON. Stronger models recommended for Russian/Chinese data."
+                                            value={localConfig.extractionModel}
+                                            onChange={(val) => setLocalConfig(prev => ({ ...prev, extractionModel: val }))}
+                                            models={availableModels}
+                                            defaultModel="google/gemini-2.0-pro-exp-02-05:free"
+                                        />
+                                        <ModelSelector
+                                            label="Reasoning Agent"
+                                            desc="Synthesizes data, resolves conflicts, and generates final output."
+                                            value={localConfig.reasoningModel}
+                                            onChange={(val) => setLocalConfig(prev => ({ ...prev, reasoningModel: val }))}
+                                            models={availableModels}
+                                            defaultModel="openrouter/auto"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         )}

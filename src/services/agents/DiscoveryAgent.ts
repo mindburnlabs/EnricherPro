@@ -72,7 +72,7 @@ export class DiscoveryAgent {
         return result;
     }
 
-    static async analyzeRequestComplexity(input: string, apiKeys?: Record<string, string>, model: string = "google/gemini-2.0-flash-exp:free"): Promise<{ mode: ResearchMode, reason: string }> {
+    static async analyzeRequestComplexity(input: string, apiKeys?: Record<string, string>, model: string = "openrouter/auto"): Promise<{ mode: ResearchMode, reason: string }> {
         try {
             const systemPrompt = `You are a Research Strategist. 
             Analyze the user's request complexity to determine the optimal research mode.
@@ -121,7 +121,7 @@ export class DiscoveryAgent {
         let suggestion = null;
 
         if (mode === 'balanced') {
-            suggestion = await this.analyzeRequestComplexity(inputRaw, apiKeys, "google/gemini-2.0-flash-exp:free");
+            suggestion = await this.analyzeRequestComplexity(inputRaw, apiKeys, "openrouter/auto");
             onLog?.(`🧠 Adaptive Strategy: Analyzed request as '${suggestion.mode}' (${suggestion.reason})`);
             if (suggestion.mode === 'deep') {
                 effectiveMode = 'deep';
@@ -314,15 +314,12 @@ export class DiscoveryAgent {
 
         const systemPrompt = isRu ? systemPromptRu : systemPromptEn;
 
-        // CIRCUIT BREAKER for known broken models (e.g. user selected them in settings previously)
-        if (model === 'xiaomi/mimo-v2-flash:free') {
-            model = 'google/gemini-2.0-flash-exp:free';
-        }
+
 
         const modelsToTry = [
-            model || "google/gemini-2.0-flash-exp:free", // Primary
-            "google/gemini-2.0-flash-exp:free", // Secondary 
-            "google/gemini-2.0-pro-exp-02-05:free" // Replaced invalid 'thinking' model
+            model || "openrouter/auto", // Primary
+            "openrouter/auto", // Secondary 
+            "openrouter/auto" // Replaced invalid 'thinking' model
         ];
 
         // Deduplicate
@@ -438,7 +435,7 @@ export class DiscoveryAgent {
         originalInput: string,
         currentResults: RetrieverResult[],
         language: string = 'en',
-        model: string = "google/gemini-2.0-flash-exp:free"
+        model: string = "openrouter/auto"
     ): Promise<{
         action: 'continue' | 'stop';
         new_tasks?: Array<{ type: 'query' | 'enrichment' | 'domain_crawl' | 'firecrawl_agent', value: string, meta?: any }>

@@ -9,9 +9,8 @@ export class FallbackSearchService {
      */
     static async search(query: string, apiKeys?: Record<string, string>): Promise<RetrieverResult[]> {
         try {
-            // Use perplexity/sonar which is generally available and reliable
-            // Use reliable online model
-            const model = "perplexity/llama-3.1-sonar-small-128k-online";
+            // Use reliable online model via Auto
+            const model = "openrouter/auto";
 
             const response = await BackendLLMService.complete({
                 model,

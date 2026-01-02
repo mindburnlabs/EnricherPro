@@ -10,6 +10,7 @@ import { triggerResearch, approveItem } from '../../lib/api.js';
 import { EnrichedItem } from '../../types/domain.js';
 import { User } from 'lucide-react';
 import { useSettingsStore } from '../../stores/settingsStore.js';
+import { ConflictResolver } from '../Research/ConflictResolver.js';
 
 interface ChatInterfaceProps { }
 
@@ -19,6 +20,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [activeJobId, setActiveJobId] = useState<string | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
+
+    // Conflict Resolution State
+    const [conflictState, setConflictState] = useState<{ current: EnrichedItem, candidate: EnrichedItem } | null>(null);
 
     // Stream Hook
     const { steps, items, logs, status, error, startStream, reset } = useResearchStream();
@@ -144,7 +148,41 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
                 };
             }));
         } catch (e) {
-            alert("Failed to approve");
+            console.error("Failed to approve item", e);
+            alert("Failed to approve item. Please try again.");
+        }
+    };
+
+    const handleMerge = (item: EnrichedItem) => {
+        // In a real scenario, we would fetch the conflicting item from DB
+        // For now, we simulate conflict by cloning the current item as 'current'
+        // and using the passed item as 'candidate'
+        const mockCurrent = { ...item, id: 'existing-db-item', data: { ...item.data, mpn_identity: { ...item.data.mpn_identity, mpn: "OLD-MPN" } } };
+        setConflictState({ current: mockCurrent, candidate: item });
+    };
+
+    const handleResolveConflict = async (action: 'keep_current' | 'replace' | 'merge') => {
+        if (!conflictState) return;
+
+        try {
+            const { resolveConflict } = await import('../../lib/api.js');
+            await resolveConflict(conflictState.candidate.id, action, conflictState.current.id);
+
+            // Optimistic update
+            if (action === 'replace') {
+                setMessages(prev => prev.map(msg => {
+                    if (!msg.items) return msg;
+                    return {
+                        ...msg,
+                        items: msg.items.map(item => item.id === conflictState.candidate.id ? { ...item, status: 'ok' } : item)
+                    };
+                }));
+            }
+        } catch (e) {
+            console.error("Conflict resolution failed", e);
+            alert(t('errors.conflict_resolution_failed', "Failed to resolve conflict."));
+        } finally {
+            setConflictState(null);
         }
     };
 
@@ -201,6 +239,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
                                             <ChatResultBlock
                                                 items={msg.items}
                                                 onApprove={handleApprove}
+                                                onMerge={handleMerge}
                                                 status={msg.status as any}
                                             />
                                         )}
@@ -239,6 +278,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
                     />
                 </div>
             </div>
+
+            {/* Conflict Modal */}
+            {conflictState && (
+                <ConflictResolver
+                    current={conflictState.current}
+                    candidate={conflictState.candidate}
+                    onResolve={handleResolveConflict}
+                    onCancel={() => setConflictState(null)}
+                />
+            )}
         </div>
     );
 };

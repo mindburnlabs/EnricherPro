@@ -46,6 +46,11 @@ export interface SettingsState {
     useSota: boolean;
     routingPreference: 'performance' | 'cost';
 
+    // Per-Agent Model Config
+    planningModel: string;
+    extractionModel: string;
+    reasoningModel: string;
+
     // Actions
     setModel: (model: ModelConfig) => void;
     setApiKey: (key: 'openRouter' | 'firecrawl' | 'perplexity', value: string) => void;
@@ -57,6 +62,7 @@ export interface SettingsState {
     removeBlockedDomain: (domain: string) => void;
     setLanguage: (lang: 'en' | 'ru') => void;
     setRoutingPreference: (pref: 'performance' | 'cost') => void;
+    setAgentModel: (agent: 'planning' | 'extraction' | 'reasoning', model: string) => void;
     resetPrompts: () => void;
 }
 
@@ -211,7 +217,7 @@ export const DEFAULT_LOGISTICS_PROMPT_RU = `Вы - Экстрактор Данн
 export const useSettingsStore = create<SettingsState>()(
     persist(
         (set, get) => ({
-            model: { id: 'google/gemini-2.0-pro-exp-02-05:free', name: 'Gemini 2.0 Pro Exp (Free)' },
+            model: { id: 'openrouter/auto', name: 'OpenRouter Auto' },
             apiKeys: {
                 openRouter: '',
                 firecrawl: '',
@@ -237,9 +243,17 @@ export const useSettingsStore = create<SettingsState>()(
             useSota: false,
             routingPreference: 'performance',
 
+            planningModel: 'openrouter/auto',
+            extractionModel: 'google/gemini-2.0-pro-exp-02-05:free', // Stronger default for extraction
+            reasoningModel: 'openrouter/auto',
+
             setModel: (model) => set({ model }),
             setApiKey: (key, value) => set((state) => ({ apiKeys: { ...state.apiKeys, [key]: value } })),
             setPrompt: (agent, value) => set((state) => ({ prompts: { ...state.prompts, [agent]: value } })),
+            setAgentModel: (agent, model) => set((state) => {
+                const key = `${agent}Model` as keyof SettingsState;
+                return { [key]: model } as Partial<SettingsState>;
+            }),
             setBudget: (mode, field, value) => set((state) => ({
                 budgets: {
                     ...state.budgets,
@@ -282,6 +296,9 @@ export const useSettingsStore = create<SettingsState>()(
                     if (!state.prompts.logistics) {
                         state.prompts.logistics = state.language === 'ru' ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT;
                     }
+                    if (!state.planningModel) state.planningModel = 'openrouter/auto';
+                    if (!state.extractionModel) state.extractionModel = 'google/gemini-2.0-pro-exp-02-05:free';
+                    if (!state.reasoningModel) state.reasoningModel = 'openrouter/auto';
                 }
             }
         }

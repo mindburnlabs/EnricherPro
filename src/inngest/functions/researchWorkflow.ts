@@ -17,8 +17,7 @@ export const researchWorkflow = inngest.createFunction(
     },
     { event: "app/research.started" },
     async ({ event, step }) => {
-        // @ts-ignore - Custom event prop
-        const { jobId, tenantId, inputRaw, mode = 'balanced', forceRefresh, apiKeys, agentConfig, sourceConfig, budgets, previousJobId, language = 'en', model } = event.data;
+        const { jobId, tenantId, inputRaw, mode = 'balanced', forceRefresh, apiKeys, agentConfig, sourceConfig, budgets, previousJobId, language = 'en', model } = event.data as any; // Cast to any to handle custom event payload
         const agent = new OrchestratorAgent(jobId, apiKeys, tenantId);
 
         // 1. Initialize DB Record

@@ -11,7 +11,7 @@ export class LogisticsAgent {
      * NIX.ru Specialized Scraper & Parser (No-API)
      * Scans NIX.ru for comprehensive data: Logistics, Specs, Compatibility.
      */
-    static async checkNixRu(canonicalName: string, apiKeys?: Record<string, string>, onLog?: (msg: string) => void, promptOverride?: string): Promise<{ weight: string | null, dimensions: string | null, url: string | null, fullExtract?: any }> {
+    static async checkNixRu(canonicalName: string, apiKeys?: Record<string, string>, onLog?: (msg: string) => void, promptOverride?: string, modelOverride?: string): Promise<{ weight: string | null, dimensions: string | null, url: string | null, fullExtract?: any }> {
         // Broad search to find the specific product page
         const queries = [
             `site:nix.ru ${canonicalName} описание`, // Description
@@ -47,14 +47,18 @@ export class LogisticsAgent {
                 4. "Ресурс" (Yield) -> pages.
                 `;
 
+                // Resolve model
+                const { useSettingsStore } = await import('../../stores/settingsStore.js');
+                const storeModel = useSettingsStore.getState().extractionModel;
+                const targetModel = modelOverride || storeModel || 'openrouter/auto'; // Use override or store or default
+
                 const extract = await BackendLLMService.complete({
-                    profile: ModelProfile.EXTRACTION,
+                    model: targetModel,
                     messages: [
                         { role: "system", content: systemPrompt },
                         { role: "user", content: text.substring(0, 20000) } // NIX pages can be long
                     ],
                     jsonSchema: LogisticsSchema,
-                    routingStrategy: RoutingStrategy.CHEAP, // High volume, low complexity -> CHEAP
                     apiKeys
                 });
 

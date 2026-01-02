@@ -21,7 +21,10 @@ export interface ResearchLog {
     timestamp: string;
 }
 
+import { useTranslation } from 'react-i18next';
+
 export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchLog[] } => {
+    const { t } = useTranslation('common');
     const [steps, setSteps] = useState<StepStatus[]>([]);
     const [items, setItems] = useState<EnrichedItem[]>([]);
     const [logs, setLogs] = useState<ResearchLog[]>([]); // New Log State
@@ -41,7 +44,7 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
         setStatus('running');
 
         // Initial step
-        setSteps([{ id: 'init', label: 'Initializing Research...', status: 'running' }]);
+        setSteps([{ id: 'init', label: t('steps.initializing', 'Initializing Research...'), status: 'running' }]);
 
         const eventSource = new EventSource(`/api/sse?jobId=${jobId}`);
 
@@ -69,11 +72,11 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
                     // Backend steps: 'planning', 'searching', 'enrichment', 'gate_check'
                     const mapStepLabel = (s: string) => {
                         switch (s) {
-                            case 'planning': return 'Planning Strategy (Agents active)';
-                            case 'searching': return 'Gathering Intelligence (Firecrawl)';
-                            case 'enrichment': return 'Synthesizing & Extracting';
-                            case 'gate_check': return 'Quality Gatekeeper Validation';
-                            default: return 'Processing...';
+                            case 'planning': return t('steps.planning', 'Planning Strategy');
+                            case 'searching': return t('steps.searching', 'Gathering Intelligence');
+                            case 'enrichment': return t('steps.enrichment', 'Synthesizing & Extracting');
+                            case 'gate_check': return t('steps.validating', 'Quality Gatekeeper Validation');
+                            default: return t('steps.processing', 'Processing...');
                         }
                     };
 

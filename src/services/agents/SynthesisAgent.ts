@@ -21,11 +21,12 @@ export class SynthesisAgent {
     static async extractClaims(sourceText: string, sourceUrl: string, apiKeys?: Record<string, string>, promptOverride?: string, modelOverride?: string | { id: string }, language: string = 'en'): Promise<ExtractedClaim[]> {
         const isRu = language === 'ru';
 
-        // CIRCUIT BREAKER for known broken models
-        let effectiveModel = typeof modelOverride === 'string' ? modelOverride : modelOverride?.id;
-        if (effectiveModel === 'xiaomi/mimo-v2-flash:free') {
-            effectiveModel = 'google/gemini-2.0-flash-exp:free';
-        }
+        // Resolve model: override > store > default
+        const { useSettingsStore } = await import('../../stores/settingsStore.js');
+        const storeModel = useSettingsStore.getState().extractionModel;
+        let effectiveModel = (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel || 'openrouter/auto';
+
+
 
         const systemPromptEn = promptOverride || `You are an Extraction Engine.
         Your goal is to parse the input text and extract structured facts (Claims) about a printer consumable.
@@ -87,11 +88,9 @@ export class SynthesisAgent {
 
         const isRu = language === 'ru';
 
-        // CIRCUIT BREAKER for known broken models
         let effectiveModel = typeof modelOverride === 'string' ? modelOverride : modelOverride?.id;
-        if (effectiveModel === 'xiaomi/mimo-v2-flash:free') {
-            effectiveModel = 'google/gemini-2.0-flash-exp:free';
-        }
+
+
 
         const systemPromptEn = promptOverride || `You are the Synthesis Agent for the D² Consumable Database.
         Your mission is to extract PRISTINE, VERIFIED data from the provided raw text evidence.

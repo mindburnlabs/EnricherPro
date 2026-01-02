@@ -50,53 +50,6 @@ interface CompletionConfig {
 
 export class BackendLLMService {
     private static apiKey = process.env.OPENROUTER_API_KEY;
-    private static modelCache: { models: string[], timestamp: number } | null = null;
-    private static CACHE_TTL = 3600 * 1000; // 1 hour
-
-    /**
-     * Dynamically fetches free models from OpenRouter.
-     * Filters for pricing.input === '0' and sorts by context length.
-     */
-    static async fetchFreeModels(): Promise<string[]> {
-        if (this.modelCache && (Date.now() - this.modelCache.timestamp < this.CACHE_TTL)) {
-            return this.modelCache.models;
-        }
-
-        try {
-
-            const response = await fetch("https://openrouter.ai/api/v1/models");
-            if (!response.ok) throw new Error("Failed to fetch models");
-
-            const data = await response.json();
-
-            const freeModels = data.data
-                .filter((m: any) => m.pricing?.prompt === '0' && m.pricing?.completion === '0')
-                .map((m: any) => ({
-                    id: m.id,
-                    context_length: m.context_length || 4096,
-                    description: m.description,
-                    name: m.name
-                }))
-                // Sort by context length (descending) as proxy for "capability"
-                .sort((a: any, b: any) => b.context_length - a.context_length);
-
-            const modelIds = freeModels.map((m: any) => m.id);
-            this.modelCache = { models: modelIds, timestamp: Date.now() };
-
-
-            return modelIds;
-
-        } catch (error) {
-            console.warn("[LLM] Failed to fetch free models, using fallback list.", error);
-            return [
-                'google/gemini-2.0-pro-exp-02-05:free',
-                'google/gemini-2.0-flash-exp:free',
-                'deepseek/deepseek-r1:free',
-                'meta-llama/llama-3.3-70b-instruct:free'
-            ];
-        }
-    }
-
     static async complete(config: CompletionConfig): Promise<string> {
         const apiKey = config.apiKeys?.openrouter || this.apiKey;
         if (!apiKey) throw new Error("Missing OpenRouter API Key");
@@ -104,34 +57,29 @@ export class BackendLLMService {
         const { withRetry } = await import("../../lib/reliability.js");
 
         // 1. Resolve Primary Model
-        let targetModel = config.model;
+        // STRICT: Always use openrouter/auto (or configured override if passed explicitly, though we aim to pass 'openrouter/auto' generally)
+        let targetModel = config.model || DEFAULT_MODEL;
 
-        // Routing Strategy Overrides
+        if (targetModel.endsWith(':free')) {
+            // Keep specific logic for free models if needed later, currently handled in provider config below.
+        }
+
+        // Routing Strategy Overrides - now irrelevant as profiles are all 'openrouter/auto'
         if (config.routingStrategy === RoutingStrategy.SMART && !targetModel) {
             targetModel = 'openrouter/auto';
         }
 
-        // Auto/Smart Logic
-        if (!targetModel || targetModel === 'openrouter/auto:free') {
-            const freeModels = await this.fetchFreeModels();
-            targetModel = freeModels[0] || DEFAULT_MODEL;
-        } else if (config.profile && !config.model) {
-            targetModel = MODEL_CONFIGS[config.profile].candidates[0];
-        }
-        if (!targetModel) targetModel = DEFAULT_MODEL;
-
-        // Nitro Injection for FAST strategy
-        if (config.routingStrategy === RoutingStrategy.FAST && !targetModel.includes(':nitro') && !targetModel.includes(':free')) {
-            targetModel += ':nitro';
-        }
-
-        // 2. Resolve Fallbacks (SOTA: models array)
+        // 2. Resolve Fallbacks
+        // OpenRouter only allows a small list of models.
+        // Since we are moving to 'openrouter/auto', we generally don't need extensive fallbacks.
+        // We will LIMIT fallback models to max 2 items to avoid "models array must have 3 items or fewer" error
+        // (Primary + 2 fallbacks = 3 total)
         let fallbackModels: string[] = [];
         if (config.models && config.models.length > 0) {
-            fallbackModels = config.models.filter(m => m !== targetModel);
+            fallbackModels = config.models.filter(m => m !== targetModel).slice(0, 2);
         } else if (config.profile) {
-            // Use profile candidates as fallbacks
-            fallbackModels = MODEL_CONFIGS[config.profile].candidates.filter(m => m !== targetModel);
+            // Profiles are now just ['openrouter/auto'], so this will likely be empty or same as target
+            fallbackModels = MODEL_CONFIGS[config.profile].candidates.filter(m => m !== targetModel).slice(0, 2);
         }
 
         // 3. Construct Request Body

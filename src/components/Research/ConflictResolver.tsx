@@ -10,7 +10,10 @@ interface ConflictResolverProps {
     onCancel: () => void;
 }
 
+import { useTranslation } from 'react-i18next';
+
 export const ConflictResolver: React.FC<ConflictResolverProps> = ({ current, candidate, onResolve, onCancel }) => {
+    const { t } = useTranslation('detail');
     const [selectedAction, setSelectedAction] = useState<'keep_current' | 'replace' | 'merge' | null>(null);
 
     // Simple diff detection (visual only for now)
@@ -28,10 +31,10 @@ export const ConflictResolver: React.FC<ConflictResolverProps> = ({ current, can
                     <div>
                         <h2 className="text-xl font-bold flex items-center gap-2">
                             <AlertTriangle className="w-6 h-6 text-amber-500" />
-                            Resolve Data Conflict
+                            {t('conflict.title', 'Resolve Data Conflict')}
                         </h2>
                         <p className="text-gray-500 mt-1">
-                            A duplicate or conflicting item was found. Choose how to resolve it.
+                            {t('conflict.description', 'A duplicate or conflicting item was found. Choose how to resolve it.')}
                         </p>
                     </div>
                     <button onClick={onCancel} className="text-gray-400 hover:text-gray-600">
@@ -49,15 +52,15 @@ export const ConflictResolver: React.FC<ConflictResolverProps> = ({ current, can
                     {/* Column 1: Current (Existing Store) */}
                     <div className={`p-4 rounded-xl border-2 transition-all ${selectedAction === 'keep_current' ? 'border-emerald-500 bg-emerald-50/10' : 'border-gray-200 dark:border-gray-800'}`}>
                         <div className="flex justify-between items-center mb-4">
-                            <span className="font-bold text-gray-500 uppercase text-xs tracking-wider">Candidate Item (New)</span>
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Incoming</span>
+                            <span className="font-bold text-gray-500 uppercase text-xs tracking-wider">{t('conflict.incoming', 'Candidate Item (New)')}</span>
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">{t('conflict.tag_incoming', 'Incoming')}</span>
                         </div>
 
                         <div className="space-y-4 font-mono text-sm">
-                            <Field label="MPN" value={current.data.mpn_identity.mpn} diff={getDiff('mpn', current.data.mpn_identity.mpn, candidate.data.mpn_identity.mpn)} />
-                            <Field label="Title" value={current.data.title_norm} diff={getDiff('title', current.data.title_norm, candidate.data.title_norm)} />
-                            <Field label="Brand" value={current.data.brand} diff={getDiff('brand', current.data.brand, candidate.data.brand)} />
-                            <Field label="Model" value={current.data.model} diff={getDiff('model', current.data.model, candidate.data.model)} />
+                            <Field label={t('identity.mpn', 'MPN')} value={current.data.mpn_identity.mpn} diff={getDiff('mpn', current.data.mpn_identity.mpn, candidate.data.mpn_identity.mpn)} />
+                            <Field label={t('identity.title', 'Title')} value={current.data.title_norm} diff={getDiff('title', current.data.title_norm, candidate.data.title_norm)} />
+                            <Field label={t('identity.brand', 'Brand')} value={current.data.brand} diff={getDiff('brand', current.data.brand, candidate.data.brand)} />
+                            <Field label={t('identity.model', 'Model')} value={current.data.model} diff={getDiff('model', current.data.model, candidate.data.model)} />
 
                             <div className="pt-4 border-t border-dashed">
                                 <h4 className="font-bold text-gray-500 mb-2">Metadata</h4>
@@ -72,22 +75,22 @@ export const ConflictResolver: React.FC<ConflictResolverProps> = ({ current, can
                             onClick={() => setSelectedAction('keep_current')}
                             className={`w-full mt-6 py-3 rounded-lg font-bold flex items-center justify-center gap-2 ${selectedAction === 'keep_current' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                         >
-                            <Check className="w-4 h-4" /> Keep This
+                            <Check className="w-4 h-4" /> {t('conflict.action_keep', 'Keep This')}
                         </button>
                     </div>
 
                     {/* Column 2: Candidate (Existing DB Item) */}
                     <div className={`p-4 rounded-xl border-2 transition-all ${selectedAction === 'replace' ? 'border-emerald-500 bg-emerald-50/10' : 'border-gray-200 dark:border-gray-800'}`}>
                         <div className="flex justify-between items-center mb-4">
-                            <span className="font-bold text-gray-500 uppercase text-xs tracking-wider">Existing Record (In Database)</span>
-                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Conflict Target</span>
+                            <span className="font-bold text-gray-500 uppercase text-xs tracking-wider">{t('conflict.existing', 'Existing Record (In Database)')}</span>
+                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">{t('conflict.tag_existing', 'Conflict Target')}</span>
                         </div>
 
                         <div className="space-y-4 font-mono text-sm">
-                            <Field label="MPN" value={candidate.data.mpn_identity.mpn} diff={getDiff('mpn', current.data.mpn_identity.mpn, candidate.data.mpn_identity.mpn)} />
-                            <Field label="Title" value={candidate.data.title_norm} diff={getDiff('title', current.data.title_norm, candidate.data.title_norm)} />
-                            <Field label="Brand" value={candidate.data.brand} diff={getDiff('brand', current.data.brand, candidate.data.brand)} />
-                            <Field label="Model" value={candidate.data.model} diff={getDiff('model', current.data.model, candidate.data.model)} />
+                            <Field label={t('identity.mpn', 'MPN')} value={candidate.data.mpn_identity.mpn} diff={getDiff('mpn', current.data.mpn_identity.mpn, candidate.data.mpn_identity.mpn)} />
+                            <Field label={t('identity.title', 'Title')} value={candidate.data.title_norm} diff={getDiff('title', current.data.title_norm, candidate.data.title_norm)} />
+                            <Field label={t('identity.brand', 'Brand')} value={candidate.data.brand} diff={getDiff('brand', current.data.brand, candidate.data.brand)} />
+                            <Field label={t('identity.model', 'Model')} value={candidate.data.model} diff={getDiff('model', current.data.model, candidate.data.model)} />
 
                             <div className="pt-4 border-t border-dashed">
                                 <h4 className="font-bold text-gray-500 mb-2">Metadata</h4>
@@ -102,7 +105,7 @@ export const ConflictResolver: React.FC<ConflictResolverProps> = ({ current, can
                             onClick={() => setSelectedAction('replace')}
                             className={`w-full mt-6 py-3 rounded-lg font-bold flex items-center justify-center gap-2 ${selectedAction === 'replace' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                         >
-                            <Shuffle className="w-4 h-4" /> Replace Existing
+                            <Shuffle className="w-4 h-4" /> {t('conflict.action_replace', 'Replace Existing')}
                         </button>
                     </div>
                 </div>
@@ -113,7 +116,7 @@ export const ConflictResolver: React.FC<ConflictResolverProps> = ({ current, can
                         onClick={onCancel}
                         className="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg font-medium"
                     >
-                        Cancel
+                        {t('common:cancel', 'Cancel')}
                     </button>
                     <button
                         disabled={!selectedAction}
@@ -123,7 +126,7 @@ export const ConflictResolver: React.FC<ConflictResolverProps> = ({ current, can
                             : 'bg-gray-300 cursor-not-allowed'
                             }`}
                     >
-                        Confirm Resolution
+                        {t('conflict.confirm', 'Confirm Resolution')}
                     </button>
                 </div>
             </div>

@@ -35,3 +35,11 @@ export const archiveItem = async (itemId: string) => {
         headers: { 'Content-Type': 'application/json' }
     }).then(r => r.json());
 }
+
+export const resolveConflict = async (itemId: string, resolution: 'keep_current' | 'replace' | 'merge', targetId?: string) => {
+    return fetch('/api/resolve-conflict', {
+        method: 'POST',
+        body: JSON.stringify({ itemId, resolution, targetId }),
+        headers: { 'Content-Type': 'application/json' }
+    }).then(r => r.json());
+}
