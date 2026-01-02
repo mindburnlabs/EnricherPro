@@ -5,7 +5,7 @@ import { OrchestratorAgent } from "../../services/agents/OrchestratorAgent.js";
 export const researchWorkflow = inngest.createFunction(
     {
         id: "research-workflow",
-        concurrency: { limit: 5 },
+        concurrency: { limit: 20 },
         retries: 3,
         onFailure: async ({ event, error }) => {
             // @ts-ignore - Inngest typing quirk
@@ -85,7 +85,8 @@ export const researchWorkflow = inngest.createFunction(
 
             // Loop Config - Reduced concurrency to avoid 429s on free tier
             // Loop Config - Reduced concurrency to avoid 429s on free tier
-            let defaultBudget = { maxQueries: 5, limitPerQuery: 3, concurrency: 2 };
+            // Loop Config - Reduced concurrency to avoid 429s on free tier
+            let defaultBudget = { maxQueries: 10, limitPerQuery: 5, concurrency: 5 };
             let MAX_LOOPS = mode === 'deep' ? 15 : 5;
 
             // ADAPTIVE UPGRADE: Override with Agent's suggested budget
@@ -104,6 +105,7 @@ export const researchWorkflow = inngest.createFunction(
             // Total Execution Limit (Safety valve) - Increased for Parallelism
             const CONCURRENCY = budget.concurrency || 3;
 
+            // 1. Frontier Execution (Phase F)
             const allResults: any[] = [];
             let loops = 0;
 
@@ -466,7 +468,7 @@ export const researchWorkflow = inngest.createFunction(
 
                             // 3. Persist Claims
                             if (claims && claims.length > 0) {
-                                await ClaimsRepository.createBatch(claims.map(c => ({
+                                await ClaimsRepository.createBatch(claims.filter(c => c.field).map(c => ({
                                     itemId: item.id,
                                     sourceDocId: sourceDoc.id,
                                     field: c.field,
@@ -479,24 +481,8 @@ export const researchWorkflow = inngest.createFunction(
                         }
                     }
 
-                    // 4. Frontier Expansion
-                    if (mode !== 'fast' && loops < MAX_LOOPS && results.length > 0) {
-                        try {
-                            const newQueries = await DiscoveryAgent.analyzeForExpansion(task.value, results.map(r => ({
-                                url: r.url,
-                                title: r.title,
-                                markdown: r.markdown || "",
-                                source_type: r.source_type as any,
-                                timestamp: new Date().toISOString()
-                            })), apiKeys, language);
-
-                            if (newQueries && newQueries.length > 0) {
-                                for (const q of newQueries) {
-                                    await FrontierService.add(jobId, 'query', q, 40, (task.depth || 0) + 1, { discovered_from: task.value });
-                                }
-                            }
-                        } catch (e) { }
-                    }
+                    // 4. Frontier Expansion - MOVED TO BATCH LEVEL
+                    // if (mode !== 'fast' && loops < MAX_LOOPS && results.length > 0) { ... }
 
                     await FrontierService.complete(task.id, 'completed');
                     return results;
@@ -602,6 +588,30 @@ export const researchWorkflow = inngest.createFunction(
                             timestamp: new Date().toISOString()
                         });
                     });
+                }
+
+
+                // 3. BATCH EXPANSION CHECK
+                // Analyze all new results from this batch to find new opportunities
+                if (mode !== 'fast' && loops < MAX_LOOPS && allResults.length > 0) {
+                    const BATCH_SIZE_FOR_ANALYSIS = 10;
+                    const recentResults = allResults.slice(-Math.min(allResults.length, BATCH_SIZE_FOR_ANALYSIS));
+
+                    if (recentResults.length > 0) {
+                        agent.log('discovery', `🔎 Running Batch Expansion Analysis on ${recentResults.length} recent items...`);
+                        try {
+                            const combinedQueries = await DiscoveryAgent.analyzeForExpansion(inputRaw, recentResults, apiKeys, language);
+
+                            if (combinedQueries && combinedQueries.length > 0) {
+                                agent.log('discovery', `✨ Batch Expansion found ${combinedQueries.length} new signals.`);
+                                for (const q of combinedQueries) {
+                                    await FrontierService.add(jobId, 'query', q, 40, loops + 1, { source: 'batch-expansion' });
+                                }
+                            }
+                        } catch (e) {
+                            console.warn("Batch expansion failed", e);
+                        }
+                    }
                 }
             }
 
@@ -769,4 +779,5 @@ export const researchWorkflow = inngest.createFunction(
             ...result
         };
     }
+
 );
