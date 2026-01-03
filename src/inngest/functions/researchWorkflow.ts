@@ -1087,7 +1087,7 @@ export const researchWorkflow = inngest.createFunction(
             }
 
             // End of Research Phase
-            // return stepResults; // Implicit via allResults reference
+            return allResults;
             // }); // Removed nested step wrapper
         });
 
