@@ -1,6 +1,6 @@
 import { db } from "../db/index.js";
 import { sourceDocuments } from "../db/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import crypto from "crypto";
 
 export class SourceDocumentRepository {
@@ -23,6 +23,21 @@ export class SourceDocumentRepository {
     static async findByJobId(jobId: string) {
         return db.query.sourceDocuments.findMany({
             where: eq(sourceDocuments.jobId, jobId)
+        });
+    }
+    static async update(id: string, data: Partial<typeof sourceDocuments.$inferInsert>) {
+        await db.update(sourceDocuments)
+            .set(data)
+            .where(eq(sourceDocuments.id, id));
+    }
+
+    static async findByUrl(url: string) {
+        return db.query.sourceDocuments.findFirst({
+            where: and(
+                eq(sourceDocuments.url, url),
+                eq(sourceDocuments.status, 'success')
+            ),
+            orderBy: [desc(sourceDocuments.crawledAt)]
         });
     }
 }

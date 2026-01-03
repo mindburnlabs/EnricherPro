@@ -1,14 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StepStatus, EnrichedItem } from '../types/domain.js';
+import { StepStatus, EnrichedItem, ConsumableData } from '../types/domain.js';
 import { getItems } from '../lib/api.js';
 
 type ResearchStatus = 'idle' | 'running' | 'completed' | 'failed';
+
+// Synthesis progress for progressive UI updates
+export interface SynthesisProgress {
+    partial: Partial<ConsumableData>;
+    chunkIndex: number;
+    totalChunks: number;
+    isComplete: boolean;
+}
 
 interface UseResearchStreamResult {
     steps: StepStatus[];
     items: EnrichedItem[];
     status: ResearchStatus;
     error: string | null;
+    synthesisPreview: SynthesisProgress | null; // Progressive synthesis data
     startStream: (jobId: string) => void;
     reset: () => void;
 }
@@ -30,6 +39,7 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
     const [logs, setLogs] = useState<ResearchLog[]>([]); // New Log State
     const [status, setStatus] = useState<ResearchStatus>('idle');
     const [error, setError] = useState<string | null>(null);
+    const [synthesisPreview, setSynthesisPreview] = useState<SynthesisProgress | null>(null);
 
     const reset = useCallback(() => {
         setSteps([]);
@@ -37,6 +47,7 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
         setLogs([]);
         setStatus('idle');
         setError(null);
+        setSynthesisPreview(null);
     }, []);
 
     const logsRef = React.useRef<ResearchLog[]>([]);
@@ -136,6 +147,16 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
                     eventSource.close();
                 }
 
+                // Handle progressive synthesis updates
+                if (data.type === 'synthesis_progress') {
+                    setSynthesisPreview({
+                        partial: data.partial,
+                        chunkIndex: data.chunkIndex,
+                        totalChunks: data.totalChunks,
+                        isComplete: data.isComplete || false,
+                    });
+                }
+
             } catch (err) {
                 console.error("Failed to parse SSE", err);
             }
@@ -157,5 +178,5 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
         };
     }, [reset, t]);
 
-    return { steps, items, logs, status, error, startStream, reset };
+    return { steps, items, logs, status, error, synthesisPreview, startStream, reset };
 };

@@ -25,10 +25,10 @@ export const getDb = () => {
 };
 
 // For direct import usage (lazy)
-export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
-    get: (_target, prop) => {
+type DbInstance = ReturnType<typeof drizzle<typeof schema>>;
+export const db = new Proxy({} as DbInstance, {
+    get: (_target, prop: keyof DbInstance) => {
         const instance = getDb();
-        // @ts-ignore
         return instance[prop];
     },
 });

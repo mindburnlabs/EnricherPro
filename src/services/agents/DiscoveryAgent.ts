@@ -27,6 +27,13 @@ export interface AgentPlan {
         depth: number;
     };
     evidence?: any;
+    /** SOTA 2026: Chain-of-Thought reasoning trace for transparency */
+    _reasoning?: {
+        product_identification: string;
+        information_gaps: string;
+        source_strategy: string;
+        risk_assessment: string;
+    };
 }
 
 export interface RetrieverResult {
@@ -216,15 +223,50 @@ export class DiscoveryAgent {
         Known Metadata: ${JSON.stringify(knowns)}
         ${contextInstruction}
 
+        ═══════════════════════════════════════════════════════════════════════════════
+        CHAIN-OF-THOUGHT REASONING PROTOCOL (SOTA 2026)
+        ═══════════════════════════════════════════════════════════════════════════════
+        Before generating your plan, you MUST explicitly reason through 4 dimensions:
+        
+        1. PRODUCT IDENTIFICATION (What is this?)
+           - Is this a specific SKU (CF217A) or generic term ("HP toner")?
+           - Confidence level in identified Brand/MPN/Type?
+           - Are there known aliases or regional variants?
+        
+        2. INFORMATION GAPS (What's missing?)
+           - Which required fields are definitely unknown? (MPN, Yield, Weight, Printers)
+           - What data is uncertain vs confirmed from input?
+           - What's the minimum viable data set for this product?
+        
+        3. SOURCE STRATEGY (Where to find each gap?)
+           - Official site likely to have: specs, yield, images
+           - Retailers (nix.ru) likely to have: price, availability, weight, dimensions
+           - Forums/Community: problems, error codes, compatibility issues
+           - OEM/Chinese sources: original manufacturer data, factory specs
+        
+        4. RISK ASSESSMENT (What could go wrong?)
+           - Ambiguous SKU (model appears in multiple product lines)?
+           - Regional variants (US vs RU versions differ)?
+           - Data freshness concerns (old product, discontinued)?
+           - False positives (similar model names, compatible vs original)?
+        
+        Include your reasoning in the output:
+        "_reasoning": {
+            "product_identification": "[Your analysis of the product identity]",
+            "information_gaps": "[What's missing and why it matters]",
+            "source_strategy": "[Which sources will fill which gaps]",
+            "risk_assessment": "[Potential issues and mitigations]"
+        }
+        ═══════════════════════════════════════════════════════════════════════════════
+
         Return a JSON object with:
         - type: "single_sku" | "list" | "unknown"
         - mpn: string
         - canonical_name: string
+        - _reasoning: { product_identification, information_gaps, source_strategy, risk_assessment }
         - strategies: Array<{
             name: string;
-            name: string;
             type: "query" | "domain_crawl" | "firecrawl_agent" | "deep_crawl" | "domain_map";
-            queries: string[];
             queries: string[];
             target_domain?: string;
             schema?: any; // JSON Schema for Agent Structured Output
@@ -256,7 +298,7 @@ export class DiscoveryAgent {
                } 
              }
 
-        4. **Related Products**:
+        6. **Related Products**:
            - Find cross-sell items (drums, maintenance kits).
            - Query: "${knowns.model || inputRaw} drum unit", "${knowns.model || inputRaw} фотобарабан".
         
@@ -284,21 +326,58 @@ export class DiscoveryAgent {
         Режимы Исследования:
         - Fast: Быстрая идентификация. 2-3 запроса.
         - Balanced: Проверка. 4-6 запросов, проверка официальных данных против ритейлеров.
-    - Deep: "Не оставить камня на камне". 8-12 запросов. ОБЯЗАТЕЛЬНО искать в Английских (Официальные), Русских (Местные) и Китайских (OEM) источниках.
+        - Deep: "Не оставить камня на камне". 8-12 запросов. ОБЯЗАТЕЛЬНО искать в Английских (Официальные), Русских (Местные) и Китайских (OEM) источниках.
 
-    ${sourceRules}
+        ${sourceRules}
 
-    Текущий Режим: ${effectiveMode.toUpperCase()}
-    Целевой Язык: РУССКИЙ (RU)
+        Текущий Режим: ${effectiveMode.toUpperCase()}
+        Целевой Язык: РУССКИЙ (RU)
 
         Входные данные: "${inputRaw}"
         Известные Метаданные: ${JSON.stringify(knowns)}
         ${contextInstruction}
 
+        ═══════════════════════════════════════════════════════════════════════════════
+        ПРОТОКОЛ ПОШАГОВОГО РАССУЖДЕНИЯ (SOTA 2026)
+        ═══════════════════════════════════════════════════════════════════════════════
+        Перед генерацией плана вы ДОЛЖНЫ явно обосновать по 4 направлениям:
+        
+        1. ИДЕНТИФИКАЦИЯ ПРОДУКТА (Что это?)
+           - Это конкретный артикул (CF217A) или общее понятие ("тонер HP")?
+           - Уровень уверенности в Бренде/Артикуле/Типе?
+           - Есть ли известные алиасы или региональные варианты?
+        
+        2. ИНФОРМАЦИОННЫЕ ПРОБЕЛЫ (Чего не хватает?)
+           - Какие обязательные поля точно неизвестны? (MPN, Ресурс, Вес, Принтеры)
+           - Какие данные неопределённые vs подтверждённые?
+           - Какой минимальный набор данных для этого продукта?
+        
+        3. СТРАТЕГИЯ ИСТОЧНИКОВ (Где найти каждый пробел?)
+           - Официальный сайт: спецификации, ресурс, изображения
+           - Ритейлеры (nix.ru): цена, наличие, вес, габариты
+           - Форумы/Сообщества: проблемы, коды ошибок, совместимость
+           - OEM/Китайские источники: данные производителя, заводские спеки
+        
+        4. ОЦЕНКА РИСКОВ (Что может пойти не так?)
+           - Неоднозначный артикул (модель в нескольких линейках)?
+           - Региональные варианты (US vs RU версии отличаются)?
+           - Актуальность данных (старый продукт, снят с производства)?
+           - Ложные срабатывания (похожие названия, совместимый vs оригинал)?
+        
+        Включите ваше обоснование в вывод:
+        "_reasoning": {
+            "product_identification": "[Ваш анализ идентификации продукта]",
+            "information_gaps": "[Что отсутствует и почему это важно]",
+            "source_strategy": "[Какие источники заполнят какие пробелы]",
+            "risk_assessment": "[Потенциальные проблемы и их смягчение]"
+        }
+        ═══════════════════════════════════════════════════════════════════════════════
+
         Верните JSON объект со следующей структурой (Ключи JSON должны быть на английском!):
         - type: "single_sku" | "list" | "unknown"
         - mpn: string (Артикул)
         - canonical_name: string (Каноническое имя)
+        - _reasoning: { product_identification, information_gaps, source_strategy, risk_assessment }
         - strategies: Array<{
             name: string; (Название стратегии на русском)
             type: "query" | "domain_crawl" | "firecrawl_agent" | "domain_map";
@@ -334,10 +413,10 @@ export class DiscoveryAgent {
            - Маркетплейсы (Wildberries, Ozon, DNS, NIX).
         4. **Автономный Агент (Firecrawl Agent)**:
            - В режиме DEEP использовать тип "firecrawl_agent" для сложной навигации.
-            - ОБЯЗАТЕЛЬНО предоставить JSON схему.
-         5. **Map & Batch (Массовое Обнаружение)**:
-             - Если цель - известная страница списка или категории, используйте "domain_map" для поиска всех подстраниц.
-             - Стратегия: { type: "domain_map", target_domain: "https://www.nix.ru/price", queries: ["${knowns.model || inputRaw}"] }
+           - ОБЯЗАТЕЛЬНО предоставить JSON схему.
+        5. **Map & Batch (Массовое Обнаружение)**:
+           - Если цель - известная страница списка или категории, используйте "domain_map" для поиска всех подстраниц.
+           - Стратегия: { type: "domain_map", target_domain: "https://www.nix.ru/price", queries: ["${knowns.model || inputRaw}"] }
         6. **Глубокое Сканирование (Deep Crawl - Focused)**:
            - В режиме DEEP, найдите *конкретную* страницу поддержки или продукта. НЕ сканируйте корень "hp.com".
            - Стратегия: { type: "query", queries: ["site:hp.com ${knowns.model || inputRaw} support", "site:kyocera.ru ${knowns.model || inputRaw} характеристики"] }
@@ -699,27 +778,61 @@ export class DiscoveryAgent {
     }
 
     /**
-     * "The Editor" - Automatic Refinement
+     * "The Editor" - Automatic Refinement (SOTA 2026)
      * Reviews the synthesized draft for critical missing data points based on the target market.
+     * Uses tiered severity scoring for prioritized repair task generation.
+     * 
+     * SEVERITY TIERS:
+     * - TIER1 (BLOCKING): mpn, brand, yield - Cannot proceed without
+     * - TIER2 (IMPORTANT): compatible_printers, images, description
+     * - TIER3 (ENHANCEMENT): weight, dimensions, faq, compliance_ru
      */
-    static async critique(finalData: any, language: string = 'en', apiKeys?: Record<string, string>): Promise<Array<{ goal: string, value: string }>> {
+    static async critique(finalData: any, language: string = 'en', apiKeys?: Record<string, string>): Promise<Array<{ goal: string, value: string, severity?: 'TIER1' | 'TIER2' | 'TIER3' }>> {
         try {
-            const systemPrompt = `You are a Strict Data Auditor for a Product Database.
-            Your job is to review the Final Output JSON and IDENTIFY CRITICAL GAPS.
+            const isRu = language === 'ru';
+
+            const systemPrompt = `You are a Strict Data Auditor for a Product Database (SOTA 2026).
+            Your job is to review the Final Output JSON and IDENTIFY GAPS using a TIERED SEVERITY system.
             
-            Target Market: ${language === 'ru' ? 'Russia (RU)' : 'Global (EN)'}
+            Target Market: ${isRu ? 'Russia (RU)' : 'Global (EN)'}
             
-            Rules:
-            1. If 'mpn' is missing/unknown -> CRITICAL.
-            2. If 'yield' (page yield) is missing -> CRITICAL.
-            3. If 'images' array is empty -> CRITICAL.
-            4. If 'compatible_printers' is empty -> CRITICAL.
-            5. If Target is RU and 'description_ru' is missing/English -> CRITICAL.
+            ═══════════════════════════════════════════════════════════════════════════════
+            SEVERITY TIERS (Prioritized)
+            ═══════════════════════════════════════════════════════════════════════════════
             
-            Return a JSON array of Repair Tasks if critical gaps exist.
-            Format: [{ "goal": "Find missing MPN", "value": "Model Name + MPN" }, { "goal": "Find compatible printers", "value": "Model Name + printers" }]
+            TIER1 - BLOCKING (Must fix immediately):
+            - 'mpn' or 'mpn_identity.mpn' is missing/unknown/null → TIER1
+            - 'brand' is missing/unknown → TIER1
+            - 'yield' or 'tech_specs.yield.value' is missing → TIER1
             
-            If NO critical gaps, return [] (empty array).
+            TIER2 - IMPORTANT (Should fix for quality):
+            - 'compatible_printers' array is empty → TIER2
+            - 'images' array is empty → TIER2
+            - 'description' is missing or too short (<50 chars) → TIER2
+            - Target is RU and 'description_ru' is missing/English → TIER2
+            
+            TIER3 - ENHANCEMENT (Nice to have):
+            - 'logistics.package_weight_g' is missing → TIER3
+            - 'logistics' dimensions fields are missing → TIER3
+            - 'faq' array is empty → TIER3
+            - Target is RU and 'compliance_ru' (tn_ved_code, mandatory_marking) is missing → TIER3
+            
+            ═══════════════════════════════════════════════════════════════════════════════
+            OUTPUT FORMAT
+            ═══════════════════════════════════════════════════════════════════════════════
+            
+            Return a JSON array of Repair Tasks, SORTED BY SEVERITY (TIER1 first, then TIER2, then TIER3).
+            
+            Format: [
+                { "severity": "TIER1", "goal": "Find missing MPN", "value": "Model Name + MPN artical number" },
+                { "severity": "TIER2", "goal": "Find compatible printers", "value": "Model Name + printers compatibility list" },
+                { "severity": "TIER3", "goal": "Find package weight", "value": "Model Name + shipping weight" }
+            ]
+            
+            If NO gaps exist, return [] (empty array).
+            
+            CRITICAL: Focus on data that is ACTUALLY MISSING, not just potentially incomplete.
+            Analyze the actual JSON values, not just field presence.
             `;
 
             const { ModelProfile } = await import("../../config/models.js");
@@ -727,7 +840,7 @@ export class DiscoveryAgent {
                 model: "openrouter/auto",
                 messages: [
                     { role: "system", content: systemPrompt },
-                    { role: "user", content: JSON.stringify(finalData) }
+                    { role: "user", content: `Analyze this product data for gaps:\n${JSON.stringify(finalData, null, 2)}` }
                 ],
                 routingStrategy: RoutingStrategy.FAST,
                 apiKeys
@@ -735,7 +848,15 @@ export class DiscoveryAgent {
 
             const parsed = safeJsonParse(response || "[]");
             if (Array.isArray(parsed)) {
-                return parsed.map((p: any) => ({ goal: p.goal || "Repair gap", value: p.value || "" }));
+                // Sort by severity tier (TIER1 first)
+                const severityOrder = { 'TIER1': 0, 'TIER2': 1, 'TIER3': 2 };
+                return parsed
+                    .map((p: any) => ({
+                        goal: p.goal || "Repair gap",
+                        value: p.value || "",
+                        severity: (p.severity as 'TIER1' | 'TIER2' | 'TIER3') || 'TIER2'
+                    }))
+                    .sort((a, b) => (severityOrder[a.severity || 'TIER2'] || 1) - (severityOrder[b.severity || 'TIER2'] || 1));
             }
             return [];
 

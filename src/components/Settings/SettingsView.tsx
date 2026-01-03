@@ -189,8 +189,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
     useEffect(() => {
         // Sync local config with store when opening
         if (isOpen) {
-            // @ts-ignore - Zustand types unwrapping
-            setLocalConfig({ ...store });
+            // Extract state properties from Zustand store
+            const storeState = useSettingsStore.getState();
+            setLocalConfig({ ...storeState });
             setHasChanges(false);
         }
     }, [isOpen, store.model.id, store.language]); // Depend on key props to re-sync if needed

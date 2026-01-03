@@ -238,7 +238,7 @@ export class BackendFirecrawlService {
         }
 
         const result = await client.crawl(url, {
-            limit: options.limit || 100, // Default conservative
+            limit: options.limit || 10, // Default conservative match
             scrapeOptions: options.scrapeOptions || {
                 formats: ['markdown']
             },
@@ -266,7 +266,7 @@ export class BackendFirecrawlService {
         try {
             const result = await client.map(url, {
                 search: options.search,
-                limit: options.limit || 50,
+                limit: options.limit || 10,
                 // country: options.country, // Check if supported in MapOptions
                 // lang: options.lang,       // Check if supported in MapOptions
                 sitemap: options.sitemap ? 'include' : 'skip'

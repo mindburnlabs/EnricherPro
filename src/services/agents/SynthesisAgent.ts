@@ -158,7 +158,17 @@ export class SynthesisAgent {
         }
     }
 
-    static async merge(sources: string[], schemaKey: string = "StrictConsumableData", apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, modelOverride?: string | { id: string }, language: string = 'en', originalInput?: string): Promise<Partial<ConsumableData>> {
+    static async merge(
+        sources: string[],
+        schemaKey: string = "StrictConsumableData",
+        apiKeys?: Record<string, string>,
+        promptOverride?: string,
+        onLog?: (msg: string) => void,
+        modelOverride?: string | { id: string },
+        language: string = 'en',
+        originalInput?: string,
+        onProgress?: (partial: Partial<ConsumableData>, chunkIndex: number, totalChunks: number) => void
+    ): Promise<Partial<ConsumableData>> {
         onLog?.(`Synthesizing data from ${sources.length} sources...`);
 
         // SLIDING WINDOW BATCHING (Perplexity-Grade Scale)
@@ -171,10 +181,23 @@ export class SynthesisAgent {
 
         onLog?.(`Split ${sources.length} sources into ${chunks.length} parallel processing chunks.`);
 
-        // Process chunks in parallel (Swarm)
-        const chunkResults = await Promise.all(chunks.map(async (chunk, index) => {
+        // STREAMING UPGRADE: Process chunks and emit partial results
+        const chunkResults: Partial<ConsumableData>[] = [];
+
+        // Process chunks in parallel (Swarm) but emit progress as each completes
+        await Promise.all(chunks.map(async (chunk, index) => {
             onLog?.(`[Swarm] Processing Chunk ${index + 1}/${chunks.length}...`);
-            return this.processChunk(chunk, apiKeys, promptOverride, modelOverride, language, originalInput);
+            const result = await this.processChunk(chunk, apiKeys, promptOverride, modelOverride, language, originalInput);
+            chunkResults[index] = result;
+
+            // STREAMING: Emit partial result for progressive UI
+            if (onProgress) {
+                // Merge results accumulated so far for preview
+                const accumulated = this.mergePartials(chunkResults.filter(Boolean));
+                onProgress(accumulated, index + 1, chunks.length);
+            }
+
+            return result;
         }));
 
         // Final Consensus/Merge of Chunk Results
@@ -184,6 +207,34 @@ export class SynthesisAgent {
             onLog?.(`[Swarm] Merging ${chunkResults.length} chunk results into Final Truth...`);
             return this.consensusMerge(chunkResults, apiKeys, modelOverride, language);
         }
+    }
+
+    /**
+     * Simple client-side merge of partial results for streaming preview
+     * (Less sophisticated than consensusMerge, but fast)
+     */
+    private static mergePartials(partials: Partial<ConsumableData>[]): Partial<ConsumableData> {
+        if (partials.length === 0) return {};
+        if (partials.length === 1) return partials[0];
+
+        // Simple shallow merge - later results override earlier ones
+        const merged: any = {};
+        for (const partial of partials) {
+            for (const [key, value] of Object.entries(partial)) {
+                if (value !== null && value !== undefined) {
+                    // For arrays, concat and dedupe
+                    if (Array.isArray(value) && Array.isArray(merged[key])) {
+                        merged[key] = [...new Set([...merged[key], ...value])];
+                    } else if (typeof value === 'object' && typeof merged[key] === 'object' && !Array.isArray(value)) {
+                        // Deep merge objects
+                        merged[key] = { ...merged[key], ...value };
+                    } else {
+                        merged[key] = value;
+                    }
+                }
+            }
+        }
+        return merged;
     }
 
     private static async processChunk(sources: string[], apiKeys?: Record<string, string>, promptOverride?: string, modelOverride?: string | { id: string }, language: string = 'en', originalInput?: string): Promise<Partial<ConsumableData>> {
@@ -321,6 +372,17 @@ export class SynthesisAgent {
         return data;
     }
 
+    /**
+     * SOTA 2026: Consensus Merge with Domain Trust Scoring
+     * Uses a tiered trust system to weight sources during conflict resolution.
+     * 
+     * DOMAIN TRUST LEVELS:
+     * - OEM (hp.com, canon.com): 100 - Manufacturer is ground truth
+     * - Verified Retailers (nix.ru, dns-shop.ru): 85-90
+     * - General Retailers (ozon.ru, wildberries.ru): 70
+     * - OEM China (alibaba.com, 1688.com): 50
+     * - Unknown sources: 30
+     */
     private static async consensusMerge(results: Partial<ConsumableData>[], apiKeys?: Record<string, string>, modelOverride?: string | { id: string }, language: string = 'en'): Promise<Partial<ConsumableData>> {
         // DeepSeek R1 Verification Step
         // We take the N chunk results and ask the LLM to merge them into one Final Truth
@@ -334,29 +396,105 @@ export class SynthesisAgent {
 
         const mergedJson = JSON.stringify(results, null, 2);
 
+        // SOTA 2026: Domain Trust Scoring System
+        const domainTrustGuide = `
+        ═══════════════════════════════════════════════════════════════════════════════
+        DOMAIN TRUST SCORING (SOTA 2026)
+        ═══════════════════════════════════════════════════════════════════════════════
+        When resolving conflicts, weight data by source authority:
+        
+        TIER A - OEM/Official (Trust: 100):
+        hp.com, canon.com, brother.com, kyocera.com, xerox.com, samsung.com, ricoh.com, pantum.com
+        → These are GROUND TRUTH for MPN, Yield, Compatibility. Override all others.
+        
+        TIER B - Verified Retailers (Trust: 85-90):
+        nix.ru (90), dns-shop.ru (85), citilink.ru (80)
+        → Reliable for Logistics (weight, dims) and RU-Market data.
+        
+        TIER C - General Marketplaces (Trust: 65-75):
+        ozon.ru (70), wildberries.ru (65), amazon.com (75)
+        → Useful for pricing, availability. Less reliable for technical specs.
+        
+        TIER D - OEM China Sources (Trust: 50-60):
+        alibaba.com (55), 1688.com (50), made-in-china.com (50)
+        → Good for OEM factory specs, less reliable for regional compatibility.
+        
+        TIER E - Unknown/Forums (Trust: 30-40):
+        reddit.com (40), forums (35), unknown domains (30)
+        → Treat as suggestions, require corroboration from higher-tier sources.
+        
+        CONFLICT RESOLUTION:
+        - If OEM (Tier A) says "Yield: 2000" and Retailer says "Yield: 2500", trust OEM.
+        - If only retailers disagree, use majority vote weighted by trust score.
+        - For logistics data, prefer Tier B (retailers measure actual packages).
+        ═══════════════════════════════════════════════════════════════════════════════
+        `;
+
+        const confidenceProtocol = `
+        ═══════════════════════════════════════════════════════════════════════════════
+        CONFIDENCE TRACKING PROTOCOL (SOTA 2026)
+        ═══════════════════════════════════════════════════════════════════════════════
+        For EACH critical field in your output, assess confidence:
+        
+        HIGH (3+ sources agree, or 1 OEM source):
+        → No uncertainty_reason needed
+        
+        MEDIUM (2 sources agree, or 1 high-quality retailer):
+        → Include uncertainty_reason: "Based on 2 similar sources"
+        
+        LOW (1 source, or conflicting data):
+        → Include uncertainty_reason: "Single source only" or "Conflicting: [details]"
+        
+        Include a "_confidence_map" in your output:
+        "_confidence_map": {
+            "mpn": "high",
+            "yield": "medium", 
+            "compatible_printers": "high",
+            "logistics": "low"
+        }
+        
+        Include "_uncertainty_reasons" for any medium/low fields:
+        "_uncertainty_reasons": {
+            "yield": "Only found in one retailer listing",
+            "logistics": "Weight differs between sources (500g vs 520g)"
+        }
+        ═══════════════════════════════════════════════════════════════════════════════
+        `;
+
         const systemPrompt = isRu ? `
-         Вы - Агент Истины (DeepSeek Consensus).
+         Вы - Агент Истины (DeepSeek Consensus) с Доменным Доверием (SOTA 2026).
          У вас есть ${results.length} частичных результатов анализа одного товара.
-         Ваша цель: Объединить их в один ИДЕАЛЬНЫЙ JSON.
+         Ваша цель: Объединить их в один ИДЕАЛЬНЫЙ JSON, учитывая авторитетность источников.
+
+         ${domainTrustGuide}
+
+         ${confidenceProtocol}
 
          Правила арбитража:
-         1. Конфликты MPN? Выбери наиболее частое или официальное.
-         2. Совместимость: ОБЪЕДИНИТЬ списки принтеров (убрать дубликаты).
-         3. Логистика: Если данные отличаются, выбери те, что кажутся точнее (с дробными частями) или возьми среднее.
+         1. Конфликты MPN? Предпочитай OEM источники (hp.com, canon.com), затем по частоте.
+         2. Совместимость: ОБЪЕДИНИТЬ списки принтеров (убрать дубликаты). OEM данные приоритетнее.
+         3. Логистика: Предпочитай данные от ритейлеров Tier B (они реально измеряют).
          4. RU Compliance: Если где-то найден ТН ВЭД или Честный ЗНАК - сохрани это.
          5. FAQ: Выбери 5 самых полезных вопросов из всех.
+         6. ОБЯЗАТЕЛЬНО включи _confidence_map и _uncertainty_reasons.
          
          Входные данные:
          ${mergedJson}
          ` : `
-         You are the Truth Arbitration Agent.
+         You are the Truth Arbitration Agent with Domain Trust Scoring (SOTA 2026).
          You have ${results.length} partial extraction results.
-         Merge them into one PERFECT JSON.
+         Merge them into one PERFECT JSON, weighting by source authority.
+         
+         ${domainTrustGuide}
+
+         ${confidenceProtocol}
          
          Rules:
-         1. Resolve conflicts by majority vote or source authority.
-         2. Merge compatibility lists (deduplicate).
-         3. Keep the most detailed specs.
+         1. Resolve conflicts by Domain Trust Score (Tier A beats all others).
+         2. Merge compatibility lists (deduplicate). OEM data takes precedence.
+         3. For logistics, prefer Tier B retailers (they measure actual packages).
+         4. Keep the most detailed specs from highest-trust sources.
+         5. MUST include _confidence_map and _uncertainty_reasons in output.
          `;
 
         const response = await BackendLLMService.complete({
@@ -364,7 +502,7 @@ export class SynthesisAgent {
             profile: ModelProfile.PLANNING, // High intelligence
             messages: [
                 { role: "system", content: systemPrompt },
-                { role: "user", content: "Merge into StrictConsumableData." }
+                { role: "user", content: "Merge into StrictConsumableData with confidence tracking." }
             ],
             jsonSchema: ConsumableDataSchema,
             routingStrategy: RoutingStrategy.SMART,

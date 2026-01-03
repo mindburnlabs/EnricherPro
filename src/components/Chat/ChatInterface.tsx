@@ -11,6 +11,7 @@ import { EnrichedItem } from '../../types/domain.js';
 import { User } from 'lucide-react';
 import { useSettingsStore } from '../../stores/settingsStore.js';
 import { ConflictResolver } from '../Research/ConflictResolver.js';
+import { SynthesisPreview } from '../Research/SynthesisPreview.js';
 
 interface ChatInterfaceProps { }
 
@@ -30,7 +31,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
     const [selectedResearchItem, setSelectedResearchItem] = useState<EnrichedItem | null>(null);
 
     // Stream Hook
-    const { steps, items, logs, status, error, startStream, reset } = useResearchStream();
+    const { steps, items, logs, status, error, synthesisPreview, startStream, reset } = useResearchStream();
 
     // Auto-scroll to bottom on new messages or stream updates
     useEffect(() => {
@@ -273,6 +274,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
                                                     logs={msg.logs || []}
                                                     status={msg.status as any}
                                                 />
+                                            )}
+
+                                            {/* Synthesis Preview - shows during extraction */}
+                                            {msg.status === 'running' && synthesisPreview && !synthesisPreview.isComplete && (
+                                                <div className="mt-4">
+                                                    <SynthesisPreview progress={synthesisPreview} />
+                                                </div>
                                             )}
 
                                             {/* Error State */}

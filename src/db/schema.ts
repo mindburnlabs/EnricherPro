@@ -187,4 +187,5 @@ export const claimsRelations = relations(claims, ({ one }) => ({
 
 export * from './schema_graph.js';
 export * from './schema_graph_lite.js';
+export * from './schema_observability.js';
 

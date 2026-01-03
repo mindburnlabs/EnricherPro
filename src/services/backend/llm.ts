@@ -1,5 +1,6 @@
 
 import { MODEL_CONFIGS, ModelProfile, DEFAULT_MODEL } from "../../config/models.js";
+import { ObservabilityService } from './ObservabilityService.js';
 
 interface OpenRouterPlugin {
     id: "web" | "response-healing" | "file-parser";
@@ -47,6 +48,14 @@ interface CompletionConfig {
 
     // Feature Flags
     useSota?: boolean; // Enable new features
+
+    // Observability Context (for tracking)
+    agentContext?: {
+        jobId?: string;
+        tenantId?: string;
+        agent: string;
+        operation?: string;
+    };
 }
 
 export class BackendLLMService {
@@ -191,6 +200,7 @@ export class BackendLLMService {
 
         // 4. Refactored Execution with Smart Fallback for 400s
         const executeFetch = async (currentBody: any) => {
+            const startTime = Date.now();
             return await withRetry(async () => {
                 try {
                     const headers: any = {
@@ -241,9 +251,33 @@ export class BackendLLMService {
                     const content = data.choices[0].message?.content;
                     if (!content) throw new Error("Empty content in LLM response");
 
+                    // OBSERVABILITY: Track successful request
+                    if (config.agentContext) {
+                        const latencyMs = Date.now() - startTime;
+                        const usage = data.usage;
+                        ObservabilityService.trackUsage(config.agentContext, {
+                            model: currentBody.model || targetModel,
+                            promptTokens: usage?.prompt_tokens,
+                            completionTokens: usage?.completion_tokens,
+                            totalTokens: usage?.total_tokens,
+                            latencyMs,
+                            statusCode: 200,
+                        }).catch(() => { }); // Fire and forget
+                    }
+
                     return content;
 
                 } catch (e: any) {
+                    // OBSERVABILITY: Track failed request
+                    if (config.agentContext) {
+                        const latencyMs = Date.now() - startTime;
+                        ObservabilityService.trackUsage(config.agentContext, {
+                            model: currentBody.model || targetModel,
+                            latencyMs,
+                            isError: e.message?.substring(0, 100),
+                        }).catch(() => { }); // Fire and forget
+                    }
+
                     // Determine if retryable
                     // Auth/Credit errors - Stop immediately
                     if (e.message?.includes("Auth/Credit")) throw e;

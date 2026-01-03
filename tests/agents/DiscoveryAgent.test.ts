@@ -48,5 +48,60 @@ describe('DiscoveryAgent', () => {
         });
     });
 
+    describe('critique (SOTA 2026 Tiered Severity)', () => {
+        it('should return gaps with tiered severity levels', async () => {
+            const mockCritiqueResponse = [
+                { severity: "TIER1", goal: "Find missing MPN", value: "HP 17A + MPN" },
+                { severity: "TIER2", goal: "Find compatible printers", value: "HP 17A + printers" },
+                { severity: "TIER3", goal: "Find package weight", value: "HP 17A + weight" }
+            ];
+
+            (BackendLLMService.complete as any).mockResolvedValue(JSON.stringify(mockCritiqueResponse));
+
+            const gaps = await DiscoveryAgent.critique({ brand: 'HP' }, 'en');
+
+            expect(Array.isArray(gaps)).toBe(true);
+            expect(gaps.length).toBe(3);
+            // Verify severity is included
+            expect(gaps[0].severity).toBe('TIER1');
+            expect(gaps[1].severity).toBe('TIER2');
+            expect(gaps[2].severity).toBe('TIER3');
+        });
+
+        it('should sort results by severity (TIER1 first)', async () => {
+            // Return out of order to test sorting
+            const mockCritiqueResponse = [
+                { severity: "TIER3", goal: "Find weight", value: "weight query" },
+                { severity: "TIER1", goal: "Find MPN", value: "MPN query" },
+                { severity: "TIER2", goal: "Find images", value: "image query" }
+            ];
+
+            (BackendLLMService.complete as any).mockResolvedValue(JSON.stringify(mockCritiqueResponse));
+
+            const gaps = await DiscoveryAgent.critique({ brand: 'HP' }, 'en');
+
+            // Should be sorted: TIER1, TIER2, TIER3
+            expect(gaps[0].severity).toBe('TIER1');
+            expect(gaps[0].goal).toBe('Find MPN');
+            expect(gaps[1].severity).toBe('TIER2');
+            expect(gaps[2].severity).toBe('TIER3');
+        });
+
+        it('should return empty array when no gaps', async () => {
+            (BackendLLMService.complete as any).mockResolvedValue('[]');
+
+            const gaps = await DiscoveryAgent.critique({
+                brand: 'HP',
+                mpn_identity: { mpn: 'CF217A' },
+                tech_specs: { yield: { value: 1600 } },
+                images: ['http://example.com/img.jpg'],
+                compatible_printers: ['LaserJet Pro M102']
+            }, 'en');
+
+            expect(Array.isArray(gaps)).toBe(true);
+            expect(gaps.length).toBe(0);
+        });
+    });
+
 
 });

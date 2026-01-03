@@ -1,8 +1,9 @@
 
 import { inngest } from "../client.js";
 import { OrchestratorAgent } from "../../services/agents/OrchestratorAgent.js";
-import { DiscoveryAgent } from "../../services/agents/DiscoveryAgent.js";
+import { DiscoveryAgent, AgentPlan } from "../../services/agents/DiscoveryAgent.js";
 import { z } from "zod";
+import type { ResearchEventData, ResearchResult, hasEvidence, createGraphLiteUrl } from "../../types/workflow.js";
 
 // Strict Schema for DB Claims
 const SafeClaimSchema = z.object({
@@ -17,8 +18,8 @@ export const researchWorkflow = inngest.createFunction(
         concurrency: { limit: 5 },
         retries: 3,
         onFailure: async ({ event, error }) => {
-            // @ts-ignore - Inngest typing quirk
-            const { jobId } = event.data;
+            const eventData = (event as any).event?.data || event.data;
+            const { jobId } = eventData as ResearchEventData;
             console.error(`[Workflow Failed] Job ${jobId}:`, error);
             const agent = new OrchestratorAgent(jobId);
             await agent.fail(error);
@@ -134,18 +135,17 @@ export const researchWorkflow = inngest.createFunction(
             }
 
             // GRAPH-LITE FAST PATH (Vertical Search)
-            // @ts-ignore - 'evidence' property might be missing on type
-            if (plan.evidence) {
+            const planWithEvidence = plan as AgentPlan & { evidence?: Record<string, any> };
+            if (planWithEvidence.evidence) {
                 agent.log('discovery', '⚡ Graph-Lite Hit! Skipping web search to prioritize local knowledge.');
 
                 // 1. Create Pseudo-Source
+                const graphUrl = `graph://${plan.mpn || 'internal'}`;
                 const sourceDoc = await SourceDocumentRepository.create({
                     jobId,
-                    // @ts-ignore
-                    url: `graph://${plan.mpn || 'internal'}`,
+                    url: graphUrl,
                     domain: 'graph-lite.internal',
-                    // @ts-ignore
-                    rawContent: JSON.stringify(plan.evidence),
+                    rawContent: JSON.stringify(planWithEvidence.evidence),
                     status: 'success',
                     extractedMetadata: { title: "Graph-Lite Entry", type: "graph_lite" }
                 });
@@ -165,8 +165,7 @@ export const researchWorkflow = inngest.createFunction(
                     return res;
                 };
 
-                // @ts-ignore
-                const flatClaims = flatten(plan.evidence);
+                const flatClaims = flatten(planWithEvidence.evidence);
                 if (flatClaims.length > 0) {
                     await ClaimsRepository.createBatch(flatClaims.map((c: any) => ({
                         itemId: item.id,
@@ -179,12 +178,10 @@ export const researchWorkflow = inngest.createFunction(
 
                 // Return synthetic result to satisfy workflow
                 return [{
-                    // @ts-ignore
-                    url: `graph://${plan.mpn}`,
+                    url: graphUrl,
                     title: "Graph-Lite",
-                    // @ts-ignore
-                    markdown: JSON.stringify(plan.evidence),
-                    source_type: 'graph_lite',
+                    markdown: JSON.stringify(planWithEvidence.evidence),
+                    source_type: 'graph_lite' as const,
                     timestamp: new Date().toISOString()
                 }];
             }
@@ -210,7 +207,7 @@ export const researchWorkflow = inngest.createFunction(
             const CONCURRENCY = budget.concurrency || 5;
 
             // 1. Frontier Execution (Phase F)
-            const allResults: any[] = [];
+            let allResults: any[] = [];
             const activeAnalyses: Promise<void>[] = []; // Track background analyses
 
             // Helper for processing a single task
@@ -416,29 +413,50 @@ export const researchWorkflow = inngest.createFunction(
                         }
                     } else if (task.type === 'url') {
                         try {
-                            // Omni-Integration: Request Screenshot for verification
-                            const data = await BackendFirecrawlService.scrape(task.value, {
-                                formats: ['markdown', 'screenshot'],
-                                actions: task.meta?.actions,
-                                location: task.meta?.location,
-                                waitFor: task.meta?.waitFor,
-                                mobile: task.meta?.mobile,
-                                maxAge: 86400, // CACHING: 24h
-                                apiKey: apiKeys?.firecrawl,
-                                onRetry: (attempt: number, error: any, delay: number) => {
-                                    if (delay > 2000) {
-                                        agent.log('system', `⏳ Rate Limit Hit for ${task.value}. Pausing for ${Math.round(delay / 1000)}s...`);
-                                    }
-                                }
-                            });
-                            if (data) {
+                            // SOTA OPTIMIZATION: Check Global Cache (Cross-Job)
+                            // "The Free Tier"
+                            let cachedDoc = null;
+                            try {
+                                cachedDoc = await SourceDocumentRepository.findByUrl(task.value);
+                            } catch (e) { /* ignore db errors */ }
+
+                            const isFresh = cachedDoc && (Date.now() - new Date(cachedDoc.crawledAt).getTime() < 86400000); // 24h
+
+                            if (isFresh && cachedDoc?.rawContent) {
+                                agent.log('discovery', `⚡ Cache Hit (Global): ${task.value}`);
                                 results.push({
-                                    url: (data as any).metadata?.sourceURL || task.value,
-                                    title: (data as any).metadata?.title || "Scraped Page",
-                                    markdown: (data as any).markdown || "",
-                                    screenshot: (data as any).screenshot || null, // Capture screenshot URL
-                                    source_type: 'direct_scrape'
+                                    url: task.value,
+                                    title: (cachedDoc.extractedMetadata as any)?.title || "Cached Page",
+                                    markdown: cachedDoc.rawContent,
+                                    screenshot: (cachedDoc.extractedMetadata as any)?.screenshot || null,
+                                    source_type: 'direct_scrape' // Treat as direct
                                 });
+                            } else {
+                                // Omni-Integration: Lazy Screenshot
+                                // 1. Scrape Markdown Only (Cheap)
+                                const data = await BackendFirecrawlService.scrape(task.value, {
+                                    formats: ['markdown'],
+                                    actions: task.meta?.actions,
+                                    location: task.meta?.location,
+                                    waitFor: task.meta?.waitFor,
+                                    mobile: task.meta?.mobile,
+                                    maxAge: 86400, // CACHING: 24h
+                                    apiKey: apiKeys?.firecrawl,
+                                    onRetry: (attempt: number, error: any, delay: number) => {
+                                        if (delay > 2000) {
+                                            agent.log('system', `⏳ Rate Limit Hit for ${task.value}. Pausing for ${Math.round(delay / 1000)}s...`);
+                                        }
+                                    }
+                                });
+                                if (data) {
+                                    results.push({
+                                        url: (data as any).metadata?.sourceURL || task.value,
+                                        title: (data as any).metadata?.title || "Scraped Page",
+                                        markdown: (data as any).markdown || "",
+                                        screenshot: (data as any).screenshot || null, // Capture screenshot URL
+                                        source_type: 'direct_scrape'
+                                    });
+                                }
                             }
                         } catch (e: any) {
                             console.warn("URL scrape failed", e);
@@ -500,11 +518,17 @@ export const researchWorkflow = inngest.createFunction(
                             });
 
                             if (mapResults && mapResults.length > 0) {
-                                agent.log('discovery', `✅ Mapped ${mapResults.length} relevant pages from ${task.value}`);
+                                // SOTA SEMANTIC FILTERING (LLM Judge)
+                                agent.log('discovery', `🧠 Semantic Filter analyzing ${mapResults.length} candidates...`);
+
+                                const relevantIndices = await DiscoveryAgent.filterResults(mapResults, queries.join(' '), apiKeys);
+                                const filteredLinks = relevantIndices.map(i => mapResults[i]);
+
+                                agent.log('discovery', `✅ Mapped ${mapResults.length} pages. Semantic Filter selected ${filteredLinks.length} best.`);
 
                                 // Add these as "URL" tasks to the frontier.
                                 // The Frontier batcher will pick them up and batchScrape them.
-                                for (const l of mapResults) {
+                                for (const l of filteredLinks) {
                                     // Check if URL is valid and not excluded
                                     if (l.url) {
                                         await FrontierService.add(jobId, 'url', l.url, 60, (task.depth || 0) + 1, {
@@ -725,6 +749,31 @@ export const researchWorkflow = inngest.createFunction(
 
                                 if (validClaims.length > 0) {
                                     await ClaimsRepository.createBatch(validClaims as any);
+
+                                    // LAZY SCREENSHOT CAPTURE
+                                    // If we found valid claims in a direct scrape, this page is High Value.
+                                    // We should invest in a screenshot now.
+                                    if (r.source_type === 'direct_scrape' && !(r as any).screenshot) {
+                                        try {
+                                            // agent.log('discovery', `📸 High Value Hit! Capturing evidence for ${r.url}...`);
+                                            // Capture Screenshot
+                                            const proof = await BackendFirecrawlService.scrape(r.url, {
+                                                formats: ['screenshot'],
+                                                apiKey: apiKeys?.firecrawl,
+                                                maxAge: 86400
+                                            });
+                                            if (proof && (proof as any).screenshot) {
+                                                await SourceDocumentRepository.update(sourceDoc.id, {
+                                                    extractedMetadata: {
+                                                        ...(sourceDoc.extractedMetadata as any),
+                                                        screenshot: (proof as any).screenshot
+                                                    }
+                                                });
+                                            }
+                                        } catch (scrErr) {
+                                            console.warn("Lazy screenshot failed", scrErr);
+                                        }
+                                    }
                                 }
                             }
                         } catch (err) {
@@ -744,296 +793,301 @@ export const researchWorkflow = inngest.createFunction(
                 }
             };
 
-            // Main Sliding Window Execution
-            // We maintain a pool of active promises (tasks currently processing).
-            // When one finishes, we fetch another.
-            const processing = new Set<Promise<any>>();
-            let tasksProcessed = 0;
-            const MAX_TASKS = MAX_LOOPS * defaultBudget.concurrency; // Approximation of total work
+            // SOTA INNGEST: Checkpointing Main Research Phase
+            allResults = await step.run("execute-research-phase", async () => {
+                const stepResults: any[] = []; // Local accumulator for this step run
 
-            agent.log('discovery', `🚀 Starting Sliding Window Execution (Target: ${CONCURRENCY} concurrent threads)...`);
+                // Main Sliding Window Execution
+                // We maintain a pool of active promises (tasks currently processing).
+                // When one finishes, we fetch another.
+                const processing = new Set<Promise<any>>();
+                let tasksProcessed = 0;
+                const MAX_TASKS = MAX_LOOPS * defaultBudget.concurrency; // Approximation of total work
 
-            // Helper for processing a BATCH of URL tasks
-            const processUrlBatch = async (tasks: any[]) => {
-                const urls = tasks.map(t => t.value);
-                agent.log('discovery', `📦 Batch Scraping ${urls.length} URLs...`);
+                agent.log('discovery', `🚀 Starting Sliding Window Execution (Target: ${CONCURRENCY} concurrent threads)...`);
 
-                try {
-                    const batchResults = await BackendFirecrawlService.batchScrape(urls, {
-                        apiKey: apiKeys?.firecrawl,
-                        formats: ['markdown', 'screenshot'], // VISION UPGRADE: Enable screenshots for batch
-                        // Note: Batch scrape might not return screenshots efficiently or at all depending on options.
-                        // Let's stick to markdown for batch efficiency as per plan.
-                        maxAge: 86400, // CACHING: 24h
-                        timeout: 30000,
-                        onRetry: (attempt: number, error: any, delay: number) => {
-                            if (delay > 2000) {
-                                agent.log('system', `⏳ Batch Rate Limit Hit. Pausing for ${Math.round(delay / 1000)}s...`);
-                            }
-                        }
-                    });
+                // Helper for processing a BATCH of URL tasks
+                const processUrlBatch = async (tasks: any[]) => {
+                    const urls = tasks.map(t => t.value);
+                    agent.log('discovery', `📦 Batch Scraping ${urls.length} URLs...`);
 
-                    // Process results
-                    // Firecrawl batchScrape returns array of result objects. 
-                    // Order is preserved? SDK says yes usually, or it has metadata.sourceURL
-
-                    for (const task of tasks) {
-                        const result = batchResults.find((r: any) => r.metadata?.sourceURL === task.value || r.url === task.value); // Flexible matching
-
-                        if (result) {
-                            allResults.push({
-                                url: result.metadata?.sourceURL || task.value,
-                                title: result.metadata?.title || "Scraped Page",
-                                markdown: result.markdown || "",
-                                source_type: 'direct_scrape_batch',
-                                timestamp: new Date().toISOString()
-                            });
-                            await FrontierService.complete(task.id, 'completed');
-                        } else {
-                            // URL failed in batch? 
-                            console.warn(`Batch result missing for ${task.value}`);
-                            // We could re-queue or mark failed.
-                            await FrontierService.complete(task.id, 'failed');
-                        }
-                    }
-
-                    return tasks.length; // Return count processed
-                } catch (e: any) {
-                    console.error("Batch Scrape Failed", e);
-                    // Fallback: Process individually?
-                    // If batch fails completely (e.g. auth), falling back to individual might just fail 5 times.
-                    // But if it's a specific URL causing it? 
-                    // Firecrawl v2 batch usually handles individual failures internally if ignoreInvalidURLs is true (which we should set?)
-                    // Let's mark all as failed for now or retry individually.
-                    // Better to re-try individually if meaningful.
-                    agent.log('discovery', `⚠️ Batch failed. Retrying ${tasks.length} tasks individually.`);
-
-                    // We can't easily "return" them to the pool without complexity.
-                    // Simpler: Just run processTask for each serially or in parallel here.
-                    for (const task of tasks) {
-                        try {
-                            const res = await processTask(task);
-                            if (res) {
-                                const resultItems = Array.isArray(res) ? res : [res];
-                                resultItems.forEach((r: any) => {
-                                    if (r) allResults.push({ ...r, timestamp: new Date().toISOString() });
-                                });
-                            }
-                        } catch (err) { /* processTask handles its own errors */ }
-                    }
-                    return tasks.length;
-                }
-            };
-
-            while (tasksProcessed < MAX_TASKS) {
-                // 1. Fill the pool
-                const freeSlots = CONCURRENCY - processing.size;
-
-                if (freeSlots > 0) {
-                    // Fetch just enough to fill slots
-                    const newTasks = await FrontierService.nextBatch(jobId, freeSlots);
-
-                    if (newTasks.length > 0) {
-
-                        // SEPARATE URL TASKS FOR BATCHING
-                        const urlTasks = newTasks.filter(t => t.type === 'url');
-                        const otherTasks = newTasks.filter(t => t.type !== 'url');
-
-                        // 1. Process URL Batch
-                        if (urlTasks.length > 1) { // Only batch if > 1
-                            const p = processUrlBatch(urlTasks).then(() => {
-                                processing.delete(p);
-                                tasksProcessed += urlTasks.length;
-                            });
-                            processing.add(p);
-                        } else if (urlTasks.length === 1) {
-                            // Single URL, process normally
-                            otherTasks.push(urlTasks[0]);
-                        }
-
-                        // 2. Process Others Individually
-                        for (const task of otherTasks) {
-                            const p = processTask(task).then(async (result) => {
-                                const resultItems = Array.isArray(result) ? result : [result];
-                                resultItems.forEach((r: any) => {
-                                    if (r) {
-                                        allResults.push({
-                                            url: r.url,
-                                            title: r.title,
-                                            markdown: r.markdown,
-                                            source_type: r.source_type,
-                                            timestamp: new Date().toISOString()
-                                        });
-                                    }
-                                });
-                                processing.delete(p);
-                                tasksProcessed++;
-                            });
-                            processing.add(p);
-                        }
-
-                    } else {
-                        // Queue Empty.
-                        if (processing.size === 0) {
-                            // Queue Empty AND Pool Empty.
-                            // Check Background Analyses?
-                            if (activeAnalyses.length > 0) {
-                                agent.log('system', `Queue empty. Waiting for ${activeAnalyses.length} background analyses...`);
-                                await Promise.all(activeAnalyses);
-                                activeAnalyses.length = 0; // Clear
-                                // Check if they added stuff
-                                const stats = await FrontierService.stats(jobId);
-                                if (stats.pending > 0) {
-                                    agent.log('system', `Analyses added ${stats.pending} tasks. Resuming...`);
-                                    continue; // Loop again to fill spots
+                    try {
+                        const batchResults = await BackendFirecrawlService.batchScrape(urls, {
+                            apiKey: apiKeys?.firecrawl,
+                            formats: ['markdown', 'screenshot'], // VISION UPGRADE: Enable screenshots for batch
+                            // Note: Batch scrape might not return screenshots efficiently or at all depending on options.
+                            // Let's stick to markdown for batch efficiency as per plan.
+                            maxAge: 86400, // CACHING: 24h
+                            timeout: 30000,
+                            onRetry: (attempt: number, error: any, delay: number) => {
+                                if (delay > 2000) {
+                                    agent.log('system', `⏳ Batch Rate Limit Hit. Pausing for ${Math.round(delay / 1000)}s...`);
                                 }
                             }
+                        });
 
-                            // DEEP MODE: Global Analyst Check (The "Thinking" Step)
-                            if (mode === 'deep' && allResults.length > 0) {
-                                agent.log('discovery', '🧠 Global Analyst is analyzing progress (Queue Empty)...');
-                                const analysis = await DiscoveryAgent.analyzeProgress(jobId, inputRaw, allResults, language, model, apiKeys);
-                                if (analysis.new_tasks && analysis.new_tasks.length > 0) {
-                                    agent.log('discovery', `🧠 Global Analyst generated ${analysis.new_tasks.length} new tasks.`);
-                                    for (const t of analysis.new_tasks) {
-                                        await FrontierService.add(jobId, t.type as any, t.value, 40, tasksProcessed + 1, t.meta);
-                                    }
-                                    continue;
-                                }
-                            }
+                        // Process results
+                        // Firecrawl batchScrape returns array of result objects. 
+                        // Order is preserved? SDK says yes usually, or it has metadata.sourceURL
 
-                            // Truly Done
-                            break;
-                        }
+                        for (const task of tasks) {
+                            const result = batchResults.find((r: any) => r.metadata?.sourceURL === task.value || r.url === task.value); // Flexible matching
 
-                        // Queue Empty, but Pool has workers. Wait for ONE to finish.
-                        await Promise.race(processing);
-                    }
-                } else {
-                    // Pool Full. Wait for ONE to finish.
-                    await Promise.race(processing);
-                }
-
-                // 2. Continuous Background Expansion Check
-                // Trigger condition: Every time we have results and aren't swamped
-                if (mode !== 'fast' && allResults.length > 0) {
-                    // Check if we want to spawn an analysis
-                    // Limit active analyses to 1 to avoid spamming the LLM
-                    if (activeAnalyses.length < 1) {
-                        const BATCH_SIZE = 10;
-                        const recentResults = allResults.slice(-BATCH_SIZE);
-                        if (recentResults.length > 0) {
-                            const analysisPromise = (async () => {
-                                const stats = await FrontierService.stats(jobId);
-                                if (stats.pending > 20) return;
-
-                                try {
-                                    const combinedQueries = await DiscoveryAgent.analyzeForExpansion(inputRaw, recentResults, apiKeys, language);
-                                    if (combinedQueries && combinedQueries.length > 0) {
-                                        agent.log('discovery', `✨ Background Analysis found ${combinedQueries.length} new signals.`);
-                                        for (const q of combinedQueries) {
-                                            await FrontierService.add(jobId, 'query', q, 40, tasksProcessed, { source: 'sliding-expansion' });
-                                        }
-                                    }
-                                } catch (e) { }
-                            })();
-                            activeAnalyses.push(analysisPromise);
-                            analysisPromise.then(() => {
-                                const idx = activeAnalyses.indexOf(analysisPromise);
-                                if (idx > -1) activeAnalyses.splice(idx, 1);
-                            });
-                        }
-                    }
-                }
-            }
-
-            // Await any remaining
-            if (processing.size > 0) {
-                agent.log('discovery', `Draining remaining ${processing.size} tasks...`);
-                await Promise.all(processing);
-            }
-
-            // Logistics Check (Side-quest) - MOVED OUTSIDE LOOP
-            if (mode !== 'fast' && plan.canonical_name) {
-                const logisticsPrompt = agentConfig?.prompts?.logistics;
-                const logistics = await LogisticsAgent.checkNixRu(
-                    plan.canonical_name,
-                    apiKeys,
-                    (msg) => agent.log('logistics', msg),
-                    logisticsPrompt,
-                    undefined, // modelOverride
-                    language   // Pass language context
-                );
-                if (logistics.url) {
-                    allResults.push({
-                        url: logistics.url,
-                        title: "Logistics Data (NIX.ru)",
-                        markdown: `Logistics Data:\nWeight: ${logistics.weight}\nDimensions: ${logistics.dimensions}`,
-                        source_type: 'nix_ru',
-                        timestamp: new Date().toISOString()
-                    });
-                }
-            }
-
-            // ---------------------------------------------------------
-            // ZERO RESULTS RESCUE: Final Safety Net
-            // ---------------------------------------------------------
-            if (allResults.length === 0) {
-                agent.log('discovery', '⚠️ Primary search yielded 0 results. Initiating Emergency Fallback...');
-                console.warn(`[ZeroResultsRescue] Job ${jobId}: Main loop finished with 0 results. Triggering rescue.`);
-
-                try {
-                    // Try one last broad broad search with the canonical name or raw input
-                    const rescueQuery = plan.canonical_name || inputRaw;
-                    const rescueResults = await FallbackSearchService.search(rescueQuery, apiKeys);
-
-                    if (rescueResults && rescueResults.length > 0) {
-                        agent.log('discovery', `✅ Rescue successful: Found ${rescueResults.length} fallback sources.`);
-
-                        // PERSIST RESCUE RESULTS
-                        for (const r of rescueResults) {
-                            try {
-                                const sourceDoc = await SourceDocumentRepository.create({
-                                    jobId,
-                                    url: r.url,
-                                    domain: new URL(r.url).hostname,
-                                    rawContent: r.markdown,
-                                    status: 'success',
-                                    extractedMetadata: { title: r.title, type: 'fallback_rescue' }
-                                });
-
-                                // Basic claim extraction for rescue results too
-                                const claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model, language);
-                                if (claims && claims.length > 0) {
-                                    await ClaimsRepository.createBatch(claims.map(c => ({
-                                        itemId: item.id,
-                                        sourceDocId: sourceDoc.id,
-                                        field: c.field,
-                                        value: typeof c.value === 'object' ? JSON.stringify(c.value) : String(c.value),
-                                        confidence: Math.round((c.confidence || 0.5) * 100)
-                                    })));
-                                }
-
-                                allResults.push({
-                                    url: r.url,
-                                    title: r.title,
-                                    markdown: r.markdown,
-                                    source_type: 'fallback_rescue',
+                            if (result) {
+                                stepResults.push({
+                                    url: result.metadata?.sourceURL || task.value,
+                                    title: result.metadata?.title || "Scraped Page",
+                                    markdown: result.markdown || "",
+                                    source_type: 'direct_scrape_batch',
                                     timestamp: new Date().toISOString()
                                 });
-                            } catch (e) {
-                                console.error("Failed to persist rescue result", e);
+                                await FrontierService.complete(task.id, 'completed');
+                            } else {
+                                // URL failed in batch? 
+                                console.warn(`Batch result missing for ${task.value}`);
+                                // We could re-queue or mark failed.
+                                await FrontierService.complete(task.id, 'failed');
                             }
                         }
-                    } else {
-                        agent.log('discovery', '❌ Emergency Rescue failed. No sources found.');
-                    }
-                } catch (e) {
-                    console.error("[ZeroResultsRescue] Rescue failed:", e);
-                }
-            }
 
-            return allResults;
+                        return tasks.length; // Return count processed
+                    } catch (e: any) {
+                        console.error("Batch Scrape Failed", e);
+                        // Fallback: Process individually?
+                        // If batch fails completely (e.g. auth), falling back to individual might just fail 5 times.
+                        // But if it's a specific URL causing it? 
+                        // Firecrawl v2 batch usually handles individual failures internally if ignoreInvalidURLs is true (which we should set?)
+                        // Let's mark all as failed for now or retry individually.
+                        // Better to re-try individually if meaningful.
+                        agent.log('discovery', `⚠️ Batch failed. Retrying ${tasks.length} tasks individually.`);
+
+                        // We can't easily "return" them to the pool without complexity.
+                        // Simpler: Just run processTask for each serially or in parallel here.
+                        for (const task of tasks) {
+                            try {
+                                const res = await processTask(task);
+                                if (res) {
+                                    const resultItems = Array.isArray(res) ? res : [res];
+                                    resultItems.forEach((r: any) => {
+                                        if (r) allResults.push({ ...r, timestamp: new Date().toISOString() });
+                                    });
+                                }
+                            } catch (err) { /* processTask handles its own errors */ }
+                        }
+                        return tasks.length;
+                    }
+                };
+
+                while (tasksProcessed < MAX_TASKS) {
+                    // 1. Fill the pool
+                    const freeSlots = CONCURRENCY - processing.size;
+
+                    if (freeSlots > 0) {
+                        // Fetch just enough to fill slots
+                        const newTasks = await FrontierService.nextBatch(jobId, freeSlots);
+
+                        if (newTasks.length > 0) {
+
+                            // SEPARATE URL TASKS FOR BATCHING
+                            const urlTasks = newTasks.filter(t => t.type === 'url');
+                            const otherTasks = newTasks.filter(t => t.type !== 'url');
+
+                            // 1. Process URL Batch
+                            if (urlTasks.length > 1) { // Only batch if > 1
+                                const p = processUrlBatch(urlTasks).then(() => {
+                                    processing.delete(p);
+                                    tasksProcessed += urlTasks.length;
+                                });
+                                processing.add(p);
+                            } else if (urlTasks.length === 1) {
+                                // Single URL, process normally
+                                otherTasks.push(urlTasks[0]);
+                            }
+
+                            // 2. Process Others Individually
+                            for (const task of otherTasks) {
+                                const p = processTask(task).then(async (result) => {
+                                    const resultItems = Array.isArray(result) ? result : [result];
+                                    resultItems.forEach((r: any) => {
+                                        if (r) {
+                                            stepResults.push({
+                                                url: r.url,
+                                                title: r.title,
+                                                markdown: r.markdown,
+                                                source_type: r.source_type,
+                                                timestamp: new Date().toISOString()
+                                            });
+                                        }
+                                    });
+                                    processing.delete(p);
+                                    tasksProcessed++;
+                                });
+                                processing.add(p);
+                            }
+
+                        } else {
+                            // Queue Empty.
+                            if (processing.size === 0) {
+                                // Queue Empty AND Pool Empty.
+                                // Check Background Analyses?
+                                if (activeAnalyses.length > 0) {
+                                    agent.log('system', `Queue empty. Waiting for ${activeAnalyses.length} background analyses...`);
+                                    await Promise.all(activeAnalyses);
+                                    activeAnalyses.length = 0; // Clear
+                                    // Check if they added stuff
+                                    const stats = await FrontierService.stats(jobId);
+                                    if (stats.pending > 0) {
+                                        agent.log('system', `Analyses added ${stats.pending} tasks. Resuming...`);
+                                        continue; // Loop again to fill spots
+                                    }
+                                }
+
+                                // DEEP MODE: Global Analyst Check (The "Thinking" Step)
+                                if (mode === 'deep' && allResults.length > 0) {
+                                    agent.log('discovery', '🧠 Global Analyst is analyzing progress (Queue Empty)...');
+                                    const analysis = await DiscoveryAgent.analyzeProgress(jobId, inputRaw, allResults, language, model, apiKeys);
+                                    if (analysis.new_tasks && analysis.new_tasks.length > 0) {
+                                        agent.log('discovery', `🧠 Global Analyst generated ${analysis.new_tasks.length} new tasks.`);
+                                        for (const t of analysis.new_tasks) {
+                                            await FrontierService.add(jobId, t.type as any, t.value, 40, tasksProcessed + 1, t.meta);
+                                        }
+                                        continue;
+                                    }
+                                }
+
+                                // Truly Done
+                                break;
+                            }
+
+                            // Queue Empty, but Pool has workers. Wait for ONE to finish.
+                            await Promise.race(processing);
+                        }
+                    } else {
+                        // Pool Full. Wait for ONE to finish.
+                        await Promise.race(processing);
+                    }
+
+                    // 2. Continuous Background Expansion Check
+                    // Trigger condition: Every time we have results and aren't swamped
+                    if (mode !== 'fast' && allResults.length > 0) {
+                        // Check if we want to spawn an analysis
+                        // Limit active analyses to 1 to avoid spamming the LLM
+                        if (activeAnalyses.length < 1) {
+                            const BATCH_SIZE = 10;
+                            const recentResults = allResults.slice(-BATCH_SIZE);
+                            if (recentResults.length > 0) {
+                                const analysisPromise = (async () => {
+                                    const stats = await FrontierService.stats(jobId);
+                                    if (stats.pending > 20) return;
+
+                                    try {
+                                        const combinedQueries = await DiscoveryAgent.analyzeForExpansion(inputRaw, recentResults, apiKeys, language);
+                                        if (combinedQueries && combinedQueries.length > 0) {
+                                            agent.log('discovery', `✨ Background Analysis found ${combinedQueries.length} new signals.`);
+                                            for (const q of combinedQueries) {
+                                                await FrontierService.add(jobId, 'query', q, 40, tasksProcessed, { source: 'sliding-expansion' });
+                                            }
+                                        }
+                                    } catch (e) { }
+                                })();
+                                activeAnalyses.push(analysisPromise);
+                                analysisPromise.then(() => {
+                                    const idx = activeAnalyses.indexOf(analysisPromise);
+                                    if (idx > -1) activeAnalyses.splice(idx, 1);
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // Await any remaining
+                if (processing.size > 0) {
+                    agent.log('discovery', `Draining remaining ${processing.size} tasks...`);
+                    await Promise.all(processing);
+                }
+
+                // Logistics Check (Side-quest) - MOVED OUTSIDE LOOP
+                if (mode !== 'fast' && plan.canonical_name) {
+                    const logisticsPrompt = agentConfig?.prompts?.logistics;
+                    const logistics = await LogisticsAgent.checkNixRu(
+                        plan.canonical_name,
+                        apiKeys,
+                        (msg) => agent.log('logistics', msg),
+                        logisticsPrompt,
+                        undefined, // modelOverride
+                        language   // Pass language context
+                    );
+                    if (logistics.url) {
+                        allResults.push({
+                            url: logistics.url,
+                            title: "Logistics Data (NIX.ru)",
+                            markdown: `Logistics Data:\nWeight: ${logistics.weight}\nDimensions: ${logistics.dimensions}`,
+                            source_type: 'nix_ru',
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                }
+
+                // ---------------------------------------------------------
+                // ZERO RESULTS RESCUE: Final Safety Net
+                // ---------------------------------------------------------
+                if (allResults.length === 0) {
+                    agent.log('discovery', '⚠️ Primary search yielded 0 results. Initiating Emergency Fallback...');
+                    console.warn(`[ZeroResultsRescue] Job ${jobId}: Main loop finished with 0 results. Triggering rescue.`);
+
+                    try {
+                        // Try one last broad broad search with the canonical name or raw input
+                        const rescueQuery = plan.canonical_name || inputRaw;
+                        const rescueResults = await FallbackSearchService.search(rescueQuery, apiKeys);
+
+                        if (rescueResults && rescueResults.length > 0) {
+                            agent.log('discovery', `✅ Rescue successful: Found ${rescueResults.length} fallback sources.`);
+
+                            // PERSIST RESCUE RESULTS
+                            for (const r of rescueResults) {
+                                try {
+                                    const sourceDoc = await SourceDocumentRepository.create({
+                                        jobId,
+                                        url: r.url,
+                                        domain: new URL(r.url).hostname,
+                                        rawContent: r.markdown,
+                                        status: 'success',
+                                        extractedMetadata: { title: r.title, type: 'fallback_rescue' }
+                                    });
+
+                                    // Basic claim extraction for rescue results too
+                                    const claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model, language);
+                                    if (claims && claims.length > 0) {
+                                        await ClaimsRepository.createBatch(claims.map(c => ({
+                                            itemId: item.id,
+                                            sourceDocId: sourceDoc.id,
+                                            field: c.field,
+                                            value: typeof c.value === 'object' ? JSON.stringify(c.value) : String(c.value),
+                                            confidence: Math.round((c.confidence || 0.5) * 100)
+                                        })));
+                                    }
+
+                                    allResults.push({
+                                        url: r.url,
+                                        title: r.title,
+                                        markdown: r.markdown,
+                                        source_type: 'fallback_rescue',
+                                        timestamp: new Date().toISOString()
+                                    });
+                                } catch (e) {
+                                    console.error("Failed to persist rescue result", e);
+                                }
+                            }
+                        } else {
+                            agent.log('discovery', '❌ Emergency Rescue failed. No sources found.');
+                        }
+                    } catch (e) {
+                        console.error("[ZeroResultsRescue] Rescue failed:", e);
+                    }
+                }
+
+                return stepResults;
+            });
         });
 
         // 4. Truth Resolution (Phase G)
@@ -1101,7 +1155,9 @@ export const researchWorkflow = inngest.createFunction(
                 const MAX_LOOPS = 1;
 
                 while (refinementLoop < MAX_LOOPS) {
-                    const repairs = await DiscoveryAgent.critique(finalData, language);
+                    const repairs = await step.run(`critique-draft-${refinementLoop}`, async () => {
+                        return await DiscoveryAgent.critique(finalData, language);
+                    });
 
                     if (repairs.length === 0) break;
 
@@ -1111,29 +1167,63 @@ export const researchWorkflow = inngest.createFunction(
                     }
 
                     // 1. EXECUTE REPAIRS (Limited Batch)
-                    // We treat these as new 'query' tasks
-                    const repairTasks = repairs.map(r => ({ type: 'query', value: r.value, meta: { goal: r.goal } }));
+                    const repairSources = await step.run(`execute-repairs-${refinementLoop}`, async () => {
+                        // We treat these as new 'query' tasks
+                        const repairTasks = repairs.map(r => ({ type: 'query', value: r.value, meta: { goal: r.goal } }));
 
-                    // We run them directly using processTask (or batch if possible, but keep simple)
-                    // For simplicity, we just push them to Frontier nextLoop? No, we want instant feedback.
-                    // We'll run them in parallel right here.
+                        // We run them directly using processTask (or batch if possible, but keep simple)
+                        // For simplicity, we just push them to Frontier nextLoop? No, we want instant feedback.
+                        // We'll run them in parallel right here.
 
-                    // We need to use 'processTask' context but we can't easily access 'processUrlBatch' etc from here.
-                    // Instead, we will use backend search directly to be fast.
-                    const { BackendFirecrawlService } = await import('../../services/backend/firecrawl.js');
+                        // We need to use 'processTask' context but we can't easily access 'processUrlBatch' etc from here.
+                        // Instead, we will use backend search directly to be fast.
+                        const { BackendFirecrawlService } = await import('../../services/backend/firecrawl.js');
+                        const { SourceDocumentRepository } = await import('../../repositories/SourceDocumentRepository.js');
 
-                    const repairResults = await Promise.all(repairTasks.map(async (t: any) => {
-                        // Search metadata only to save credits, then scrape top 1
-                        // Fix: apiKey goes in options, return value IS the array
-                        const searchRes = await BackendFirecrawlService.search(t.value, {
-                            limit: 2,
-                            scrapeOptions: { formats: ['markdown'] },
-                            apiKey: apiKeys?.firecrawl
-                        });
-                        return searchRes.map((d: any) => `Source: ${d.url}\nTitle: ${d.title}\nSnippet: ${d.markdown}`);
-                    }));
+                        const repairResults = await Promise.all(repairTasks.map(async (t: any) => {
+                            // SOTA REPAIR: Omni-Integration
+                            // 1. Try Global Cache First
+                            try {
+                                const cached = await SourceDocumentRepository.findByUrl(t.value); // In repair, value is the query? No, value is query for 'query' type.
+                                // Wait, 'query' type tasks don't have a URL value. They have a query string.
+                                // So we can't cache-lookup a query string against a URL.
+                                // We must search first.
+                            } catch (e) { }
 
-                    const repairSources = repairResults.flat();
+                            // 2. Search & Filter
+                            const searchRes = await BackendFirecrawlService.search(t.value, {
+                                limit: 5, // Get more candidates for filtering
+                                apiKey: apiKeys?.firecrawl
+                            });
+
+                            // 3. Semantic Filter
+                            const relevantIndices = await DiscoveryAgent.filterResults(searchRes, t.value, apiKeys);
+                            const bestCandidates = relevantIndices.map(i => searchRes[i]);
+
+                            // 4. Scrape & Cache (Parallel)
+                            const scraped = await Promise.all(bestCandidates.map(async (c: any) => {
+                                // Check Cache for this specific URL
+                                try {
+                                    const cached = await SourceDocumentRepository.findByUrl(c.url);
+                                    if (cached && (Date.now() - new Date(cached.crawledAt).getTime() < 86400000)) {
+                                        agent.log('discovery', `⚡ Cache Hit (Repair): ${c.url}`);
+                                        return { ...c, markdown: cached.rawContent };
+                                    }
+                                } catch (e) { }
+
+                                // Scrape
+                                const d = await BackendFirecrawlService.scrape(c.url, {
+                                    formats: ['markdown'],
+                                    apiKey: apiKeys?.firecrawl
+                                });
+                                return { ...c, markdown: (d as any).markdown };
+                            }));
+
+                            return scraped.map((d: any) => `Source: ${d.url}\nTitle: ${d.title}\nSnippet: ${d.markdown}`);
+                        }));
+
+                        return repairResults.flat();
+                    });
 
                     if (repairSources.length > 0) {
                         agent.log('synthesis', `Incorporating ${repairSources.length} repair sources...`);
@@ -1193,8 +1283,7 @@ export const researchWorkflow = inngest.createFunction(
         await step.run("transition-gate-check", () => agent.transition('gate_check'));
         const verification = await step.run("verify-data", async () => {
             const { QualityGatekeeper } = await import("../../services/agents/QualityGatekeeper.js");
-            // @ts-ignore
-            return await QualityGatekeeper.validate(extractedData, language);
+            return await QualityGatekeeper.validate(extractedData as any, language);
         });
 
         // 6. DB Update & Finalization
@@ -1206,6 +1295,26 @@ export const researchWorkflow = inngest.createFunction(
                 // We rely on standard failure from Orchestrator if fail() was called.
             }
             return await agent.complete(verification, extractedData);
+        });
+
+        // 7. Graph Population (SOTA 2026)
+        // Automatically populate Graph-Lite with entities and edges from research
+        await step.run("populate-graph", async () => {
+            try {
+                const { GraphPopulator } = await import("../../services/ingestion/GraphPopulator.js");
+                const graphResult = await GraphPopulator.populateFromResearch(
+                    item.id,
+                    extractedData as any,
+                    jobId
+                );
+                agent.log('orchestrator', `📊 Graph populated: ${graphResult.entitiesCreated} entities, ${graphResult.edgesCreated} edges`);
+                return graphResult;
+            } catch (e: any) {
+                // Non-blocking: Log error but don't fail workflow
+                console.warn('[GraphPopulator] Error during population:', e);
+                agent.log('system', `⚠️ Graph population skipped: ${e.message}`);
+                return { entitiesCreated: 0, edgesCreated: 0 };
+            }
         });
 
         return {
