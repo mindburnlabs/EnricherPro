@@ -19,7 +19,7 @@
         "needs_review": "На проверку"
     },
     "engines": {
-        "gemini_default": "Gemini 2.0 (По умолчанию)",
+        "gemini_default": "Авто-Роутер (По умолчанию)",
         "firecrawl_agent": "Агент Firecrawl",
         "openrouter": "OpenRouter AI"
     },

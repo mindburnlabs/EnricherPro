@@ -19,7 +19,7 @@
         "needs_review": "Needs Review"
     },
     "engines": {
-        "gemini_default": "Gemini 2.0 (Default)",
+        "gemini_default": "Auto Router (Default)",
         "firecrawl_agent": "Firecrawl Agent",
         "openrouter": "OpenRouter AI"
     },

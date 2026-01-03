@@ -10,6 +10,8 @@ const MODEL_PRICING: Record<string, { prompt: number; completion: number }> = {
     'google/gemini-2.0-flash-001': { prompt: 0.1, completion: 0.4 },
     'google/gemini-exp-1206:free': { prompt: 0, completion: 0 },
     'deepseek/deepseek-r1:free': { prompt: 0, completion: 0 },
+    'google/gemini-2.0-pro-exp-02-05:free': { prompt: 0, completion: 0 },
+    'openrouter/auto': { prompt: 0.2, completion: 0.2 }, // Average estimate if actual model not returned
     'deepseek/deepseek-chat': { prompt: 0.14, completion: 0.28 },
     'anthropic/claude-3.5-sonnet': { prompt: 3, completion: 15 },
     'openai/gpt-4o': { prompt: 2.5, completion: 10 },

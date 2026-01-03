@@ -256,7 +256,7 @@ export class BackendLLMService {
                         const latencyMs = Date.now() - startTime;
                         const usage = data.usage;
                         ObservabilityService.trackUsage(config.agentContext, {
-                            model: currentBody.model || targetModel,
+                            model: data.model || currentBody.model || targetModel,
                             promptTokens: usage?.prompt_tokens,
                             completionTokens: usage?.completion_tokens,
                             totalTokens: usage?.total_tokens,

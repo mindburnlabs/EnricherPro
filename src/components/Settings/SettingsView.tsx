@@ -688,7 +688,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
 
                     <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-[#0f1115] flex justify-end gap-3 rounded-br-3xl">
                         <button onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
-                            {t('settings:actions.cancel')}
+                            {t('common:actions.cancel')}
                         </button>
                         <button
                             onClick={handleSave}
@@ -699,7 +699,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                 }`}
                         >
                             <Save className="w-4 h-4" />
-                            {t('settings:actions.save')}
+                            {t('common:actions.save')}
                         </button>
                     </div>
                 </div>
