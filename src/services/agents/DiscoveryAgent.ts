@@ -81,7 +81,7 @@ export class DiscoveryAgent {
         return result;
     }
 
-    static async analyzeRequestComplexity(input: string, apiKeys?: Record<string, string>, model: string = "google/gemini-2.0-flash-exp:free"): Promise<{ mode: ResearchMode, reason: string }> {
+    static async analyzeRequestComplexity(input: string, apiKeys?: Record<string, string>, model: string = "openrouter/auto"): Promise<{ mode: ResearchMode, reason: string }> {
         try {
             const systemPrompt = `You are a Research Strategist. 
             Analyze the user's request complexity to determine the optimal research mode.
@@ -431,7 +431,7 @@ export class DiscoveryAgent {
 
 
         const modelsToTry = [
-            useFlashPlanner ? "google/gemini-2.0-flash-exp:free" : (model || "openrouter/auto"), // Primary - Flash First!
+            useFlashPlanner ? "openrouter/auto" : (model || "openrouter/auto"), // Primary - Dynamic routing
             model || "openrouter/auto", // Secondary 
             "openrouter/auto" // Fallback 
         ];

@@ -31,7 +31,7 @@ export class SynthesisAgent {
 
         // Fallback only if BOTH are missing
         if (!effectiveModel) {
-            effectiveModel = 'google/gemini-2.0-flash-exp:free'; // 2026 Default Free Fallback
+            effectiveModel = 'openrouter/auto'; // Dynamic routing to available models
         }
 
         console.log(`[SynthesisAgent] Extracting with model: ${effectiveModel}`);
@@ -245,7 +245,7 @@ export class SynthesisAgent {
         let effectiveModel = (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel;
 
         if (!effectiveModel) {
-            effectiveModel = 'google/gemini-2.0-flash-exp:free';
+            effectiveModel = 'openrouter/auto';
         }
 
         const inputGroundingPrompt = originalInput ? `
@@ -392,7 +392,7 @@ export class SynthesisAgent {
         const state = useSettingsStore.getState();
         const storeModel = state.reasoningModel;
         let effectiveModel = (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel;
-        if (!effectiveModel) effectiveModel = 'google/gemini-2.0-flash-exp:free';
+        if (!effectiveModel) effectiveModel = 'openrouter/auto';
 
         const mergedJson = JSON.stringify(results, null, 2);
 
