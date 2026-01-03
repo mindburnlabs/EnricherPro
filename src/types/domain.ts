@@ -171,6 +171,7 @@ export interface ConsumableData {
     aliases?: string[]; // Array of short names/aliases
 
     related_skus?: string[]; // Array of related/cross-sell SKUs
+    related_ids?: { id: string; type: string }[]; // Structured related items
 
     yield: YieldInfo | null;
     color: string | null; // Normalized: Black, Cyan, etc.

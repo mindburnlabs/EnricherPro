@@ -1,7 +1,7 @@
 {
   "name": "consumable-enricher-pro",
   "private": true,
-  "version": "0.0.0",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "NODE_OPTIONS='--no-deprecation' vite",
