@@ -14,7 +14,8 @@ export class EnrichmentAgent {
         language: string = 'en',
         model: string = "openrouter/auto",
         apiKeys?: Record<string, string>,
-        promptOverride?: string
+        promptOverride?: string,
+        onLog?: (msg: string) => void
     ): Promise<any> {
 
         const { useSettingsStore } = await import('../../stores/settingsStore.js');
@@ -40,7 +41,8 @@ export class EnrichmentAgent {
                 ],
                 jsonSchema: FirecrawlSchemaSchema,
                 routingStrategy: RoutingStrategy.SMART,
-                apiKeys
+                apiKeys,
+                onLog: onLog ? (_cat: string, msg: string) => onLog(msg) : undefined
             });
 
             return JSON.parse(response || "{}");

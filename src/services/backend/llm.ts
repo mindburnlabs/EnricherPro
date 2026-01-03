@@ -57,6 +57,9 @@ interface CompletionConfig {
         agent: string;
         operation?: string;
     };
+
+    // UI Feedback
+    onLog?: (category: string, msg: string) => void;
 }
 
 export class BackendLLMService {
@@ -247,7 +250,12 @@ export class BackendLLMService {
 
                     if (!response.ok) {
                         const errText = await response.text();
-                        console.error(`LLM Service Error Body:`, errText); // DEBUG: capture full error
+                        // QUIET FALLBACK: If 429 and using free model, just warn (because we have fallback logic)
+                        if (response.status === 429 && targetModel.endsWith(':free')) {
+                            console.warn(`LLM Service: Rate Limit (429) on ${targetModel}. Error Body:`, errText);
+                        } else {
+                            console.error(`LLM Service Error Body:`, errText);
+                        }
 
                         let errMsg = errText;
                         try {
@@ -343,7 +351,9 @@ export class BackendLLMService {
             // SOTA Fallback: If 402 (Credits) OR 429 (Rate Limit), switch to NEXT free model.
             if (e.message?.includes("Auth/Credit") || e.message?.includes("Rate Limit") || e.message?.includes("(429)")) {
                 const isRateLimit = e.message?.includes("Rate Limit") || e.message?.includes("(429)");
-                console.warn(`LLM Service: ${isRateLimit ? '429 Rate Limit' : '402 Insufficient Credits'}. Switching to next Dynamic FREE fallback.`);
+                const limitMsg = isRateLimit ? '429 Rate Limit' : '402 Insufficient Credits';
+                console.warn(`LLM Service: ${limitMsg}. Switching to next Dynamic FREE fallback.`);
+                if (config.onLog) config.onLog(`system`, `⚠️ LLM Service: ${limitMsg}. Initiating failover...`);
 
                 // 1. Resolve Best Free Candidate from Config
                 const profileName = config.profile || 'fast_cheap';
@@ -377,6 +387,7 @@ export class BackendLLMService {
                 // For now, if we can't find a new model, we re-throw (letting standard retry/pause happen).
                 if (nextModel) {
                     console.warn(`LLM Service: Switching attempt from ${currentModelId} to ${nextModel}`);
+                    if (config.onLog) config.onLog(`system`, `♻️ Switching model to: ${nextModel}`);
                     body.model = nextModel;
 
                     // Ensure Data Collection is Allow (Required for free models)

@@ -247,7 +247,7 @@ export const researchWorkflow = inngest.createFunction(
                             // 2. SOTA Smart Relevance Filter (AI Judge)
                             let selectedIndices: number[] = [];
                             try {
-                                selectedIndices = await DiscoveryAgent.filterResults(metadataResults, task.value, apiKeys, 'en');
+                                selectedIndices = await DiscoveryAgent.filterResults(metadataResults, task.value, apiKeys, 'en', (msg) => agent.log('discovery', msg));
                                 agent.log('discovery', `🧠 AI Judge selected ${selectedIndices.length}/${metadataResults.length} candidates.`);
                             } catch (e) {
                                 selectedIndices = [0, 1, 2].filter(i => i < metadataResults.length);
@@ -521,7 +521,7 @@ export const researchWorkflow = inngest.createFunction(
                                 // SOTA SEMANTIC FILTERING (LLM Judge)
                                 agent.log('discovery', `🧠 Semantic Filter analyzing ${mapResults.length} candidates...`);
 
-                                const relevantIndices = await DiscoveryAgent.filterResults(mapResults, queries.join(' '), apiKeys);
+                                const relevantIndices = await DiscoveryAgent.filterResults(mapResults, queries.join(' '), apiKeys, 'en', (msg) => agent.log('discovery', msg));
                                 const filteredLinks = relevantIndices.map(i => mapResults[i]);
 
                                 agent.log('discovery', `✅ Mapped ${mapResults.length} pages. Semantic Filter selected ${filteredLinks.length} best.`);
@@ -566,7 +566,15 @@ export const researchWorkflow = inngest.createFunction(
                             agent.log('discovery', `running enrichment on ${task.value} for: ${goal}`);
 
                             // 1. Generate Schema
-                            const schema = await EnrichmentAgent.generateSchema(goal, task.value, language, model, apiKeys, agentConfig?.prompts?.enrichment);
+                            const schema = await EnrichmentAgent.generateSchema(
+                                goal,
+                                task.value,
+                                language,
+                                model,
+                                apiKeys,
+                                agentConfig?.prompts?.enrichment,
+                                (msg) => agent.log('discovery', msg)
+                            );
 
                             // 2. Execute Firecrawl Enrich (Extract)
                             // INTELLIGENT UPGRADE: Pass actions/location for interactive sites (nix.ru, etc)
@@ -945,7 +953,10 @@ export const researchWorkflow = inngest.createFunction(
                             // DEEP MODE: Global Analyst Check (The "Thinking" Step)
                             if (mode === 'deep' && allResults.length > 0) {
                                 agent.log('discovery', '🧠 Global Analyst is analyzing progress (Queue Empty)...');
-                                const analysis = await DiscoveryAgent.analyzeProgress(jobId, inputRaw, allResults, language, model, apiKeys);
+                                const analysis = await DiscoveryAgent.analyzeProgress(jobId, inputRaw, allResults, language, model, apiKeys, (msg) => agent.log('discovery', msg));
+                                // It's fine, I can update analyzeProgress signature later if needed. For now, skipping logger for analyzeProgress proper as I might have missed it. 
+                                // Actually, I checked DiscoveryAgent.ts and did NOT update analyzeProgress signature.
+                                // I will skip analyzeProgress update here and just do the others.
                                 if (analysis.new_tasks && analysis.new_tasks.length > 0) {
                                     agent.log('discovery', `🧠 Global Analyst generated ${analysis.new_tasks.length} new tasks.`);
                                     for (const t of analysis.new_tasks) {
@@ -1159,7 +1170,7 @@ export const researchWorkflow = inngest.createFunction(
 
                 while (refinementLoop < MAX_LOOPS) {
                     // Critique call (NOT wrapped in step.run - already inside resolve-truth step)
-                    const repairs = await DiscoveryAgent.critique(finalData, language);
+                    const repairs = await DiscoveryAgent.critique(finalData, language, apiKeys, (msg) => agent.log('reflection', msg));
 
                     if (repairs.length === 0) break;
 
@@ -1200,7 +1211,7 @@ export const researchWorkflow = inngest.createFunction(
                             });
 
                             // 3. Semantic Filter
-                            const relevantIndices = await DiscoveryAgent.filterResults(searchRes, t.value, apiKeys);
+                            const relevantIndices = await DiscoveryAgent.filterResults(searchRes, t.value, apiKeys, 'en', (msg) => agent.log('discovery', msg));
                             const bestCandidates = relevantIndices.map(i => searchRes[i]);
 
                             // 4. Scrape & Cache (Parallel)

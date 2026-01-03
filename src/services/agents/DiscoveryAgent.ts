@@ -81,7 +81,7 @@ export class DiscoveryAgent {
         return result;
     }
 
-    static async analyzeRequestComplexity(input: string, apiKeys?: Record<string, string>, model: string = "openrouter/auto"): Promise<{ mode: ResearchMode, reason: string }> {
+    static async analyzeRequestComplexity(input: string, apiKeys?: Record<string, string>, model: string = "openrouter/auto", onLog?: (msg: string) => void): Promise<{ mode: ResearchMode, reason: string }> {
         try {
             const systemPrompt = `You are a Research Strategist. 
             Analyze the user's request complexity to determine the optimal research mode.
@@ -103,7 +103,9 @@ export class DiscoveryAgent {
                 ],
                 jsonSchema: ComplexityAnalysisSchema,
                 routingStrategy: RoutingStrategy.FAST,
-                apiKeys
+                apiKeys,
+                // Pass logging callback if available
+                onLog: onLog ? (_cat: string, msg: string) => onLog(msg) : undefined
             });
 
             const parsed = safeJsonParse(response || "{}");
@@ -130,7 +132,11 @@ export class DiscoveryAgent {
         let suggestion = null;
 
         if (mode === 'balanced') {
-            suggestion = await this.analyzeRequestComplexity(inputRaw, apiKeys, "openrouter/auto");
+            // Suggestion: Update analyzeRequestComplexity to accept onLog?
+            // For now, pass undefined or update signature. Let's update signature in next step if checking fails.
+            // Actually, I can't update analyzeRequestComplexity call here because I haven't updated its signature yet.
+            // I will update plan first to pass onLog to ITS main LLM call.
+            suggestion = await this.analyzeRequestComplexity(inputRaw, apiKeys, "openrouter/auto", onLog);
             onLog?.(`🧠 Adaptive Strategy: Analyzed request as '${suggestion.mode}' (${suggestion.reason})`);
             if (suggestion.mode === 'deep') {
                 effectiveMode = 'deep';
@@ -452,7 +458,8 @@ export class DiscoveryAgent {
                     plugins: effectiveMode === 'fast' ? [{ id: "web", max_results: 3 }] : [],
                     routingStrategy: RoutingStrategy.SMART,
                     maxTokens: 4096, // Cap to fit free tier
-                    apiKeys // Pass to service
+                    // Bridge UI Logging
+                    onLog: onLog ? (_cat: string, msg: string) => onLog(msg) : undefined
                 });
 
                 const plan = safeJsonParse(response || "{}");
@@ -550,7 +557,8 @@ export class DiscoveryAgent {
         currentResults: RetrieverResult[],
         language: string = 'en',
         model: string = "openrouter/auto",
-        apiKeys?: Record<string, string>
+        apiKeys?: Record<string, string>,
+        onLog?: (msg: string) => void
     ): Promise<{
         action: 'continue' | 'stop';
         new_tasks?: Array<{ type: 'query' | 'enrichment' | 'domain_crawl' | 'firecrawl_agent', value: string, meta?: any }>
@@ -612,7 +620,8 @@ export class DiscoveryAgent {
                 ],
                 jsonSchema: ProgressAnalysisSchema,
                 routingStrategy: RoutingStrategy.SMART,
-                apiKeys
+                apiKeys,
+                onLog: onLog ? (_cat: string, msg: string) => onLog(msg) : undefined
             });
 
             const parsed = safeJsonParse(response || "{}");
@@ -640,7 +649,7 @@ export class DiscoveryAgent {
      * Analyzes search results to find new keyword expansion opportunities.
      * Uses Fast/Cheap model to keep costs low.
      */
-    static async analyzeForExpansion(originalQuery: string, searchResults: RetrieverResult[], apiKeys?: Record<string, string>, language: string = 'en'): Promise<string[]> {
+    static async analyzeForExpansion(originalQuery: string, searchResults: RetrieverResult[], apiKeys?: Record<string, string>, language: string = 'en', onLog?: (msg: string) => void): Promise<string[]> {
         if (searchResults.length === 0) return [];
 
         const isRu = language === 'ru';
@@ -691,7 +700,8 @@ export class DiscoveryAgent {
                 ],
                 jsonSchema: ExpansionSchema,
                 routingStrategy: RoutingStrategy.CHEAP,
-                apiKeys
+                apiKeys,
+                onLog: onLog ? (_cat: string, msg: string) => onLog(msg) : undefined
             });
 
             const parsed = safeJsonParse(response || "[]");
@@ -707,7 +717,7 @@ export class DiscoveryAgent {
      * Uses a lightweight, fast LLM to strict-filter search results based on snippets.
      * Prevents scraping of irrelevant pages.
      */
-    static async filterResults(results: any[], originalQuery: string, apiKeys?: Record<string, string>, language: string = 'en'): Promise<number[]> {
+    static async filterResults(results: any[], originalQuery: string, apiKeys?: Record<string, string>, language: string = 'en', onLog?: (msg: string) => void): Promise<number[]> {
         if (results.length === 0) return [];
         if (results.length <= 2) return results.map((_, i) => i); // If very few results, just take them (heuristics likely already applied)
 
@@ -787,7 +797,7 @@ export class DiscoveryAgent {
      * - TIER2 (IMPORTANT): compatible_printers, images, description
      * - TIER3 (ENHANCEMENT): weight, dimensions, faq, compliance_ru
      */
-    static async critique(finalData: any, language: string = 'en', apiKeys?: Record<string, string>): Promise<Array<{ goal: string, value: string, severity?: 'TIER1' | 'TIER2' | 'TIER3' }>> {
+    static async critique(finalData: any, language: string = 'en', apiKeys?: Record<string, string>, onLog?: (msg: string) => void): Promise<Array<{ goal: string, value: string, severity?: 'TIER1' | 'TIER2' | 'TIER3' }>> {
         try {
             const isRu = language === 'ru';
 
@@ -843,7 +853,8 @@ export class DiscoveryAgent {
                     { role: "user", content: `Analyze this product data for gaps:\n${JSON.stringify(finalData, null, 2)}` }
                 ],
                 routingStrategy: RoutingStrategy.FAST,
-                apiKeys
+                apiKeys,
+                onLog: onLog ? (_cat: string, msg: string) => onLog(msg) : undefined
             });
 
             const parsed = safeJsonParse(response || "[]");
