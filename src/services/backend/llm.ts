@@ -121,15 +121,33 @@ export class BackendLLMService {
         }
 
         // Response Format & Structured Outputs
+        // FIX: openrouter/auto often routes to models incompatible with 'json_schema' (causing 400s).
+        // If targeting auto, we proactively DOWNGRADE to Raw Mode (System Prompt instruction) to avoid the error roundtrip.
         if (config.jsonSchema) {
-            body.response_format = {
-                type: "json_schema",
-                json_schema: {
-                    name: "output_schema", // Generic name, required by OpenAI/OR
-                    // strict: true, // REMOVED: Causes 400 on non-OpenAI models (e.g. Anthropic, Gemini via OpenRouter)
-                    schema: config.jsonSchema
+            const isAuto = targetModel === 'openrouter/auto';
+
+            if (!isAuto) {
+                // For specific models (gpt-4o, etc), we use strict native schema
+                body.response_format = {
+                    type: "json_schema",
+                    json_schema: {
+                        name: "output_schema",
+                        schema: config.jsonSchema
+                    }
+                };
+            } else {
+                // For Auto: Append strict JSON instruction to System Prompt if not already there
+                const schemaString = JSON.stringify(config.jsonSchema, null, 2);
+                const instruction = `\n\nCRITICAL: You MUST return strictly valid JSON matching this schema:\n${schemaString}\n\nNO MARKDOWN. NO PREAMBLE. JUST JSON.`;
+
+                // Append to the last system message, or first message if no system
+                const sysIdx = body.messages.findIndex((m: any) => m.role === 'system');
+                if (sysIdx >= 0) {
+                    body.messages[sysIdx].content += instruction;
+                } else {
+                    body.messages.unshift({ role: "system", content: instruction });
                 }
-            };
+            }
         }
 
         // Plugins & Transforms
@@ -193,6 +211,8 @@ export class BackendLLMService {
 
                     if (!response.ok) {
                         const errText = await response.text();
+                        console.error(`LLM Service Error Body:`, errText); // DEBUG: capture full error
+
                         let errMsg = errText;
                         try {
                             const jsonErr = JSON.parse(errText);

@@ -108,7 +108,7 @@ export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({ steps, logs, statu
                                         onClick={() => setExpandedStep(expandedStep === step.id ? null : step.id)}
                                     >
                                         {/* Status Dot */}
-                                        <div className={`absolute left-0 top-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 z-10 bg-white dark:bg-gray-900
+                                        <div className={`absolute left-0 top-1.5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 z-10 bg-white dark:bg-gray-900
                                             ${isDone
                                                 ? 'border-emerald-500 text-emerald-500 scale-100'
                                                 : isCurrent
