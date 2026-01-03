@@ -1,5 +1,6 @@
 
 import { BackendLLMService, RoutingStrategy } from "../backend/llm.js";
+import { GraphService } from "../backend/GraphService.js";
 
 import { safeJsonParse } from "../../lib/json.js";
 import { ComplexityAnalysisSchema, AgentPlanSchema, ProgressAnalysisSchema, ExpansionSchema } from "../../schemas/agent_schemas.js";
@@ -25,6 +26,7 @@ export interface AgentPlan {
         concurrency: number;
         depth: number;
     };
+    evidence?: any;
 }
 
 export interface RetrieverResult {
@@ -135,7 +137,26 @@ export class DiscoveryAgent {
         onLog?.(`Planning research for "${inputRaw}" in ${effectiveMode} mode (${language.toUpperCase()})...`);
 
         // 1. Pre-process Input
-        const knowns = this.parseInput(inputRaw);
+        // ---------------------------------------------------------
+        const knowns: any = this.parseInput(inputRaw);
+
+        try {
+            const graphHit = await GraphService.resolveIdentity(inputRaw);
+            if (graphHit) {
+                onLog?.(`🔥 Graph Hit (${graphHit.confidence}%): Resolved "${inputRaw}" -> "${graphHit.mpn}"`);
+                // Inject the canonical MPN into 'knowns' to guide the Planner
+                knowns.mpn = graphHit.mpn;
+                knowns.canonical_name = graphHit.mpn;
+                knowns.is_graph_verified = true;
+            } else {
+                onLog?.(`Network miss for "${inputRaw}". Proceeding to web search.`);
+            }
+        } catch (e) {
+            // Ignore graph errors, fail open to web
+            console.warn("Graph lookup failed", e);
+        }
+        // ---------------------------------------------------------
+
         onLog?.(`Parsed Knowns: ${JSON.stringify(knowns)}`);
 
         let contextInstruction = "";
@@ -674,5 +695,50 @@ export class DiscoveryAgent {
         }
     }
 
+    /**
+     * "The Editor" - Automatic Refinement
+     * Reviews the synthesized draft for critical missing data points based on the target market.
+     */
+    static async critique(finalData: any, language: string = 'en', apiKeys?: Record<string, string>): Promise<Array<{ goal: string, value: string }>> {
+        try {
+            const systemPrompt = `You are a Strict Data Auditor for a Product Database.
+            Your job is to review the Final Output JSON and IDENTIFY CRITICAL GAPS.
+            
+            Target Market: ${language === 'ru' ? 'Russia (RU)' : 'Global (EN)'}
+            
+            Rules:
+            1. If 'mpn' is missing/unknown -> CRITICAL.
+            2. If 'yield' (page yield) is missing -> CRITICAL.
+            3. If 'images' array is empty -> CRITICAL.
+            4. If 'compatible_printers' is empty -> CRITICAL.
+            5. If Target is RU and 'description_ru' is missing/English -> CRITICAL.
+            
+            Return a JSON array of Repair Tasks if critical gaps exist.
+            Format: [{ "goal": "Find missing MPN", "value": "Model Name + MPN" }, { "goal": "Find compatible printers", "value": "Model Name + printers" }]
+            
+            If NO critical gaps, return [] (empty array).
+            `;
 
+            const { ModelProfile } = await import("../../config/models.js");
+            const response = await BackendLLMService.complete({
+                model: "openrouter/auto",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: JSON.stringify(finalData) }
+                ],
+                routingStrategy: RoutingStrategy.FAST,
+                apiKeys
+            });
+
+            const parsed = safeJsonParse(response || "[]");
+            if (Array.isArray(parsed)) {
+                return parsed.map((p: any) => ({ goal: p.goal || "Repair gap", value: p.value || "" }));
+            }
+            return [];
+
+        } catch (e) {
+            console.warn("Critique failed", e);
+            return [];
+        }
+    }
 }

@@ -196,11 +196,105 @@ export const LogisticsSchema = {
 export const ConsumableDataSchema = {
     type: "object",
     properties: {
-        brand: { type: ["string", "null"] },
-        consumable_type: {
-            type: ["string", "null"],
-            enum: ["toner_cartridge", "drum_unit", "ink_cartridge", "maintenance_kit", "waste_toner", "bottle", "other", "unknown", null]
+        // 1. Identity
+        mpn_identity: {
+            type: ["object", "null"],
+            properties: {
+                mpn: { type: ["string", "null"] },
+                series: { type: ["string", "null"] }, // e.g. "HP 12A"
+                canonical_model_name: { type: ["string", "null"] },
+                cross_reference_mpns: { type: "array", items: { type: "string" } }, // Equivalences
+                authenticity: { type: ["string", "null"], enum: ["oem", "compatible", "remanufactured", "refill", "fake", "unknown", null] }
+            },
+            required: ["mpn", "series"],
+            additionalProperties: false
         },
+        brand: { type: ["string", "null"] },
+        aliases: { type: "array", items: { type: "string" } },
+        gtin: { type: "array", items: { type: "string" } },
+
+        // 2. Taxonomy
+        type_classification: {
+            type: ["object", "null"],
+            properties: {
+                family: { type: "string", enum: ["toner", "drum", "developer", "waste_toner", "maintenance_kit", "fuser", "ink", "ribbon", "other", "unknown"] },
+                subtype: { type: "string", enum: ["cartridge", "bottle", "unit", "integrated_drum", "separate_drum", "unknown"] }
+            },
+            required: ["family", "subtype"],
+            additionalProperties: false
+        },
+
+        // 3. Compatibility (RU-Market Focus)
+        compatible_printers_ru: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    model: { type: "string" },
+                    canonicalName: { type: "string" },
+                    is_ru_confirmed: { type: "boolean" }, // Source explicitly mentions RU market or Cyrillic
+                    constraints: { type: "array", items: { type: "string" } } // "firmware_sensitive", "chip_required", "counter_reset"
+                },
+                required: ["model", "canonicalName", "is_ru_confirmed"],
+                additionalProperties: false
+            }
+        },
+
+        // 4. Tech Specs
+        tech_specs: {
+            type: ["object", "null"],
+            properties: {
+                yield: {
+                    type: ["object", "null"],
+                    properties: {
+                        value: { type: ["number", "null"] },
+                        unit: { type: "string", enum: ["pages", "copies", "ml", "g", "unknown"] },
+                        standard: { type: ["string", "null"], enum: ["ISO_19752", "ISO_19798", "5_percent_coverage", "manufacturer_stated", "unknown", null] }
+                    },
+                    required: ["value", "unit", "standard"],
+                    additionalProperties: false
+                },
+                color: { type: ["string", "null"] },
+                is_integrated_drum: { type: "boolean" },
+                chip_type: { type: ["string", "null"], enum: ["oem", "compatible", "universal", "none", "unknown", null] }
+            },
+            required: ["yield", "color", "chip_type"],
+            additionalProperties: false
+        },
+
+        // 5. Logistics & Compliance
+        logistics: {
+            type: ["object", "null"],
+            properties: {
+                package_weight_g: { type: ["number", "null"] },
+                product_weight_g: { type: ["number", "null"] },
+                width_mm: { type: ["number", "null"] },
+                height_mm: { type: ["number", "null"] },
+                depth_mm: { type: ["number", "null"] },
+                origin_country: { type: ["string", "null"] },
+                box_contents: { type: "array", items: { type: "string" } },
+                transport_symbols: { type: "array", items: { type: "string" } } // e.g. "fragile", "keep_dry"
+            },
+            required: ["package_weight_g", "width_mm"],
+            additionalProperties: false
+        },
+
+        // 5.1 RU Compliance (Strict)
+        compliance_ru: {
+            type: ["object", "null"],
+            properties: {
+                tn_ved_code: { type: ["string", "null"] }, // e.g. "8443 99 900 0"
+                okpd2_code: { type: ["string", "null"] },  // e.g. "28.23.25.000"
+                mandatory_marking: { type: "boolean", description: "Is 'Honest Sign' (Честный ЗНАК) required?" },
+                certification_type: { type: ["string", "null"], enum: ["mandatory", "voluntary", "refusal_letter", "none", "unknown", null] },
+                has_sds: { type: "boolean", description: "Safety Data Sheet (Паспорт безопасности) available?" },
+                refusal_letter_info: { type: ["string", "null"] } // Issuer/Date
+            },
+            required: ["tn_ved_code", "mandatory_marking"],
+            additionalProperties: false
+        },
+
+        // 6. High-Fidelity
         marketing: {
             type: ["object", "null"],
             properties: {
@@ -210,47 +304,31 @@ export const ConsumableDataSchema = {
                 keywords: { type: "array", items: { type: "string" } }
             }
         },
-        mpn_identity: {
-            type: ["object", "null"],
-            properties: {
-                mpn: { type: ["string", "null"] },
-                series: { type: ["string", "null"] },
-                canonical_model_name: { type: ["string", "null"] }
-            },
-            required: ["mpn", "series"],
-            additionalProperties: false
-        },
-        aliases: {
-            type: "array",
-            items: { type: "string" }
-        },
-        gtin: {
-            type: "array",
-            items: { type: "string" }
-        },
-        compatible_printers_ru: {
+        faq: {
             type: "array",
             items: {
                 type: "object",
                 properties: {
-                    model: { type: "string" },
-                    canonicalName: { type: "string" }
+                    question: { type: "string" },
+                    answer: { type: "string" }
                 },
-                required: ["model", "canonicalName"],
+                required: ["question", "answer"],
                 additionalProperties: false
             }
         },
-        logistics: {
-            type: ["object", "null"],
-            properties: {
-                weight_g: { type: ["number", "null"] },
-                width_mm: { type: ["number", "null"] },
-                height_mm: { type: ["number", "null"] },
-                depth_mm: { type: ["number", "null"] }
-            },
-            required: ["weight_g", "width_mm", "height_mm", "depth_mm"],
-            additionalProperties: false
+        images: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    url: { type: "string" }
+                },
+                required: ["url"],
+                additionalProperties: false
+            }
         },
+
+        // Evidence
         _evidence: {
             type: "object",
             additionalProperties: {
@@ -273,7 +351,7 @@ export const ConsumableDataSchema = {
             }
         }
     },
-    required: ["brand", "mpn_identity", "aliases", "compatible_printers_ru", "logistics", "_evidence"],
+    required: ["mpn_identity", "type_classification", "compatible_printers_ru", "tech_specs", "logistics", "_evidence"],
     additionalProperties: false
 };
 

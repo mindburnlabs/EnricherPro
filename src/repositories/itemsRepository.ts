@@ -52,7 +52,8 @@ export class ItemsRepository {
                 jobId,
                 mpn,
                 brand: initialData.brand,
-                model: initialData.model,
+                // Polyfill model if missing in top-level but present elsewhere (Strict Truth Migration)
+                model: (initialData as any).model || (initialData as any).mpn_identity?.mpn || null,
                 data: Transformers.toDbData(initialData),
                 status: 'processing'
             }).returning();

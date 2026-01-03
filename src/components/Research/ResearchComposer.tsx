@@ -1,19 +1,51 @@
 import React, { useState } from 'react';
-import { Send, Paperclip, FileText } from 'lucide-react';
+import { Send, Paperclip, FileText, Sparkles, Database } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { semanticSearch } from '../../lib/api.js'; // Import API wrapper
 
 interface ResearchComposerProps {
     onSubmit: (input: string | string[], mode: 'fast' | 'balanced' | 'deep', isRefinement?: boolean) => void;
     isProcessing: boolean;
-    canRefine?: boolean; // New prop
+    canRefine?: boolean;
+    apiKeys?: Record<string, string>;
 }
 
-export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, isProcessing, canRefine }) => {
+export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, isProcessing, canRefine, apiKeys }) => {
     const { t } = useTranslation('research');
     const [input, setInput] = useState('');
     const [mode, setMode] = useState<'fast' | 'balanced' | 'deep'>('balanced');
     const [showModes, setShowModes] = useState(false);
     const [isRefining, setIsRefining] = useState(false); // Toggle for refinement mode
+
+    // Level 2: Oracle Memory
+    const [memoryResults, setMemoryResults] = useState<any[]>([]);
+    const [isThinking, setIsThinking] = useState(false);
+
+    // Debounced Semantic Search
+    React.useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (input.trim().length > 5 && !isRefining && apiKeys?.openrouter) {
+                setIsThinking(true);
+                try {
+                    const res = await semanticSearch(input, apiKeys);
+                    if (res.success && res.results.length > 0) {
+                        // Only show high confidence
+                        const hits = res.results.filter((r: any) => r.similarity > 0.82);
+                        setMemoryResults(hits);
+                    } else {
+                        setMemoryResults([]);
+                    }
+                } catch (e) {
+                    console.error("Oracle check failed", e);
+                } finally {
+                    setIsThinking(false);
+                }
+            } else {
+                setMemoryResults([]);
+            }
+        }, 800); // 800ms debounce
+        return () => clearTimeout(timer);
+    }, [input, isRefining, apiKeys]);
 
     // Reset refining state if canRefine changes to false
     React.useEffect(() => {
@@ -60,6 +92,16 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
             });
         });
     };
+    // ... (file upload logic)
+
+    // Reuse Memory Item
+    const handleRecall = (content: string) => {
+        // We could just fill the input, or ideally, verify this item immediately.
+        // For now, let's append [Recall: Item] to input? 
+        // Or better: Just fill input so user can hit enter to "Refine" or "Verify" it?
+        // Actually, user might want to re-run.
+        setInput(content); // Simple fill for now
+    };
 
     const modes = [
         { id: 'fast', label: t('modes.fast.label', '⚡ Fast'), desc: t('modes.fast.desc', 'Quick specs check') },
@@ -69,6 +111,29 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
 
     return (
         <div className="w-full max-w-3xl mx-auto">
+            {/* ORACLE MEMORY CARD */}
+            {memoryResults.length > 0 && (
+                <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                        <div className="flex items-center gap-2 mb-2 text-indigo-700 dark:text-indigo-300 font-semibold text-sm">
+                            <Database className="w-4 h-4" />
+                            <span>The Oracle Found Similar Items ({memoryResults.length})</span>
+                        </div>
+                        <div className="space-y-2">
+                            {memoryResults.map((res: any, idx) => (
+                                <div key={idx} onClick={() => handleRecall(res.content)} className="p-2 bg-white/60 dark:bg-black/20 rounded-lg hover:bg-white dark:hover:bg-black/40 cursor-pointer transition-colors border border-transparent hover:border-indigo-100">
+                                    <p className="text-sm text-gray-700 dark:text-gray-200 line-clamp-2">{res.content}</p>
+                                    <div className="text-xs text-indigo-500 mt-1 font-mono">{(res.similarity * 100).toFixed(1)}% Match</div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                            <Sparkles className="w-24 h-24 text-indigo-500" />
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <form onSubmit={handleSubmit} className="relative group z-20">
                 <div className={`
                     flex flex-col bg-white dark:bg-gray-800 

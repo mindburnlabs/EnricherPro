@@ -18,7 +18,7 @@ export class SynthesisAgent {
      * Extracts atomic claims from a single source document.
      * PREFERS: High-speed, cheap models (ModelProfile.EXTRACTION)
      */
-    static async extractClaims(sourceText: string, sourceUrl: string, apiKeys?: Record<string, string>, promptOverride?: string, modelOverride?: string | { id: string }, language: string = 'en'): Promise<ExtractedClaim[]> {
+    static async extractClaims(sourceText: string, sourceUrl: string, apiKeys?: Record<string, string>, promptOverride?: string, modelOverride?: string | { id: string }, language: string = 'en', screenshotUrl?: string): Promise<ExtractedClaim[]> {
         const isRu = language === 'ru';
 
         // Resolve model: explicit override > settings store > default
@@ -42,15 +42,16 @@ export class SynthesisAgent {
         Your goal is to parse the input text and extract structured facts (Claims) about a printer consumable.
         
         Targets:
-        - brand, mpn_identity.mpn (Use dot notation)
-        - consumable_type (Enum: toner_cartridge, drum_unit, ink_cartridge, maintenance_kit, waste_toner, bottle, other)
-        - yield.value, yield.unit (Use dot notation)
-        - compatible_printers_ru (array of objects {model, canonicalName})
-        - packaging_from_nix.weight_g, packaging_from_nix.width_mm (Use dot notation)
+        - mpn_identity.mpn, mpn_identity.series (e.g. "HP 12A")
+        - brand
+        - type_classification.family (toner, drum, ink...), type_classification.subtype (cartridge, bottle...)
+        - yield.value, yield.unit, yield.standard (ISO_19752, etc.)
+        - compatible_printers_ru (array of objects {model, canonicalName, is_ru_confirmed, constraints})
+        - logistics: package_weight_g, width_mm, height_mm, depth_mm, origin_country, hs_code, box_contents
+        - tech_specs: color, is_integrated_drum, chip_type (oem/compatible/universal)
         - gtin (array of strings)
-        - short_model (e.g. "12A", "CF218A" -> "18A")
+        - aliases, cross_reference_mpns
         - faq (3-5 common questions/problems)
-        - related_ids (drums, chips, maintenance)
         
         Rules:
         1. Extract ONLY present data. No guessing.
@@ -58,40 +59,39 @@ export class SynthesisAgent {
         3. Confidence 0.1-1.0 based on clarity.
         4. CRITICAL: For nested fields, use DOT NOTATION in 'field' property.
            - "mpn" -> "mpn_identity.mpn"
-           - "weight" -> "packaging_from_nix.weight_g"
-           - "yield" -> "yield.value"
+           - "series" -> "mpn_identity.series"
+           - "chip" -> "tech_specs.chip_type"
+           - "weight" -> "logistics.package_weight_g"
+           - "yield" -> "tech_specs.yield.value"
         `;
+
 
         const systemPromptRu = `Вы - Движок Извлечения Данных.
         Ваша цель - проанализировать текст и извлечь структурированные факты (Claims).
         
         Цели:
-        - brand, mpn_identity.mpn
-        - consumable_type (Тип: toner_cartridge, drum_unit, ink_cartridge, maintenance_kit, другие)
-        - yield.value, yield.unit
-        - compatible_printers_ru
-        - packaging_from_nix.weight_g
-        - gtin
-        - short_model
-        - faq
-        - related_ids
+        - mpn_identity.mpn, mpn_identity.series (напр. "HP 12A")
+        - brand
+        - type_classification.family (toner, drum...), type_classification.subtype
+        - yield.value, yield.unit, yield.standard (ISO/IEC)
+        - compatible_printers_ru (объекты: model, canonicalName, is_ru_confirmed, constraints)
+        - compliance_ru: tn_ved_code (8443...), mandatory_marking (Честный ЗНАК?), certification_type (refusal_letter?), has_sds
+        - logistics: package_weight_g, width_mm, height_mm, depth_mm, origin_country, box_contents (gloves, chip...), transport_symbols
+        - tech_specs: color, is_integrated_drum, chip_type (oem/compatible/universal)
+        - gtin, aliases
+        - faq (3-5 частых вопросов: прошивка, чип, сброс)
         
         Правила:
         1. Извлекать ТОЛЬКО присутствующие данные.
-        2. Нормализовать числа.
+        2. Нормализовать числа (1 кг -> 1000).
         3. ИСПОЛЬЗОВАТЬ ТОЧКУ для вложенных полей:
-           - 'yield.value'
-           - 'packaging_from_nix.weight_g'
+           - 'compliance_ru.tn_ved_code'
+           - 'compliance_ru.mandatory_marking'
+           - 'tech_specs.yield.value'
+           - 'logistics.package_weight_g'
            - 'mpn_identity.mpn'
-        - gtin/ean codes
-        - short_model (короткий номер, напр. "12A")
-        - faq (3-5 частых вопросов/проблем)
-        - related_consumables (барабаны, чипы)
-        
-        Правила:
-        1. Извлекать ТОЛЬКО присутствующие данные. Не гадать.
-        2. Нормализовать числовые значения (напр. "1 кг" -> 1000).
-        3. Уверенность (confidence) 0.1-1.0 на основе четкости.
+           - 'tech_specs.chip_type'
+        4. Уверенность (confidence) 0.1-1.0.
         `;
 
         const systemPrompt = isRu ? systemPromptRu : systemPromptEn;
@@ -102,7 +102,15 @@ export class SynthesisAgent {
                 profile: modelOverride ? undefined : ModelProfile.EXTRACTION, // Use Cheap/Fast model if no override
                 messages: [
                     { role: "system", content: systemPrompt },
-                    { role: "user", content: `Source URL: ${sourceUrl}\n\n${sourceText.substring(0, 15000)}` } // Limit context window for cheap models
+                    {
+                        role: "user",
+                        content: screenshotUrl
+                            ? [
+                                { type: "text", text: `Source URL: ${sourceUrl}\n\n${sourceText.substring(0, 15000)}` },
+                                { type: "image_url", image_url: { url: screenshotUrl } }
+                            ]
+                            : `Source URL: ${sourceUrl}\n\n${sourceText.substring(0, 15000)}`
+                    }
                 ],
                 jsonSchema: ExtractionSchema,
                 routingStrategy: RoutingStrategy.FAST, // Extraction is high volume
@@ -120,19 +128,41 @@ export class SynthesisAgent {
     static async merge(sources: string[], schemaKey: string = "StrictConsumableData", apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, modelOverride?: string | { id: string }, language: string = 'en', originalInput?: string): Promise<Partial<ConsumableData>> {
         onLog?.(`Synthesizing data from ${sources.length} sources...`);
 
-        const isRu = language === 'ru';
+        // SLIDING WINDOW BATCHING (Perplexity-Grade Scale)
+        // Process in chunks of 15 to avoid context limits and hallucinations
+        const CHUNK_SIZE = 15;
+        const chunks: string[][] = [];
+        for (let i = 0; i < sources.length; i += CHUNK_SIZE) {
+            chunks.push(sources.slice(i, i + CHUNK_SIZE));
+        }
 
+        onLog?.(`Split ${sources.length} sources into ${chunks.length} parallel processing chunks.`);
+
+        // Process chunks in parallel (Swarm)
+        const chunkResults = await Promise.all(chunks.map(async (chunk, index) => {
+            onLog?.(`[Swarm] Processing Chunk ${index + 1}/${chunks.length}...`);
+            return this.processChunk(chunk, apiKeys, promptOverride, modelOverride, language, originalInput);
+        }));
+
+        // Final Consensus/Merge of Chunk Results
+        if (chunkResults.length === 1) {
+            return chunkResults[0];
+        } else {
+            onLog?.(`[Swarm] Merging ${chunkResults.length} chunk results into Final Truth...`);
+            return this.consensusMerge(chunkResults, apiKeys, modelOverride, language);
+        }
+    }
+
+    private static async processChunk(sources: string[], apiKeys?: Record<string, string>, promptOverride?: string, modelOverride?: string | { id: string }, language: string = 'en', originalInput?: string): Promise<Partial<ConsumableData>> {
+        const isRu = language === 'ru';
         const { useSettingsStore } = await import('../../stores/settingsStore.js');
         const state = useSettingsStore.getState();
-        const storeModel = state.reasoningModel; // Synthesis uses the Reasoning/Reasoning model
-
+        const storeModel = state.reasoningModel;
         let effectiveModel = (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel;
 
         if (!effectiveModel) {
             effectiveModel = 'google/gemini-2.0-flash-exp:free';
         }
-
-        onLog?.(`Synthesizing data with ${effectiveModel}...`);
 
         const inputGroundingPrompt = originalInput ? `
         CRITICAL INPUT GROUNDING:
@@ -172,30 +202,26 @@ export class SynthesisAgent {
         ${sources.join("\n\n")}
         `;
 
-        const systemPromptRu = `Вы - Агент Синтеза D².
-        Ваша миссия - извлечь ЧИСТЫЕ данные.
-        
+        const systemPromptRu = `Вы - Агент Синтеза D² (Swarm Worker).
+        Ваша миссия - извлечь ЧИСТЫЕ данные из этого пакета источников.
+
         ${inputGroundingPrompt}
 
         СТРАТЕГИЯ:
         1. Идентифицируй точный MPN, Бренд и Модель.
         2. Собери все характеристики (Yield, Color, Chip).
         3. ПРОАНАЛИЗИРУЙ СОВМЕСТИМОСТЬ: Собери полный список принтеров.
-        4. ГЕНЕРИРУЙ МАРКЕТИНГОВЫЙ КОНТЕНТ:
-            - SEO Заголовок (H1): [Бренд] [Тип] для [Главные Принтеры] ([Цвет], [Ресурс])
-            - Описание: Продающее HTML описание с ключевыми преимуществами.
-            - Буллиты: 5 ключевых особенностей для маркетплейсов.
-            - Ключевые слова: SEO теги для поиска.
+        4. ГЕНЕРИРУЙ МАРКЕТИНГОВЫЙ КОНТЕНТ (РУССКИЙ).
 
         КРИТИЧЕСКИЕ ПРАВИЛА:
-        1. Использовать данные из Текста И Ввода пользователя.
-        2. 'brand', 'model', 'yield' - НЕ МОГУТ БЫТЬ NULL, если они есть во вводе.
-        3. 'short_model': Извлечь короткий алиас (напр. "CF218A" -> "18A").
-        4. 'faq': Извлечь 3-5 частых вопросов/проблем (напр. "Как сбросить чип?").
-        5. 'related_ids': Список связанных расходников (барабаны, чипы).
-        6. Маркетинг должен быть на РУССКОМ языке.
+        1. Извлекать ТОЛЬКО присутствующие данные.
+        2. ИСПОЛЬЗОВАТЬ ТОЧКУ для вложенных полей.
+        3. Нормализация полей:
+           - compatibility_ru: Ищите упоминания о прошивках, чипах, регионах.
+           - compliance_ru: ТН ВЭД, Честный ЗНАК.
+           - logistics: Вес, габариты, комплектация.
 
-        Входной Текст:
+        Входной Текст (Пакет):
         ${sources.join("\n\n")}
         `;
 
@@ -204,21 +230,112 @@ export class SynthesisAgent {
         try {
             const response = await BackendLLMService.complete({
                 model: effectiveModel,
-                profile: modelOverride ? undefined : ModelProfile.REASONING, // Use Smart/Reasoning model if no override
+                profile: modelOverride ? undefined : ModelProfile.REASONING,
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: "Extract data according to StrictConsumableData schema." }
                 ],
                 jsonSchema: ConsumableDataSchema,
-                routingStrategy: RoutingStrategy.SMART, // Reasoning requires balance
+                routingStrategy: RoutingStrategy.SMART,
                 apiKeys
             });
 
             const parsed = safeJsonParse(response || "{}");
+            return this.normalizeData(parsed);
+        } catch (error) {
+            console.error("SynthesisAgent Chunk Failed:", error);
+            return {};
+        }
+    }
 
-            // Post-processing
+    private static normalizeData(data: any): any {
+        if (!data) return data;
+
+        // Yield Normalization
+        if (data.tech_specs?.yield) {
+            const y = data.tech_specs.yield;
+
+            // Standard Normalization
+            if (typeof y.standard === 'string') {
+                const s = y.standard.toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (s.includes('19752')) y.standard = 'ISO_19752';
+                else if (s.includes('19798')) y.standard = 'ISO_19798';
+                else if (s.includes('24711')) y.standard = 'ISO_24711'; // Ink
+                else if (s.includes('5') && (s.includes('cov') || s.includes('percent'))) y.standard = '5_percent_coverage';
+                else if (s.includes('manuf') || s.includes('declar')) y.standard = 'manufacturer_stated';
+            }
+
+            // Unit Normalization
+            if (typeof y.unit === 'string') {
+                const u = y.unit.toLowerCase();
+                if (u.includes('pag') || u.includes('cop') || u.includes('sheet')) y.unit = 'pages';
+                else if (u.includes('ml')) y.unit = 'ml';
+                else if (u.includes('g') || u.includes('gram')) y.unit = 'g';
+            }
+        }
+
+        return data;
+    }
+
+    private static async consensusMerge(results: Partial<ConsumableData>[], apiKeys?: Record<string, string>, modelOverride?: string | { id: string }, language: string = 'en'): Promise<Partial<ConsumableData>> {
+        // DeepSeek R1 Verification Step
+        // We take the N chunk results and ask the LLM to merge them into one Final Truth
+
+        const isRu = language === 'ru';
+        const { useSettingsStore } = await import('../../stores/settingsStore.js');
+        const state = useSettingsStore.getState();
+        const storeModel = state.reasoningModel;
+        let effectiveModel = (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel;
+        if (!effectiveModel) effectiveModel = 'google/gemini-2.0-flash-exp:free';
+
+        const mergedJson = JSON.stringify(results, null, 2);
+
+        const systemPrompt = isRu ? `
+         Вы - Агент Истины (DeepSeek Consensus).
+         У вас есть ${results.length} частичных результатов анализа одного товара.
+         Ваша цель: Объединить их в один ИДЕАЛЬНЫЙ JSON.
+
+         Правила арбитража:
+         1. Конфликты MPN? Выбери наиболее частое или официальное.
+         2. Совместимость: ОБЪЕДИНИТЬ списки принтеров (убрать дубликаты).
+         3. Логистика: Если данные отличаются, выбери те, что кажутся точнее (с дробными частями) или возьми среднее.
+         4. RU Compliance: Если где-то найден ТН ВЭД или Честный ЗНАК - сохрани это.
+         5. FAQ: Выбери 5 самых полезных вопросов из всех.
+         
+         Входные данные:
+         ${mergedJson}
+         ` : `
+         You are the Truth Arbitration Agent.
+         You have ${results.length} partial extraction results.
+         Merge them into one PERFECT JSON.
+         
+         Rules:
+         1. Resolve conflicts by majority vote or source authority.
+         2. Merge compatibility lists (deduplicate).
+         3. Keep the most detailed specs.
+         `;
+
+        const response = await BackendLLMService.complete({
+            model: effectiveModel, // Ideally DeepSeek-R1 here
+            profile: ModelProfile.PLANNING, // High intelligence
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: "Merge into StrictConsumableData." }
+            ],
+            jsonSchema: ConsumableDataSchema,
+            routingStrategy: RoutingStrategy.SMART,
+            apiKeys
+        });
+
+        const parsed = safeJsonParse(response || "{}");
+        const normalized = this.normalizeData(parsed);
+
+        // Post-processing timestamps & POLYFILL FOR LEGACY UI
+        if (normalized) {
+            const now = new Date().toISOString();
+
+            // 1. Evidence Timestamps
             if (parsed._evidence) {
-                const now = new Date().toISOString();
                 for (const key of Object.keys(parsed._evidence)) {
                     if (parsed._evidence[key]) {
                         parsed._evidence[key].timestamp = now;
@@ -226,10 +343,32 @@ export class SynthesisAgent {
                 }
             }
 
-            return parsed;
-        } catch (error) {
-            console.error("SynthesisAgent Merge Failed:", error);
-            return {};
+            // 2. BACKWARD COMPATIBILITY POLYFILL (Strict Truth -> Legacy UI)
+            // Use "as any" to write to deprecated readonly fields if necessary
+            const p = normalized as any;
+
+            // Yield
+            if (!p.yield && p.tech_specs?.yield) {
+                p.yield = p.tech_specs.yield;
+            }
+
+            // Color
+            if (!p.color && p.tech_specs?.color) {
+                p.color = p.tech_specs.color;
+            }
+
+            // Consumable Type (Family)
+            if (!p.consumable_type && p.type_classification?.family) {
+                p.consumable_type = p.type_classification.family;
+            }
+
+            // Weights/Dims (Logistics)
+            if (p.logistics) {
+                if (p.logistics.package_weight_g && !p.weight_g) p.weight_g = p.logistics.package_weight_g;
+                // Add other legacy fields if needed
+            }
         }
+
+        return normalized;
     }
 }

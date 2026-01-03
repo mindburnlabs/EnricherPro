@@ -15,15 +15,23 @@ export interface StepStatus {
 
 export type AutomationStatus = 'done' | 'needs_review' | 'failed';
 
-export type ConsumableType =
-    | 'toner_cartridge'
-    | 'drum_unit'
-    | 'ink_cartridge'
-    | 'maintenance_kit'
-    | 'waste_toner'
-    | 'bottle'
-    | 'other'
-    | 'unknown';
+// 2. Taxonomy (Strict)
+export interface TypeClassification {
+    family: 'toner' | 'drum' | 'developer' | 'waste_toner' | 'maintenance_kit' | 'fuser' | 'ink' | 'ribbon' | 'other' | 'unknown';
+    subtype: 'cartridge' | 'bottle' | 'unit' | 'integrated_drum' | 'separate_drum' | 'unknown';
+}
+
+// 4. Tech Specs
+export interface TechSpecs {
+    yield: {
+        value: number | null;
+        unit: 'pages' | 'copies' | 'ml' | 'g' | 'unknown';
+        standard: 'ISO_19752' | 'ISO_19798' | '5_percent_coverage' | 'manufacturer_stated' | 'unknown' | null;
+    };
+    color: string | null;
+    is_integrated_drum: boolean;
+    chip_type: 'oem' | 'compatible' | 'universal' | 'none' | 'unknown' | null;
+}
 
 export type YieldUnit = 'pages' | 'copies' | 'ml';
 
@@ -58,20 +66,35 @@ export interface FieldEvidence<T> {
     method?: 'official' | 'consensus' | 'single_source' | 'fallback' | 'agent_result';
 }
 
+// 5.1 RU Compliance
+export interface ComplianceRU {
+    tn_ved_code: string | null;
+    okpd2_code: string | null;
+    mandatory_marking: boolean; // Honest Sign
+    certification_type: 'mandatory' | 'voluntary' | 'refusal_letter' | 'none' | 'unknown' | null;
+    has_sds: boolean;
+    refusal_letter_info: string | null;
+}
+
 export interface MpnIdentity {
-    mpn: string;
-    variant_flags: {
+    mpn: string | null;
+    series: string | null;
+    canonical_model_name: string | null;
+    cross_reference_mpns: string[];
+    authenticity: 'oem' | 'compatible' | 'remanufactured' | 'refill' | 'fake' | 'unknown' | null;
+    variant_flags?: {
         chip: boolean;
         counterless: boolean;
         high_yield: boolean;
         kit: boolean;
     };
-    canonical_model_name: string; // e.g. "W1331X"
 }
 
 export interface PrinterCompatibility {
     model: string;
     canonicalName: string; // Brand + Series + Index
+    is_ru_confirmed: boolean;
+    constraints: string[]; // e.g. "firmware_sensitive"
     sources: DataSource[];
     ruMarketEligibility: RuMarketEligibility;
     compatibilityConflict: boolean;
@@ -159,86 +182,86 @@ export interface ConsumableData {
     publish_ready: boolean;
 
     mpn_identity: MpnIdentity;
-    reviewReason?: string; // Reason why item needs review
+    reviewReason?: string;
 
-    // 1.1 Marketing Content (SEO)
+    // 1.1 Marketing
     marketing: {
-        seo_title: string | null; // H1 optimized title
-        description: string | null; // Product description html/markdown
-        feature_bullets: string[]; // Key selling points
+        seo_title: string | null;
+        description: string | null;
+        feature_bullets: string[];
         keywords: string[];
     };
 
-    // 2. Core Attributes
-    brand: string | null; // e.g., HP, Kyocera
-    consumable_type: ConsumableType;
+    // 2. Taxonomy
+    brand: string | null;
+    type_classification: TypeClassification;
 
-    /** @deprecated Use mpn_identity.mpn or mpn_identity.canonical_model_name */
-    model: string | null;
+    // DEPRECATED: mapped from type_classification
+    consumable_type?: string;
 
-    short_model: string | null;
-    model_alias_short: string | null;
-    aliases?: string[]; // Array of short names/aliases
+    aliases: string[];
+    gtin: string[];
 
-    related_skus?: string[]; // Array of related/cross-sell SKUs
-    related_ids?: { id: string; type: string }[]; // Structured related items
+    // 3. Compatibility (RU)
+    compatible_printers_ru: PrinterCompatibility[];
+    compatible_printers_unverified: PrinterCompatibility[]; // Legacy/fallback
+    // Deprecated simple list
+    printers_ru: string[];
 
-    yield: YieldInfo | null;
-    color: string | null; // Normalized: Black, Cyan, etc.
+    // 4. Tech Specs
+    tech_specs: TechSpecs;
 
-    has_chip: boolean | 'unknown';
-    has_page_counter: boolean | 'unknown';
+    // DEPRECATED: direct accessors
+    yield?: YieldInfo | null;
+    color?: string | null;
+    has_chip?: boolean | 'unknown';
+    has_page_counter?: boolean | 'unknown';
 
-    gtin?: string[]; // EAN/UPC codes
 
-    // 3. Compatibility (Printers)
-    printers_ru: string[]; // Final display list (names only)
-    compatible_printers_ru: PrinterCompatibility[]; // Full objects
-    compatible_printers_unverified: PrinterCompatibility[];
+    // 5. Logistics (Enhanced)
+    logistics: {
+        package_weight_g: number | null;
+        product_weight_g: number | null;
+        width_mm: number | null;
+        height_mm: number | null;
+        depth_mm: number | null;
+        origin_country: string | null;
+        // hs_code deprecated, moved to compliance_ru.tn_ved_code
+        box_contents: string[];
+        transport_symbols?: string[];
+    } | null;
 
-    // 4. Logistics (NIX.ru critical)
-    packaging_from_nix: PackagingInfo | null;
+    compliance_ru?: ComplianceRU;
+
+    packaging_from_nix?: PackagingInfo | null; // Old field kept for legacy ref
 
     connectivity?: {
         connection_interfaces: string[];
         ports: string[];
     };
 
-    // 5. Relations
+    // 6. Relations
     related_consumables_display?: EnhancedRelatedItem[];
     related_consumables_full?: EnhancedRelatedItem[];
+    related_skus?: string[];
+    related_ids?: { id: string; type: string }[];
 
-    // 6. Media
+    // 7. Media
     images: ImageCandidate[];
-    product_image_main?: string | null; // valid URL
+    product_image_main?: string | null;
 
-    // 7. Audit & Logs
-    sources: DataSource[]; // Global list of all sources used
+    // 8. Audit
+    sources: DataSource[];
     normalization_log?: string[];
     validation_errors?: string[];
-    missing_fields?: string[]; // For manual queue
+    missing_fields?: string[];
 
-    // Compatibility / Extensions
+    // Ext
     confidence?: ConfidenceScores;
     faq?: FAQItem[];
-    related_consumables_categories?: {
-        companions: string[];
-        alternatives: string[];
-        colorVariants: string[];
-        replacements: string[];
-    };
 
-    // Traceability Layer - Maps 1:1 to key data fields for UI evidence
+    // Traceability Layer
     _evidence?: {
-        brand?: FieldEvidence<string>;
-        consumable_type?: FieldEvidence<string>;
-        model?: FieldEvidence<string>;
-        yield?: FieldEvidence<YieldInfo>;
-        packaging_from_nix?: FieldEvidence<PackagingInfo>;
-        connectivity?: FieldEvidence<any>;
-        gtin?: FieldEvidence<string[]>;
-        compatible_printers_ru?: FieldEvidence<PrinterCompatibility[]>;
-        images?: FieldEvidence<ImageCandidate[]>;
         [key: string]: FieldEvidence<any> | undefined;
     };
 }

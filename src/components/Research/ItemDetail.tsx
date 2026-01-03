@@ -58,9 +58,9 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
             className={`flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border cursor-pointer transition-colors group ${fieldEnv?.is_conflict ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-500'}`}
         >
             <span className="text-sm font-medium text-gray-500 capitalize">{label}</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
                 <TrustBadge evidence={fieldEnv} />
-                <span className="text-sm text-gray-900 dark:text-gray-100 font-medium whitespace-pre-wrap text-right max-w-[200px]">
+                <span className="text-sm text-gray-900 dark:text-gray-100 font-medium whitespace-pre-wrap text-right flex-1 break-words">
                     {typeof value === 'object' ? JSON.stringify(value) : String(value || t('common:general.n_a'))}
                 </span>
             </div>

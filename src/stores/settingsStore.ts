@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -49,6 +48,10 @@ export interface SettingsState {
     useFlashPlanner: boolean; // New Performance Toggle
     routingPreference: 'performance' | 'cost';
 
+    // Vertical Search
+    offlineMode: boolean;
+    preferGraph: boolean;
+
     // Per-Agent Model Config
     planningModel: string;
     extractionModel: string;
@@ -67,6 +70,10 @@ export interface SettingsState {
     setRoutingPreference: (pref: 'performance' | 'cost') => void;
     setUseSota: (enabled: boolean) => void;
     setUseFlashPlanner: (enabled: boolean) => void;
+
+    setOfflineMode: (enabled: boolean) => void;
+    setPreferGraph: (enabled: boolean) => void;
+
     setAgentModel: (agent: 'planning' | 'extraction' | 'reasoning', model: string) => void;
     // Granular Source Control
     setSpecificDomains: (type: 'official' | 'marketplace' | 'community', domains: string[]) => void;
@@ -254,6 +261,9 @@ export const useSettingsStore = create<SettingsState>()(
             useFlashPlanner: true, // Default to true for speed
             routingPreference: 'performance',
 
+            offlineMode: false,
+            preferGraph: true,
+
             planningModel: 'openrouter/auto',
             extractionModel: 'openrouter/auto',
             reasoningModel: 'openrouter/auto',
@@ -287,6 +297,10 @@ export const useSettingsStore = create<SettingsState>()(
             setRoutingPreference: (pref) => set({ routingPreference: pref }),
             setUseSota: (useSota) => set({ useSota }),
             setUseFlashPlanner: (useFlashPlanner) => set({ useFlashPlanner }),
+
+            setOfflineMode: (offlineMode) => set({ offlineMode }),
+            setPreferGraph: (preferGraph) => set({ preferGraph }),
+
             setAgentModel: (agent, model) => set((state) => ({
                 [agent === 'planning' ? 'planningModel' : agent === 'extraction' ? 'extractionModel' : 'reasoningModel']: model
             })),
@@ -324,6 +338,9 @@ export const useSettingsStore = create<SettingsState>()(
                     (['fast', 'balanced', 'deep'] as const).forEach(m => {
                         if (!state.budgets[m].concurrency) state.budgets[m].concurrency = m === 'deep' ? 10 : 5;
                     });
+
+                    if (state.offlineMode === undefined) state.offlineMode = false;
+                    if (state.preferGraph === undefined) state.preferGraph = true;
 
                     // Migration for Specific Domains
                     if (!state.sources.specificOfficial) state.sources.specificOfficial = [];

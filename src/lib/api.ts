@@ -43,3 +43,11 @@ export const resolveConflict = async (itemId: string, resolution: 'keep_current'
         headers: { 'Content-Type': 'application/json' }
     }).then(r => r.json());
 }
+
+export const semanticSearch = async (query: string, apiKeys: Record<string, string>) => {
+    return fetch('/api/similarity-search', {
+        method: 'POST',
+        body: JSON.stringify({ query, apiKeys }),
+        headers: { 'Content-Type': 'application/json' }
+    }).then(r => r.json());
+}

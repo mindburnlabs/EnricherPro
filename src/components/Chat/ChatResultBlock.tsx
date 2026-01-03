@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { EnrichedItem } from '../../types/domain.js';
-import { Check, AlertTriangle, ExternalLink, Box, Layers, Download, FileJson, Loader2, RefreshCcw } from 'lucide-react';
+import { Check, AlertTriangle, ExternalLink, Box, Layers, Download, FileJson, Loader2, RefreshCcw, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface ChatResultBlockProps {
@@ -117,6 +117,13 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                                         <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-[10px] font-bold text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30" title="High Confidence">
                                             <Check className="w-3 h-3" />
                                             {t('results.verified', 'Verified')}
+                                        </div>
+                                    )}
+
+                                    {(item.data as any)._evidence?.is_graph_verified && (
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-purple-50 dark:bg-purple-900/20 text-[10px] font-bold text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/30" title="Source: Local Knowledge Graph">
+                                            <Zap className="w-3 h-3" />
+                                            {t('results.graph_hit', 'Graph Hit')}
                                         </div>
                                     )}
                                 </div>

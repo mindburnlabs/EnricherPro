@@ -1,6 +1,7 @@
 
 import { inngest } from "../client.js";
 import { OrchestratorAgent } from "../../services/agents/OrchestratorAgent.js";
+import { DiscoveryAgent } from "../../services/agents/DiscoveryAgent.js";
 import { z } from "zod";
 
 // Strict Schema for DB Claims
@@ -53,10 +54,35 @@ export const researchWorkflow = inngest.createFunction(
             });
         }
 
-        // 2. Planning
+        // 2. Planning (HYDRA UPGRADE)
         await step.run("transition-planning", () => agent.transition('planning'));
         const plan = await step.run("generate-plan", async () => {
             const { DiscoveryAgent } = await import("../../services/agents/DiscoveryAgent.js");
+            const { StrategyRacer } = await import("../../services/logic/StrategyRacer.js");
+
+            // HYDRA HEAD 1: Fast Guesser (Zero Latency)
+            // If we can regex-match a likely URL, we skip the LLM Planner entirely.
+            // This transforms the system from "Reactive" to "Predictive".
+            const guessedUrl = StrategyRacer.guessUrl(inputRaw);
+            if (guessedUrl) {
+                // Verify strictness: Only skip plan if we are confident.
+                // For B2B/MPN lookups, this is usually safe and much faster.
+                agent.log('discovery', `🐉 Hydra: Guesser predicted direct URL: ${guessedUrl}. Bypassing Planner.`);
+                return {
+                    type: "single_sku",
+                    mpn: null,
+                    canonical_name: inputRaw,
+                    strategies: [{
+                        name: "Hydra Direct Guess",
+                        type: "url", // Frontier handles 'url' types by scraping
+                        queries: [], // No queries needed
+                        target_domain: new URL(guessedUrl).hostname,
+                        target_url: guessedUrl
+                    }],
+                    suggestedBudget: { mode: 'fast', concurrency: 2, depth: 0 }
+                };
+            }
+
             return await DiscoveryAgent.plan(
                 inputRaw,
                 mode,
@@ -90,17 +116,77 @@ export const researchWorkflow = inngest.createFunction(
                 // Batch add
                 const tasksToAdd = [];
                 for (const strategy of plan.strategies) {
-                    if (strategy.type === 'domain_crawl' && strategy.target_domain) {
-                        await FrontierService.add(jobId, 'domain_crawl', strategy.target_url || strategy.target_domain, 100, 0, { strategy: strategy.name, target_domain: strategy.target_domain, schema: strategy.schema });
+                    if (strategy.type === 'url' && strategy.target_url) {
+                        // HYDRA: Direct URL Injection
+                        await FrontierService.add(jobId, 'url', strategy.target_url, 100, 0, { strategy: strategy.name });
+                    }
+                    else if (strategy.type === 'domain_crawl' && strategy.target_domain) {
+                        await FrontierService.add(jobId, 'domain_crawl', strategy.target_url || strategy.target_domain, 100, 0, { strategy: strategy.name, target_domain: strategy.target_domain, schema: (strategy as any).schema });
                     } else if (strategy.type === 'domain_map' && strategy.target_domain) {
                         // NEW: Domain Map Strategy
-                        await FrontierService.add(jobId, 'domain_map', strategy.target_domain, 100, 0, { strategy: strategy.name, queries: strategy.queries, schema: strategy.schema });
+                        await FrontierService.add(jobId, 'domain_map', strategy.target_domain, 100, 0, { strategy: strategy.name, queries: strategy.queries, schema: (strategy as any).schema });
                     } else {
                         for (const query of strategy.queries) {
-                            await FrontierService.add(jobId, (strategy.type as any) || 'query', query, 50, 0, { strategy: strategy.name, target_domain: strategy.target_domain, schema: strategy.schema });
+                            await FrontierService.add(jobId, (strategy.type as any) || 'query', query, 50, 0, { strategy: strategy.name, target_domain: strategy.target_domain, schema: (strategy as any).schema });
                         }
                     }
                 }
+            }
+
+            // GRAPH-LITE FAST PATH (Vertical Search)
+            // @ts-ignore - 'evidence' property might be missing on type
+            if (plan.evidence) {
+                agent.log('discovery', '⚡ Graph-Lite Hit! Skipping web search to prioritize local knowledge.');
+
+                // 1. Create Pseudo-Source
+                const sourceDoc = await SourceDocumentRepository.create({
+                    jobId,
+                    // @ts-ignore
+                    url: `graph://${plan.mpn || 'internal'}`,
+                    domain: 'graph-lite.internal',
+                    // @ts-ignore
+                    rawContent: JSON.stringify(plan.evidence),
+                    status: 'success',
+                    extractedMetadata: { title: "Graph-Lite Entry", type: "graph_lite" }
+                });
+
+                // 2. Flatten & Inject Claims
+                const flatten = (obj: any, prefix = '') => {
+                    let res: any[] = [];
+                    for (const [key, val] of Object.entries(obj)) {
+                        if (key === '_evidence') continue; // Skip metadata
+                        const fieldKey = prefix ? `${prefix}.${key}` : key;
+                        if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+                            res = res.concat(flatten(val, fieldKey));
+                        } else {
+                            res.push({ field: fieldKey, value: val });
+                        }
+                    }
+                    return res;
+                };
+
+                // @ts-ignore
+                const flatClaims = flatten(plan.evidence);
+                if (flatClaims.length > 0) {
+                    await ClaimsRepository.createBatch(flatClaims.map((c: any) => ({
+                        itemId: item.id,
+                        sourceDocId: sourceDoc.id,
+                        field: c.field,
+                        value: typeof c.value === 'object' ? JSON.stringify(c.value) : String(c.value),
+                        confidence: 99
+                    })));
+                }
+
+                // Return synthetic result to satisfy workflow
+                return [{
+                    // @ts-ignore
+                    url: `graph://${plan.mpn}`,
+                    title: "Graph-Lite",
+                    // @ts-ignore
+                    markdown: JSON.stringify(plan.evidence),
+                    source_type: 'graph_lite',
+                    timestamp: new Date().toISOString()
+                }];
             }
 
             // Loop Config - Increased concurrency for Pipelining
@@ -603,10 +689,12 @@ export const researchWorkflow = inngest.createFunction(
                                     };
                                     claims = flatten(parsed);
                                 } catch (e) {
-                                    claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model, language);
+                                    // VISION UPGRADE: Pass screenshot if available
+                                    claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model, language, (r as any).screenshot);
                                 }
                             } else {
-                                claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model, language);
+                                // VISION UPGRADE: Pass screenshot if available
+                                claims = await SynthesisAgent.extractClaims(r.markdown || "", r.url, apiKeys, undefined, model, language, (r as any).screenshot);
                             }
 
                             // 3. Persist Claims (Strict Validation)
@@ -666,8 +754,7 @@ export const researchWorkflow = inngest.createFunction(
                 try {
                     const batchResults = await BackendFirecrawlService.batchScrape(urls, {
                         apiKey: apiKeys?.firecrawl,
-                        formats: ['markdown'], // We don't need screenshot in batch for efficiency usually, or do we? Let's check plan. 
-                        // Plan said: "Handle results mapping back...". 
+                        formats: ['markdown', 'screenshot'], // VISION UPGRADE: Enable screenshots for batch
                         // Note: Batch scrape might not return screenshots efficiently or at all depending on options.
                         // Let's stick to markdown for batch efficiency as per plan.
                         maxAge: 86400, // CACHING: 24h
@@ -980,21 +1067,103 @@ export const researchWorkflow = inngest.createFunction(
             }
 
             if (!resolvedData.brand) {
-                agent.log('synthesis', 'Trust Engine yielded incomplete data. Running fallback synthesis...');
+                agent.log('synthesis', 'Trust Engine yielded incomplete data. Activating Swarm Synthesis...');
+
+                // Formulate sources for Swarm
                 const combinedSources = searchResults.map((r: any) =>
-                    `Source: ${r.url} (${r.source_type})\n---\n${r.markdown}`
+                    `Source: ${r.url} (${r.source_type})\n Title: ${r.title}\n---\n${r.markdown}`
                 );
+
                 const synthesized = await SynthesisAgent.merge(
                     combinedSources,
                     "StrictConsumableData",
                     apiKeys,
                     agentConfig?.prompts?.synthesis,
-                    undefined,
+                    (msg) => agent.log('synthesis', msg), // Pass logger for Swarm progress
                     model,
                     language,
                     inputRaw // Pass original input for grounding
                 );
-                return { ...synthesized, ...resolvedData };
+
+                // DYNAMIC REFLECTION: Check for missing critical fields & REPAIR LOOP
+                // We perform 1 refinement loop if needed
+                let finalData = synthesized;
+                let refinementLoop = 0;
+                const MAX_LOOPS = 1;
+
+                while (refinementLoop < MAX_LOOPS) {
+                    const repairs = await DiscoveryAgent.critique(finalData, language);
+
+                    if (repairs.length === 0) break;
+
+                    agent.log('reflection', `⚠️ Critique found gaps in Draft ${refinementLoop + 1}. Starting Repair Loop...`);
+                    for (const r of repairs) {
+                        agent.log('planning', `🔧 Repair Task: ${r.goal} -> Query: "${r.value}"`);
+                    }
+
+                    // 1. EXECUTE REPAIRS (Limited Batch)
+                    // We treat these as new 'query' tasks
+                    const repairTasks = repairs.map(r => ({ type: 'query', value: r.value, meta: { goal: r.goal } }));
+
+                    // We run them directly using processTask (or batch if possible, but keep simple)
+                    // For simplicity, we just push them to Frontier nextLoop? No, we want instant feedback.
+                    // We'll run them in parallel right here.
+
+                    // We need to use 'processTask' context but we can't easily access 'processUrlBatch' etc from here.
+                    // Instead, we will use backend search directly to be fast.
+                    const { BackendFirecrawlService } = await import('../../services/backend/firecrawl.js');
+
+                    const repairResults = await Promise.all(repairTasks.map(async (t: any) => {
+                        // Search metadata only to save credits, then scrape top 1
+                        // Fix: apiKey goes in options, return value IS the array
+                        const searchRes = await BackendFirecrawlService.search(t.value, {
+                            limit: 2,
+                            scrapeOptions: { formats: ['markdown'] },
+                            apiKey: apiKeys?.firecrawl
+                        });
+                        return searchRes.map((d: any) => `Source: ${d.url}\nTitle: ${d.title}\nSnippet: ${d.markdown}`);
+                    }));
+
+                    const repairSources = repairResults.flat();
+
+                    if (repairSources.length > 0) {
+                        agent.log('synthesis', `Incorporating ${repairSources.length} repair sources...`);
+
+                        // 2. RE-SYNTHESIZE (Merge new sources with PREVIOUS data)
+                        // A. Extract from Repair Sources
+                        agent.log('synthesis', 'Extracting insights from repair sources...');
+                        const repairData = await SynthesisAgent.merge(
+                            repairSources,
+                            "StrictConsumableData",
+                            apiKeys,
+                            agentConfig?.prompts?.synthesis,
+                            undefined, // No logger to reduce noise
+                            model,
+                            language
+                        );
+
+                        // B. Merge Old + New (Meta-Merge)
+                        const metaMergeSources = [
+                            `EXISTING_DRAFT_JSON:\n${JSON.stringify(finalData)}`,
+                            `NEW_REPAIR_DATA_JSON:\n${JSON.stringify(repairData)}`
+                        ];
+
+                        agent.log('synthesis', 'Merging Repair Data with Draft...');
+                        finalData = await SynthesisAgent.merge(
+                            metaMergeSources,
+                            "StrictConsumableData",
+                            apiKeys,
+                            agentConfig?.prompts?.synthesis,
+                            undefined,
+                            model,
+                            language
+                        );
+                    }
+
+                    refinementLoop++;
+                }
+
+                return { ...finalData, ...resolvedData };
             }
 
             // FINALIZATION: Ensure 'PENDING' MPN from creating is overwritten

@@ -49,7 +49,7 @@ export class OrchestratorAgent {
         }
 
         const item = await ItemsRepository.createOrGet(this.tenantId, this.jobId, "PENDING-MPN", {
-            mpn_identity: { mpn: "PENDING", canonical_model_name: inputRaw },
+            mpn_identity: { mpn: null, canonical_model_name: inputRaw },
             brand: null,
             status: "processing",
             processing_step: "planning"

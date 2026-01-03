@@ -292,7 +292,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
                         <ResearchComposer
                             onSubmit={handleSearch}
                             isProcessing={status === 'running'}
-                            canRefine={!isEmpty && !activeJobId} // Only allow refine if idle and has history
+                            canRefine={!isEmpty && !activeJobId}
+                            apiKeys={{
+                                firecrawl: config.apiKeys.firecrawl,
+                                openrouter: config.apiKeys.openRouter
+                            }}
                         />
                     </div>
                 </div>

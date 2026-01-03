@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { X, Save, Moon, Sun, Globe, Brain, Zap, Key, Layout, Shield, Database, Check, History, ChevronRight, AlertCircle, RefreshCw, Wand2, Factory, Search } from 'lucide-react';
+import { X, Save, Moon, Sun, Globe, Brain, Zap, Key, Layout, Shield, Database, Check, History, ChevronRight, AlertCircle, RefreshCw, Wand2, Factory, Search, Server, Network } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore, SettingsState, DEFAULT_DISCOVERY_PROMPT, DEFAULT_SYNTHESIS_PROMPT, DEFAULT_DISCOVERY_PROMPT_RU, DEFAULT_SYNTHESIS_PROMPT_RU, DEFAULT_LOGISTICS_PROMPT, DEFAULT_LOGISTICS_PROMPT_RU } from '../../stores/settingsStore.js';
 
@@ -203,7 +202,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
             JSON.stringify(localConfig.sources.specificOfficial) !== JSON.stringify(store.sources.specificOfficial) ||
             JSON.stringify(localConfig.sources.specificMarketplace) !== JSON.stringify(store.sources.specificMarketplace) ||
             JSON.stringify(localConfig.sources.specificCommunity) !== JSON.stringify(store.sources.specificCommunity) ||
-            (localConfig.useFlashPlanner ?? true) !== (store.useFlashPlanner ?? true);
+            (localConfig.useFlashPlanner ?? true) !== (store.useFlashPlanner ?? true) ||
+            (localConfig.offlineMode ?? false) !== (store.offlineMode ?? false) ||
+            (localConfig.preferGraph ?? true) !== (store.preferGraph ?? true);
         setHasChanges(isDifferent);
     }, [localConfig, store]);
 
@@ -223,6 +224,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
         store.setLanguage(localConfig.language);
         store.setUseSota(localConfig.useSota);
         store.setUseFlashPlanner(localConfig.useFlashPlanner);
+
+        store.setOfflineMode(localConfig.offlineMode);
+        store.setPreferGraph(localConfig.preferGraph);
 
         store.setBlockedDomains(localConfig.sources.blockedDomains);
 
@@ -506,6 +510,27 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
 
                         {activeTab === 'modes' && (
                             <div className="space-y-6 max-w-3xl animate-in slide-in-from-right-4 duration-300">
+
+                                <Section title="Vertical Search Engine (Graph-Lite)">
+                                    <div className="bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800 rounded-xl p-4">
+                                        <div className="flex flex-col gap-4">
+                                            <ToggleRow
+                                                label="Prefer Graph-Lite"
+                                                desc="Trust local Graph DB (aliases, compatibility) over live web search. Faster & more deterministic."
+                                                active={localConfig.preferGraph ?? true}
+                                                onToggle={() => setLocalConfig(prev => ({ ...prev, preferGraph: !(prev.preferGraph ?? true) }))}
+                                            />
+                                            <div className="h-px bg-gray-200 dark:bg-gray-800" />
+                                            <ToggleRow
+                                                label="Offline Mode"
+                                                desc="Disable all live web searches. Only use data from Graph-Lite and ingested Catalogs."
+                                                active={localConfig.offlineMode ?? false}
+                                                onToggle={() => setLocalConfig(prev => ({ ...prev, offlineMode: !(prev.offlineMode ?? false) }))}
+                                            />
+                                        </div>
+                                    </div>
+                                </Section>
+
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {(['fast', 'balanced', 'deep'] as const).map(mode => (
                                         <div key={mode} className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">

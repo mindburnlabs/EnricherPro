@@ -21,7 +21,8 @@ export enum RoutingStrategy {
     FAST = "fast",   // Uses :nitro or latency sort
     CHEAP = "cheap", // Uses price sort
     SMART = "smart", // Uses openrouter/auto
-    BALANCED = "balanced" // Default
+    BALANCED = "balanced", // Default
+    EXTRACTION = "extraction" // For data extraction
 }
 
 interface CompletionConfig {

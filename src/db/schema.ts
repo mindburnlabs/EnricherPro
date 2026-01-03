@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, jsonb, boolean, integer, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, jsonb, boolean, integer, index, vector } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // --- JOBS (The "Deep Research" Session) ---
@@ -115,6 +115,24 @@ export const claims = pgTable('claims', {
     extractedAt: timestamp('extracted_at').defaultNow().notNull(),
 });
 
+// --- VECTOR MEMORY (The "Oracle") ---
+export const itemEmbeddings = pgTable('item_embeddings', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    itemId: uuid('item_id').references(() => items.id, { onDelete: 'cascade' }).notNull(),
+
+    // Google text-embedding-004 is 768 dimensions
+    vector: vector('vector', { dimensions: 768 }).notNull(),
+
+    // The content that was embedded (usually a synthesis of the item)
+    content: text('content').notNull(),
+
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    // HNSW Index for fast similarity search
+    // Note: Requires 'vector' extension enabled in Postgres
+    embeddingIndex: index('embedding_idx').using('hnsw', table.vector.op('vector_cosine_ops')),
+}));
+
 // --- RELATIONS ---
 export const jobsRelations = relations(jobs, ({ many }) => ({
     items: many(items),
@@ -129,6 +147,14 @@ export const itemsRelations = relations(items, ({ one, many }) => ({
         references: [jobs.id],
     }),
     claims: many(claims),
+    embeddings: many(itemEmbeddings),
+}));
+
+export const itemEmbeddingsRelations = relations(itemEmbeddings, ({ one }) => ({
+    item: one(items, {
+        fields: [itemEmbeddings.itemId],
+        references: [items.id],
+    }),
 }));
 
 
@@ -158,3 +184,7 @@ export const claimsRelations = relations(claims, ({ one }) => ({
         references: [sourceDocuments.id],
     }),
 }));
+
+export * from './schema_graph.js';
+export * from './schema_graph_lite.js';
+

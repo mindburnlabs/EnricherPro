@@ -19,6 +19,8 @@
 -   **⚡ Frontier Exploration Loop**: A parallelized graph traversal focused on high-recall discovery of hidden specs.
 -   **🌍 Multi-Lingual Native**: Full `i18n` support (UI & prompts) for English and Russian (`ru`, `en`), with locale-specific search strategies.
 -   **🔄 Global Analyst Loop**: Iterative re-planning that continues until specific "Knowledge Gaps" are filled.
+-   **⚡ Vertical Search (Graph-Lite)**: Local knowledge graph optimized for deterministic lookups and immediate hits, bypassing web search for known entities.
+-   **🧠 Dynamic Model Routing**: Auto-generated model configuration strategies using live pricing and capability data from OpenRouter.
 
 ## 🏗️ Architecture
 
@@ -84,6 +86,12 @@ graph TD
 5.  **Run Development Server:**
     ```bash
     npm run dev
+    ```
+
+6.  **Update Model Configs:**
+    The system uses a dynamic model selector. To refresh model lists from OpenRouter:
+    ```bash
+    npm run gen:models
     ```
 
 ## 🛠️ Operational Guide
