@@ -72,7 +72,7 @@ export class DiscoveryAgent {
         return result;
     }
 
-    static async analyzeRequestComplexity(input: string, apiKeys?: Record<string, string>, model: string = "openrouter/auto"): Promise<{ mode: ResearchMode, reason: string }> {
+    static async analyzeRequestComplexity(input: string, apiKeys?: Record<string, string>, model: string = "google/gemini-2.0-flash-exp:free"): Promise<{ mode: ResearchMode, reason: string }> {
         try {
             const systemPrompt = `You are a Research Strategist. 
             Analyze the user's request complexity to determine the optimal research mode.
@@ -596,6 +596,81 @@ export class DiscoveryAgent {
         } catch (e) {
             console.warn("Expansion analysis failed", e);
             return [];
+        }
+    }
+
+    /**
+     * Smart Relevance Filter (Phase 3 Optimization).
+     * Uses a lightweight, fast LLM to strict-filter search results based on snippets.
+     * Prevents scraping of irrelevant pages.
+     */
+    static async filterResults(results: any[], originalQuery: string, apiKeys?: Record<string, string>, language: string = 'en'): Promise<number[]> {
+        if (results.length === 0) return [];
+        if (results.length <= 2) return results.map((_, i) => i); // If very few results, just take them (heuristics likely already applied)
+
+        const isRu = language === 'ru';
+        const systemPromptEn = `You are a Search Relevance Judge. 
+        Your goal is to filter search results for a SPECIFIC technical research query.
+        
+        Input:
+        1. Query
+        2. List of Candidates [ID, Title, Snippet]
+        
+        Task: 
+        Return a JSON array of IDs (integers) that are HIGHLY PROBABLE to contain the answer. 
+        Discard "General" pages, ads, random blog spam, or unrelated topics. 
+        
+        Strictness: HIGH. Better to miss a weak link than scrape garbage.
+        Limit: Select max 3 best links.
+        `;
+
+        const systemPromptRu = `Вы - Судья Релевантности Поиска.
+        Ваша цель - отфильтровать результаты поиска для конкретного технического запроса.
+        
+        Ввод:
+        1. Запрос
+        2. Список кандидатов [ID, Заголовок, Сниппет]
+        
+        Задача:
+        Вернуть JSON массив ID (целых чисел), которые с ВЫСОКОЙ ВЕРОЯТНОСТЬЮ содержат ответ.
+        Отбрасывайте "Общие" страницы, рекламу, случайные блоги или несвязанные темы.
+        
+        Строгость: ВЫСОКАЯ. Лучше пропустить слабую ссылку, чем сканировать мусор.
+        Лимит: Выберите максимум 3 лучших ссылки.
+        `;
+
+        const candidatesCtx = results.map((r, i) =>
+            `ID: ${i}\nTitle: ${r.title}\nURL: ${r.url}\nSnippet: ${r.description || r.markdown || r.content || "No snippet"}`
+        ).join("\n---\n");
+
+        try {
+            const { ModelProfile } = await import("../../config/models.js");
+            const response = await BackendLLMService.complete({
+                profile: ModelProfile.FAST_CHEAP, // Key: Cheap model
+                messages: [
+                    { role: "system", content: isRu ? systemPromptRu : systemPromptEn },
+                    { role: "user", content: `Query: "${originalQuery}"\n\nCandidates:\n${candidatesCtx}` }
+                ],
+                jsonSchema: {
+                    type: "object",
+                    properties: {
+                        selected_ids: {
+                            type: "array",
+                            items: { type: "integer" }
+                        }
+                    }
+                },
+                routingStrategy: RoutingStrategy.CHEAP,
+                apiKeys
+            });
+
+            const parsed = safeJsonParse(response || "{}");
+            const indices = parsed.selected_ids || [];
+            return indices.filter((i: any) => typeof i === 'number' && i >= 0 && i < results.length);
+        } catch (e) {
+            console.warn("Smart Filter failed, falling back to top N", e);
+            // Fallback: Return top 3 indices
+            return [0, 1, 2].filter(i => i < results.length);
         }
     }
 

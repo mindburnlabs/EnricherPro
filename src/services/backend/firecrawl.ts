@@ -20,8 +20,8 @@ export class BackendFirecrawlService {
                 // Map top-level options to SDK structure
                 const result = await client.search(query, {
                     limit: options.limit || 5,
-                    scrapeOptions: {
-                        formats: (options.formats || ['markdown']) as any,
+                    scrapeOptions: (options.formats && options.formats.length > 0) ? {
+                        formats: options.formats as any,
                         ...((options.country || options.lang) && {
                             location: {
                                 country: options.country,
@@ -29,7 +29,7 @@ export class BackendFirecrawlService {
                             }
                         }),
                         ...options.scrapeOptions
-                    },
+                    } : undefined,
                     timeout: options.timeout,
                     tbs: options.tbs as any,
                 });
@@ -271,6 +271,7 @@ export class BackendFirecrawlService {
         ignoreInvalidURLs?: boolean;
         timeout?: number;
         apiKey?: string;
+        maxAge?: number;
         onRetry?: (attempt: number, error: any, delay: number) => void;
     } = {}) {
         const { withRetry } = await import("../../lib/reliability.js");
@@ -292,6 +293,7 @@ export class BackendFirecrawlService {
                     formats: formats,
                     waitFor: options.waitFor || 0,
                     location: options.location,
+                    maxAge: options.maxAge,
                 },
                 ignoreInvalidURLs: options.ignoreInvalidURLs,
                 timeout: options.timeout
