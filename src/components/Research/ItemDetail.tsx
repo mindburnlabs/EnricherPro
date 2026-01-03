@@ -4,6 +4,8 @@ import { X, Check, AlertTriangle, ShieldCheck, Users, Globe } from 'lucide-react
 import { EnrichedItem, FieldEvidence } from '../../types/domain.js';
 import { CitationDrawer } from './CitationDrawer.js';
 import { EvidenceTooltip } from './EvidenceTooltip.js';
+import { CompletenessMeter } from './CompletenessMeter.js';
+import { ConflictResolver } from './ConflictResolver.js';
 
 interface ItemDetailProps {
     item: EnrichedItem | null;
@@ -103,30 +105,12 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
 
-                {/* Images Grid with Error Handling */}
-                {data.images && data.images.filter(img => img.url).length > 0 && (
-                    <div className="grid grid-cols-2 gap-4">
-                        {data.images.slice(0, 4).map((img, idx) => (
-                            <div key={idx} className="aspect-square bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 relative group">
-                                <img
-                                    src={img.url}
-                                    alt={t('images.alt')}
-                                    referrerPolicy="no-referrer"
-                                    className="w-full h-full object-contain p-2 hover:scale-105 transition-transform"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                        (e.target as HTMLImageElement).parentElement!.classList.add('hidden');
-                                    }}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                )}
+                <CompletenessMeter data={data} />
 
                 {/* Identity Section */}
-                <div>
+                <div id="identity">
                     <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                         <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
                         {t('identity.title')}
@@ -161,25 +145,137 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                         <EvidenceRow
                             label={t('specs.yield')}
                             value={data.yield && data.yield.value ? `${data.yield.value} ${data.yield.unit ? t(`identity.yield_units.${data.yield.unit.toLowerCase()}`, data.yield.unit) : ''}`.trim() : t('common:general.n_a')}
-                            fieldEnv={evidence['yield.value']} // Updated Key
+                            fieldEnv={evidence['yield.value']}
                             fieldKey="yield.value"
                         />
                         <EvidenceRow
                             label={t('specs.color')}
                             value={data.color}
-                            fieldEnv={evidence['color']} // Updated Key (was specifications.color)
+                            fieldEnv={evidence['color']}
                             fieldKey="color"
                         />
                         {data.aliases && data.aliases.length > 0 && (
                             <EvidenceRow
                                 label={t('identity.aliases')}
-                                value={data.aliases.join(", ")}
+                                value={data.aliases.filter(a => a.length < 20).join(", ")} // Filter out long descriptions
                                 fieldEnv={evidence['aliases']}
                                 fieldKey="aliases"
                             />
                         )}
                     </div>
                 </div>
+
+                {/* Compatibility (Promoted) */}
+                {data.compatible_printers_ru && data.compatible_printers_ru.length > 0 && (
+                    <div id="compatibility">
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                            <span className="w-1 h-4 bg-blue-500 rounded-full"></span>
+                            {t('compatibility.title')} <span className="text-xs font-normal text-gray-500">{t('compatibility.region_hint')}</span>
+                            {data.compatible_printers_ru.some(p => p.canonicalName?.includes('nix')) && (
+                                <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 rounded-full">
+                                    {t('compatibility.nix_verified')}
+                                </span>
+                            )}
+                        </h3>
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto shadow-inner">
+                            <div className="flex flex-wrap gap-2">
+                                {data.compatible_printers_ru.map((p, i) => (
+                                    <span key={i} className="px-2 py-1 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 text-sm hover:border-blue-400 transition-colors cursor-default">
+                                        {p.model}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Conflict Resolution Panel */}
+                {Object.entries(evidence).filter(([, e]) => (e as any)?.is_conflict).map(([key, val]) => (
+                    <ConflictResolver
+                        key={key}
+                        fieldKey={key}
+                        evidence={val as any}
+                        onResolve={(value, method) => console.log('Resolved', key, value, method)} // Placeholder handler
+                    />
+                ))}
+
+                {/* Logistics Section */}
+                <div id="logistics">
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-orange-500 rounded-full"></span>
+                        {t('logistics.title')}
+                    </h3>
+                    <div className="grid grid-cols-1 gap-3">
+                        <EvidenceRow
+                            label={t('logistics.weight')}
+                            value={data.logistics?.package_weight_g ? `${data.logistics.package_weight_g} ${t('logistics.unit_g')}` : (data.weight_g ? `${data.weight_g} ${t('logistics.unit_g')}` : t('common:general.n_a'))}
+                            fieldEnv={evidence['logistics.package_weight_g'] || evidence['weight_g']}
+                            fieldKey="logistics.package_weight_g"
+                        />
+                        <EvidenceRow
+                            label={t('logistics.dims')}
+                            value={data.logistics?.width_mm ? `${data.logistics.width_mm}x${data.logistics.height_mm}x${data.logistics.depth_mm} ${t('logistics.unit_mm')}` : t('common:general.n_a')}
+                            fieldEnv={evidence['logistics.width_mm']}
+                            fieldKey="logistics.width_mm"
+                        />
+                        <EvidenceRow
+                            label={t('logistics.origin')}
+                            value={data.logistics?.origin_country || t('common:general.n_a')}
+                            fieldEnv={evidence['logistics.origin_country']}
+                            fieldKey="logistics.origin_country"
+                        />
+                    </div>
+                </div>
+
+                {/* Compliance (RU) */}
+                {(data.compliance_ru || (data as any).compliance) && (
+                    <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                            <span className="w-1 h-4 bg-red-500 rounded-full"></span>
+                            {t('compliance.title')}
+                        </h3>
+                        <div className="grid grid-cols-1 gap-3">
+                            <EvidenceRow
+                                label={t('compliance.tn_ved')}
+                                value={data.compliance_ru?.tn_ved_code || t('common:general.n_a')}
+                                fieldEnv={evidence['compliance_ru.tn_ved_code']}
+                                fieldKey="compliance_ru.tn_ved_code"
+                            />
+                            <EvidenceRow
+                                label={t('compliance.marking')}
+                                value={formatBool(data.compliance_ru?.mandatory_marking)}
+                                fieldEnv={evidence['compliance_ru.mandatory_marking']}
+                                fieldKey="compliance_ru.mandatory_marking"
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Images Grid with Error Handling */}
+                {data.images && data.images.filter(img => img.url).length > 0 && (
+                    <div className="space-y-2">
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                            <span className="w-1 h-4 bg-gray-400 rounded-full"></span>
+                            {t('tabs.images')}
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            {data.images.slice(0, 4).map((img, idx) => (
+                                <div key={idx} className="aspect-square bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 relative group">
+                                    <img
+                                        src={img.url}
+                                        alt={t('images.alt')}
+                                        referrerPolicy="no-referrer"
+                                        className="w-full h-full object-contain p-2 hover:scale-105 transition-transform"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                            (e.target as HTMLImageElement).parentElement!.classList.add('hidden');
+                                        }}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Technical Architecture */}
                 <div>
@@ -268,53 +364,6 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                     </div>
                 )}
 
-                {/* Compatibility (RU) */}
-                {data.compatible_printers_ru && data.compatible_printers_ru.length > 0 && (
-                    <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-blue-500 rounded-full"></span>
-                            {t('compatibility.title')} <span className="text-xs font-normal text-gray-500">{t('compatibility.region_hint')}</span>
-                            {data.compatible_printers_ru.some(p => p.canonicalName?.includes('nix')) && (
-                                <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 rounded-full">
-                                    {t('compatibility.nix_verified')}
-                                </span>
-                            )}
-                        </h3>
-                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto">
-                            <div className="flex flex-wrap gap-2">
-                                {data.compatible_printers_ru.map((p, i) => (
-                                    <span key={i} className="px-2 py-1 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 text-sm">
-                                        {p.model}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* FAQ Section */}
-                {data.faq && data.faq.length > 0 && (
-                    <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
-                            {t('faq')}
-                        </h3>
-                        <div className="space-y-3">
-                            {data.faq.map((item, idx) => (
-                                <div key={idx} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                                    <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">{item.question}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">{item.answer}</p>
-                                    {item.source_url && (
-                                        <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline mt-2 block truncate">
-                                            {t('common:general.source')}: {new URL(item.source_url).hostname}
-                                        </a>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {/* Related SKUs (Enhanced) */}
                 {(data.related_ids || (data.related_skus && data.related_skus.length > 0)) && (
                     <div>
@@ -335,68 +384,31 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                     </div>
                 )}
 
-                {/* Logistics Section */}
-                <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-orange-500 rounded-full"></span>
-                        {t('logistics.title')}
-                    </h3>
-                    <div className="grid grid-cols-1 gap-3">
-                        <EvidenceRow
-                            label={t('logistics.weight')}
-                            value={data.logistics?.package_weight_g ? `${data.logistics.package_weight_g} ${t('logistics.unit_g')}` : (data.weight_g ? `${data.weight_g} ${t('logistics.unit_g')}` : t('common:general.n_a'))}
-                            fieldEnv={evidence['logistics.package_weight_g'] || evidence['weight_g']}
-                            fieldKey="logistics.package_weight_g"
-                        />
-                        <EvidenceRow
-                            label={t('logistics.dims')}
-                            value={data.logistics?.width_mm ? `${data.logistics.width_mm}x${data.logistics.height_mm}x${data.logistics.depth_mm} ${t('logistics.unit_mm')}` : t('common:general.n_a')}
-                            fieldEnv={evidence['logistics.width_mm']}
-                            fieldKey="logistics.width_mm"
-                        />
-                        <EvidenceRow
-                            label={t('logistics.origin')}
-                            value={data.logistics?.origin_country || t('common:general.n_a')}
-                            fieldEnv={evidence['logistics.origin_country']}
-                            fieldKey="logistics.origin_country"
-                        />
-                    </div>
-                </div>
-
-                {/* Compliance (RU) */}
-                {(data.compliance_ru || (data as any).compliance) && (
-                    <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-red-500 rounded-full"></span>
-                            {t('compliance.title')}
-                        </h3>
-                        <div className="grid grid-cols-1 gap-3">
-                            <EvidenceRow
-                                label={t('compliance.tn_ved')}
-                                value={data.compliance_ru?.tn_ved_code || t('common:general.n_a')}
-                                fieldEnv={evidence['compliance_ru.tn_ved_code']}
-                                fieldKey="compliance_ru.tn_ved_code"
-                            />
-                            <EvidenceRow
-                                label={t('compliance.marking')}
-                                value={formatBool(data.compliance_ru?.mandatory_marking)}
-                                fieldEnv={evidence['compliance_ru.mandatory_marking']}
-                                fieldKey="compliance_ru.mandatory_marking"
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* Conflicts Alert */}
-                {Object.values(evidence).some((e: any) => e.is_conflict) && (
-                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-xl flex items-start gap-3">
-                        <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-                        <div>
-                            <h4 className="font-semibold text-amber-900 dark:text-amber-100">{t('conflicts')}</h4>
-                            <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                                {t('conflicts_desc')}
-                            </p>
-                        </div>
+                {/* FAQ Section (Demoted) */}
+                {data.faq && data.faq.length > 0 && (
+                    <div className="border-t border-gray-100 dark:border-gray-800 pt-6">
+                        <details className="group">
+                            <summary className="list-none flex items-center justify-between cursor-pointer">
+                                <h3 className="font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">
+                                    <span className="w-1 h-4 bg-purple-500 rounded-full grayscale group-hover:grayscale-0 transition-all"></span>
+                                    {t('faq')}
+                                </h3>
+                                <span className="text-xs text-gray-400 underline">Show {data.faq.length} Q&A</span>
+                            </summary>
+                            <div className="space-y-3 mt-4 animate-in slide-in-from-top-2">
+                                {data.faq.map((item, idx) => (
+                                    <div key={idx} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm opacity-75 hover:opacity-100 transition-opacity">
+                                        <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">{item.question}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">{item.answer}</p>
+                                        {item.source_url && (
+                                            <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline mt-2 block truncate">
+                                                {t('common:general.source')}: {new URL(item.source_url).hostname}
+                                            </a>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </details>
                     </div>
                 )}
 

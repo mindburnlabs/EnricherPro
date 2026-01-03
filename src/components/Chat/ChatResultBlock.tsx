@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { EnrichedItem } from '../../types/domain.js';
 import { Check, AlertTriangle, ExternalLink, Box, Layers, Download, FileJson, Loader2, RefreshCcw, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { CompletenessMeter } from '../Research/CompletenessMeter.js';
 
 interface ChatResultBlockProps {
     items: EnrichedItem[];
@@ -167,20 +168,15 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                             </div>
 
                             {/* Expanded Info: Logistics, FAQ, Compliance Highlights */}
-                            <div className="flex flex-wrap gap-2 mb-4">
+                            <div className="flex flex-wrap gap-2 mb-4 items-center">
+                                {/* Compat Meter */}
+                                <CompletenessMeter data={item.data} compact />
+
                                 {/* Logistics Badge */}
                                 {(item.data.logistics?.package_weight_g || (item.data as any).weight_g) && (
                                     <div className="px-2 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30 text-[10px] font-medium text-indigo-700 dark:text-indigo-300 flex items-center gap-1" title={t('results.logistics_badge', 'Logistics Data Only')}>
                                         <Box className="w-3 h-3" />
                                         {(item.data.logistics?.package_weight_g || (item.data as any).weight_g)}{t('results.logistics_unit_g', 'g')}
-                                    </div>
-                                )}
-
-                                {/* FAQ Count Badge */}
-                                {((item.data as any).faq?.length > 0) && (
-                                    <div className="px-2 py-1 rounded-md bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/30 text-[10px] font-medium text-orange-700 dark:text-orange-300 flex items-center gap-1" title={t('results.faq_badge', 'FAQs Available')}>
-                                        <div className="w-3 h-3 flex items-center justify-center font-bold border border-orange-300 rounded-full text-[8px]">?</div>
-                                        {t('results.faqs_count', { count: (item.data as any).faq.length, defaultValue: '{{count}} FAQs' })}
                                     </div>
                                 )}
 

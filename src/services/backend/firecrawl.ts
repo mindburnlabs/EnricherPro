@@ -145,10 +145,29 @@ export class BackendFirecrawlService {
     }
 
     /**
-     * Semantic wrapper for extract to "Enrich" a specific URL with a schema
+     * Semantic wrapper for extract/scrape to "Enrich" a specific URL with a schema.
+     * INTELLIGENT ROUTING: 
+     * - If options (actions, location) are provided -> Use `scrape` with schema (supports interaction).
+     * - If simple URL -> Use `scrape` with schema (standard v2 approach).
+     * - We avoid `extract` endpoint as it lacks interaction capabilities needed for complex sites like nix.ru.
      */
-    static async enrich(url: string, schema: any, options: { apiKey?: string } = {}) {
-        return this.extract([url], schema, options);
+    static async enrich(url: string, schema: any, options: {
+        apiKey?: string;
+        actions?: any[];
+        location?: { country?: string; languages?: string[] };
+        mobile?: boolean;
+        waitFor?: number;
+    } = {}) {
+        // Use scrape with strict schema output (V2 'JSON' format)
+        return this.scrape(url, {
+            formats: ['markdown'], // Get markdown too for verification/fallback
+            schema: schema,
+            actions: options.actions,
+            location: options.location,
+            mobile: options.mobile,
+            waitFor: options.waitFor,
+            apiKey: options.apiKey
+        });
     }
 
     /**

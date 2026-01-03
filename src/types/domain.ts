@@ -47,23 +47,41 @@ export interface DataSource {
     retryCount?: number;
 }
 
+export interface EvidenceSnippet {
+    url: string;
+    snippet: string;
+    fetched_at: string; // ISO
+    content_hash?: string;
+    source_rank?: 'oem' | 'retailer' | 'aggregator' | 'unknown';
+}
+
+export interface ConflictingValue {
+    value: any;
+    source: EvidenceSnippet;
+    confidence: number;
+}
+
 export interface FieldEvidence<T> {
     value: T;
-    urls?: string[]; // Deprecated in favor of source_url
-    extraction_method?: string;
     confidence: number;
-    source_type?: DataSource['sourceType'];
-    raw_snippet?: string;
 
-    // Strict Audit Extension
-    timestamp?: string; // ISO string
-    content_hash?: string; // SHA-256 of the snippet
-    source_id?: string; // Link to specific DataSource entry
-    source_url?: string;
+    // Core Provenance
+    evidence_chain?: EvidenceSnippet[];
+    source_url?: string; // Primary source
+    raw_snippet?: string; // Primary snippet
+    timestamp?: string; // Primary fetch time
 
-    // Truth Engine Extensions
-    is_conflict?: boolean;
+    // Governance Status
+    status?: 'verified' | 'conflict' | 'manual' | 'missing' | 'generated';
+    is_conflict?: boolean; // Legacy flag, try to use status='conflict'
+
+    // Conflict Details
+    conflicting_values?: ConflictingValue[];
+
+    // Meta
     method?: 'official' | 'consensus' | 'single_source' | 'fallback' | 'agent_result';
+    locked_by_user?: boolean;
+    last_verified_at?: string;
 }
 
 // 5.1 RU Compliance

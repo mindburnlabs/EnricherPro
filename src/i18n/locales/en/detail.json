@@ -152,5 +152,38 @@
         "consensus": "Consensus",
         "conflict": "Conflict",
         "web": "WEB"
+    },
+    "completeness": {
+        "title": "Data Completeness",
+        "missing": "Missing",
+        "perfect": "All required fields present",
+        "subtitle": "Fill missing fields to publish",
+        "blocking_hint": "Required fields missing. Publishing blocked."
+    },
+    "sections": {
+        "identity": "Identity",
+        "compatibility": "Compatibility",
+        "specs": "Tech Specs",
+        "logistics": "Logistics",
+        "compliance": "Compliance RU",
+        "images": "Key Assets"
+    },
+    "fields": {
+        "brand": "Brand",
+        "mpn": "MPN",
+        "images": "Images",
+        "yield": "Yield",
+        "type": "Type",
+        "color": "Color",
+        "title": "Compat List",
+        "weight": "Weight",
+        "origin": "Origin",
+        "tn_ved": "TN VED"
+    },
+    "governance": {
+        "conflict_detected": "Data Conflict Detected",
+        "conflict_desc": "Multiple trusted sources reported different values. Please select the correct one.",
+        "confirm_current": "Confirm This Value",
+        "select_alternative": "Select Alternative"
     }
 }

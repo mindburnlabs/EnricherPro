@@ -120,38 +120,72 @@
         "conflict": "Конфликт",
         "web": "WEB"
     },
-    "specs": {
-        "title": "ХАРАКТЕРИСТИКИ",
-        "tech_title": "ТЕХНИЧЕСКАЯ АРХИТЕКТУРА",
-        "type": "Тип расходного материала",
-        "types": {
-            "toner_cartridge": "Тонер-картридж",
-            "drum_unit": "Драм-юнит (Фотобарабан)",
-            "ink_cartridge": "Чернильный картридж",
-            "maintenance_kit": "Ремкомплект (MK)",
-            "waste_toner": "Контейнер отработки",
-            "bottle": "Бутыль с тонером",
-            "other": "Другое",
-            "unknown": "Неизвестно"
-        },
-        "yield": "Ресурс (стр)",
+    "completeness": {
+        "title": "Полнота Данных",
+        "missing": "Отсутствует",
+        "perfect": "Все обязательные поля заполнены",
+        "subtitle": "Заполните обязательные поля для публикации",
+        "blocking_hint": "Обязательные поля отсутствуют. Публикация заблокирована."
+    },
+    "sections": {
+        "identity": "Идентификация",
+        "compatibility": "Совместимость",
+        "specs": "Тех. Хар-ки",
+        "logistics": "Логистика",
+        "compliance": "Compliance РФ",
+        "images": "Изображения"
+    },
+    "fields": {
+        "brand": "Бренд",
+        "mpn": "Артикул",
+        "images": "Фото",
+        "yield": "Ресурс",
+        "type": "Тип",
         "color": "Цвет",
-        "chip": "Чип",
-        "counter": "Счетчик стр.",
-        "gtin": "Штрихкоды (GTIN)"
+        "title": "Спис. Совм.",
+        "weight": "Вес",
+        "origin": "Страна",
+        "tn_ved": "ТН ВЭД"
     },
-    "connectivity": {
-        "title": "СВЯЗЬ И ПОРТЫ",
-        "ports": "Порты"
-    },
-    "compatibility": {
-        "title": "СОВМЕСТИМОСТЬ",
-        "nix_verified": "Проверено NIX",
-        "region_hint": "(РФ)"
-    },
-    "compliance": {
-        "title": "Соответствие и Нормативы",
-        "tn_ved": "Код ТН ВЭД",
-        "marking": "Обяз. Маркировка"
+    "governance": {
+        "conflict_detected": "Обнаружен Конфликт Данных",
+        "conflict_desc": "Несколько доверенных источников сообщают разные значения. Выберите верное.",
+        "confirm_current": "Подтвердить Текущее",
+        "select_alternative": "Выбрать Альтернативу"
     }
+},
+"specs": {
+    "title": "ХАРАКТЕРИСТИКИ",
+    "tech_title": "ТЕХНИЧЕСКАЯ АРХИТЕКТУРА",
+    "type": "Тип расходного материала",
+    "types": {
+        "toner_cartridge": "Тонер-картридж",
+        "drum_unit": "Драм-юнит (Фотобарабан)",
+        "ink_cartridge": "Чернильный картридж",
+        "maintenance_kit": "Ремкомплект (MK)",
+        "waste_toner": "Контейнер отработки",
+        "bottle": "Бутыль с тонером",
+        "other": "Другое",
+        "unknown": "Неизвестно"
+    },
+    "yield": "Ресурс (стр)",
+    "color": "Цвет",
+    "chip": "Чип",
+    "counter": "Счетчик стр.",
+    "gtin": "Штрихкоды (GTIN)"
+},
+"connectivity": {
+    "title": "СВЯЗЬ И ПОРТЫ",
+    "ports": "Порты"
+},
+"compatibility": {
+    "title": "СОВМЕСТИМОСТЬ",
+    "nix_verified": "Проверено NIX",
+    "region_hint": "(РФ)"
+},
+"compliance": {
+    "title": "Соответствие и Нормативы",
+    "tn_ved": "Код ТН ВЭД",
+    "marking": "Обяз. Маркировка"
+}
 }

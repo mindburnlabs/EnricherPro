@@ -545,7 +545,14 @@ export const researchWorkflow = inngest.createFunction(
                             const schema = await EnrichmentAgent.generateSchema(goal, task.value, language, model, apiKeys);
 
                             // 2. Execute Firecrawl Enrich (Extract)
-                            const data = await BackendFirecrawlService.enrich(task.value, schema, { apiKey: apiKeys?.firecrawl });
+                            // INTELLIGENT UPGRADE: Pass actions/location for interactive sites (nix.ru, etc)
+                            const data = await BackendFirecrawlService.enrich(task.value, schema, {
+                                apiKey: apiKeys?.firecrawl,
+                                actions: task.meta?.actions,
+                                location: task.meta?.location,
+                                mobile: task.meta?.mobile,
+                                waitFor: task.meta?.waitFor
+                            });
 
                             if (data) {
                                 results.push({
