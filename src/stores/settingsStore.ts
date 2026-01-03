@@ -22,6 +22,7 @@ export interface SettingsState {
         discovery: string;
         synthesis: string;
         logistics: string;
+        enrichment: string;
     };
 
     // Source Configuration
@@ -60,7 +61,7 @@ export interface SettingsState {
     // Actions
     setModel: (model: ModelConfig) => void;
     setApiKey: (key: 'openRouter' | 'firecrawl', value: string) => void;
-    setPrompt: (agent: 'discovery' | 'synthesis' | 'logistics', value: string) => void;
+    setPrompt: (agent: 'discovery' | 'synthesis' | 'logistics' | 'enrichment', value: string) => void;
     setBudget: (mode: 'fast' | 'balanced' | 'deep', field: 'maxQueries' | 'limitPerQuery' | 'concurrency', value: number) => void;
     toggleSource: (type: 'official' | 'marketplace' | 'community') => void;
     addBlockedDomain: (domain: string) => void;
@@ -365,6 +366,17 @@ export const DEFAULT_LOGISTICS_PROMPT_RU = `Вы - Экстрактор Данн
         "specs": { "yield": "1500 страниц", "color": "Black" }
 } `;
 
+export const DEFAULT_ENRICHMENT_PROMPT = `You are a Schema Architect for Data Extraction.
+Your goal is to create a JSON Schema(draft-07) that perfectly captures the "Enrichment Goal" from a specific URL.
+
+    Rules:
+1. Return ONLY the JSON Schema object.
+2. Use precise field names(snake_case).
+3. Include descriptions for fields to guide the extraction model.
+4. If the goal implies multiple items, use an array structure.
+5. Ensure types are correct(number for weight, string for text).
+`;
+
 export const useSettingsStore = create<SettingsState>()(
     persist(
         (set, get) => ({
@@ -376,7 +388,8 @@ export const useSettingsStore = create<SettingsState>()(
             prompts: {
                 discovery: DEFAULT_DISCOVERY_PROMPT,
                 synthesis: DEFAULT_SYNTHESIS_PROMPT,
-                logistics: DEFAULT_LOGISTICS_PROMPT
+                logistics: DEFAULT_LOGISTICS_PROMPT,
+                enrichment: DEFAULT_ENRICHMENT_PROMPT
             },
             sources: {
                 official: true,
@@ -452,7 +465,8 @@ export const useSettingsStore = create<SettingsState>()(
                     prompts: {
                         discovery: lang === 'ru' ? DEFAULT_DISCOVERY_PROMPT_RU : DEFAULT_DISCOVERY_PROMPT,
                         synthesis: lang === 'ru' ? DEFAULT_SYNTHESIS_PROMPT_RU : DEFAULT_SYNTHESIS_PROMPT,
-                        logistics: lang === 'ru' ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT
+                        logistics: lang === 'ru' ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT,
+                        enrichment: DEFAULT_ENRICHMENT_PROMPT
                     }
                 }));
             }
@@ -465,6 +479,7 @@ export const useSettingsStore = create<SettingsState>()(
                     if (!state.prompts.logistics) {
                         state.prompts.logistics = state.language === 'ru' ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT;
                     }
+                    if (!state.prompts.enrichment) state.prompts.enrichment = DEFAULT_ENRICHMENT_PROMPT;
                     if (!state.planningModel) state.planningModel = 'openrouter/auto';
                     if (!state.extractionModel) state.extractionModel = 'openrouter/auto';
                     if (!state.reasoningModel) state.reasoningModel = 'openrouter/auto';

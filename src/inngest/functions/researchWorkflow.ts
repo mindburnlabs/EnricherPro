@@ -566,7 +566,7 @@ export const researchWorkflow = inngest.createFunction(
                             agent.log('discovery', `running enrichment on ${task.value} for: ${goal}`);
 
                             // 1. Generate Schema
-                            const schema = await EnrichmentAgent.generateSchema(goal, task.value, language, model, apiKeys);
+                            const schema = await EnrichmentAgent.generateSchema(goal, task.value, language, model, apiKeys, agentConfig?.prompts?.enrichment);
 
                             // 2. Execute Firecrawl Enrich (Extract)
                             // INTELLIGENT UPGRADE: Pass actions/location for interactive sites (nix.ru, etc)

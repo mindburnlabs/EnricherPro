@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Moon, Sun, Globe, Brain, Zap, Key, Layout, Shield, Database, Check, History, ChevronRight, AlertCircle, RefreshCw, Wand2, Factory, Search, Server, Network } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useSettingsStore, SettingsState, DEFAULT_DISCOVERY_PROMPT, DEFAULT_SYNTHESIS_PROMPT, DEFAULT_DISCOVERY_PROMPT_RU, DEFAULT_SYNTHESIS_PROMPT_RU, DEFAULT_LOGISTICS_PROMPT, DEFAULT_LOGISTICS_PROMPT_RU } from '../../stores/settingsStore.js';
+import { useSettingsStore, SettingsState, DEFAULT_DISCOVERY_PROMPT, DEFAULT_SYNTHESIS_PROMPT, DEFAULT_DISCOVERY_PROMPT_RU, DEFAULT_SYNTHESIS_PROMPT_RU, DEFAULT_LOGISTICS_PROMPT, DEFAULT_LOGISTICS_PROMPT_RU, DEFAULT_ENRICHMENT_PROMPT } from '../../stores/settingsStore.js';
 
 interface SettingsViewProps {
     isOpen: boolean;
@@ -232,6 +232,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
         store.setPrompt('discovery', localConfig.prompts.discovery);
         store.setPrompt('synthesis', localConfig.prompts.synthesis);
         store.setPrompt('logistics', localConfig.prompts.logistics);
+        store.setPrompt('enrichment', localConfig.prompts.enrichment);
         store.setLanguage(localConfig.language);
         store.setLanguage(localConfig.language);
         store.setUseSota(localConfig.useSota);
@@ -655,7 +656,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                                 prompts: {
                                                     discovery: isRu ? DEFAULT_DISCOVERY_PROMPT_RU : DEFAULT_DISCOVERY_PROMPT,
                                                     synthesis: isRu ? DEFAULT_SYNTHESIS_PROMPT_RU : DEFAULT_SYNTHESIS_PROMPT,
-                                                    logistics: isRu ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT
+                                                    logistics: isRu ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT,
+                                                    enrichment: DEFAULT_ENRICHMENT_PROMPT
                                                 }
                                             });
                                         }}
@@ -679,6 +681,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                         label={t('settings:prompts.logistics') || "LOGISTICS AGENT"}
                                         value={localConfig.prompts.logistics || ""}
                                         onChange={(v) => setLocalConfig({ ...localConfig, prompts: { ...localConfig.prompts, logistics: v } })}
+                                    />
+                                    <PromptEditor
+                                        label="ENRICHMENT AGENT"
+                                        value={localConfig.prompts.enrichment || ""}
+                                        onChange={(v) => setLocalConfig({ ...localConfig, prompts: { ...localConfig.prompts, enrichment: v } })}
                                     />
                                 </div>
                             </div>

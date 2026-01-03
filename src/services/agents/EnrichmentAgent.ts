@@ -13,22 +13,22 @@ export class EnrichmentAgent {
         url: string,
         language: string = 'en',
         model: string = "openrouter/auto",
-        apiKeys?: Record<string, string>
+        apiKeys?: Record<string, string>,
+        promptOverride?: string
     ): Promise<any> {
 
-        const systemPrompt = `You are a Schema Architect for Data Extraction.
-        Your goal is to create a JSON Schema (draft-07) that perfectly captures the "Enrichment Goal" from a specific URL.
+        const { useSettingsStore } = await import('../../stores/settingsStore.js');
+        const state = useSettingsStore.getState();
+
+        // 1. Get Base Instruction (User Configured or Default)
+        const basePrompt = promptOverride || state.prompts.enrichment || `You are a Schema Architect for Data Extraction.`;
+
+        // 2. Append Dynamic Context (Critical for operation)
+        const systemPrompt = `${basePrompt}
 
         Target URL: ${url}
         Enrichment Goal: "${goal}"
         Language: ${language.toUpperCase()}
-
-        Rules:
-        1. Return ONLY the JSON Schema object.
-        2. Use precise field names (snake_case).
-        3. Include descriptions for fields to guide the extraction model.
-        4. If the goal implies multiple items, use an array structure.
-        5. Ensure types are correct (number for weight, string for text).
         `;
 
         try {
