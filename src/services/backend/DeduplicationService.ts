@@ -11,7 +11,7 @@ export class DeduplicationService {
      */
     static normalizeMpn(mpn: string): string {
         if (!mpn) return "";
-        return mpn.replace(/[\s\-\/\.]/g, "").toLowerCase();
+        return String(mpn).replace(/[\s\-\/\.]/g, "").toLowerCase();
     }
 
     /**
