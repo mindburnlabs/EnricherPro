@@ -9,7 +9,9 @@
         "complete": "Исследование завершено",
         "failed": "Сбой протокола исследования",
         "review_required": "Требует ручной валидации",
-        "published": "Опубликовано в PIM"
+        "needs_review": "Требует ручной валидации",
+        "published": "Опубликовано в PIM",
+        "processing": "Обработка..."
     },
     "progress": {
         "title": "Активный процесс агента",
@@ -39,6 +41,27 @@
         "button_detail": "Просмотр",
         "button_approve": "Утвердить",
         "unknown_reason": "Не указана"
+    },
+    "results": {
+        "title": "Результаты исследования",
+        "refresh_data": "Принудительное обновление",
+        "download_csv": "Скачать CSV",
+        "download_json": "Скачать JSON",
+        "verified": "Проверено"
+    },
+    "actions": {
+        "details": "Подробнее",
+        "approve": "Утвердить",
+        "approving": "Утверждение...",
+        "approved": "Утверждено"
+    },
+    "evidence": {
+        "title": "Доказательства",
+        "points_verified": "Точек проверено"
+    },
+    "specs": {
+        "brand": "Бренд",
+        "type": "Тип"
     },
     "interface": {
         "welcome_title": "Что вы хотите проверить?",

@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 
 // Trust Badge Component
 const TrustBadge = ({ evidence }: { evidence?: FieldEvidence<any> }) => {
-    const { t } = useTranslation('detail');
+    const { t } = useTranslation(['detail', 'common']);
     if (!evidence) return null;
 
     if (evidence.method === 'official') {
@@ -24,13 +24,13 @@ const TrustBadge = ({ evidence }: { evidence?: FieldEvidence<any> }) => {
     }
     if (evidence.method === 'agent_result' || evidence.source_url?.includes('agent-session')) {
         // Firecrawl Agent - High Trust
-        return <span className="flex items-center gap-1 text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800"><Users className="w-3 h-3" /> AI Agent</span>;
+        return <span className="flex items-center gap-1 text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800"><Users className="w-3 h-3" /> {t('common:engines.firecrawl_agent')}</span>;
     }
     if (evidence.method === 'consensus') {
         return <span className="flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800"><Users className="w-3 h-3" /> {t('trust.consensus')}</span>;
     }
     if (evidence.source_url?.includes('nix.ru') || evidence.source_url?.includes('dns-shop.ru')) {
-        return <span className="flex items-center gap-1 text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-800"><ShieldCheck className="w-3 h-3" /> Verified by NIX</span>;
+        return <span className="flex items-center gap-1 text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-800"><ShieldCheck className="w-3 h-3" /> {t('compatibility.nix_verified')}</span>;
     }
     if (evidence.is_conflict) {
         return <span className="flex items-center gap-1 text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800"><AlertTriangle className="w-3 h-3" /> {t('trust.conflict')}</span>;
@@ -39,7 +39,7 @@ const TrustBadge = ({ evidence }: { evidence?: FieldEvidence<any> }) => {
 };
 
 export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onApprove }) => {
-    const { t } = useTranslation('detail');
+    const { t } = useTranslation(['detail', 'common']);
     const [citationField, setCitationField] = useState<string | null>(null);
 
     if (!open || !item) return null;
@@ -61,11 +61,13 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
             <div className="flex items-center gap-2">
                 <TrustBadge evidence={fieldEnv} />
                 <span className="text-sm text-gray-900 dark:text-gray-100 font-medium whitespace-pre-wrap text-right max-w-[200px]">
-                    {typeof value === 'object' ? JSON.stringify(value) : String(value || '-')}
+                    {typeof value === 'object' ? JSON.stringify(value) : String(value || t('common:general.n_a'))}
                 </span>
             </div>
         </div>
     );
+
+    const formatBool = (val?: boolean | null) => val === true ? t('common:general.yes') : val === false ? t('common:general.no') : t('common:general.unknown');
 
 
     return (
@@ -90,23 +92,27 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
             <div className="flex-none p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 flex justify-end">
                 <button
                     onClick={() => onApprove(item.id)}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-2"
+                    disabled={(item.status as any) === 'published'}
+                    className={`px-6 py-2 rounded-lg font-bold shadow-md transition-all flex items-center gap-2 ${(item.status as any) === 'published'
+                        ? 'bg-emerald-100 text-emerald-700 shadow-none cursor-default'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20 active:scale-95'
+                        }`}
                 >
-                    <Check className="w-4 h-4" /> {t('header.approve')}
+                    <Check className="w-4 h-4" /> {(item.status as any) === 'published' ? t('header.approved', 'Approved') : t('header.approve')}
                 </button>
             </div>
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
 
-                // Images Grid with Error Handling
+                {/* Images Grid with Error Handling */}
                 {data.images && data.images.filter(img => img.url).length > 0 && (
                     <div className="grid grid-cols-2 gap-4">
                         {data.images.slice(0, 4).map((img, idx) => (
                             <div key={idx} className="aspect-square bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 relative group">
                                 <img
                                     src={img.url}
-                                    alt={t('image.alt', 'Product Image')}
+                                    alt={t('images.alt')}
                                     referrerPolicy="no-referrer"
                                     className="w-full h-full object-contain p-2 hover:scale-105 transition-transform"
                                     onError={(e) => {
@@ -128,9 +134,15 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                     <div className="grid grid-cols-1 gap-3">
                         <EvidenceRow
                             label={t('identity.brand')}
-                            value={data.brand || t('common.unknown_brand', 'Unknown')}
+                            value={data.brand || t('common:general.unknown')}
                             fieldEnv={evidence['brand']}
                             fieldKey="brand"
+                        />
+                        <EvidenceRow
+                            label={t('specs.type')}
+                            value={data.consumable_type ? data.consumable_type.replace('_', ' ') : t('common:general.n_a')}
+                            fieldEnv={evidence['consumable_type']}
+                            fieldKey="consumable_type"
                         />
                         <EvidenceRow
                             label={t('identity.mpn')}
@@ -140,7 +152,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                         />
                         {data.short_model && (
                             <EvidenceRow
-                                label={t('identity.short_model', 'Short Model')}
+                                label={t('identity.short_model')}
                                 value={data.short_model}
                                 fieldEnv={evidence['short_model']}
                                 fieldKey="short_model"
@@ -148,19 +160,19 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                         )}
                         <EvidenceRow
                             label={t('specs.yield')}
-                            value={data.yield && data.yield.value ? `${data.yield.value} ${data.yield.unit || ''}`.trim() : '-'}
-                            fieldEnv={evidence['specifications.yield_pages']}
-                            fieldKey="specifications.yield_pages"
+                            value={data.yield && data.yield.value ? `${data.yield.value} ${data.yield.unit || ''}`.trim() : t('common:general.n_a')}
+                            fieldEnv={evidence['yield.value']} // Updated Key
+                            fieldKey="yield.value"
                         />
                         <EvidenceRow
                             label={t('specs.color')}
                             value={data.color}
-                            fieldEnv={evidence['specifications.color']}
-                            fieldKey="specifications.color"
+                            fieldEnv={evidence['color']} // Updated Key (was specifications.color)
+                            fieldKey="color"
                         />
                         {data.aliases && data.aliases.length > 0 && (
                             <EvidenceRow
-                                label={t('identity.aliases', 'Aliases')}
+                                label={t('identity.aliases')}
                                 value={data.aliases.join(", ")}
                                 fieldEnv={evidence['aliases']}
                                 fieldKey="aliases"
@@ -173,24 +185,24 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                 <div>
                     <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                         <span className="w-1 h-4 bg-indigo-500 rounded-full"></span>
-                        {t('specs.tech_title', 'Technical Architecture')}
+                        {t('specs.tech_title')}
                     </h3>
                     <div className="grid grid-cols-1 gap-3">
                         <EvidenceRow
-                            label={t('specs.chip', 'Chip')}
-                            value={data.has_chip === true ? 'Yes' : data.has_chip === false ? 'No' : 'Unknown'}
+                            label={t('specs.chip')}
+                            value={formatBool(data.has_chip)}
                             fieldEnv={evidence['has_chip']}
                             fieldKey="has_chip"
                         />
                         <EvidenceRow
-                            label={t('specs.counter', 'Page Counter')}
-                            value={data.has_page_counter === true ? 'Yes' : data.has_page_counter === false ? 'No' : 'Unknown'}
+                            label={t('specs.counter')}
+                            value={formatBool(data.has_page_counter)}
                             fieldEnv={evidence['has_page_counter']}
                             fieldKey="has_page_counter"
                         />
                         {data.gtin && data.gtin.length > 0 && (
                             <EvidenceRow
-                                label={t('specs.gtin', 'Barcodes (GTIN)')}
+                                label={t('specs.gtin')}
                                 value={data.gtin.join(", ")}
                                 fieldEnv={evidence['gtin']}
                                 fieldKey="gtin"
@@ -199,17 +211,54 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                     </div>
                 </div>
 
+                {/* Marketing Content (SEO) */}
+                {data.marketing && (
+                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-5 border border-indigo-100 dark:border-indigo-800/50">
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                            <span className="w-1 h-4 bg-indigo-500 rounded-full"></span>
+                            {t('marketing.title', 'Marketing Strategy')}
+                        </h3>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('marketing.seo_title', 'SEO Title')}</label>
+                                <div className="text-sm font-medium text-gray-900 dark:text-gray-100 border-b border-indigo-200 dark:border-indigo-800 pb-2">
+                                    {data.marketing.seo_title || '-'}
+                                </div>
+                            </div>
+
+                            {data.marketing.description && (
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('marketing.desc', 'Description')}</label>
+                                    <div className="text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none mt-1" dangerouslySetInnerHTML={{ __html: data.marketing.description }} />
+                                </div>
+                            )}
+
+                            {data.marketing.feature_bullets && data.marketing.feature_bullets.length > 0 && (
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('marketing.bullets', 'Key Features')}</label>
+                                    <ul className="list-disc pl-4 mt-1 space-y-1">
+                                        {data.marketing.feature_bullets.map((bullet, i) => (
+                                            <li key={i} className="text-xs text-gray-700 dark:text-gray-300">{bullet}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Connectivity (If present) */}
                 {data.connectivity && (
                     <div>
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                             <span className="w-1 h-4 bg-cyan-500 rounded-full"></span>
-                            {t('connectivity.title', 'Connectivity')}
+                            {t('connectivity.title')}
                         </h3>
                         <div className="grid grid-cols-1 gap-3">
                             {data.connectivity.ports && data.connectivity.ports.length > 0 && (
                                 <EvidenceRow
-                                    label={t('connectivity.ports', 'Ports')}
+                                    label={t('connectivity.ports')}
                                     value={data.connectivity.ports.join(", ")}
                                     fieldEnv={evidence['connectivity.ports']}
                                     fieldKey="connectivity.ports"
@@ -224,10 +273,10 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                     <div>
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                             <span className="w-1 h-4 bg-blue-500 rounded-full"></span>
-                            {t('compatibility', 'Compatibility')} <span className="text-xs font-normal text-gray-500">(RU Region)</span>
+                            {t('compatibility.title')} <span className="text-xs font-normal text-gray-500">{t('compatibility.region_hint')}</span>
                             {data.compatible_printers_ru.some(p => p.canonicalName?.includes('nix')) && (
                                 <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 rounded-full">
-                                    {t('compatibility.nix_verified', 'NIX Checked')}
+                                    {t('compatibility.nix_verified')}
                                 </span>
                             )}
                         </h3>
@@ -248,7 +297,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                     <div>
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                             <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
-                            {t('faq', 'FAQ & Troubleshooting')}
+                            {t('faq')}
                         </h3>
                         <div className="space-y-3">
                             {data.faq.map((item, idx) => (
@@ -257,7 +306,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                                     <p className="text-sm text-gray-600 dark:text-gray-400">{item.answer}</p>
                                     {item.source_url && (
                                         <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline mt-2 block truncate">
-                                            Source: {new URL(item.source_url).hostname}
+                                            {t('common:general.source')}: {new URL(item.source_url).hostname}
                                         </a>
                                     )}
                                 </div>
@@ -269,7 +318,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                 {/* Related SKUs (Enhanced) */}
                 {(data.related_ids || (data.related_skus && data.related_skus.length > 0)) && (
                     <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('related_products', 'Related Products')}</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('related_products')}</h3>
                         <div className="flex flex-wrap gap-2">
                             {/* Prefer Structured related_ids if available, else standard string array */}
                             {data.related_ids ? data.related_ids.map((item, i) => (
@@ -293,8 +342,8 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                         {t('logistics.title')}
                     </h3>
                     <div className="grid grid-cols-1 gap-3">
-                        <EvidenceRow label={t('logistics.weight')} value={data.packaging_from_nix?.weight_g ? `${data.packaging_from_nix.weight_g} g` : '-'} fieldEnv={evidence['packaging.weight_g']} fieldKey="packaging.weight_g" />
-                        <EvidenceRow label={t('logistics.dims')} value={data.packaging_from_nix?.width_mm ? `${data.packaging_from_nix.width_mm}x${data.packaging_from_nix.height_mm}x${data.packaging_from_nix.depth_mm} mm` : '-'} fieldEnv={evidence['packaging.dimensions']} fieldKey="packaging.dimensions" />
+                        <EvidenceRow label={t('logistics.weight')} value={data.packaging_from_nix?.weight_g ? `${data.packaging_from_nix.weight_g} g` : t('common:general.n_a')} fieldEnv={evidence['packaging_from_nix.weight_g']} fieldKey="packaging_from_nix.weight_g" />
+                        <EvidenceRow label={t('logistics.dims')} value={data.packaging_from_nix?.width_mm ? `${data.packaging_from_nix.width_mm}x${data.packaging_from_nix.height_mm}x${data.packaging_from_nix.depth_mm} mm` : t('common:general.n_a')} fieldEnv={evidence['packaging_from_nix.dimensions']} fieldKey="packaging_from_nix.dimensions" />
                     </div>
                 </div>
 
@@ -303,7 +352,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                     <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-xl flex items-start gap-3">
                         <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
                         <div>
-                            <h4 className="font-semibold text-amber-900 dark:text-amber-100">{t('conflicts', 'Conflicts Detected')}</h4>
+                            <h4 className="font-semibold text-amber-900 dark:text-amber-100">{t('conflicts')}</h4>
                             <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
                                 Some fields have conflicting data from different sources. Review the highlighted fields above.
                             </p>

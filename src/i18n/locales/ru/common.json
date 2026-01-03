@@ -12,6 +12,12 @@
         "live_engine": "Активный движок",
         "active_orchestrator": "Активный оркестратор"
     },
+    "status": {
+        "published": "Опубликовано",
+        "processing": "Обработка",
+        "failed": "Ошибка",
+        "needs_review": "На проверку"
+    },
     "engines": {
         "gemini_default": "Gemini 2.0 (По умолчанию)",
         "firecrawl_agent": "Агент Firecrawl",
@@ -53,8 +59,12 @@
         "thinking": "Думаю...",
         "complete": "Исследование завершено",
         "steps_count": "этапов",
-        "sources_found": "источников найдено",
+        "sources_found": "{{count}} источник найдено",
+        "sources_found_one": "{{count}} источник найден",
+        "sources_found_few": "{{count}} источника найдено",
+        "sources_found_many": "{{count}} источников найдено",
         "steps": {
+            "init": "Инициализация...",
             "normalization": "Нормализация",
             "parsing": "Парсинг запроса",
             "discovery": "Первичное обнаружение",
@@ -70,5 +80,13 @@
             "complete": "Готово",
             "failed": "Ошибка"
         }
+    },
+    "general": {
+        "yes": "Да",
+        "no": "Нет",
+        "unknown": "Неизвестно",
+        "n_a": "Н/Д",
+        "source": "Источник",
+        "verified_by": "Проверено {{name}}"
     }
 }

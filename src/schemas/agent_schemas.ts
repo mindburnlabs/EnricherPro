@@ -197,11 +197,25 @@ export const ConsumableDataSchema = {
     type: "object",
     properties: {
         brand: { type: ["string", "null"] },
+        consumable_type: {
+            type: ["string", "null"],
+            enum: ["toner_cartridge", "drum_unit", "ink_cartridge", "maintenance_kit", "waste_toner", "bottle", "other", "unknown", null]
+        },
+        marketing: {
+            type: ["object", "null"],
+            properties: {
+                seo_title: { type: ["string", "null"] },
+                description: { type: ["string", "null"] },
+                feature_bullets: { type: "array", items: { type: "string" } },
+                keywords: { type: "array", items: { type: "string" } }
+            }
+        },
         mpn_identity: {
             type: ["object", "null"],
             properties: {
                 mpn: { type: ["string", "null"] },
-                series: { type: ["string", "null"] }
+                series: { type: ["string", "null"] },
+                canonical_model_name: { type: ["string", "null"] }
             },
             required: ["mpn", "series"],
             additionalProperties: false

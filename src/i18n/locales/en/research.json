@@ -9,7 +9,9 @@
         "complete": "Research Complete",
         "failed": "Research Protocol Failed",
         "review_required": "Manual Validation Required",
-        "published": "Published to PIM"
+        "needs_review": "Manual Validation Required",
+        "published": "Published to PIM",
+        "processing": "Processing..."
     },
     "progress": {
         "title": "Active Agent Process",
@@ -39,6 +41,27 @@
         "button_detail": "View Details",
         "button_approve": "Approve",
         "unknown_reason": "Not specified"
+    },
+    "results": {
+        "title": "Research Findings",
+        "refresh_data": "Force Refresh Data",
+        "download_csv": "Download CSV",
+        "download_json": "Download JSON",
+        "verified": "Verified"
+    },
+    "actions": {
+        "details": "Details",
+        "approve": "Approve",
+        "approving": "Approving...",
+        "approved": "Approved"
+    },
+    "evidence": {
+        "title": "Evidence",
+        "points_verified": "Verified Points"
+    },
+    "specs": {
+        "brand": "Brand",
+        "type": "Type"
     },
     "interface": {
         "welcome_title": "What do you want to verify?",

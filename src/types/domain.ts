@@ -9,6 +9,8 @@ export interface StepStatus {
     status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
     description?: string;
     timestamp?: string;
+    logStartIndex?: number;
+    logEndIndex?: number;
 }
 
 export type AutomationStatus = 'done' | 'needs_review' | 'failed';
@@ -159,6 +161,14 @@ export interface ConsumableData {
     mpn_identity: MpnIdentity;
     reviewReason?: string; // Reason why item needs review
 
+    // 1.1 Marketing Content (SEO)
+    marketing: {
+        seo_title: string | null; // H1 optimized title
+        description: string | null; // Product description html/markdown
+        feature_bullets: string[]; // Key selling points
+        keywords: string[];
+    };
+
     // 2. Core Attributes
     brand: string | null; // e.g., HP, Kyocera
     consumable_type: ConsumableType;
@@ -234,7 +244,7 @@ export interface ConsumableData {
 }
 
 // Status Types
-export type ValidationStatus = 'pending' | 'processing' | 'ok' | 'needs_review' | 'failed';
+export type ValidationStatus = 'pending' | 'processing' | 'published' | 'needs_review' | 'failed';
 
 export interface ManualQueueEntry {
     itemId: string;

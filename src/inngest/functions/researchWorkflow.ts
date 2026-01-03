@@ -171,9 +171,14 @@ export const researchWorkflow = inngest.createFunction(
                                 source_type: (r as any).markdown ? 'direct_scrape' : 'web', // Promote to direct_scrape if content exists
                                 markdown: (r as any).markdown // Ensure markdown is passed through
                             }));
+                            // ZERO RESULTS CHECK: If Firecrawl returns empty, we must fallback to ensure coverage.
+                            if (results.length === 0) {
+                                throw new Error("Zero Results");
+                            }
                         } catch (e: any) {
                             // CRITICAL: Explicit Error Handling for User Visibility
                             const isMissingKey = e.message?.includes("Missing Firecrawl API Key");
+                            const isZeroResults = e.message === "Zero Results";
                             const isAuthError = e.statusCode === 401 || e.statusCode === 403;
                             const isPaymentError = e.statusCode === 402 || e.message?.includes("Payment Required");
                             const isRateLimit = e.statusCode === 429;
@@ -182,8 +187,8 @@ export const researchWorkflow = inngest.createFunction(
                             // If it's Payment (402), we also fallback but maybe warn?
                             // Plan: If Firecrawl is down/missing/unpaid, we use OpenRouter.
 
-                            if (isMissingKey || isAuthError || isPaymentError || isRateLimit) {
-                                agent.log('discovery', `⚠️ Firecrawl unavailable (${isMissingKey ? 'No Key' : e.statusCode || 'Error'}). Switching to Fallback Search.`);
+                            if (isMissingKey || isAuthError || isPaymentError || isRateLimit || isZeroResults) {
+                                agent.log('discovery', `⚠️ Firecrawl unavailable (${isMissingKey ? 'No Key' : isZeroResults ? '0 Results' : e.statusCode || 'Error'}). Switching to Fallback Search.`);
                             } else {
                                 console.warn("Firecrawl failed with unexpected error, trying fallback", e);
                             }
@@ -883,6 +888,17 @@ export const researchWorkflow = inngest.createFunction(
                     inputRaw // Pass original input for grounding
                 );
                 return { ...synthesized, ...resolvedData };
+            }
+
+            // FINALIZATION: Ensure 'PENDING' MPN from creating is overwritten
+            // If TrustEngine didn't find specific mpn_identity.mpn, we override it with what we have (Model/Short).
+            if (!resolvedData.mpn_identity) {
+                const inferred = resolvedData.model || resolvedData.short_model || inputRaw;
+                resolvedData.mpn_identity = {
+                    mpn: inferred, // Fallback to raw input or extracted model
+                    canonical_model_name: inputRaw,
+                    variant_flags: { chip: false, counterless: false, high_yield: false, kit: false }
+                };
             }
 
             return resolvedData;

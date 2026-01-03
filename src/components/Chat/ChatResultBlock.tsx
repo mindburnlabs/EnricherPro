@@ -113,7 +113,7 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                                         <Layers className="w-4 h-4" />
                                     </div>
 
-                                    {(item.data.confidence_score?.overall || 0) > 85 && (
+                                    {(item.data.confidence?.overall || 0) > 85 && (
                                         <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-[10px] font-bold text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30" title="High Confidence">
                                             <Check className="w-3 h-3" />
                                             {t('results.verified', 'Verified')}
@@ -123,16 +123,23 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
 
                                 <span className={`flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shadow-sm border ${(item.status as any) === 'needs_review'
                                     ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30'
-                                    : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30'
+                                    : (item.status as any) === 'processing'
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900/30 animate-pulse'
+                                        : (item.status as any) === 'failed'
+                                            ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30'
+                                            : (item.status as any) === 'published'
+                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30'
+                                                : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
                                     }`}>
                                     {(item.status as any) === 'needs_review' && <AlertTriangle className="w-3 h-3" />}
+                                    {(item.status as any) === 'processing' && <Loader2 className="w-3 h-3 animate-spin" />}
                                     {t(`status.${item.status}`, (item.status as any).replace('_', ' '))}
                                 </span>
                             </div>
 
                             <div className="mb-4">
                                 <h4 className="font-bold text-lg text-gray-900 dark:text-gray-100 leading-tight mb-1 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
-                                    {item.data.mpn_identity.mpn || t('common.unknown_mpn', 'Unknown MPN')}
+                                    {item.data.mpn_identity.mpn || t('review.unknown_mpn', 'Unknown MPN')}
                                 </h4>
                                 <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
                                     {item.data.mpn_identity.canonical_model_name}
@@ -193,8 +200,8 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
 
                                 <button
                                     onClick={(e) => handleApproveClick(item.id, e)}
-                                    disabled={approvingId === item.id || item.status === 'ok'}
-                                    className={`flex-1 px-3 py-2 text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2 ${item.status === 'ok'
+                                    disabled={approvingId === item.id || item.status === 'published'}
+                                    className={`flex-1 px-3 py-2 text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2 ${item.status === 'published'
                                         ? 'bg-emerald-100 text-emerald-700 cursor-default'
                                         : 'text-white bg-gray-900 dark:bg-white dark:text-black hover:bg-emerald-600 dark:hover:bg-emerald-400 hover:shadow-emerald-500/20'
                                         } ${approvingId === item.id ? 'animate-pulse' : ''}`}
@@ -204,7 +211,7 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                             {t('actions.approving', 'Approving...')}
                                         </>
-                                    ) : item.status === 'ok' ? (
+                                    ) : item.status === 'published' ? (
                                         <>
                                             <Check className="w-3.5 h-3.5" />
                                             {t('actions.approved', 'Approved')}

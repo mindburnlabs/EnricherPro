@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StepStatus, EnrichedItem } from '../types/domain.js';
 import { getItems } from '../lib/api.js';
 
@@ -39,12 +39,15 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
         setError(null);
     }, []);
 
+    const logsRef = React.useRef<ResearchLog[]>([]);
+
     const startStream = useCallback((jobId: string) => {
         reset();
         setStatus('running');
+        logsRef.current = []; // Reset ref
 
         // Initial step
-        setSteps([{ id: 'init', label: t('steps.initializing', 'Initializing Research...'), status: 'running' }]);
+        setSteps([{ id: 'init', label: t('progress.steps.init', 'Initializing Research...'), status: 'running', logStartIndex: 0 }]);
 
         const eventSource = new EventSource(`/api/sse?jobId=${jobId}`);
 
@@ -53,7 +56,6 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
                 const data = JSON.parse(event.data);
 
                 if (data.type === 'connected') {
-
                     return;
                 }
 
@@ -63,7 +65,9 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
                         const newLogs = (data.logs as ResearchLog[]).filter(l => !prev.some(p => p.id === l.id));
                         if (newLogs.length === 0) return prev;
                         // Sort by timestamp
-                        return [...prev, ...newLogs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                        const updated = [...prev, ...newLogs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                        logsRef.current = updated; // Sync ref
+                        return updated;
                     });
                 }
 
@@ -72,11 +76,11 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
                     // Backend steps: 'planning', 'searching', 'enrichment', 'gate_check'
                     const mapStepLabel = (s: string) => {
                         switch (s) {
-                            case 'planning': return t('steps.planning', 'Planning Strategy');
-                            case 'searching': return t('steps.searching', 'Gathering Intelligence');
-                            case 'enrichment': return t('steps.enrichment', 'Synthesizing & Extracting');
-                            case 'gate_check': return t('steps.validating', 'Quality Gatekeeper Validation');
-                            default: return t('steps.processing', 'Processing...');
+                            case 'planning': return t('progress.steps.planning', 'Planning Strategy');
+                            case 'searching': return t('progress.steps.searching', 'Gathering Intelligence');
+                            case 'enrichment': return t('progress.steps.enrichment', 'Synthesizing & Extracting');
+                            case 'gate_check': return t('progress.steps.gate_check', 'Quality Gatekeeper Validation');
+                            default: return t('progress.steps.processing', 'Processing...');
                         }
                     };
 
@@ -86,17 +90,25 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
                             return prev;
                         }
 
-                        // Mark previous as done
-                        const newSteps = prev.map(s => ({ ...s, status: 'completed' as const }));
+                        // Mark previous as done and capture log end index
+                        const currentLogCount = logsRef.current.length;
+                        const newSteps = prev.map(s => {
+                            if (s.status === 'running') {
+                                return { ...s, status: 'completed' as const, logEndIndex: currentLogCount };
+                            }
+                            return s;
+                        });
 
                         // Add new
                         return [...newSteps, {
                             id: data.step,
                             label: mapStepLabel(data.step),
-                            status: 'running'
+                            status: 'running',
+                            logStartIndex: currentLogCount
                         }];
                     });
                 }
+
 
                 if (data.type === 'complete') {
                     setStatus('completed');
@@ -109,7 +121,12 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
                     }
 
                     // Mark last step as done
-                    setSteps(prev => prev.map(s => ({ ...s, status: 'completed' })));
+                    setSteps(prev => prev.map(s => {
+                        if (s.status === 'running') {
+                            return { ...s, status: 'completed', logEndIndex: logsRef.current.length };
+                        }
+                        return s;
+                    }));
                 }
 
                 if (data.type === 'error') {
@@ -138,7 +155,7 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
         return () => {
             eventSource.close();
         };
-    }, [reset]);
+    }, [reset, t]);
 
     return { steps, items, logs, status, error, startStream, reset };
 };

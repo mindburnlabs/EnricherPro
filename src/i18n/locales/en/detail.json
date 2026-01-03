@@ -25,6 +25,7 @@
         "brand": "Brand (Authority)",
         "mpn": "Entity Identity (MPN)",
         "short_model": "Short Model",
+        "aliases": "Aliases",
         "alias": "Semantic Alias",
         "alias_placeholder": "short identifier",
         "yield": "Yield Matrix",
@@ -34,12 +35,29 @@
             "copies": "COPIES"
         },
         "chip": "IC Chip Architecture",
-        "counter": "FW Logical Counter"
+        "counter": "FW Logical Counter",
+        "gtin": "Barcodes (GTIN)"
+    },
+    "connectivity": {
+        "title": "Connectivity & Ports",
+        "ports": "Ports"
+    },
+    "compatibility": {
+        "title": "Compatibility",
+        "nix_verified": "NIX Verified",
+        "region_hint": "(RU Region)"
     },
     "market": {
         "eligibility": "Market Eligibility",
         "agents_validated": "AGENTS VALIDATED",
         "placeholder": "Verified list of compatible ID terminals..."
+    },
+    "marketing": {
+        "title": "Marketing Strategy",
+        "seo_title": "SEO Title (H1)",
+        "desc": "Product Description",
+        "bullets": "Key Features",
+        "keywords": "Keywords"
     },
     "logistics": {
         "title": "Logistics Protocol",
@@ -98,10 +116,23 @@
         "oem_logo": "OEM LOGO",
         "ok": "OK",
         "rejection_reasons": "Rejection Reasons",
-        "primary": "Primary"
+        "primary": "Primary",
+        "alt": "Product Image"
     },
     "specs": {
         "title": "Specifications",
+        "tech_title": "Technical Architecture",
+        "type": "Consumable Type",
+        "types": {
+            "toner_cartridge": "Toner Cartridge",
+            "drum_unit": "Drum Unit",
+            "ink_cartridge": "Ink Cartridge",
+            "maintenance_kit": "Maintenance Kit",
+            "waste_toner": "Waste Toner Box",
+            "bottle": "Toner Bottle",
+            "other": "Other",
+            "unknown": "Unknown"
+        },
         "click_hint": "Click to view sources",
         "yield": "Yield",
         "color": "Color"

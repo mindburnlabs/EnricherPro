@@ -42,29 +42,47 @@ export class SynthesisAgent {
         Your goal is to parse the input text and extract structured facts (Claims) about a printer consumable.
         
         Targets:
-        - brand, mpn, series, color
-        - yield (pages)
-        - compatible_printers (array of strings)
-        - logistics (weight_g, dim_width_mm, dim_height_mm, dim_depth_mm)
-        - gtin/ean codes
+        - brand, mpn_identity.mpn (Use dot notation)
+        - consumable_type (Enum: toner_cartridge, drum_unit, ink_cartridge, maintenance_kit, waste_toner, bottle, other)
+        - yield.value, yield.unit (Use dot notation)
+        - compatible_printers_ru (array of objects {model, canonicalName})
+        - packaging_from_nix.weight_g, packaging_from_nix.width_mm (Use dot notation)
+        - gtin (array of strings)
         - short_model (e.g. "12A", "CF218A" -> "18A")
         - faq (3-5 common questions/problems)
-        - related_consumables (drums, chips, maintenance)
+        - related_ids (drums, chips, maintenance)
         
         Rules:
         1. Extract ONLY present data. No guessing.
         2. Normalize numeric values (e.g. "1 kg" -> 1000).
         3. Confidence 0.1-1.0 based on clarity.
+        4. CRITICAL: For nested fields, use DOT NOTATION in 'field' property.
+           - "mpn" -> "mpn_identity.mpn"
+           - "weight" -> "packaging_from_nix.weight_g"
+           - "yield" -> "yield.value"
         `;
 
         const systemPromptRu = `Вы - Движок Извлечения Данных.
         Ваша цель - проанализировать текст и извлечь структурированные факты (Claims).
         
         Цели:
-        - brand, mpn, series, color
-        - yield (pages - ресурс)
-        - compatible_printers (массив моделей принтеров)
-        - logistics (weight_g, dim_width_mm, dim_height_mm, dim_depth_mm)
+        - brand, mpn_identity.mpn
+        - consumable_type (Тип: toner_cartridge, drum_unit, ink_cartridge, maintenance_kit, другие)
+        - yield.value, yield.unit
+        - compatible_printers_ru
+        - packaging_from_nix.weight_g
+        - gtin
+        - short_model
+        - faq
+        - related_ids
+        
+        Правила:
+        1. Извлекать ТОЛЬКО присутствующие данные.
+        2. Нормализовать числа.
+        3. ИСПОЛЬЗОВАТЬ ТОЧКУ для вложенных полей:
+           - 'yield.value'
+           - 'packaging_from_nix.weight_g'
+           - 'mpn_identity.mpn'
         - gtin/ean codes
         - short_model (короткий номер, напр. "12A")
         - faq (3-5 частых вопросов/проблем)
@@ -131,6 +149,16 @@ export class SynthesisAgent {
         
         ${inputGroundingPrompt}
 
+        STRATEGY:
+        1. Identify exact MPN, Brand, and Model.
+        2. Aggregate specs (Yield, Color, Chip).
+        3. ANALYZE COMPATIBILITY: List all compatible printers.
+        4. GENERATE MARKETING CONTENT:
+            - SEO Title (H1): [Brand] [Type] for [Main Printers] ([Color], [Yield])
+            - Description: Sales-oriented HTML description with key benefits.
+            - Feature Bullets: 5 key selling points for marketplaces.
+            - Keywords: SEO tags for search.
+
         CRITICAL RULES (Evidence-First):
         1. ONLY output data explicitly present in the text OR in the Inputs.
         2. 'mpn_identity.mpn': Manufacturer Part Number. Must be exact.
@@ -149,12 +177,23 @@ export class SynthesisAgent {
         
         ${inputGroundingPrompt}
 
+        СТРАТЕГИЯ:
+        1. Идентифицируй точный MPN, Бренд и Модель.
+        2. Собери все характеристики (Yield, Color, Chip).
+        3. ПРОАНАЛИЗИРУЙ СОВМЕСТИМОСТЬ: Собери полный список принтеров.
+        4. ГЕНЕРИРУЙ МАРКЕТИНГОВЫЙ КОНТЕНТ:
+            - SEO Заголовок (H1): [Бренд] [Тип] для [Главные Принтеры] ([Цвет], [Ресурс])
+            - Описание: Продающее HTML описание с ключевыми преимуществами.
+            - Буллиты: 5 ключевых особенностей для маркетплейсов.
+            - Ключевые слова: SEO теги для поиска.
+
         КРИТИЧЕСКИЕ ПРАВИЛА:
         1. Использовать данные из Текста И Ввода пользователя.
         2. 'brand', 'model', 'yield' - НЕ МОГУТ БЫТЬ NULL, если они есть во вводе.
         3. 'short_model': Извлечь короткий алиас (напр. "CF218A" -> "18A").
         4. 'faq': Извлечь 3-5 частых вопросов/проблем (напр. "Как сбросить чип?").
         5. 'related_ids': Список связанных расходников (барабаны, чипы).
+        6. Маркетинг должен быть на РУССКОМ языке.
 
         Входной Текст:
         ${sources.join("\n\n")}

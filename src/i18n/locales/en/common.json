@@ -12,6 +12,12 @@
         "live_engine": "Active Engine",
         "active_orchestrator": "Active Orchestrator"
     },
+    "status": {
+        "published": "Published",
+        "processing": "Processing",
+        "failed": "Failed",
+        "needs_review": "Needs Review"
+    },
     "engines": {
         "gemini_default": "Gemini 2.0 (Default)",
         "firecrawl_agent": "Firecrawl Agent",
@@ -48,5 +54,39 @@
         "save": "Save",
         "search": "Search",
         "clear": "Clear"
+    },
+    "progress": {
+        "thinking": "Thinking...",
+        "complete": "Research Complete",
+        "steps_count": "steps",
+        "sources_found": "{{count}} sources found",
+        "sources_found_one": "{{count}} source found",
+        "sources_found_few": "{{count}} sources found",
+        "sources_found_many": "{{count}} sources found",
+        "steps": {
+            "init": "Initializing...",
+            "normalization": "Normalization",
+            "parsing": "Parsing Request",
+            "discovery": "Initial Discovery",
+            "searching": "Searching",
+            "filtering": "Filtering",
+            "scraping_nix": "Scanning NIX.ru",
+            "scraping_compat": "Compatibility Analysis",
+            "enrichment": "Deep Enrichment",
+            "analyzing": "Synthesizing Data",
+            "auditing_images": "Auditing Images",
+            "finalizing": "Finalizing",
+            "gate_check": "Quality Check",
+            "complete": "Complete",
+            "failed": "Failed"
+        }
+    },
+    "general": {
+        "yes": "Yes",
+        "no": "No",
+        "unknown": "Unknown",
+        "n_a": "N/A",
+        "source": "Source",
+        "verified_by": "Verified by {{name}}"
     }
 }
