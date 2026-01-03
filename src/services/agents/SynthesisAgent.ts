@@ -369,6 +369,33 @@ export class SynthesisAgent {
             }
         }
 
+
+        // Compatible Printers Normalization
+        if (data.compatible_printers_ru) {
+            if (typeof data.compatible_printers_ru === 'string') {
+                // Try to recover if it's a JSON string
+                try {
+                    const parsed = JSON.parse(data.compatible_printers_ru);
+                    if (Array.isArray(parsed)) data.compatible_printers_ru = parsed;
+                    else data.compatible_printers_ru = [];
+                } catch (e) {
+                    // If not JSON, maybe a CSV string? "HP 1010, HP 1020"
+                    if ((data.compatible_printers_ru as string).includes(',')) {
+                        data.compatible_printers_ru = (data.compatible_printers_ru as string)
+                            .split(',')
+                            .map(s => ({ model: s.trim(), canonicalName: s.trim() }));
+                    } else {
+                        data.compatible_printers_ru = [{ model: data.compatible_printers_ru, canonicalName: data.compatible_printers_ru }];
+                    }
+                }
+            } else if (!Array.isArray(data.compatible_printers_ru)) {
+                data.compatible_printers_ru = [];
+            }
+        } else {
+            // Ensure it exists as empty array if missing, to prevent null checks downstream
+            data.compatible_printers_ru = [];
+        }
+
         return data;
     }
 

@@ -88,9 +88,9 @@ export class QualityGatekeeper {
         }
 
         // Stage 5: Compatibility (RU Market Consensus)
-        if (data.compatible_printers_ru && data.compatible_printers_ru.length > 0) {
+        if (data.compatible_printers_ru && Array.isArray(data.compatible_printers_ru) && data.compatible_printers_ru.length > 0) {
             stages.compatibility = true;
-        } else if ((data as any).compatibility_ru?.printers && (data as any).compatibility_ru.printers.length > 0) {
+        } else if ((data as any).compatibility_ru?.printers && Array.isArray((data as any).compatibility_ru.printers) && (data as any).compatibility_ru.printers.length > 0) {
             stages.compatibility = true;
         } else {
             warnings.push(MSG.MISSING_COMPATIBILITY);
