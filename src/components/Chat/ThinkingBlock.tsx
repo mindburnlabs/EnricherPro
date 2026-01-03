@@ -55,7 +55,7 @@ export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({ steps, logs, statu
                         )}
                     </div>
 
-                    <div className="flex flex-col items-start gap-0.5">
+                    <div className="flex flex-col items-start gap-1 justify-center">
                         <span className="font-semibold text-sm text-gray-800 dark:text-gray-100 flex items-center gap-2">
                             {status === 'running'
                                 ? (activeStep?.label ? t(`progress.steps.${activeStep.id}`, activeStep.label) : t('progress.thinking', 'Thinking...'))
@@ -76,7 +76,7 @@ export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({ steps, logs, statu
                     {/* Badge for phase */}
                     {activeStep && status === 'running' && (
                         <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest animate-pulse">
-                            {activeStep.id.replace('_', ' ')}
+                            {t(`progress.steps.${activeStep.id}`, activeStep.id.replace('_', ' '))}
                         </span>
                     )}
 

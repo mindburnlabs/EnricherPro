@@ -66,6 +66,7 @@
         "steps": {
             "init": "Initializing...",
             "normalization": "Normalization",
+            "planning": "Planning Strategy",
             "parsing": "Parsing Request",
             "discovery": "Initial Discovery",
             "searching": "Searching",
