@@ -65,6 +65,7 @@
         "sources_found_many": "{{count}} sources found",
         "steps": {
             "init": "Initializing...",
+            "initializing": "Initializing...",
             "normalization": "Normalization",
             "planning": "Planning Strategy",
             "parsing": "Parsing Request",

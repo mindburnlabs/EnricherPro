@@ -65,6 +65,7 @@
         "sources_found_many": "{{count}} источников найдено",
         "steps": {
             "init": "Инициализация...",
+            "initializing": "Инициализация...",
             "normalization": "Нормализация",
             "planning": "Планирование стратегии",
             "parsing": "Парсинг запроса",
