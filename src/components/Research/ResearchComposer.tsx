@@ -173,18 +173,18 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
                                     `}
                                 >
                                     <span className="text-base">
-                                        {mode === 'fast' && '⚡'}
-                                        {mode === 'balanced' && '⚖️'}
-                                        {mode === 'deep' && '🧠'}
+                                        {modes.find(m => m.id === mode)?.label.split(' ')[0]}
                                     </span>
-                                    <span className="hidden sm:inline">{modes.find(m => m.id === mode)?.label}</span>
+                                    <span className="hidden sm:inline">
+                                        {modes.find(m => m.id === mode)?.label.split(' ').slice(1).join(' ')}
+                                    </span>
                                 </button>
 
                                 {/* Dropdown Menu - Positioned Absolute/Z-Index High */}
                                 {showModes && (
                                     <>
                                         <div className="fixed inset-0 z-30" onClick={() => setShowModes(false)} />
-                                        <div className="absolute bottom-full mb-3 left-0 w-64 bg-white dark:bg-[#1a1c20] rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden z-40 animate-in fade-in zoom-in-95 duration-200 origin-bottom-left">
+                                        <div className="absolute bottom-full mb-2 left-0 w-64 bg-white dark:bg-[#1a1c20] rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 origin-bottom-left">
                                             <div className="p-1 space-y-0.5">
                                                 {modes.map((m) => (
                                                     <button
