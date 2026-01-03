@@ -81,9 +81,15 @@ export class BackendLLMService {
         // User Requirement: "Always use smart free models unless user selects specific models"
         // If model is undefined or 'openrouter/auto', we resolve to the Profile's top candidate (which is Smart Free).
         if ((!targetModel || targetModel === 'openrouter/auto') && config.profile) {
-            const candidates = MODEL_CONFIGS[config.profile]?.candidates || [];
+            const profileName = config.profile;
+            // Typecast to safely access dynamic property on readonly const
+            const candidates: readonly string[] = (MODEL_CONFIGS as any)[profileName]?.candidates || [];
+
             if (candidates.length > 0) {
-                targetModel = candidates[0]; // Pick the Smart Free Model found by generator
+                // SOTA: Prioritize FREE models if they exist in the candidate list
+                // The generator *should* sort them first, but we enforce it here to be safe.
+                const bestFree = candidates.find((m: string) => m.endsWith(':free'));
+                targetModel = bestFree || candidates[0];
             }
         }
 

@@ -3,7 +3,9 @@ import { Pool } from 'pg';
 import * as schema from './schema.js';
 import * as dotenv from 'dotenv';
 
-dotenv.config({ path: '.env.local' });
+if (process.env.NODE_ENV !== 'production') {
+    dotenv.config({ path: '.env.local' });
+}
 
 // Singleton pattern for DB connection
 let dbInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
