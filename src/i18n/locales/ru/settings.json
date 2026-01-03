@@ -17,46 +17,50 @@
         "language": "Язык интерфейса",
         "language_desc": "Влияет на текст интерфейса и регион поиска"
     },
+    "plan_active": "Pro План Активен",
+    "sota": {
+        "title": "Режим SOTA / Разработчик",
+        "debug_label": "Отладка SOTA",
+        "debug_desc": "Показать стратегии маршрутизации, токены и валидацию схем.",
+        "flash_label": "Flash Планировщик (Скорость)",
+        "flash_desc": "Gemini 2.0 Flash для планирования (0.5с). Выкл для качества (2с).",
+        "routing_label": "Приоритет Маршрутизации",
+        "routing_desc": "Оптимизация авто-роутинга: Скорость или Цена.",
+        "routing_perf": "Скорость",
+        "routing_cost": "Цена",
+        "protip_title": "Совет Pro (SOTA 2026)",
+        "protip_desc": "Используйте openrouter/auto для автоматического выбора лучшей модели под ваш бюджет."
+    },
     "models": {
         "title": "Основная модель (Reasoner)",
         "desc": "Выберите LLM для планирования и синтеза.",
         "active": "Активна",
         "fetch_error": "Не удалось загрузить модели",
-        "fetch_tip": "Нажмите кнопку обновления для загрузки моделей из OpenRouter."
-    },
-    "api": {
-        "security_note": "API ключи хранятся в вашем браузере.",
-        "firecrawl": "API Ключ Firecrawl",
-        "openrouter": "API Ключ OpenRouter"
-    },
-    "modes": {
-        "fast": "Быстрый",
-        "balanced": "Баланс",
-        "deep": "Глубокий",
-        "max_queries": "Макс. запросов",
-        "limit_per_query": "Лимит / запрос"
+        "fetch_tip": "Нажмите кнопку обновления для загрузки моделей.",
+        "default": "По умолчанию:",
+        "discovery_label": "Агент-Исследователь (Discovery)",
+        "discovery_desc": "Скорость для стратегии поиска. Рек: Gemini 2.0 Flash.",
+        "extraction_label": "Агент-Извлечения (Extraction)",
+        "extraction_desc": "Экономный парсинг шумного HTML. Рек: Gemini Flash.",
+        "synthesis_label": "Агент-Синтеза (Synthesis)",
+        "synthesis_desc": "Интеллект для разрешения конфликтов. Рек: Claude 3.5 Sonnet."
     },
     "sources": {
         "allowed_types": "Типы источников",
+        "vertical_search_title": "Вертикальный Поиск (Graph-Lite)",
+        "prefer_graph_label": "Приоритет Graph-Lite",
+        "prefer_graph_desc": "Доверять локальной графовой БД выше поиска. Быстрее.",
+        "offline_mode_label": "Оффлайн Режим",
+        "offline_mode_desc": "Отключить живой поиск. Только локальные данные.",
         "official": "Официальные",
         "official_desc": "Сайты брендов, документация.",
         "marketplace": "Маркетплейсы",
-        "marketplace_desc": "Amazon, eBay, Alibaba и др.",
+        "marketplace_desc": "Amazon, eBay, Wildberries, Ozon.",
         "community": "Сообщества и Форумы",
         "community_desc": "Reddit, FixYourOwnPrinter и др.",
         "blocked_domains": "Заблокированные домены",
-        "blocked_domains_desc": "Один домен на строку."
-    },
-    "prompts": {
-        "system_prompts": "Системные промпты",
-        "discovery": "Агент-Исследователь (Discovery)",
-        "synthesis": "Агент-Синтезатор (Synthesis)",
-        "logistics": "Агент-Логист (Logistics)",
-        "reset": "Сбросить по умолчанию"
-    },
-    "actions": {
-        "cancel": "Отмена",
-        "save": "Сохранить"
-    },
-    "plan_active": "Pro План Активен"
+        "blocked_domains_desc": "Один домен на строку.",
+        "specific_domains_label": "Только конкретные домены (Опционально)",
+        "specific_domains_help": "Оставьте пустым для всех источников типа {{label}}."
+    }
 }

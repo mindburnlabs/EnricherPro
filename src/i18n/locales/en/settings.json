@@ -17,27 +17,41 @@
         "language": "Interface Language",
         "language_desc": "Affects UI text and default search regions"
     },
+    "plan_active": "Pro Plan Active",
+    "sota": {
+        "title": "Developer / SOTA Mode",
+        "debug_label": "SOTA Debug Info",
+        "debug_desc": "Show routing strategies, token usage, and strict schema validation status.",
+        "flash_label": "Flash Planner (Speed)",
+        "flash_desc": "Use Gem 2.0 Flash for planning (0.5s). Disable for higher logic quality (2s).",
+        "routing_label": "Routing Preference",
+        "routing_desc": "Optimize auto-routing for Speed or Cost.",
+        "routing_perf": "Performance",
+        "routing_cost": "Cost",
+        "protip_title": "Pro Tip (2026 SOTA)",
+        "protip_desc": "For best results, use openrouter/auto to let the system automatically route to the best available model based on your budget."
+    },
     "models": {
         "title": "Primary Reasoner Model",
         "desc": "Select the LLM used for planning and synthesis.",
         "active": "Active",
         "fetch_error": "Failed to fetch models",
-        "fetch_tip": "Click the refresh button to load available models from OpenRouter."
-    },
-    "api": {
-        "security_note": "API keys are stored in your browser.",
-        "firecrawl": "Firecrawl API Key",
-        "openrouter": "OpenRouter API Key"
-    },
-    "modes": {
-        "fast": "Fast",
-        "balanced": "Balanced",
-        "deep": "Deep",
-        "max_queries": "Max Queries",
-        "limit_per_query": "Limit / Query"
+        "fetch_tip": "Click the refresh button to load available models from OpenRouter.",
+        "default": "Default:",
+        "discovery_label": "Discovery Agent (Planner)",
+        "discovery_desc": "High-speed model for search strategy. Rec: Gemini 2.0 Flash.",
+        "extraction_label": "Extraction Agent (Parser)",
+        "extraction_desc": "Cost-effective model for parsing noisy HTML. Rec: Gemini Flash.",
+        "synthesis_label": "Synthesis Agent (Reasoner)",
+        "synthesis_desc": "High-intelligence model for conflict resolution. Rec: Claude 3.5 Sonnet."
     },
     "sources": {
         "allowed_types": "Allowed Source Types",
+        "vertical_search_title": "Vertical Search Engine (Graph-Lite)",
+        "prefer_graph_label": "Prefer Graph-Lite",
+        "prefer_graph_desc": "Trust local Graph DB over live web search. Faster & more deterministic.",
+        "offline_mode_label": "Offline Mode",
+        "offline_mode_desc": "Disable live web search. Use only Graph-Lite and catalogs.",
         "official": "Official Sources",
         "official_desc": "Brand websites, documentation.",
         "marketplace": "Marketplaces",
@@ -45,18 +59,8 @@
         "community": "Community & Forums",
         "community_desc": "Reddit, FixYourOwnPrinter, etc.",
         "blocked_domains": "Blocked Domains",
-        "blocked_domains_desc": "Enter one domain per line."
-    },
-    "prompts": {
-        "system_prompts": "System Prompts",
-        "discovery": "Discovery Agent",
-        "synthesis": "Synthesis Agent",
-        "logistics": "Logistics Agent",
-        "reset": "Reset to Defaults"
-    },
-    "actions": {
-        "cancel": "Cancel",
-        "save": "Save Changes"
-    },
-    "plan_active": "Pro Plan Active"
+        "blocked_domains_desc": "Enter one domain per line.",
+        "specific_domains_label": "Allow Only Specific Domains (Optional)",
+        "specific_domains_help": "Leave empty to allow all {{label}} sources."
+    }
 }

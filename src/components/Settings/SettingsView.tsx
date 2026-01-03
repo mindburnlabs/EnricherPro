@@ -12,28 +12,33 @@ interface SettingsViewProps {
 
 type Tab = 'general' | 'models' | 'api' | 'prompts' | 'modes' | 'sources';
 
-const ModelSelector: React.FC<{ label: string; desc: string; value: string; onChange: (v: string) => void; models: any[]; defaultModel: string }> = ({ label, desc, value, onChange, models, defaultModel }) => (
-    <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
-        <label className="block text-sm font-bold text-gray-900 dark:text-white mb-1">{label}</label>
-        <p className="text-xs text-gray-500 mb-3">{desc}</p>
-        <div className="relative">
-            <input
-                type="text"
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                list={`models-${label.replace(/\s+/g, '-')}`}
-                placeholder={defaultModel}
-                className="w-full bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none"
-            />
-            <datalist id={`models-${label.replace(/\s+/g, '-')}`}>
-                {models.map(m => (
-                    <option key={m.id} value={m.id} />
-                ))}
-            </datalist>
-            {!value && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none">Default: {defaultModel.split('/')[1] || defaultModel}</span>}
+// --- Subcomponents ---
+
+const ModelSelector: React.FC<{ label: string; desc: string; value: string; onChange: (v: string) => void; models: any[]; defaultModel: string }> = ({ label, desc, value, onChange, models, defaultModel }) => {
+    const { t } = useTranslation(['settings']);
+    return (
+        <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <label className="block text-sm font-bold text-gray-900 dark:text-white mb-1">{label}</label>
+            <p className="text-xs text-gray-500 mb-3">{desc}</p>
+            <div className="relative">
+                <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    list={`models-${label.replace(/\s+/g, '-')}`}
+                    placeholder={defaultModel}
+                    className="w-full bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+                <datalist id={`models-${label.replace(/\s+/g, '-')}`}>
+                    {models.map(m => (
+                        <option key={m.id} value={m.id} />
+                    ))}
+                </datalist>
+                {!value && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none">{t('settings:models.default')} {defaultModel.split('/')[1] || defaultModel}</span>}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 // --- Subcomponents ---
 
@@ -77,26 +82,29 @@ const InputGroup: React.FC<{ label: string; desc?: string; value: string; onChan
     </div>
 );
 
-const ToggleRow: React.FC<{ label: string; desc: string; active: boolean; onToggle: () => void }> = ({ label, desc, active, onToggle }) => (
-    <button
-        onClick={onToggle}
-        className={`flex items-start justify-between p-4 rounded-xl border transition-all text-left ${active
-            ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'
-            : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 opacity-75 grayscale'
-            }`}
-    >
-        <div>
-            <div className="flex items-center gap-2">
-                <span className={`text-sm font-bold ${active ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{label}</span>
-                {active && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold">ON</span>}
+const ToggleRow: React.FC<{ label: string; desc: string; active: boolean; onToggle: () => void }> = ({ label, desc, active, onToggle }) => {
+    const { t } = useTranslation(['settings']);
+    return (
+        <button
+            onClick={onToggle}
+            className={`flex items-start justify-between p-4 rounded-xl border transition-all text-left ${active
+                ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'
+                : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 opacity-75 grayscale'
+                }`}
+        >
+            <div>
+                <div className="flex items-center gap-2">
+                    <span className={`text-sm font-bold ${active ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{label}</span>
+                    {active && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold">{t('settings:models.active')}</span>}
+                </div>
+                <p className="text-xs text-gray-500 mt-1 max-w-[200px] sm:max-w-xs">{desc}</p>
             </div>
-            <p className="text-xs text-gray-500 mt-1 max-w-[200px] sm:max-w-xs">{desc}</p>
-        </div>
-        <div className={`w-11 h-6 rounded-full flex items-center transition-colors p-1 mt-1 ${active ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
-            <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${active ? 'translate-x-5' : ''}`} />
-        </div>
-    </button>
-);
+            <div className={`w-11 h-6 rounded-full flex items-center transition-colors p-1 mt-1 ${active ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${active ? 'translate-x-5' : ''}`} />
+            </div>
+        </button>
+    );
+};
 
 const PromptEditor: React.FC<{ label: string; value: string; onChange: (v: string) => void }> = ({ label, value, onChange }) => (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
@@ -121,45 +129,48 @@ const SourceCard: React.FC<{
     specificDomains: string[];
     onSpecificDomainsChange: (domains: string[]) => void;
     placeholder: string;
-}> = ({ label, desc, active, onToggle, specificDomains, onSpecificDomainsChange, placeholder }) => (
-    <div className={`rounded-xl border transition-all ${active
-        ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'
-        : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 opacity-75 grayscale'
-        }`}>
-        <button
-            onClick={onToggle}
-            className="w-full flex items-start justify-between p-4 text-left"
-        >
-            <div>
-                <div className="flex items-center gap-2">
-                    <span className={`text-sm font-bold ${active ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{label}</span>
-                    {active && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold">ON</span>}
+}> = ({ label, desc, active, onToggle, specificDomains, onSpecificDomainsChange, placeholder }) => {
+    const { t } = useTranslation(['settings']);
+    return (
+        <div className={`rounded-xl border transition-all ${active
+            ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'
+            : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 opacity-75 grayscale'
+            }`}>
+            <button
+                onClick={onToggle}
+                className="w-full flex items-start justify-between p-4 text-left"
+            >
+                <div>
+                    <div className="flex items-center gap-2">
+                        <span className={`text-sm font-bold ${active ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>{label}</span>
+                        {active && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold">{t('settings:models.active')}</span>}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 max-w-[200px] sm:max-w-xs">{desc}</p>
                 </div>
-                <p className="text-xs text-gray-500 mt-1 max-w-[200px] sm:max-w-xs">{desc}</p>
-            </div>
-            <div className={`w-11 h-6 rounded-full flex items-center transition-colors p-1 mt-1 ${active ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
-                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${active ? 'translate-x-5' : ''}`} />
-            </div>
-        </button>
+                <div className={`w-11 h-6 rounded-full flex items-center transition-colors p-1 mt-1 ${active ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
+                    <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${active ? 'translate-x-5' : ''}`} />
+                </div>
+            </button>
 
-        {active && (
-            <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-200">
-                <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/30">
-                    <label className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 mb-1.5 block">
-                        Allow Only Specific Domains (Optional)
-                    </label>
-                    <textarea
-                        value={specificDomains.join(', ')}
-                        onChange={(e) => onSpecificDomainsChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                        placeholder={placeholder}
-                        className="w-full bg-white dark:bg-black border border-emerald-100 dark:border-emerald-900/50 rounded-lg p-2 text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none h-16 resize-none"
-                    />
-                    <p className="text-[10px] text-gray-400 mt-1">Leave empty to allow all {label} sources.</p>
+            {active && (
+                <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-200">
+                    <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/30">
+                        <label className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 mb-1.5 block">
+                            {t('settings:sources.specific_domains_label')}
+                        </label>
+                        <textarea
+                            value={specificDomains.join(', ')}
+                            onChange={(e) => onSpecificDomainsChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                            placeholder={placeholder}
+                            className="w-full bg-white dark:bg-black border border-emerald-100 dark:border-emerald-900/50 rounded-lg p-2 text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none h-16 resize-none"
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1">{t('settings:sources.specific_domains_help', { label })}</p>
+                    </div>
                 </div>
-            </div>
-        )}
-    </div>
-);
+            )}
+        </div>
+    );
+};
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onThemeChange, currentTheme }) => {
     if (!isOpen) return null;
@@ -402,39 +413,39 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                     </div>
                                 </Section>
 
-                                <Section title="Developer / SOTA Mode">
+                                <Section title={t('settings:sota.title')}>
                                     <div className="bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 space-y-4">
                                         <ToggleRow
-                                            label="SOTA Debug Info"
-                                            desc="Show routing strategies, token usage, and strict schema validation status in the UI."
+                                            label={t('settings:sota.debug_label')}
+                                            desc={t('settings:sota.debug_desc')}
                                             active={localConfig.useSota || false}
                                             onToggle={() => setLocalConfig(prev => ({ ...prev, useSota: !prev.useSota }))}
                                         />
                                         <div className="h-px bg-gray-200 dark:bg-gray-800" />
                                         <ToggleRow
-                                            label="Flash Planner (Speed)"
-                                            desc="Use Gem 2.0 Flash for planning (0.5s latency). Disable for higher quality logic (2s latency)."
+                                            label={t('settings:sota.flash_label')}
+                                            desc={t('settings:sota.flash_desc')}
                                             active={localConfig.useFlashPlanner ?? true}
                                             onToggle={() => setLocalConfig(prev => ({ ...prev, useFlashPlanner: !(prev.useFlashPlanner ?? true) }))}
                                         />
                                         <div className="h-px bg-gray-200 dark:bg-gray-800" />
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <div className="text-sm font-bold text-gray-900 dark:text-white">Routing Preference</div>
-                                                <div className="text-xs text-gray-500 mt-1">Optimize auto-routing for Speed or Cost.</div>
+                                                <div className="text-sm font-bold text-gray-900 dark:text-white">{t('settings:sota.routing_label')}</div>
+                                                <div className="text-xs text-gray-500 mt-1">{t('settings:sota.routing_desc')}</div>
                                             </div>
                                             <div className="flex bg-gray-200 dark:bg-gray-800 rounded-lg p-1">
                                                 <button
                                                     onClick={() => setLocalConfig(prev => ({ ...prev, routingPreference: 'performance' }))}
                                                     className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${localConfig.routingPreference === 'performance' ? 'bg-white dark:bg-gray-700 text-emerald-600 shadow-sm' : 'text-gray-500'}`}
                                                 >
-                                                    Performance
+                                                    {t('settings:sota.routing_perf')}
                                                 </button>
                                                 <button
                                                     onClick={() => setLocalConfig(prev => ({ ...prev, routingPreference: 'cost' }))}
                                                     className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${localConfig.routingPreference === 'cost' ? 'bg-white dark:bg-gray-700 text-emerald-600 shadow-sm' : 'text-gray-500'}`}
                                                 >
-                                                    Cost
+                                                    {t('settings:sota.routing_cost')}
                                                 </button>
                                             </div>
                                         </div>
@@ -467,24 +478,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
 
                                 <div className="space-y-4">
                                     <ModelSelector
-                                        label="Discovery Agent (Planner)"
-                                        desc="High-speed model for search strategy and recursive crawling. Recommended: Google Gemini 2.0 Flash."
+                                        label={t('settings:models.discovery_label')}
+                                        desc={t('settings:models.discovery_desc')}
                                         value={localConfig.planningModel}
                                         onChange={(val) => setLocalConfig(prev => ({ ...prev, planningModel: val }))}
                                         models={availableModels}
                                         defaultModel="openrouter/auto"
                                     />
                                     <ModelSelector
-                                        label="Extraction Agent (Parser)"
-                                        desc="Cost-effective model for parsing noisy HTML from NIX.ru/Amazon. Recommended: Gemini Flash or Claude Haiku."
+                                        label={t('settings:models.extraction_label')}
+                                        desc={t('settings:models.extraction_desc')}
                                         value={localConfig.extractionModel}
                                         onChange={(val) => setLocalConfig(prev => ({ ...prev, extractionModel: val }))}
                                         models={availableModels}
                                         defaultModel="openrouter/auto"
                                     />
                                     <ModelSelector
-                                        label="Synthesis Agent (Reasoner)"
-                                        desc="High-intelligence model for conflict resolution and final truth merging. Recommended: Claude 3.5 Sonnet or GPT-4o."
+                                        label={t('settings:models.synthesis_label')}
+                                        desc={t('settings:models.synthesis_desc')}
                                         value={localConfig.reasoningModel}
                                         onChange={(val) => setLocalConfig(prev => ({ ...prev, reasoningModel: val, model: { id: val, name: val } }))} // Sync main model with reasoning for now
                                         models={availableModels}
@@ -495,9 +506,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                 <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-xl flex gap-3">
                                     <Zap className="w-5 h-5 text-blue-600 flex-shrink-0" />
                                     <div>
-                                        <p className="text-sm font-bold text-blue-900 dark:text-blue-100">Pro Tip (2026 SOTA)</p>
+                                        <p className="text-sm font-bold text-blue-900 dark:text-blue-100">{t('settings:sota.protip_title')}</p>
                                         <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                                            For best results, use <b>openrouter/auto</b> to let the system automatically route to the best available model (Gemini 2.0 Flash, Claude 3.5, etc) based on your budget preference.
+                                            <span dangerouslySetInnerHTML={{ __html: t('settings:sota.protip_desc').replace('**openrouter/auto**', '<b>openrouter/auto</b>') }} />
                                         </p>
                                     </div>
                                 </div>
@@ -532,19 +543,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                         {activeTab === 'modes' && (
                             <div className="space-y-6 max-w-3xl animate-in slide-in-from-right-4 duration-300">
 
-                                <Section title="Vertical Search Engine (Graph-Lite)">
+                                <Section title={t('settings:sources.vertical_search_title')}>
                                     <div className="bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800 rounded-xl p-4">
                                         <div className="flex flex-col gap-4">
                                             <ToggleRow
-                                                label="Prefer Graph-Lite"
-                                                desc="Trust local Graph DB (aliases, compatibility) over live web search. Faster & more deterministic."
+                                                label={t('settings:sources.prefer_graph_label')}
+                                                desc={t('settings:sources.prefer_graph_desc')}
                                                 active={localConfig.preferGraph ?? true}
                                                 onToggle={() => setLocalConfig(prev => ({ ...prev, preferGraph: !(prev.preferGraph ?? true) }))}
                                             />
                                             <div className="h-px bg-gray-200 dark:bg-gray-800" />
                                             <ToggleRow
-                                                label="Offline Mode"
-                                                desc="Disable all live web searches. Only use data from Graph-Lite and ingested Catalogs."
+                                                label={t('settings:sources.offline_mode_label')}
+                                                desc={t('settings:sources.offline_mode_desc')}
                                                 active={localConfig.offlineMode ?? false}
                                                 onToggle={() => setLocalConfig(prev => ({ ...prev, offlineMode: !(prev.offlineMode ?? false) }))}
                                             />
