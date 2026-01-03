@@ -14,12 +14,15 @@
         "quality_matched": "Match Quality",
         "discard": "Discard Changes",
         "approve": "Approve PIM Record",
+        "approved": "Approved",
         "model_placeholder": "UNDEFINED"
     },
     "alerts": {
         "structural": "Structural Alert",
         "validation_failed": "Validation Failed"
     },
+    "conflicts": "Conflicts",
+    "conflicts_desc": "Some fields have conflicting data from different sources. Review the highlighted fields above.",
     "identity": {
         "title": "Identity Extraction",
         "brand": "Brand (Authority)",
@@ -47,6 +50,11 @@
         "nix_verified": "NIX Verified",
         "region_hint": "(RU Region)"
     },
+    "compliance": {
+        "title": "Compliance & Regulation",
+        "tn_ved": "TN VED Code",
+        "marking": "Mandatory Marking"
+    },
     "market": {
         "eligibility": "Market Eligibility",
         "agents_validated": "AGENTS VALIDATED",
@@ -69,7 +77,9 @@
         "depth": "Depth",
         "nix_verified": "NIX.ru Authority Verified",
         "missing": "Data Missing: Request Scan",
-        "reliability": "RELIABILITY"
+        "reliability": "RELIABILITY",
+        "unit_g": "g",
+        "unit_mm": "mm"
     },
     "evidence": {
         "metrics_title": "Quality Metrics Panel",

@@ -98,7 +98,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                         : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20 active:scale-95'
                         }`}
                 >
-                    <Check className="w-4 h-4" /> {(item.status as any) === 'published' ? t('header.approved', 'Approved') : t('header.approve')}
+                    <Check className="w-4 h-4" /> {(item.status as any) === 'published' ? t('header.approved') : t('header.approve')}
                 </button>
             </div>
 
@@ -140,7 +140,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                         />
                         <EvidenceRow
                             label={t('specs.type')}
-                            value={data.consumable_type ? data.consumable_type.replace('_', ' ') : t('common:general.n_a')}
+                            value={data.consumable_type ? t(`specs.types.${data.consumable_type}`, data.consumable_type.replace('_', ' ')) : t('common:general.n_a')}
                             fieldEnv={evidence['consumable_type']}
                             fieldKey="consumable_type"
                         />
@@ -160,7 +160,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                         )}
                         <EvidenceRow
                             label={t('specs.yield')}
-                            value={data.yield && data.yield.value ? `${data.yield.value} ${data.yield.unit || ''}`.trim() : t('common:general.n_a')}
+                            value={data.yield && data.yield.value ? `${data.yield.value} ${data.yield.unit ? t(`identity.yield_units.${data.yield.unit.toLowerCase()}`, data.yield.unit) : ''}`.trim() : t('common:general.n_a')}
                             fieldEnv={evidence['yield.value']} // Updated Key
                             fieldKey="yield.value"
                         />
@@ -216,12 +216,12 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                     <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-5 border border-indigo-100 dark:border-indigo-800/50">
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                             <span className="w-1 h-4 bg-indigo-500 rounded-full"></span>
-                            {t('marketing.title', 'Marketing Strategy')}
+                            {t('marketing.title')}
                         </h3>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('marketing.seo_title', 'SEO Title')}</label>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('marketing.seo_title')}</label>
                                 <div className="text-sm font-medium text-gray-900 dark:text-gray-100 border-b border-indigo-200 dark:border-indigo-800 pb-2">
                                     {data.marketing.seo_title || '-'}
                                 </div>
@@ -229,14 +229,14 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
 
                             {data.marketing.description && (
                                 <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('marketing.desc', 'Description')}</label>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('marketing.desc')}</label>
                                     <div className="text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none mt-1" dangerouslySetInnerHTML={{ __html: data.marketing.description }} />
                                 </div>
                             )}
 
                             {data.marketing.feature_bullets && data.marketing.feature_bullets.length > 0 && (
                                 <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('marketing.bullets', 'Key Features')}</label>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('marketing.bullets')}</label>
                                     <ul className="list-disc pl-4 mt-1 space-y-1">
                                         {data.marketing.feature_bullets.map((bullet, i) => (
                                             <li key={i} className="text-xs text-gray-700 dark:text-gray-300">{bullet}</li>
@@ -344,13 +344,13 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                     <div className="grid grid-cols-1 gap-3">
                         <EvidenceRow
                             label={t('logistics.weight')}
-                            value={data.logistics?.package_weight_g ? `${data.logistics.package_weight_g} g` : (data.weight_g ? `${data.weight_g} g` : t('common:general.n_a'))}
+                            value={data.logistics?.package_weight_g ? `${data.logistics.package_weight_g} ${t('logistics.unit_g')}` : (data.weight_g ? `${data.weight_g} ${t('logistics.unit_g')}` : t('common:general.n_a'))}
                             fieldEnv={evidence['logistics.package_weight_g'] || evidence['weight_g']}
                             fieldKey="logistics.package_weight_g"
                         />
                         <EvidenceRow
                             label={t('logistics.dims')}
-                            value={data.logistics?.width_mm ? `${data.logistics.width_mm}x${data.logistics.height_mm}x${data.logistics.depth_mm} mm` : t('common:general.n_a')}
+                            value={data.logistics?.width_mm ? `${data.logistics.width_mm}x${data.logistics.height_mm}x${data.logistics.depth_mm} ${t('logistics.unit_mm')}` : t('common:general.n_a')}
                             fieldEnv={evidence['logistics.width_mm']}
                             fieldKey="logistics.width_mm"
                         />
@@ -368,17 +368,17 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                     <div>
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                             <span className="w-1 h-4 bg-red-500 rounded-full"></span>
-                            {t('compliance.title', 'Compliance & Regulation')}
+                            {t('compliance.title')}
                         </h3>
                         <div className="grid grid-cols-1 gap-3">
                             <EvidenceRow
-                                label={t('compliance.tn_ved', 'TN VED Code')}
+                                label={t('compliance.tn_ved')}
                                 value={data.compliance_ru?.tn_ved_code || t('common:general.n_a')}
                                 fieldEnv={evidence['compliance_ru.tn_ved_code']}
                                 fieldKey="compliance_ru.tn_ved_code"
                             />
                             <EvidenceRow
-                                label={t('compliance.marking', 'Mandatory Marking')}
+                                label={t('compliance.marking')}
                                 value={formatBool(data.compliance_ru?.mandatory_marking)}
                                 fieldEnv={evidence['compliance_ru.mandatory_marking']}
                                 fieldKey="compliance_ru.mandatory_marking"
@@ -394,7 +394,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                         <div>
                             <h4 className="font-semibold text-amber-900 dark:text-amber-100">{t('conflicts')}</h4>
                             <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                                {t('conflicts_desc', 'Some fields have conflicting data from different sources. Review the highlighted fields above.')}
+                                {t('conflicts_desc')}
                             </p>
                         </div>
                     </div>
