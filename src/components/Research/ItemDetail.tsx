@@ -354,7 +354,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                         <div>
                             <h4 className="font-semibold text-amber-900 dark:text-amber-100">{t('conflicts')}</h4>
                             <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                                Some fields have conflicting data from different sources. Review the highlighted fields above.
+                                {t('conflicts_desc', 'Some fields have conflicting data from different sources. Review the highlighted fields above.')}
                             </p>
                         </div>
                     </div>

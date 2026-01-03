@@ -66,5 +66,25 @@
     "interface": {
         "welcome_title": "What do you want to verify?",
         "welcome_subtitle": "Ask anything about specs, availability, or compatibility."
-    }
+    },
+    "modes": {
+        "fast": {
+            "label": "⚡ Fast",
+            "desc": "Quick specs check"
+        },
+        "balanced": {
+            "label": "⚖️ Balanced",
+            "desc": "Scrape & Verify"
+        },
+        "deep": {
+            "label": "🧠 Deep",
+            "desc": "Exhaustive (Slow)"
+        }
+    },
+    "errors": {
+        "resolution_failed": "Failed to resolve conflict."
+    },
+    "conflicts": "Data Conflicts",
+    "conflicts_desc": "Some fields have conflicting data from different sources. Review the highlighted fields above.",
+    "related_products": "Related Products"
 }

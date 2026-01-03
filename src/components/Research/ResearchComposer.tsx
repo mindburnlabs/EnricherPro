@@ -62,9 +62,9 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
     };
 
     const modes = [
-        { id: 'fast', label: '⚡ Fast', desc: 'Quick specs check' },
-        { id: 'balanced', label: '⚖️ Balanced', desc: 'Scrape & Verify' },
-        { id: 'deep', label: '🧠 Deep', desc: 'Exhaustive (Slow)' }
+        { id: 'fast', label: t('modes.fast.label', '⚡ Fast'), desc: t('modes.fast.desc', 'Quick specs check') },
+        { id: 'balanced', label: t('modes.balanced.label', '⚖️ Balanced'), desc: t('modes.balanced.desc', 'Scrape & Verify') },
+        { id: 'deep', label: t('modes.deep.label', '🧠 Deep'), desc: t('modes.deep.desc', 'Exhaustive (Slow)') }
     ];
 
     return (
@@ -112,7 +112,7 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
                                         {mode === 'balanced' && '⚖️'}
                                         {mode === 'deep' && '🧠'}
                                     </span>
-                                    <span className="hidden sm:inline">{modes.find(m => m.id === mode)?.label.split(' ')[1]}</span>
+                                    <span className="hidden sm:inline">{modes.find(m => m.id === mode)?.label}</span>
                                 </button>
 
                                 {/* Dropdown Menu - Positioned Absolute/Z-Index High */}
@@ -143,7 +143,7 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({ onSubmit, is
                                                         <div className="flex flex-col">
                                                             <div className="flex items-center justify-between w-full">
                                                                 <span className={`text-sm font-semibold ${mode === m.id ? 'text-emerald-900 dark:text-emerald-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                                                                    {m.label.split(' ').slice(1).join(' ')}
+                                                                    {m.label.substring(m.label.indexOf(' ') + 1)}
                                                                 </span>
                                                                 {mode === m.id && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5" />}
                                                             </div>

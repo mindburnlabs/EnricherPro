@@ -116,7 +116,7 @@ export const ConflictResolver: React.FC<ConflictResolverProps> = ({ current, can
                         onClick={onCancel}
                         className="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg font-medium"
                     >
-                        {t('common:cancel', 'Cancel')}
+                        {t('actions.cancel', 'Cancel')}
                     </button>
                     <button
                         disabled={!selectedAction}

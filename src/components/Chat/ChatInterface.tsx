@@ -188,7 +188,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
             }
         } catch (e) {
             console.error("Conflict resolution failed", e);
-            alert(t('errors.conflict_resolution_failed', "Failed to resolve conflict."));
+            alert(t('errors.resolution_failed', "Failed to resolve conflict."));
         } finally {
             setConflictState(null);
         }
