@@ -191,7 +191,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                 </div>
 
                 {/* Compatibility (Promoted) */}
-                {data.compatible_printers_ru && data.compatible_printers_ru.length > 0 && (
+                {data.compatible_printers_ru && Array.isArray(data.compatible_printers_ru) && data.compatible_printers_ru.length > 0 && (
                     <div id="compatibility">
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                             <span className="w-1 h-4 bg-blue-500 rounded-full"></span>

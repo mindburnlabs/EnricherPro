@@ -29,7 +29,7 @@ export const CompletenessMeter: React.FC<CompletenessMeterProps> = ({ data, comp
                 total: 0,
                 missing: [] as string[],
                 fields: [
-                    { key: 'compatible_printers_ru', weight: 20, required: true, check: (d: ConsumableData) => d.compatible_printers_ru && d.compatible_printers_ru.length > 0 }
+                    { key: 'compatible_printers_ru', weight: 20, required: true, check: (d: ConsumableData) => d.compatible_printers_ru && Array.isArray(d.compatible_printers_ru) && d.compatible_printers_ru.length > 0 }
                 ]
             },
             logistics: {
