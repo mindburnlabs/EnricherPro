@@ -9,10 +9,10 @@ import { ModelProfile } from './model_selectors.js';
 export const MODEL_CONFIGS = {
   "fast_cheap": {
     "candidates": [
+      "qwen/qwen3-coder:free",
       "google/gemini-2.5-flash-lite-preview-09-2025",
       "anthropic/claude-haiku-4.5",
       "openai/gpt-4o-mini",
-      "qwen/qwen3-coder:free",
       "openrouter/auto"
     ],
     "description": "High speed, low cost parsing/normalization."

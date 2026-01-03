@@ -194,6 +194,38 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
         }
     };
 
+    const handleUpdateItem = async (id: string, field: string, value: any, source: string) => {
+        console.log(`Manual Override: ${id} [${field}] = ${value} (via ${source})`);
+
+        // Optimistic Update in UI
+        if (selectedResearchItem && selectedResearchItem.id === id) {
+            const newData = { ...selectedResearchItem.data };
+            // Handle nested fields
+            const parts = field.split('.');
+            let current = newData as any;
+            for (let i = 0; i < parts.length - 1; i++) {
+                if (!current[parts[i]]) current[parts[i]] = {};
+                current = current[parts[i]];
+            }
+            current[parts[parts.length - 1]] = value;
+
+            // Add Evidence Stub
+            if (!newData._evidence) newData._evidence = {};
+            newData._evidence[field] = {
+                value: value,
+                source_url: `manual:${source}`,
+                confidence: 1.0,
+                last_checked: new Date().toISOString(),
+                method: 'manual',
+                is_conflict: false
+            };
+
+            setSelectedResearchItem({ ...selectedResearchItem, data: newData });
+        }
+
+        // TODO: Call API to persist override
+        // await api.updateItem(id, { [field]: value, _evidence: ... });
+    };
 
     const handleRefresh = async (originalQuery: string, mode: 'fast' | 'balanced' | 'deep') => {
         // Trigger research with FORCE REFRESH
@@ -311,6 +343,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
                         open={true}
                         onClose={() => setSelectedResearchItem(null)}
                         onApprove={handleApprove}
+                        onUpdate={handleUpdateItem}
                     />
                 )}
             </div>

@@ -6,7 +6,7 @@ import type { ModelSelector } from '../src/config/model_selectors.ts';
 type ORModel = {
     id: string;
     context_length?: number;
-    pricing?: { prompt?: string; completion?: string; input?: string; output?: string };
+    pricing?: { prompt?: string; completion?: string; input?: string; output?: string; request?: string; image?: string };
 };
 
 function toNum(x: unknown): number | null {
@@ -18,6 +18,21 @@ function toNum(x: unknown): number | null {
     return null;
 }
 
+function isFreeModel(m: ORModel): boolean {
+    if (m.id.endsWith(':free')) return true;
+
+    const pricing = m.pricing ?? {};
+    const vals = [
+        pricing.prompt ?? pricing.input,
+        pricing.completion ?? pricing.output,
+        pricing.request,
+        pricing.image
+    ].map(toNum).filter(v => v !== null) as number[];
+
+    // If pricing is present and all provided components are zero, treat as free.
+    return vals.length > 0 && vals.every(v => v === 0);
+}
+
 function scoreModel(m: ORModel, strategy: string): number {
     const ctx = m.context_length ?? 0;
     const pIn = toNum((m.pricing as any)?.prompt ?? (m.pricing as any)?.input) ?? Number.POSITIVE_INFINITY;
@@ -26,25 +41,42 @@ function scoreModel(m: ORModel, strategy: string): number {
     if (strategy === 'largest_context') return ctx;
     if (strategy === 'cheapest_input') return -pIn;
     if (strategy === 'cheapest_total') return -(pIn + pOut);
-    return 0;
+    return 0; // "latest" handled via id sort
 }
 
-function pickMatches(models: ORModel[], sel: Extract<ModelSelector, { kind: 'pattern' }>): ORModel[] {
-    const re = new RegExp(sel.regex);
-    const matches = models.filter(m => re.test(m.id));
-
-    if (sel.strategy === 'latest') {
-        matches.sort((a, b) => (a.id < b.id ? 1 : -1));
+function sortMatches(matches: ORModel[], strategy: string): ORModel[] {
+    const out = [...matches];
+    if (strategy === 'latest') {
+        out.sort((a, b) => (a.id < b.id ? 1 : -1));
     } else {
-        matches.sort((a, b) => scoreModel(b, sel.strategy) - scoreModel(a, sel.strategy));
+        out.sort((a, b) => scoreModel(b, strategy) - scoreModel(a, strategy));
     }
+    return out;
+}
 
-    return matches.slice(0, sel.limit ?? 1);
+function pickMatchesFreeFirst(
+    models: ORModel[],
+    regex: RegExp,
+    strategy: 'latest' | 'cheapest_input' | 'cheapest_total' | 'largest_context',
+    limit: number
+): ORModel[] {
+    const matches = models.filter(m => regex.test(m.id));
+
+    const free = sortMatches(matches.filter(isFreeModel), strategy);
+    const paid = sortMatches(matches.filter(m => !isFreeModel(m)), strategy);
+
+    const preferFree = process.env.PREFER_FREE !== '0'; // default on
+    const freeOnly = process.env.FREE_ONLY === '1';
+
+    const ordered = preferFree ? [...free, ...paid] : [...paid, ...free];
+    return (freeOnly ? free : ordered).slice(0, limit);
 }
 
 async function fetchJson(url: string, apiKey?: string) {
     const headers: Record<string, string> = {};
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+    headers['HTTP-Referer'] = 'https://enricher.pro'; // Good practice for OR
+    headers['X-Title'] = 'EnricherPro Config Gen';
 
     const res = await fetch(url, { headers });
     if (!res.ok) throw new Error(`Fetch failed ${res.status} ${res.statusText} for ${url}`);
@@ -62,27 +94,49 @@ async function main() {
 
     for (const profile of Object.values(ModelProfile)) {
         const cfg = MODEL_SELECTOR_CONFIGS[profile];
-        const candidates: string[] = [];
+
+        const selectedModels: ORModel[] = [];
+        const autoCandidates: string[] = [];
 
         for (const s of cfg.selectors) {
             if (s.kind === 'auto') {
-                candidates.push(s.id);
+                autoCandidates.push(s.id);
                 continue;
             }
 
             if (s.kind === 'exact') {
-                if (models.some(m => m.id === s.id)) candidates.push(s.id);
+                const m = models.find(m => m.id === s.id);
+                if (m) selectedModels.push(m);
                 continue;
             }
 
             if (s.kind === 'pattern') {
-                const picked = pickMatches(models, s);
-                for (const m of picked) candidates.push(m.id);
+                const picked = pickMatchesFreeFirst(
+                    models,
+                    new RegExp(s.regex),
+                    s.strategy,
+                    s.limit ?? 1
+                );
+                selectedModels.push(...picked);
                 continue;
             }
         }
 
-        out[profile] = { candidates: [...new Set(candidates)], description: cfg.description };
+        // Deduplicate by ID
+        const uniqueModels = Array.from(new Set(selectedModels.map(m => m.id)))
+            .map(id => selectedModels.find(m => m.id === id)!);
+
+        // Global Sort: Free -> Paid
+        const free = uniqueModels.filter(isFreeModel);
+        const paid = uniqueModels.filter(m => !isFreeModel(m));
+
+        const orderedCandidates = [
+            ...free.map(m => m.id),
+            ...paid.map(m => m.id),
+            ...new Set(autoCandidates) // OpenRouter/auto always last
+        ];
+
+        out[profile] = { candidates: orderedCandidates, description: cfg.description };
     }
 
     const file = `/* eslint-disable */

@@ -52,9 +52,13 @@
         "merge": "Merge",
         "cancel": "Cancel",
         "save": "Save",
-        "na": "N/A",
         "search": "Search",
-        "clear": "Clear"
+        "clear": "Clear",
+        "override": "Override",
+        "override_title": "Manual Override",
+        "fetch": "Fetch Data",
+        "enter_value": "Enter correct value...",
+        "source_placeholder": "e.g. Verified manually, Manufacturer site..."
     },
     "progress": {
         "thinking": "Thinking...",

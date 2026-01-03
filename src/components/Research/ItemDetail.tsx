@@ -5,13 +5,16 @@ import { EnrichedItem, FieldEvidence } from '../../types/domain.js';
 import { CitationDrawer } from './CitationDrawer.js';
 import { EvidenceTooltip } from './EvidenceTooltip.js';
 import { CompletenessMeter } from './CompletenessMeter.js';
+import { ManualEntryDialog } from './ManualEntryDialog.js';
 import { ConflictResolver } from './ConflictResolver.js';
+import { PenTool, RefreshCw } from 'lucide-react';
 
 interface ItemDetailProps {
     item: EnrichedItem | null;
     open: boolean;
     onClose: () => void;
     onApprove: (id: string) => void;
+    onUpdate?: (id: string, field: string, value: any, source: string) => void;
 }
 
 import { useTranslation } from 'react-i18next';
@@ -40,9 +43,10 @@ const TrustBadge = ({ evidence }: { evidence?: FieldEvidence<any> }) => {
     return <span className="flex items-center gap-1 text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded"><Globe className="w-3 h-3" /> {t('trust.web')}</span>;
 };
 
-export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onApprove }) => {
+export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onApprove, onUpdate }) => {
     const { t } = useTranslation(['detail', 'common']);
     const [citationField, setCitationField] = useState<string | null>(null);
+    const [manualEntryField, setManualEntryField] = useState<{ key: string, label: string, current: any } | null>(null);
 
     if (!open || !item) return null;
 
@@ -53,21 +57,42 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
         setCitationField(field);
     };
 
+    const handleManualOverride = (e: React.MouseEvent, key: string, label: string, current: any) => {
+        e.stopPropagation();
+        setManualEntryField({ key, label, current });
+    };
+
     // Helper to render a row
-    const EvidenceRow = ({ label, value, fieldEnv, fieldKey }: { label: string, value: any, fieldEnv: any, fieldKey: string }) => (
-        <div
-            onClick={() => openCitations(fieldKey)}
-            className={`flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border cursor-pointer transition-colors group ${fieldEnv?.is_conflict ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-500'}`}
-        >
-            <span className="text-sm font-medium text-gray-500 capitalize">{label}</span>
-            <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-                <TrustBadge evidence={fieldEnv} />
-                <span className="text-sm text-gray-900 dark:text-gray-100 font-medium whitespace-pre-wrap text-right flex-1 break-words">
-                    {typeof value === 'object' ? JSON.stringify(value) : String(value || t('common:general.n_a'))}
-                </span>
+    const EvidenceRow = ({ label, value, fieldEnv, fieldKey }: { label: string, value: any, fieldEnv: any, fieldKey: string }) => {
+        const isNA = value === null || value === undefined || value === '' || value === t('common:general.n_a') || (typeof value === 'object' && Object.keys(value).length === 0);
+
+        return (
+            <div
+                onClick={() => !isNA && openCitations(fieldKey)}
+                className={`flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border transition-colors group ${fieldEnv?.is_conflict ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-500'} ${!isNA ? 'cursor-pointer' : ''}`}
+            >
+                <span className="text-sm font-medium text-gray-500 capitalize">{label}</span>
+                <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
+                    <TrustBadge evidence={fieldEnv} />
+                    <span className={`text-sm font-medium whitespace-pre-wrap text-right flex-1 break-words ${isNA ? 'text-gray-400 italic' : 'text-gray-900 dark:text-gray-100'}`}>
+                        {typeof value === 'object' ? JSON.stringify(value) : String(value || t('common:general.n_a'))}
+                    </span>
+
+                    {/* Actionable N/A State */}
+                    {isNA && onUpdate && (
+                        <button
+                            onClick={(e) => handleManualOverride(e, fieldKey, label, value)}
+                            className="ml-2 p-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded flex items-center gap-1 transition-colors"
+                            title={t('common:actions.override_title', 'Manual Override')}
+                        >
+                            <PenTool className="w-3 h-3" />
+                            {t('common:actions.override', 'Override')}
+                        </button>
+                    )}
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     const formatBool = (val?: boolean | null) => val === true ? t('common:general.yes') : val === false ? t('common:general.no') : t('common:general.unknown');
 
@@ -419,6 +444,19 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                 onClose={() => setCitationField(null)}
                 fieldLabel={citationField || ''}
                 evidence={citationField ? evidence[citationField] : []}
+            />
+
+            <ManualEntryDialog
+                isOpen={!!manualEntryField}
+                onClose={() => setManualEntryField(null)}
+                onSave={(val, src) => {
+                    if (manualEntryField && onUpdate && item) {
+                        onUpdate(item.id, manualEntryField.key, val, src);
+                    }
+                }}
+                fieldLabel={manualEntryField?.label || ''}
+                fieldKey={manualEntryField?.key || ''}
+                currentValue={manualEntryField?.current}
             />
         </div>
     );
