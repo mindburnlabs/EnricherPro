@@ -19,7 +19,7 @@ export class IngestionAgent {
      * Parses a raw HTML/Markdown of a Catalog Page (List of items) into structured items.
      * Use Tier A (Fast/Cheap) model.
      */
-    static async parseCatalog(datasetRaw: string, sourceDomain: string): Promise<CatalogItem[]> {
+    static async parseCatalog(datasetRaw: string, sourceDomain: string, apiKeys?: Record<string, string>): Promise<CatalogItem[]> {
         const systemPrompt = `You are a Catalog Ingestion Engine.
         Your goal is to extract a list of products from a retailer category page.
         
@@ -58,7 +58,8 @@ export class IngestionAgent {
                         required: ["title", "url"]
                     }
                 },
-                routingStrategy: RoutingStrategy.CHEAP
+                routingStrategy: RoutingStrategy.CHEAP,
+                apiKeys: apiKeys
             });
 
             return safeJsonParse(response || "[]");

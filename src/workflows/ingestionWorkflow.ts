@@ -30,11 +30,26 @@ export async function runIngestionLoop() {
             console.log(`Processing ${page.url}...`);
 
             // 2. Scrape
-            const result = await BackendFirecrawlService.scrape(page.url, { formats: ['markdown'] });
+            const firecrawlKey = process.env.FIRECRAWL_API_KEY;
+            const openRouterKey = process.env.OPENROUTER_API_KEY;
+
+            if (!firecrawlKey || !openRouterKey) {
+                console.warn("Skipping ingestion: Missing API Keys in environment.");
+                continue;
+            }
+
+            const result = await BackendFirecrawlService.scrape(page.url, {
+                formats: ['markdown'],
+                apiKey: firecrawlKey
+            });
 
             if (result.markdown) {
                 // 3. Extract
-                const items = await IngestionAgent.parseCatalog(result.markdown, page.domain);
+                const items = await IngestionAgent.parseCatalog(
+                    result.markdown,
+                    page.domain,
+                    { openrouter: openRouterKey }
+                );
                 console.log(`Extracted ${items.length} items.`);
 
                 // 4. Ingest
