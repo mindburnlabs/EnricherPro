@@ -953,7 +953,9 @@ export const researchWorkflow = inngest.createFunction(
                     plan.canonical_name,
                     apiKeys,
                     (msg) => agent.log('logistics', msg),
-                    logisticsPrompt
+                    logisticsPrompt,
+                    undefined, // modelOverride
+                    language   // Pass language context
                 );
                 if (logistics.url) {
                     allResults.push({

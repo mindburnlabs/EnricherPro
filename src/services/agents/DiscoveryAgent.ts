@@ -488,7 +488,9 @@ export class DiscoveryAgent {
         Analyze the "Snippet" of the top results. 
         - If we found a High-Authority Domain (nix.ru, dns-shop.ru, hp.com, canon.com) but only have the URL, we MUST "enrich" it to get exact specs.
         - If we have "fuzzy" matches, we need specific queries for the MPN.
-        - If we have everything (Weight, Dims, Compatibility, Image), we STOP.
+        - **Logistics Check**: If we lack "Weight" or "Dimensions", trigger a specific query (e.g. "${originalInput} weight specs").
+        - **FAQ Check**: If we lack "Common Problems" or "FAQ", trigger a specific Firecrawl Agent task (e.g. "Find common error codes for ${originalInput}").
+        - If we have everything (MPN, Weight, Dims, Compatibility, Image, FAQ), we STOP.
 
         Return JSON:
         {
@@ -510,8 +512,8 @@ export class DiscoveryAgent {
                 { "type": "query", "value": "Canon GPR-43 specs pdf" },
                 { 
                    "type": "firecrawl_agent", 
-                   "value": "Find specific compatibility list for Canon GPR-43 on official site",
-                   "meta": { "schema": { "type": "object", "properties": { "printers": { "type": "array", "items": { "type": "string" } } } } }
+                   "value": "Find known issues and error codes for Canon GPR-43",
+                   "meta": { "schema": { "type": "object", "properties": { "faq": { "type": "array", "items": { "type": "object", "properties": { "q": {"type":"string"}, "a": {"type":"string"} } } } } } }
                 }
             ]
         }

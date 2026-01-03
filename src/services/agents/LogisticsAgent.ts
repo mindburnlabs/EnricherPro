@@ -11,11 +11,20 @@ export class LogisticsAgent {
      * NIX.ru Specialized Scraper & Parser (No-API)
      * Scans NIX.ru for comprehensive data: Logistics, Specs, Compatibility.
      */
-    static async checkNixRu(canonicalName: string, apiKeys?: Record<string, string>, onLog?: (msg: string) => void, promptOverride?: string, modelOverride?: string): Promise<{ weight: string | null, dimensions: string | null, url: string | null, fullExtract?: any }> {
+    static async checkNixRu(
+        canonicalName: string,
+        apiKeys?: Record<string, string>,
+        onLog?: (msg: string) => void,
+        promptOverride?: string,
+        modelOverride?: string,
+        language: string = 'en'
+    ): Promise<{ weight: string | null, dimensions: string | null, url: string | null, fullExtract?: any }> {
         // Broad search to find the specific product page
+        // If RU, explicit Russian query
+        const suffix = language === 'ru' ? 'характеристики' : 'specs';
         const queries = [
-            `site:nix.ru ${canonicalName} описание`, // Description
-            `site:nix.ru ${canonicalName} характеристики` // Specs
+            `site:nix.ru ${canonicalName} ${suffix}`,
+            `site:nix.ru ${canonicalName} описание`
         ];
 
         try {
@@ -51,18 +60,40 @@ export class LogisticsAgent {
 
                 // Use Cheap LLM to parse NIX.ru's specific table format
                 // They often have "Характеристики" (Specs) and "Совместимость" (Compatibility) blocks
-                const systemPrompt = promptOverride || `You are a NIX.ru Data Extractor, expert in parsing Russian technical specs.
+
+                const systemPromptEn = `You are a NIX.ru Data Extractor, expert in parsing Russian technical specs.
                 Extract the following from the text:
                 1. "Вес брутто" (Gross Weight) -> normalized to kg.
                 2. "Размеры упаковки" (Dimensions) -> normalized to cm (W x D x H).
                 3. "Совместимость" (Compatibility) -> list of printer models.
                 4. "Ресурс" (Yield) -> pages.
+                
+                Return JSON with keys: logistics.weight, logistics.dimensions, compatibility, specs.yield.
                 `;
+
+                const systemPromptRu = `Вы - Эксперт по извлечению данных с NIX.ru.
+                Ваша задача - найти технические характеристики в тексте.
+                
+                ИЗВЛЕЧЬ:
+                1. "Вес брутто" (Gross Weight) -> перевести в кг (например "0.85 кг").
+                2. "Размеры упаковки" (Dimensions) -> перевести в см (например "30 x 10 x 10 см").
+                3. "Совместимость" -> массив моделей принтеров.
+                4. "Ресурс" -> количество страниц.
+
+                Вернуть JSON:
+                {
+                    "logistics": { "weight": "...", "dimensions": "..." },
+                    "compatibility": [...],
+                    "specs": { "yield": "..." }
+                }
+                `;
+
+                const systemPrompt = promptOverride || (language === 'ru' ? systemPromptRu : systemPromptEn);
 
                 // Resolve model
                 const { useSettingsStore } = await import('../../stores/settingsStore.js');
                 const storeModel = useSettingsStore.getState().extractionModel;
-                const targetModel = modelOverride || storeModel || 'openrouter/auto'; // Use override or store or default
+                const targetModel = modelOverride || storeModel || 'openrouter/auto';
 
                 const extract = await BackendLLMService.complete({
                     model: targetModel,
@@ -81,7 +112,7 @@ export class LogisticsAgent {
                     weight: parsed.logistics?.weight || null,
                     dimensions: parsed.logistics?.dimensions || null,
                     url: bestPage.url,
-                    fullExtract: parsed // Return everything found
+                    fullExtract: parsed
                 };
             }
         } catch (e) {
@@ -91,3 +122,4 @@ export class LogisticsAgent {
         return { weight: null, dimensions: null, url: null };
     }
 }
+

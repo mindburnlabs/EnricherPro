@@ -342,10 +342,50 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                         {t('logistics.title')}
                     </h3>
                     <div className="grid grid-cols-1 gap-3">
-                        <EvidenceRow label={t('logistics.weight')} value={data.packaging_from_nix?.weight_g ? `${data.packaging_from_nix.weight_g} g` : t('common:general.n_a')} fieldEnv={evidence['packaging_from_nix.weight_g']} fieldKey="packaging_from_nix.weight_g" />
-                        <EvidenceRow label={t('logistics.dims')} value={data.packaging_from_nix?.width_mm ? `${data.packaging_from_nix.width_mm}x${data.packaging_from_nix.height_mm}x${data.packaging_from_nix.depth_mm} mm` : t('common:general.n_a')} fieldEnv={evidence['packaging_from_nix.dimensions']} fieldKey="packaging_from_nix.dimensions" />
+                        <EvidenceRow
+                            label={t('logistics.weight')}
+                            value={data.logistics?.package_weight_g ? `${data.logistics.package_weight_g} g` : (data.weight_g ? `${data.weight_g} g` : t('common:general.n_a'))}
+                            fieldEnv={evidence['logistics.package_weight_g'] || evidence['weight_g']}
+                            fieldKey="logistics.package_weight_g"
+                        />
+                        <EvidenceRow
+                            label={t('logistics.dims')}
+                            value={data.logistics?.width_mm ? `${data.logistics.width_mm}x${data.logistics.height_mm}x${data.logistics.depth_mm} mm` : t('common:general.n_a')}
+                            fieldEnv={evidence['logistics.width_mm']}
+                            fieldKey="logistics.width_mm"
+                        />
+                        <EvidenceRow
+                            label={t('logistics.origin')}
+                            value={data.logistics?.origin_country || t('common:general.n_a')}
+                            fieldEnv={evidence['logistics.origin_country']}
+                            fieldKey="logistics.origin_country"
+                        />
                     </div>
                 </div>
+
+                {/* Compliance (RU) */}
+                {(data.compliance_ru || (data as any).compliance) && (
+                    <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                            <span className="w-1 h-4 bg-red-500 rounded-full"></span>
+                            {t('compliance.title', 'Compliance & Regulation')}
+                        </h3>
+                        <div className="grid grid-cols-1 gap-3">
+                            <EvidenceRow
+                                label={t('compliance.tn_ved', 'TN VED Code')}
+                                value={data.compliance_ru?.tn_ved_code || t('common:general.n_a')}
+                                fieldEnv={evidence['compliance_ru.tn_ved_code']}
+                                fieldKey="compliance_ru.tn_ved_code"
+                            />
+                            <EvidenceRow
+                                label={t('compliance.marking', 'Mandatory Marking')}
+                                value={formatBool(data.compliance_ru?.mandatory_marking)}
+                                fieldEnv={evidence['compliance_ru.mandatory_marking']}
+                                fieldKey="compliance_ru.mandatory_marking"
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* Conflicts Alert */}
                 {Object.values(evidence).some((e: any) => e.is_conflict) && (
