@@ -319,30 +319,55 @@ export class BackendLLMService {
         try {
             return await executeFetch(body);
         } catch (e: any) {
-            // SOTA Fallback: If 402 (Insufficient Credits), switch to FREE model and retry ONCE.
-            if (e.message?.includes("Auth/Credit")) {
-                console.warn("LLM Service: 402 Insufficient Credits. Switching to Dynamic FREE fallback.");
+            // SOTA Fallback: If 402 (Credits) OR 429 (Rate Limit), switch to NEXT free model.
+            if (e.message?.includes("Auth/Credit") || e.message?.includes("Rate Limit") || e.message?.includes("(429)")) {
+                const isRateLimit = e.message?.includes("Rate Limit") || e.message?.includes("(429)");
+                console.warn(`LLM Service: ${isRateLimit ? '429 Rate Limit' : '402 Insufficient Credits'}. Switching to next Dynamic FREE fallback.`);
 
-                // 1. Resolve Best Free Candidate from Config
                 // 1. Resolve Best Free Candidate from Config
                 const profileName = config.profile || 'fast_cheap';
                 // Typecast to avoid TS 'never' inference on read-only const
                 const candidates: readonly string[] = (MODEL_CONFIGS as any)[profileName]?.candidates || [];
 
-                // Find first free model in candidates (generator guarantees free models are first if found)
-                const freeModel = candidates.find((m: string) => m.endsWith(':free')) || 'openrouter/auto';
+                // Logic: Find current model in candidates, pick NEXT one that is free.
+                // If current model not in candidates (e.g. was default/auto), pick FIRST free.
+                let nextModel = '';
 
-                console.warn(`LLM Service: Falling back to ${freeModel}`);
+                // Current attempted model is in body.model, or targetModel
+                const currentModelId = body.model;
+                const currentIndex = candidates.indexOf(currentModelId);
 
-                // 1. Modify Body for Free Model
-                body.model = freeModel;
+                if (currentIndex >= 0) {
+                    // Start searching from next index
+                    const nextCandidate = candidates.slice(currentIndex + 1).find((m: string) => m.endsWith(':free'));
+                    if (nextCandidate) nextModel = nextCandidate;
+                }
 
-                // 2. Ensure Data Collection is Allow (Required for free models)
-                if (!body.provider) body.provider = {};
-                body.provider.data_collection = "allow";
+                // If no next model found (end of list, or current wasn't in list), try finding FIRST free (if we haven't tried it yet)
+                if (!nextModel) {
+                    const firstFree = candidates.find((m: string) => m.endsWith(':free'));
+                    // Only use if it's different/new
+                    if (firstFree && firstFree !== currentModelId) {
+                        nextModel = firstFree;
+                    }
+                }
 
-                // 3. Retry execution with new body
-                return await executeFetch(body);
+                // If still no model, and it was 429, we might want to try a hardcoded backup or just fail.
+                // For now, if we can't find a new model, we re-throw (letting standard retry/pause happen).
+                if (nextModel) {
+                    console.warn(`LLM Service: Switching attempt from ${currentModelId} to ${nextModel}`);
+                    body.model = nextModel;
+
+                    // Ensure Data Collection is Allow (Required for free models)
+                    if (!body.provider) body.provider = {};
+                    body.provider.data_collection = "allow";
+
+                    // Retry execution with new body
+                    return await executeFetch(body);
+                }
+
+                console.warn("LLM Service: No alternative free models found in profile. Propagating error.");
+                throw e;
             }
 
             // SOTA Fallback: If 400 Error AND we used json_schema, try again without it.
