@@ -28,7 +28,7 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
         } else {
-            const headers = ['ID', 'MPN', 'Brand', 'Model', 'Confidence', 'Status'];
+            const headers = t('results.csv_headers', 'ID, MPN, Brand, Model, Confidence, Status').split(', ');
             const rows = items.map(i => [
                 i.id,
                 i.data.mpn_identity.mpn,
@@ -95,7 +95,7 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                 </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                 {items.map(item => (
                     <div
                         key={item.id}
@@ -121,7 +121,7 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                                     )}
 
                                     {(item.data as any)._evidence?.is_graph_verified && (
-                                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-purple-50 dark:bg-purple-900/20 text-[10px] font-bold text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/30" title="Source: Local Knowledge Graph">
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-purple-50 dark:bg-purple-900/20 text-[10px] font-bold text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/30" title={t('results.graph_hit', 'Graph Hit')}>
                                             <Zap className="w-3 h-3" />
                                             {t('results.graph_hit', 'Graph Hit')}
                                         </div>
@@ -170,17 +170,17 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                             <div className="flex flex-wrap gap-2 mb-4">
                                 {/* Logistics Badge */}
                                 {(item.data.logistics?.package_weight_g || (item.data as any).weight_g) && (
-                                    <div className="px-2 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30 text-[10px] font-medium text-indigo-700 dark:text-indigo-300 flex items-center gap-1" title="Logistics Data Only">
+                                    <div className="px-2 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30 text-[10px] font-medium text-indigo-700 dark:text-indigo-300 flex items-center gap-1" title={t('results.logistics_badge', 'Logistics Data Only')}>
                                         <Box className="w-3 h-3" />
-                                        {(item.data.logistics?.package_weight_g || (item.data as any).weight_g)}g
+                                        {(item.data.logistics?.package_weight_g || (item.data as any).weight_g)}{t('results.logistics_unit_g', 'g')}
                                     </div>
                                 )}
 
                                 {/* FAQ Count Badge */}
                                 {((item.data as any).faq?.length > 0) && (
-                                    <div className="px-2 py-1 rounded-md bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/30 text-[10px] font-medium text-orange-700 dark:text-orange-300 flex items-center gap-1" title="FAQs Available">
+                                    <div className="px-2 py-1 rounded-md bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/30 text-[10px] font-medium text-orange-700 dark:text-orange-300 flex items-center gap-1" title={t('results.faq_badge', 'FAQs Available')}>
                                         <div className="w-3 h-3 flex items-center justify-center font-bold border border-orange-300 rounded-full text-[8px]">?</div>
-                                        {(item.data as any).faq.length} FAQs
+                                        {t('results.faqs_count', { count: (item.data as any).faq.length, defaultValue: '{{count}} FAQs' })}
                                     </div>
                                 )}
 
@@ -188,7 +188,7 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                                 {(item.data as any).compliance_ru?.tn_ved_code && (
                                     <div className="px-2 py-1 rounded-md bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-900/30 text-[10px] font-medium text-teal-700 dark:text-teal-300 flex items-center gap-1">
                                         <div className="w-3 h-3 bg-teal-200 rounded-sm"></div>
-                                        TN VED
+                                        {t('results.tn_ved', 'TN VED')}
                                     </div>
                                 )}
                             </div>
@@ -216,7 +216,7 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({ items, onAppro
                                                 ))}
                                             </div>
                                             <span className="text-xs text-gray-500 truncate">
-                                                {Object.keys(item.data._evidence || {}).length} {t('evidence.points_verified', 'Verified Points')}
+                                                {Object.keys(item.data._evidence || {}).length} {t('results.verified_points', 'Verified Points')}
                                             </span>
                                         </div>
                                     </div>

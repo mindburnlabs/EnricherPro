@@ -277,7 +277,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
                 </div>
 
                 {/* Input Area */}
-                <div className={`transition-all duration-500 ease-in-out z-20 ${isEmpty ? 'flex-1 flex flex-col justify-center mb-[20vh]' : 'sticky bottom-0 pb-6 pt-4 bg-gradient-to-t from-white via-white to-transparent dark:from-gray-900 dark:via-gray-900'}`}>
+                <div className={`transition-all duration-500 ease-in-out z-40 ${isEmpty ? 'flex-1 flex flex-col justify-center mb-[20vh]' : 'sticky bottom-0 pb-6 pt-4 bg-gradient-to-t from-white via-white to-transparent dark:from-gray-900 dark:via-gray-900'}`}>
 
                     {isEmpty && (
                         <div className="text-center mb-8 animate-in fade-in zoom-in duration-700">

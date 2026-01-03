@@ -200,7 +200,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                             fieldEnv={evidence['has_page_counter']}
                             fieldKey="has_page_counter"
                         />
-                        {data.gtin && data.gtin.length > 0 && (
+                        {data.gtin && Array.isArray(data.gtin) && data.gtin.length > 0 && (
                             <EvidenceRow
                                 label={t('specs.gtin')}
                                 value={data.gtin.join(", ")}

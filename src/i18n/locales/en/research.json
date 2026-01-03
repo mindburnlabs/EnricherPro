@@ -47,6 +47,15 @@
         "refresh_data": "Force Refresh Data",
         "download_csv": "Download CSV",
         "download_json": "Download JSON",
+        "logistics_unit_g": "g",
+        "logistics_unit_mm": "mm",
+        "logistics_badge": "Logistics Data Only",
+        "faq_badge": "FAQs Available",
+        "faqs_count": "{{count}} FAQs",
+        "tn_ved": "TN VED",
+        "verified_points": "Verified Points",
+        "graph_hit": "Graph Hit",
+        "csv_headers": "ID, MPN, Brand, Model, Confidence, Status",
         "verified": "Verified"
     },
     "actions": {

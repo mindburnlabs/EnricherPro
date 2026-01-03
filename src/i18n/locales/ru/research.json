@@ -47,6 +47,15 @@
         "refresh_data": "Принудительное обновление",
         "download_csv": "Скачать CSV",
         "download_json": "Скачать JSON",
+        "logistics_unit_g": "г",
+        "logistics_unit_mm": "мм",
+        "logistics_badge": "Только логистика",
+        "faq_badge": "Есть FAQ",
+        "faqs_count": "{{count}} FAQ",
+        "tn_ved": "ТН ВЭД",
+        "verified_points": "Точек проверено",
+        "graph_hit": "Из Графа",
+        "csv_headers": "ID, MPN, Бренд, Модель, Уверенность, Статус",
         "verified": "Проверено"
     },
     "actions": {

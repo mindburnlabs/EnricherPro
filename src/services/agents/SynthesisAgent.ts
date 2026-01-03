@@ -297,6 +297,17 @@ export class SynthesisAgent {
             }
         }
 
+        // GTIN Normalization
+        if (data.gtin) {
+            if (typeof data.gtin === 'string') {
+                data.gtin = [data.gtin];
+            } else if (!Array.isArray(data.gtin)) {
+                // If it's something else weird (number, null, etc), allow empty or stringify?
+                // Safest is to force array or empty
+                data.gtin = [];
+            }
+        }
+
         return data;
     }
 
