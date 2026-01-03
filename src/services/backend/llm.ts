@@ -1,4 +1,5 @@
 
+import "../../lib/suppress-warnings.js";
 import { MODEL_CONFIGS, ModelProfile, DEFAULT_MODEL } from "../../config/models.js";
 import { ObservabilityService } from './ObservabilityService.js';
 
@@ -287,13 +288,28 @@ export class BackendLLMService {
             }, {
                 maxRetries: 2,
                 baseDelayMs: 1000,
-                shouldRetry: (err) => !err.message.includes("Auth/Credit") && !err.message.includes("(400)")
+                shouldRetry: (err) => !err.message.includes("(400)") // Retry 402s now that we handle them!
             });
         };
 
         try {
             return await executeFetch(body);
         } catch (e: any) {
+            // SOTA Fallback: If 402 (Insufficient Credits), switch to FREE model and retry ONCE.
+            if (e.message?.includes("Auth/Credit")) {
+                console.warn("LLM Service: 402 Insufficient Credits. Switching to FREE fallback model (qwen/qwen-2.5-coder-32b-instruct:free).");
+
+                // 1. Modify Body for Free Model
+                body.model = 'qwen/qwen-2.5-coder-32b-instruct:free'; // Reliable coding/reasoning free model
+
+                // 2. Ensure Data Collection is Allow (Required for free models)
+                if (!body.provider) body.provider = {};
+                body.provider.data_collection = "allow";
+
+                // 3. Retry execution with new body
+                return await executeFetch(body);
+            }
+
             // SOTA Fallback: If 400 Error AND we used json_schema, try again without it.
             // Many providers (Anthropic, Gemini via OR) fail hard on 'json_schema' even with strict:false
             if (e.message?.includes("(400)") && body.response_format?.type === 'json_schema') {

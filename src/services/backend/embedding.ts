@@ -1,3 +1,4 @@
+import "../../lib/suppress-warnings.js";
 import { BackendLLMService, RoutingStrategy } from "./llm.js";
 import { db } from "../../db/index.js";
 import { itemEmbeddings, items } from "../../db/schema.js";
@@ -46,7 +47,11 @@ export class EmbeddingService {
             const data = await response.json();
             return data.data[0].embedding;
 
-        } catch (e) {
+        } catch (e: any) {
+            if (e.message?.includes("402") || e.message?.includes("401")) {
+                console.warn("Embedding generation disabled: Insufficient Credits/Auth Error. Continuing without embeddings.");
+                return [];
+            }
             console.error("Embedding generation failed:", e);
             return []; // Return empty on failure to degrade gracefully
         }

@@ -39,9 +39,10 @@ export class BackendFirecrawlService {
                 }
                 return [];
             } catch (error) {
-                // If 402 or 401, don't retry, throw immediately
+                // If 402 or 401 (Quota/Auth), degrade gracefully
                 if ((error as any).statusCode === 402 || (error as any).statusCode === 401) {
-                    throw error;
+                    console.warn(`Firecrawl Search disabled: ${(error as any).message || 'Insufficient Credits'}`);
+                    return [];
                 }
                 throw error; // Let retry handle others
             }
@@ -150,9 +151,10 @@ export class BackendFirecrawlService {
                 }
                 throw new Error(`Firecrawl Extract Failed: ${(result as any)?.error || 'Unknown'}`);
             } catch (error) {
-                // No retry on billing/auth issues
+                // No retry on billing/auth issues, degrade gracefully
                 if ((error as any).statusCode === 402 || (error as any).statusCode === 401) {
-                    throw error;
+                    console.warn("Firecrawl Extract disabled: Insufficient Credits/Auth Error.");
+                    return null as any; // Return null so caller handles missing data
                 }
                 throw error;
             }
@@ -208,7 +210,8 @@ export class BackendFirecrawlService {
                 throw new Error("Firecrawl Agent returned no data");
             } catch (error) {
                 if ((error as any).statusCode === 402 || (error as any).statusCode === 401) {
-                    throw error;
+                    console.warn("Firecrawl Agent disabled: Insufficient Credits/Auth Error.");
+                    return null as any;
                 }
                 throw error;
             }
