@@ -487,6 +487,7 @@ export class DiscoveryAgent {
 
         Analyze the "Snippet" of the top results. 
         - If we found a High-Authority Domain (nix.ru, dns-shop.ru, hp.com, canon.com) but only have the URL, we MUST "enrich" it to get exact specs.
+        - **NIX.RU SPECIFIC**: detailed specs are often in a "Характеристики" tab. You MUST add an action to click it.
         - If we have "fuzzy" matches, we need specific queries for the MPN.
         - **Logistics Check**: If we lack "Weight" or "Dimensions", trigger a specific query (e.g. "${originalInput} weight specs").
         - **FAQ Check**: If we lack "Common Problems" or "FAQ", trigger a specific Firecrawl Agent task (e.g. "Find common error codes for ${originalInput}").
@@ -503,7 +504,7 @@ export class DiscoveryAgent {
                     "goal": "Extract weight and printer compatibility. Click 'Specs' tab if needed.",
                     "meta": {
                         "actions": [
-                            { "type": "click", "selector": "#specs-tab" },
+                            { "type": "click", "selector": "text:Характеристики" },
                             { "type": "wait", "milliseconds": 2000 }
                         ],
                         "location": { "country": "RU" }
