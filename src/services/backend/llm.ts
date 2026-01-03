@@ -94,7 +94,14 @@ export class BackendLLMService {
         }
 
         // Final fallback if no profile or empty candidates
-        targetModel = targetModel || DEFAULT_MODEL;
+        // STRICT POLICY: If we still don't have a model, or if we fell back to default,
+        // we MUST ensure it's a free model unless the user explicitly requested otherwise.
+        if (!targetModel || targetModel === 'openrouter/auto') {
+            // Hardcoded safe fallback for "Free Only" policy
+            targetModel = 'google/gemini-2.0-flash-exp:free';
+        } else {
+            targetModel = targetModel || DEFAULT_MODEL;
+        }
 
         if (targetModel.endsWith(':free')) {
             // Keep specific logic for free models if needed later, currently handled in provider config below.
