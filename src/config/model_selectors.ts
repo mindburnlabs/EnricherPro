@@ -18,6 +18,11 @@ export type ModelSelector =
         strategy: 'latest' | 'cheapest_input' | 'cheapest_total' | 'largest_context';
         limit?: number; // keep top N matches
     }
+    | {
+        kind: 'smart_free';
+        sort: 'context' | 'recency'; // 'recency' = newest first, 'context' = largest context window
+        limit?: number
+    }
     | { kind: 'auto'; id: 'openrouter/auto' };
 
 export const MODEL_SELECTOR_CONFIGS: Record<ModelProfile, { selectors: ModelSelector[]; description: string }> = {
@@ -26,8 +31,8 @@ export const MODEL_SELECTOR_CONFIGS: Record<ModelProfile, { selectors: ModelSele
             { kind: 'pattern', regex: '^google/gemini-.*flash-lite', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^anthropic/claude-.*haiku', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^openai/gpt-4o-mini$', strategy: 'latest', limit: 1 },
-            // optional free fallback; keep if you want a “no credits” safety valve
-            { kind: 'pattern', regex: '^qwen/.*:free$', strategy: 'cheapest_total', limit: 1 },
+            // Smart Free Fallback: Best Free model by Recency
+            { kind: 'smart_free', sort: 'recency', limit: 1 },
             { kind: 'auto', id: 'openrouter/auto' }
         ],
         description: 'High speed, low cost parsing/normalization.'
@@ -39,6 +44,8 @@ export const MODEL_SELECTOR_CONFIGS: Record<ModelProfile, { selectors: ModelSele
             { kind: 'pattern', regex: '^openai/gpt-4o-mini$', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^anthropic/claude-.*haiku', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^google/gemini-.*flash$', strategy: 'latest', limit: 1 },
+            // Smart Free Fallback: Recent free model for extraction
+            { kind: 'smart_free', sort: 'recency', limit: 1 },
             { kind: 'auto', id: 'openrouter/auto' }
         ],
         description: 'Structured JSON extraction from noisy supplier titles.'
@@ -49,6 +56,8 @@ export const MODEL_SELECTOR_CONFIGS: Record<ModelProfile, { selectors: ModelSele
             { kind: 'pattern', regex: '^anthropic/claude-.*sonnet', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^google/gemini-.*flash$', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^openai/gpt-4\\.1-mini', strategy: 'latest', limit: 1 },
+            // Smart Free Fallback: Largest Context for Planning
+            { kind: 'smart_free', sort: 'context', limit: 1 },
             { kind: 'auto', id: 'openrouter/auto' }
         ],
         description: 'Search planning / decomposition / next-action decisions.'
@@ -59,6 +68,9 @@ export const MODEL_SELECTOR_CONFIGS: Record<ModelProfile, { selectors: ModelSele
             { kind: 'pattern', regex: '^openai/o1$', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^anthropic/claude-.*sonnet', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^deepseek/deepseek-r1$', strategy: 'latest', limit: 1 },
+            // Smart Free Fallback: Largest Context for Reasoning (often correlates with model size/capability for now)
+            // or 'recency' to catch new strong free models
+            { kind: 'smart_free', sort: 'recency', limit: 1 },
             { kind: 'auto', id: 'openrouter/auto' }
         ],
         description: 'Conflict resolution, truth arbitration, deep reasoning.'
@@ -69,6 +81,8 @@ export const MODEL_SELECTOR_CONFIGS: Record<ModelProfile, { selectors: ModelSele
             { kind: 'pattern', regex: '^anthropic/claude-.*sonnet', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^openai/gpt-4o$', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^google/gemini-.*flash$', strategy: 'latest', limit: 1 },
+            // Smart Free Fallback: Best available
+            { kind: 'smart_free', sort: 'recency', limit: 1 },
             { kind: 'auto', id: 'openrouter/auto' }
         ],
         description: 'Highest general capability fallback.'

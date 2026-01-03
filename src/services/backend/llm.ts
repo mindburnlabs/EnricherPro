@@ -76,8 +76,19 @@ export class BackendLLMService {
         const { withRetry } = await import("../../lib/reliability.js");
 
         // 1. Resolve Primary Model
-        // STRICT: Always use openrouter/auto (or configured override if passed explicitly, though we aim to pass 'openrouter/auto' generally)
-        let targetModel = config.model || DEFAULT_MODEL;
+        let targetModel = config.model;
+
+        // User Requirement: "Always use smart free models unless user selects specific models"
+        // If model is undefined or 'openrouter/auto', we resolve to the Profile's top candidate (which is Smart Free).
+        if ((!targetModel || targetModel === 'openrouter/auto') && config.profile) {
+            const candidates = MODEL_CONFIGS[config.profile]?.candidates || [];
+            if (candidates.length > 0) {
+                targetModel = candidates[0]; // Pick the Smart Free Model found by generator
+            }
+        }
+
+        // Final fallback if no profile or empty candidates
+        targetModel = targetModel || DEFAULT_MODEL;
 
         if (targetModel.endsWith(':free')) {
             // Keep specific logic for free models if needed later, currently handled in provider config below.

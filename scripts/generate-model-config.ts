@@ -6,6 +6,7 @@ import type { ModelSelector } from '../src/config/model_selectors.ts';
 type ORModel = {
     id: string;
     context_length?: number;
+    created?: number; // timestamp
     pricing?: { prompt?: string; completion?: string; input?: string; output?: string; request?: string; image?: string };
 };
 
@@ -37,8 +38,10 @@ function scoreModel(m: ORModel, strategy: string): number {
     const ctx = m.context_length ?? 0;
     const pIn = toNum((m.pricing as any)?.prompt ?? (m.pricing as any)?.input) ?? Number.POSITIVE_INFINITY;
     const pOut = toNum((m.pricing as any)?.completion ?? (m.pricing as any)?.output) ?? Number.POSITIVE_INFINITY;
+    const created = m.created ?? 0;
 
     if (strategy === 'largest_context') return ctx;
+    if (strategy === 'recency') return created;
     if (strategy === 'cheapest_input') return -pIn;
     if (strategy === 'cheapest_total') return -(pIn + pOut);
     return 0; // "latest" handled via id sort
@@ -46,12 +49,29 @@ function scoreModel(m: ORModel, strategy: string): number {
 
 function sortMatches(matches: ORModel[], strategy: string): ORModel[] {
     const out = [...matches];
+    // Special handling for smart strategies
+    if (strategy === 'recency' || strategy === 'largest_context') {
+        out.sort((a, b) => scoreModel(b, strategy) - scoreModel(a, strategy));
+        return out;
+    }
     if (strategy === 'latest') {
         out.sort((a, b) => (a.id < b.id ? 1 : -1));
     } else {
         out.sort((a, b) => scoreModel(b, strategy) - scoreModel(a, strategy));
     }
     return out;
+}
+
+function pickSmartFree(
+    models: ORModel[],
+    sort: 'context' | 'recency',
+    limit: number
+): ORModel[] {
+    const free = models.filter(isFreeModel);
+    // map 'context' to 'largest_context' strategy for sorting
+    const strategy = sort === 'context' ? 'largest_context' : 'recency';
+    const sorted = sortMatches(free, strategy);
+    return sorted.slice(0, limit);
 }
 
 function pickMatchesFreeFirst(
@@ -101,6 +121,16 @@ async function main() {
         for (const s of cfg.selectors) {
             if (s.kind === 'auto') {
                 autoCandidates.push(s.id);
+                continue;
+            }
+
+            if (s.kind === 'smart_free') {
+                const picked = pickSmartFree(
+                    models,
+                    s.sort,
+                    s.limit ?? 1
+                );
+                selectedModels.push(...picked);
                 continue;
             }
 

@@ -9,7 +9,7 @@ import { ModelProfile } from './model_selectors.js';
 export const MODEL_CONFIGS = {
   "fast_cheap": {
     "candidates": [
-      "qwen/qwen3-coder:free",
+      "allenai/olmo-3.1-32b-think:free",
       "google/gemini-2.5-flash-lite-preview-09-2025",
       "anthropic/claude-haiku-4.5",
       "openai/gpt-4o-mini",
@@ -19,6 +19,7 @@ export const MODEL_CONFIGS = {
   },
   "reasoning": {
     "candidates": [
+      "allenai/olmo-3.1-32b-think:free",
       "openai/o1",
       "anthropic/claude-sonnet-4.5",
       "deepseek/deepseek-r1",
@@ -28,6 +29,7 @@ export const MODEL_CONFIGS = {
   },
   "best": {
     "candidates": [
+      "allenai/olmo-3.1-32b-think:free",
       "anthropic/claude-sonnet-4.5",
       "openai/gpt-4o",
       "google/gemini-2.5-flash",
@@ -37,6 +39,7 @@ export const MODEL_CONFIGS = {
   },
   "extraction": {
     "candidates": [
+      "allenai/olmo-3.1-32b-think:free",
       "openai/gpt-4.1-mini",
       "openai/gpt-4o-mini",
       "anthropic/claude-haiku-4.5",
@@ -47,6 +50,7 @@ export const MODEL_CONFIGS = {
   },
   "planning": {
     "candidates": [
+      "google/gemini-2.0-flash-exp:free",
       "anthropic/claude-sonnet-4.5",
       "google/gemini-2.5-flash",
       "openai/gpt-4.1-mini",
