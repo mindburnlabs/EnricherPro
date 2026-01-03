@@ -33,7 +33,7 @@ export class EmbeddingService {
                     "X-Title": "EnricherPro (Embeddings)"
                 },
                 body: JSON.stringify({
-                    model: "google/text-embedding-004", // High quality, cheap
+                    model: "openai/text-embedding-3-small", // Standard, reliable embedding model
                     input: text
                 })
             });
