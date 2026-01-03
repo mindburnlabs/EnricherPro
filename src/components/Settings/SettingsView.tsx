@@ -403,20 +403,41 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                 </Section>
 
                                 <Section title="Developer / SOTA Mode">
-                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 space-y-4">
                                         <ToggleRow
                                             label="SOTA Debug Info"
                                             desc="Show routing strategies, token usage, and strict schema validation status in the UI."
                                             active={localConfig.useSota || false}
                                             onToggle={() => setLocalConfig(prev => ({ ...prev, useSota: !prev.useSota }))}
                                         />
-                                        <div className="h-px bg-gray-200 dark:bg-gray-800 my-2" />
+                                        <div className="h-px bg-gray-200 dark:bg-gray-800" />
                                         <ToggleRow
                                             label="Flash Planner (Speed)"
                                             desc="Use Gem 2.0 Flash for planning (0.5s latency). Disable for higher quality logic (2s latency)."
                                             active={localConfig.useFlashPlanner ?? true}
                                             onToggle={() => setLocalConfig(prev => ({ ...prev, useFlashPlanner: !(prev.useFlashPlanner ?? true) }))}
                                         />
+                                        <div className="h-px bg-gray-200 dark:bg-gray-800" />
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <div className="text-sm font-bold text-gray-900 dark:text-white">Routing Preference</div>
+                                                <div className="text-xs text-gray-500 mt-1">Optimize auto-routing for Speed or Cost.</div>
+                                            </div>
+                                            <div className="flex bg-gray-200 dark:bg-gray-800 rounded-lg p-1">
+                                                <button
+                                                    onClick={() => setLocalConfig(prev => ({ ...prev, routingPreference: 'performance' }))}
+                                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${localConfig.routingPreference === 'performance' ? 'bg-white dark:bg-gray-700 text-emerald-600 shadow-sm' : 'text-gray-500'}`}
+                                                >
+                                                    Performance
+                                                </button>
+                                                <button
+                                                    onClick={() => setLocalConfig(prev => ({ ...prev, routingPreference: 'cost' }))}
+                                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${localConfig.routingPreference === 'cost' ? 'bg-white dark:bg-gray-700 text-emerald-600 shadow-sm' : 'text-gray-500'}`}
+                                                >
+                                                    Cost
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </Section>
                             </div>
@@ -447,7 +468,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                 <div className="space-y-4">
                                     <ModelSelector
                                         label="Discovery Agent (Planner)"
-                                        desc="Responsible for analyzing requests, generating search strategies, and coordinating deep crawls."
+                                        desc="High-speed model for search strategy and recursive crawling. Recommended: Google Gemini 2.0 Flash."
                                         value={localConfig.planningModel}
                                         onChange={(val) => setLocalConfig(prev => ({ ...prev, planningModel: val }))}
                                         models={availableModels}
@@ -455,15 +476,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                     />
                                     <ModelSelector
                                         label="Extraction Agent (Parser)"
-                                        desc="Responsible for cleaning messy HTML and extracting strict data (Logistics, Specs) from NIX.ru, HP, etc."
+                                        desc="Cost-effective model for parsing noisy HTML from NIX.ru/Amazon. Recommended: Gemini Flash or Claude Haiku."
                                         value={localConfig.extractionModel}
                                         onChange={(val) => setLocalConfig(prev => ({ ...prev, extractionModel: val }))}
                                         models={availableModels}
-                                        defaultModel="google/gemini-2.0-pro-exp-02-05:free"
+                                        defaultModel="openrouter/auto"
                                     />
                                     <ModelSelector
                                         label="Synthesis Agent (Reasoner)"
-                                        desc="Responsible for merging conflicting data, resolving duplications, and writing the final answer."
+                                        desc="High-intelligence model for conflict resolution and final truth merging. Recommended: Claude 3.5 Sonnet or GPT-4o."
                                         value={localConfig.reasoningModel}
                                         onChange={(val) => setLocalConfig(prev => ({ ...prev, reasoningModel: val, model: { id: val, name: val } }))} // Sync main model with reasoning for now
                                         models={availableModels}
@@ -476,7 +497,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isOpen, onClose, onT
                                     <div>
                                         <p className="text-sm font-bold text-blue-900 dark:text-blue-100">Pro Tip (2026 SOTA)</p>
                                         <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                                            Use <b>google/gemini-2.5-flash</b> for Planning (Speed) and <b>anthropic/claude-opus-4.5</b> for Synthesis (Deep Reasoning).
+                                            For best results, use <b>openrouter/auto</b> to let the system automatically route to the best available model (Gemini 2.0 Flash, Claude 3.5, etc) based on your budget preference.
                                         </p>
                                     </div>
                                 </div>

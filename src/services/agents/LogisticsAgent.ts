@@ -74,7 +74,8 @@ export class LogisticsAgent {
                     apiKeys
                 });
 
-                const parsed = JSON.parse(extract || "{}");
+                const { safeJsonParse } = await import('../../lib/json.js');
+                const parsed = safeJsonParse<any>(extract || "{}", {});
 
                 return {
                     weight: parsed.logistics?.weight || null,

@@ -119,7 +119,30 @@ export class SynthesisAgent {
 
             const parsed = safeJsonParse(response || "[]");
             return Array.isArray(parsed) ? parsed : (parsed.claims || []);
-        } catch (error) {
+        } catch (error: any) {
+            // Fallback: If model rejects image (404/400 support error), try TEXT ONLY
+            if (screenshotUrl && error.message?.includes("support image input")) {
+                console.warn(`[SynthesisAgent] Model ${effectiveModel} rejected image. Retrying text-only...`);
+                try {
+                    const response = await BackendLLMService.complete({
+                        model: effectiveModel,
+                        profile: modelOverride ? undefined : ModelProfile.EXTRACTION,
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: `Source URL: ${sourceUrl}\n\n${sourceText.substring(0, 15000)}` }
+                        ],
+                        jsonSchema: ExtractionSchema,
+                        routingStrategy: RoutingStrategy.FAST,
+                        apiKeys
+                    });
+                    const parsed = safeJsonParse(response || "[]");
+                    return Array.isArray(parsed) ? parsed : (parsed.claims || []);
+                } catch (retryError) {
+                    console.error(`Extraction failed (retry) for ${sourceUrl}:`, retryError);
+                    return [];
+                }
+            }
+
             console.error(`Extraction failed for ${sourceUrl}:`, error);
             return [];
         }
