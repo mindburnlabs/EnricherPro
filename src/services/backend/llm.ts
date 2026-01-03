@@ -312,7 +312,28 @@ export class BackendLLMService {
             }, {
                 maxRetries: 2,
                 baseDelayMs: 1000,
-                shouldRetry: (err) => !err.message.includes("(400)") // Retry 402s now that we handle them!
+                shouldRetry: (err) => {
+                    // 1. Don't retry 400s (Bad Request) - handled in outer loop logic
+                    if (err.message.includes("(400)")) return false;
+
+                    // 2. Auth/Credit (402) - Never retry in inner loop, bubble to outer switch
+                    if (err.message.includes("Auth/Credit")) return false;
+
+                    // 3. Rate Limit (429)
+                    if (err.message.includes("Rate Limit") || err.message.includes("(429)")) {
+                        // STRICT USER REQUEST: Only pause/retry if user EXPLICITLY selected a paid model.
+                        // If we are on a Free model (or Auto which defaults to free), we FAIL FAST to switch models.
+                        const isFreeOrAuto = targetModel.endsWith(':free') || targetModel === 'openrouter/auto';
+                        if (isFreeOrAuto) {
+                            return false; // Fail fast -> Trigger Switch
+                        }
+                        // If paid model, return true -> triggers standard 'reliability.ts' pause logic (60s etc)
+                        return true;
+                    }
+
+                    // Default: Retry 5xx, network errors, etc.
+                    return true;
+                }
             });
         };
 
