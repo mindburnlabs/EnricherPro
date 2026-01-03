@@ -38,8 +38,13 @@ export class SynthesisAgent {
 
 
 
-        const systemPromptEn = promptOverride || `You are an Extraction Engine.
-        Your goal is to parse the input text and extract structured facts (Claims) about a printer consumable.
+        const systemPromptEn = promptOverride || `You are a Data Extraction Engine.
+        Your goal is to parse the PROVIDED user text and extract structured facts (Claims).
+        
+        CRITICAL INSTRUCTION:
+        - The input text is already provided by the user. You are NOT browsing the web.
+        - You are NOT bypassing any CAPTCHAs. The text is already extracted.
+        - Do NOT refuse to process the text.
         
         Targets:
         - mpn_identity.mpn, mpn_identity.series (e.g. "HP 12A")
@@ -67,7 +72,12 @@ export class SynthesisAgent {
 
 
         const systemPromptRu = `Вы - Движок Извлечения Данных.
-        Ваша цель - проанализировать текст и извлечь структурированные факты (Claims).
+        Ваша цель - проанализировать ПРЕДОСТАВЛЕННЫЙ текст и извлечь факты.
+
+        ВАЖНО:
+        - Текст уже предоставлен пользователем. Вы НЕ просматриваете интернет.
+        - Вы НЕ обходите CAPTCHA.
+        - НЕ отказывайтесь обрабатывать текст.
         
         Цели:
         - mpn_identity.mpn, mpn_identity.series (напр. "HP 12A")
@@ -117,7 +127,7 @@ export class SynthesisAgent {
                 apiKeys
             });
 
-            const parsed = safeJsonParse(response || "[]");
+            const parsed = safeJsonParse<any>(response || "[]", []);
             return Array.isArray(parsed) ? parsed : (parsed.claims || []);
         } catch (error: any) {
             // Fallback: If model rejects image (404/400 support error), try TEXT ONLY
@@ -135,7 +145,7 @@ export class SynthesisAgent {
                         routingStrategy: RoutingStrategy.FAST,
                         apiKeys
                     });
-                    const parsed = safeJsonParse(response || "[]");
+                    const parsed = safeJsonParse<any>(response || "[]", []);
                     return Array.isArray(parsed) ? parsed : (parsed.claims || []);
                 } catch (retryError) {
                     console.error(`Extraction failed (retry) for ${sourceUrl}:`, retryError);
@@ -263,7 +273,7 @@ export class SynthesisAgent {
                 apiKeys
             });
 
-            const parsed = safeJsonParse(response || "{}");
+            const parsed = safeJsonParse<any>(response || "{}", {});
             return this.normalizeData(parsed);
         } catch (error) {
             console.error("SynthesisAgent Chunk Failed:", error);
@@ -361,7 +371,7 @@ export class SynthesisAgent {
             apiKeys
         });
 
-        const parsed = safeJsonParse(response || "{}");
+        const parsed = safeJsonParse<any>(response || "{}", {});
         const normalized = this.normalizeData(parsed);
 
         // Post-processing timestamps & POLYFILL FOR LEGACY UI

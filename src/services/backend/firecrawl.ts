@@ -74,6 +74,20 @@ export class BackendFirecrawlService {
     } = {}) {
         const { withRetry } = await import("../../lib/reliability.js");
 
+        // Custom Retry Logic for Scrape
+        const shouldRetryScrape = (error: any) => {
+            const msg = error.message || "";
+            // Deterministic errors - DO NOT RETRY
+            if (msg.includes("File size exceeds") || msg.includes("Invalid URL") || msg.includes("Unsupported file")) {
+                return false;
+            }
+            // Standard checks
+            const status = error.status || error.statusCode;
+            if (status === 429) return true;
+            if (status >= 400 && status < 500) return false;
+            return true;
+        };
+
         return withRetry(async () => {
             const client = this.getClient(options.apiKey);
 
@@ -114,7 +128,8 @@ export class BackendFirecrawlService {
         }, {
             maxRetries: 3,
             baseDelayMs: 2000,
-            onRetry: options.onRetry
+            onRetry: options.onRetry,
+            shouldRetry: shouldRetryScrape
         });
     }
 
