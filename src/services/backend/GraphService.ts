@@ -12,42 +12,51 @@ export class GraphService {
         if (!query) return null;
         const cleanQuery = query.trim();
 
-        // 1. Direct Alias Match (Exact)
-        const exactMatch = await db.query.aliases.findFirst({
-            where: (t, { eq, and }) => and(
-                eq(t.alias, cleanQuery),
-                // We could filter by aliasType='exact' but let's trust the table
-            ),
-            with: {
-                entity: true
+        try {
+            // 1. Direct Alias Match (Exact)
+            const exactMatch = await db.query.aliases.findFirst({
+                where: (t, { eq, and }) => and(
+                    eq(t.alias, cleanQuery),
+                    // We could filter by aliasType='exact' but let's trust the table
+                ),
+                with: {
+                    entity: true
+                }
+            });
+
+            if (exactMatch && exactMatch.entity) {
+                return {
+                    mpn: exactMatch.entity.canonicalName,
+                    confidence: exactMatch.confidence || 100,
+                    entityId: exactMatch.entityId
+                };
             }
-        });
 
-        if (exactMatch && exactMatch.entity) {
-            return {
-                mpn: exactMatch.entity.canonicalName,
-                confidence: exactMatch.confidence || 100,
-                entityId: exactMatch.entityId
-            };
-        }
+            // 2. Case Insensitive Alias Match
+            const caseMatch = await db.query.aliases.findFirst({
+                where: (t, { eq }) => eq(t.alias, cleanQuery.toLowerCase()), // Assuming manual lower(), or use ilike
+                with: {
+                    entity: true
+                }
+            });
 
-        // 2. Case Insensitive Alias Match
-        const caseMatch = await db.query.aliases.findFirst({
-            where: (t, { eq }) => eq(t.alias, cleanQuery.toLowerCase()), // Assuming manual lower(), or use ilike
-            with: {
-                entity: true
+            if (caseMatch && caseMatch.entity) {
+                return {
+                    mpn: caseMatch.entity.canonicalName,
+                    confidence: (caseMatch.confidence || 100) - 5,
+                    entityId: caseMatch.entityId
+                };
             }
-        });
 
-        if (caseMatch && caseMatch.entity) {
-            return {
-                mpn: caseMatch.entity.canonicalName,
-                confidence: (caseMatch.confidence || 100) - 5,
-                entityId: caseMatch.entityId
-            };
+            return null; // Graph Miss
+        } catch (error: any) {
+            // Gracefully handle missing Graph-Lite tables (not migrated yet)
+            if (error?.cause?.code === '42P01' || error?.message?.includes('does not exist')) {
+                console.warn('[GraphService] Graph-Lite tables not migrated. Run: npx drizzle-kit push');
+                return null;
+            }
+            throw error; // Re-throw unexpected errors
         }
-
-        return null; // Graph Miss
     }
 
     /**
