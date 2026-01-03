@@ -1134,7 +1134,9 @@ export const researchWorkflow = inngest.createFunction(
                 agent.log('synthesis', 'Trust Engine yielded incomplete data. Activating Swarm Synthesis...');
 
                 // Formulate sources for Swarm
-                const combinedSources = searchResults.map((r: any) =>
+                // Handle case where searchResults is null/undefined due to upstream failures
+                const safeResults = searchResults || [];
+                const combinedSources = safeResults.map((r: any) =>
                     `Source: ${r.url} (${r.source_type})\n Title: ${r.title}\n---\n${r.markdown}`
                 );
 

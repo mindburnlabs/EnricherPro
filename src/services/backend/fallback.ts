@@ -37,7 +37,10 @@ export class FallbackSearchService {
                 plugins: [{ id: 'web' }] // Enable OpenRouter Web Search
             });
 
-            const parsed = JSON.parse(response || "{}");
+            let cleanJson = response || "{}";
+            // Strip code fences if present
+            cleanJson = cleanJson.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+            const parsed = JSON.parse(cleanJson);
             if (!parsed.results || !Array.isArray(parsed.results)) {
                 return [];
             }

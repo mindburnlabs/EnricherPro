@@ -64,6 +64,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = () => {
 
 
     const handleSearch = async (input: string | string[], mode: 'fast' | 'balanced' | 'deep', isRefinement?: boolean, forceRefresh: boolean = false) => {
+        // SAFETY: Block if keys are missing
+        if (!config.apiKeys.firecrawl || !config.apiKeys.openRouter) {
+            alert(t('errors.missing_keys', "Please configure Firecrawl and OpenRouter API keys in Settings to proceed."));
+            return;
+        }
+
         const inputs = Array.isArray(input) ? input : [input];
         const queryText = inputs.join('\n'); // Treat multiple lines as one complex query or handle multiple?
 
