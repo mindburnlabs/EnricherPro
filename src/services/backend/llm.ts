@@ -308,10 +308,21 @@ export class BackendLLMService {
         } catch (e: any) {
             // SOTA Fallback: If 402 (Insufficient Credits), switch to FREE model and retry ONCE.
             if (e.message?.includes("Auth/Credit")) {
-                console.warn("LLM Service: 402 Insufficient Credits. Switching to FREE fallback model (qwen/qwen-2.5-coder-32b-instruct:free).");
+                console.warn("LLM Service: 402 Insufficient Credits. Switching to Dynamic FREE fallback.");
+
+                // 1. Resolve Best Free Candidate from Config
+                // 1. Resolve Best Free Candidate from Config
+                const profileName = config.profile || 'fast_cheap';
+                // Typecast to avoid TS 'never' inference on read-only const
+                const candidates: readonly string[] = (MODEL_CONFIGS as any)[profileName]?.candidates || [];
+
+                // Find first free model in candidates (generator guarantees free models are first if found)
+                const freeModel = candidates.find((m: string) => m.endsWith(':free')) || 'openrouter/auto';
+
+                console.warn(`LLM Service: Falling back to ${freeModel}`);
 
                 // 1. Modify Body for Free Model
-                body.model = 'qwen/qwen-2.5-coder-32b-instruct:free'; // Reliable coding/reasoning free model
+                body.model = freeModel;
 
                 // 2. Ensure Data Collection is Allow (Required for free models)
                 if (!body.provider) body.provider = {};

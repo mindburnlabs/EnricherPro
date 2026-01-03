@@ -89,49 +89,55 @@ export class BackendFirecrawlService {
             return true;
         };
 
-        return withRetry(async () => {
-            const client = this.getClient(options.apiKey);
+        try {
+            return await withRetry(async () => {
+                const client = this.getClient(options.apiKey);
 
-            // Construct formats array
-            const formats: any[] = options.formats || ['markdown'];
+                // Construct formats array
+                const formats: any[] = options.formats || ['markdown'];
 
-            // If schema is provided, we MUST use type: 'json' with schema
-            if (options.schema) {
-                // Remove 'json' string if present to avoiding duplication, then add object
-                const cleanFormats = formats.filter(f => f !== 'json');
-                cleanFormats.push({
-                    type: 'json',
-                    schema: options.schema
+                // If schema is provided, we MUST use type: 'json' with schema
+                if (options.schema) {
+                    // Remove 'json' string if present to avoiding duplication, then add object
+                    const cleanFormats = formats.filter(f => f !== 'json');
+                    cleanFormats.push({
+                        type: 'json',
+                        schema: options.schema
+                    });
+                    // Reassign
+                    formats.length = 0;
+                    formats.push(...cleanFormats);
+                }
+
+                const result = await client.scrape(url, {
+                    formats: formats,
+                    waitFor: options.waitFor || 0,
+                    actions: options.actions,
+                    location: options.location,
+                    mobile: options.mobile,
+                    maxAge: options.maxAge,
+                    timeout: options.timeout,
+                    onlyMainContent: options.onlyMainContent
                 });
-                // Reassign
-                formats.length = 0;
-                formats.push(...cleanFormats);
-            }
 
-            const result = await client.scrape(url, {
-                formats: formats,
-                waitFor: options.waitFor || 0,
-                actions: options.actions,
-                location: options.location,
-                mobile: options.mobile,
-                maxAge: options.maxAge,
-                timeout: options.timeout,
-                onlyMainContent: options.onlyMainContent
+                if (result && (result as any).success) {
+                    return (result as any).data || (result as any);
+                }
+                // If not success but valid response is returned directly (sometimes SDK does this)
+                if (result && (result as any).markdown) return result;
+
+                throw new Error(`Firecrawl Scrape Failed: ${(result as any)?.error || 'Unknown'}`);
+            }, {
+                maxRetries: 3,
+                baseDelayMs: 2000,
+                onRetry: options.onRetry,
+                shouldRetry: shouldRetryScrape
             });
-
-            if (result && (result as any).success) {
-                return (result as any).data || (result as any);
-            }
-            // If not success but valid response is returned directly (sometimes SDK does this)
-            if (result && (result as any).markdown) return result;
-
-            throw new Error(`Firecrawl Scrape Failed: ${(result as any)?.error || 'Unknown'}`);
-        }, {
-            maxRetries: 3,
-            baseDelayMs: 2000,
-            onRetry: options.onRetry,
-            shouldRetry: shouldRetryScrape
-        });
+        } catch (error: any) {
+            console.warn(`[Firecrawl] Outputting Local Fallback for ${url} due to error: ${error.message}`);
+            const { FallbackScraper } = await import("./fallback-scraper.js");
+            return await FallbackScraper.scrape(url);
+        }
     }
 
     static async extract(urls: string[], schema: any, options: { apiKey?: string } = {}) {
