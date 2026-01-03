@@ -1155,9 +1155,8 @@ export const researchWorkflow = inngest.createFunction(
                 const MAX_LOOPS = 1;
 
                 while (refinementLoop < MAX_LOOPS) {
-                    const repairs = await step.run(`critique-draft-${refinementLoop}`, async () => {
-                        return await DiscoveryAgent.critique(finalData, language);
-                    });
+                    // Critique call (NOT wrapped in step.run - already inside resolve-truth step)
+                    const repairs = await DiscoveryAgent.critique(finalData, language);
 
                     if (repairs.length === 0) break;
 
@@ -1167,7 +1166,8 @@ export const researchWorkflow = inngest.createFunction(
                     }
 
                     // 1. EXECUTE REPAIRS (Limited Batch)
-                    const repairSources = await step.run(`execute-repairs-${refinementLoop}`, async () => {
+                    // NOTE: NOT wrapped in step.run - already inside resolve-truth step
+                    const repairSources = await (async () => {
                         // We treat these as new 'query' tasks
                         const repairTasks = repairs.map(r => ({ type: 'query', value: r.value, meta: { goal: r.goal } }));
 
@@ -1223,7 +1223,7 @@ export const researchWorkflow = inngest.createFunction(
                         }));
 
                         return repairResults.flat();
-                    });
+                    })();
 
                     if (repairSources.length > 0) {
                         agent.log('synthesis', `Incorporating ${repairSources.length} repair sources...`);
