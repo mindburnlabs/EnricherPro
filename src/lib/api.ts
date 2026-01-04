@@ -65,10 +65,26 @@ export const resolveConflict = async (
   }).then((r) => r.json());
 };
 
+export const updateItem = async (itemId: string, updates: any) => {
+  return fetch(`/api/items?id=${itemId}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+    headers: { 'Content-Type': 'application/json' },
+  }).then((r) => r.json());
+};
+
 export const semanticSearch = async (query: string, apiKeys: Record<string, string>) => {
   return fetch('/api/similarity-search', {
     method: 'POST',
     body: JSON.stringify({ query, apiKeys }),
+    headers: { 'Content-Type': 'application/json' },
+  }).then((r) => r.json());
+};
+
+export const createAuditEntry = async (entry: any) => {
+  return fetch('/api/audit', {
+    method: 'POST',
+    body: JSON.stringify(entry),
     headers: { 'Content-Type': 'application/json' },
   }).then((r) => r.json());
 };

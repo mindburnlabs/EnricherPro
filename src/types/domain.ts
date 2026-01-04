@@ -117,7 +117,7 @@ export interface FieldEvidence<T> {
   conflicting_values?: ConflictingValue[];
 
   // Meta
-  method?: 'official' | 'consensus' | 'single_source' | 'fallback' | 'agent_result';
+  method?: 'official' | 'consensus' | 'single_source' | 'fallback' | 'agent_result' | 'manual';
   locked_by_user?: boolean;
   last_verified_at?: string;
 }
@@ -319,6 +319,11 @@ export interface ConsumableData {
   _evidence?: {
     [key: string]: FieldEvidence<any> | undefined;
   };
+
+  // Legacy / UI Support fields
+  model?: string;
+  short_model?: string;
+  weight_g?: number; // Shortcut for logistics.package_weight_g
 }
 
 // Status Types
@@ -348,6 +353,8 @@ export interface EnrichedItem {
   id: string; // job_run_id
   input_raw: string;
   input_hash: string;
+  
+  reviewReason?: string;
 
   data: ConsumableData;
 
@@ -472,3 +479,11 @@ export type StrictConsumableData = ConsumableData & {
   faq?: FiresearchFAQ[];
   meta?: FiresearchMeta;
 };
+export interface ValidationBlocker {
+  id: string;
+  channel: 'ozon' | 'yandex' | 'wildberries';
+  severity: 'critical' | 'warning';
+  message: string;
+  field?: string;
+  canAutoFix: boolean;
+}

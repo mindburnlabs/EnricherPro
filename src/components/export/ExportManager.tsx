@@ -20,14 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-interface ValidationBlocker {
-  id: string;
-  channel: 'ozon' | 'yandex' | 'wildberries';
-  severity: 'critical' | 'warning';
-  message: string;
-  field?: string;
-  canAutoFix: boolean;
-}
+import { ValidationBlocker } from '@/types/domain';
 
 interface ExportManagerProps {
   skuId: string;

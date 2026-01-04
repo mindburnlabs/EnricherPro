@@ -1,16 +1,16 @@
-import { EnrichedItem } from '../../types/domain.js';
+import { ConsumableData } from '../../types/domain.js';
 import { BackendLLMService } from '../backend/llm.js';
 
 export class FAQGeneratorAgent {
   static async generateFAQ(
-    item: EnrichedItem,
+    data: ConsumableData,
     apiKeys: any,
   ): Promise<{ question: string; answer: string }[]> {
     const context = `
-        Product: ${item.data.supplier_title_raw}
-        MPN: ${item.data.mpn_identity.mpn}
-        Specs: ${JSON.stringify(item.data.tech_specs)}
-        Compatibility: ${JSON.stringify(item.data.compatible_printers_ru?.map((p) => p.model))}
+        Product: ${data.supplier_title_raw}
+        MPN: ${data.mpn_identity.mpn}
+        Specs: ${JSON.stringify(data.tech_specs)}
+        Compatibility: ${JSON.stringify(data.compatible_printers_ru?.map((p) => p.model))}
         `;
 
     const prompt = `

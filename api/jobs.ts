@@ -24,10 +24,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
   try {
     if (request.method === 'GET') {
       const limit = request.query.limit ? parseInt(request.query.limit as string) : 50;
+      const id = request.query.id as string;
 
-      // Fetch jobs with some stats
-      const res = await pool.query(
-        `
+      let query = `
                 SELECT 
                     j.id, 
                     j.input_raw, 
@@ -36,15 +35,31 @@ export default async function handler(request: VercelRequest, response: VercelRe
                     j.start_time as "startTime", 
                     j.end_time as "endTime",
                     (SELECT COUNT(*) FROM items i WHERE i.job_id = j.id) as "itemCount",
-                    (SELECT mpn FROM items i WHERE i.job_id = j.id LIMIT 1) as "firstMpn"
+                    (SELECT mpn FROM items i WHERE i.job_id = j.id LIMIT 1) as "firstMpn",
+                    (SELECT COALESCE(SUM(cost_usd), 0) FROM model_usage mu WHERE mu.job_id = j.id) as "cost",
+                    (SELECT COALESCE(SUM(total_tokens), 0) FROM model_usage mu WHERE mu.job_id = j.id) as "tokenUsage"
                 FROM jobs j
-                ORDER BY j.start_time DESC
-                LIMIT $1
-            `,
-        [limit],
-      );
+            `;
+            
+      const params = [];
+      if (id) {
+        query += ` WHERE j.id = $1`;
+        params.push(id);
+      } else {
+        query += ` ORDER BY j.start_time DESC LIMIT $1`;
+        params.push(limit);
+      }
 
-      return response.status(200).json({ success: true, jobs: res.rows });
+      const res = await pool.query(query, params);
+
+      // Cast cost to number (postgres returns numeric as string)
+      const jobs = res.rows.map((r: any) => ({
+        ...r,
+        cost: parseFloat(r.cost),
+        tokenUsage: parseInt(r.tokenUsage)
+      }));
+
+      return response.status(200).json({ success: true, jobs });
     }
 
     return response.status(405).json({ error: 'Method Not Allowed' });

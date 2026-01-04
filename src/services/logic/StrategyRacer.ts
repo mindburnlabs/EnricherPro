@@ -28,7 +28,7 @@ export class StrategyRacer {
             // Validate result simply (must have URL or HTML)
             if (result.url || result.html) {
               resolved = true;
-              // console.log(`Hydra: Strategy '${strategy.name}' WON the race.`);
+
               resolve(result);
             }
           }

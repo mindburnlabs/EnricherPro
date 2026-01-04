@@ -1,4 +1,4 @@
-import { EnrichedItem } from '../../types/domain.js';
+import { ConsumableData } from '../../types/domain.js';
 
 export class MediaQCAgent {
   /**
@@ -6,10 +6,10 @@ export class MediaQCAgent {
    * Simulates check by inspecting URL and metadata if available.
    * In a real implementation, this would download headers or image data.
    */
-  static async validateImages(item: EnrichedItem): Promise<{ passed: boolean; report: string[] }> {
+  static async validateImages(data: ConsumableData): Promise<{ passed: boolean; report: string[] }> {
     const report: string[] = [];
     const validImages = [];
-    const images = item.data.images || [];
+    const images = data.images || [];
 
     if (images.length === 0) {
       report.push('CRITICAL: No images found.');

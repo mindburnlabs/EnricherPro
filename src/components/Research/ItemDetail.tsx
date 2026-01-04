@@ -418,13 +418,13 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({
           <div className='grid grid-cols-1 gap-3'>
             <EvidenceRow
               label={t('specs.chip')}
-              value={formatBool(data.has_chip)}
+              value={formatBool(data.has_chip === true)}
               fieldEnv={evidence['has_chip']}
               fieldKey='has_chip'
             />
             <EvidenceRow
               label={t('specs.counter')}
-              value={formatBool(data.has_page_counter)}
+              value={formatBool(data.has_page_counter === true)}
               fieldEnv={evidence['has_page_counter']}
               fieldKey='has_page_counter'
             />

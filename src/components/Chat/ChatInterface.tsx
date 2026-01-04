@@ -183,14 +183,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onJobCreated }) =>
           if (!msg.items) return msg;
           return {
             ...msg,
-            items: msg.items.map((item) => (item.id === itemId ? { ...item, status: 'ok' } : item)),
+            items: msg.items.map((item) => (item.id === itemId ? { ...item, status: 'published' as any } : item)),
           };
         }),
       );
 
       // Also update selected item if it's the one being approved
       if (selectedResearchItem && selectedResearchItem.id === itemId) {
-        setSelectedResearchItem((prev) => (prev ? { ...prev, status: 'ok' } : null));
+        setSelectedResearchItem((prev) => (prev ? { ...prev, status: 'published' as any } : null));
       }
     } catch (e) {
       console.error('Failed to approve item', e);
@@ -225,7 +225,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onJobCreated }) =>
             return {
               ...msg,
               items: msg.items.map((item) =>
-                item.id === conflictState.candidate.id ? { ...item, status: 'ok' } : item,
+                item.id === conflictState.candidate.id ? { ...item, status: 'published' as any } : item,
               ),
             };
           }),
@@ -258,16 +258,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onJobCreated }) =>
         value: value,
         source_url: `manual:${source}`,
         confidence: 1.0,
-        last_checked: new Date().toISOString(),
+        last_verified_at: new Date().toISOString(),
         method: 'manual',
         is_conflict: false,
       };
 
       setSelectedResearchItem({ ...selectedResearchItem, data: newData });
-    }
 
-    // TODO: Call API to persist override
-    // await api.updateItem(id, { [field]: value, _evidence: ... });
+      try {
+        const { updateItem } = await import('../../lib/api.js');
+        await updateItem(id, { data: newData });
+      } catch (e) {
+        console.error('Failed to persist item update', e);
+        // Revert optimistic update? For now, just alert.
+        alert(t('errors.update_failed', 'Failed to save changes.'));
+      }
+    }
   };
 
   const handleRefresh = async (originalQuery: string, mode: 'fast' | 'balanced' | 'deep') => {

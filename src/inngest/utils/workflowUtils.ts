@@ -446,3 +446,17 @@ export const processUrlBatch = async (
     return { count: 0, results: [], exhausted };
   }
 };
+
+export const flattenClaims = (obj: any, prefix = '') => {
+  let res: any[] = [];
+  for (const [key, val] of Object.entries(obj)) {
+    if (key === '_evidence') continue;
+    const fieldKey = prefix ? `${prefix}.${key}` : key;
+    if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+      res = res.concat(flattenClaims(val, fieldKey));
+    } else {
+      res.push({ field: fieldKey, value: val });
+    }
+  }
+  return res;
+};

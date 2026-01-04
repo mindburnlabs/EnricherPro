@@ -61,7 +61,7 @@ export class EdgeAIService {
       try {
         const adapter = await (navigator as any).gpu.requestAdapter();
         if (adapter) {
-          console.log('[EdgeAI] WebGPU available');
+    // console.log('[EdgeAI] WebGPU available');
           return 'webgpu';
         }
       } catch (e) {
@@ -70,7 +70,7 @@ export class EdgeAIService {
     }
 
     // Fallback to WASM (good performance, wide support)
-    console.log('[EdgeAI] Using WASM backend');
+// console.log ...
     return 'wasm';
   }
 
@@ -97,7 +97,7 @@ export class EdgeAIService {
 
       // Load model
       const modelUrl = config.modelPath || this.DEFAULT_MODEL_URL;
-      console.log(`[EdgeAI] Loading model from ${modelUrl} using ${this.activeBackend}`);
+// console.log ...
 
       this.session = await ort.InferenceSession.create(modelUrl, {
         executionProviders,
@@ -105,10 +105,10 @@ export class EdgeAIService {
       });
 
       this.isInitialized = true;
-      console.log('[EdgeAI] Initialized successfully');
+// console.logOrError
       return true;
     } catch (error) {
-      console.error('[EdgeAI] Initialization failed:', error);
+// console.logOrError
       return false;
     }
   }
@@ -230,7 +230,7 @@ export class EdgeAIService {
         backend: this.activeBackend,
       };
     } catch (error) {
-      console.error('[EdgeAI] Embedding failed:', error);
+// console.logOrError
       throw error;
     }
   }

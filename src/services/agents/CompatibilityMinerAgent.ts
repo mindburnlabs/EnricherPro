@@ -1,5 +1,5 @@
 import { BackendLLMService } from '../backend/llm.js';
-import { GenericScraper } from '../backend/GenericScraper.js';
+import { FallbackSearchService } from '../backend/fallback.js';
 
 interface CompatibilityMiningResult {
   printers: string[];
@@ -25,9 +25,9 @@ export class CompatibilityMinerAgent {
     ];
 
     // 2. We'll execute just the first query for MVP efficiency
-    // Instantiate the scraper
-    const scraper = new GenericScraper();
-    const searchResults = await scraper.fetch(queries[0]);
+    // 2. We'll execute just the first query for MVP efficiency
+    // Use FallbackSearchService for generic web search
+    const searchResults = await FallbackSearchService.search(queries[0]);
 
     if (!searchResults || searchResults.length === 0) {
       onLog?.(`[CompatibilityMiner] No search results found.`);
@@ -38,9 +38,9 @@ export class CompatibilityMinerAgent {
     const bestCandidate =
       searchResults.find(
         (r) =>
-          r.contentSnippet?.toLowerCase().includes('compatible') &&
-          (r.contentSnippet?.toLowerCase().includes('list') ||
-            (r.contentSnippet?.length || 0) > 100),
+          r.markdown?.toLowerCase().includes('compatible') &&
+          (r.markdown?.toLowerCase().includes('list') ||
+            (r.markdown?.length || 0) > 100),
       ) || searchResults[0];
 
     onLog?.(`[CompatibilityMiner] Analyzing content from: ${bestCandidate.url}`);
@@ -51,7 +51,7 @@ export class CompatibilityMinerAgent {
         Task: Extract a clean list of printer models compatible with the Consumable: "${skuString}".
         
         Source Context:
-        ${(bestCandidate.contentSnippet || '').substring(0, 8000)}
+        ${(bestCandidate.markdown || '').substring(0, 8000)}
 
         Output Format:
         Return ONLY a JSON object with a single key "printers" containing an array of strings.

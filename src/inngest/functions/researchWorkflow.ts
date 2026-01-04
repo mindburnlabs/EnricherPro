@@ -8,7 +8,7 @@ import type {
   hasEvidence,
   createGraphLiteUrl,
 } from '../../types/workflow.js';
-import { processTask, processUrlBatch, type WorkflowContext } from '../utils/workflowUtils.js';
+import { processTask, processUrlBatch, flattenClaims, type WorkflowContext } from '../utils/workflowUtils.js';
 
 // SafeClaimSchema moved to utils
 
@@ -167,20 +167,7 @@ export const researchWorkflow = inngest.createFunction(
           extractedMetadata: { title: 'Graph-Lite Entry', type: 'graph_lite' },
         });
         // Flatten Claims logic...
-        const flatten = (obj: any, prefix = '') => {
-          let res: any[] = [];
-          for (const [key, val] of Object.entries(obj)) {
-            if (key === '_evidence') continue;
-            const fieldKey = prefix ? `${prefix}.${key}` : key;
-            if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-              res = res.concat(flatten(val, fieldKey));
-            } else {
-              res.push({ field: fieldKey, value: val });
-            }
-          }
-          return res;
-        };
-        const flatClaims = flatten(planWithEvidence.evidence);
+        const flatClaims = flattenClaims(planWithEvidence.evidence);
         if (flatClaims.length > 0) {
           await ClaimsRepository.createBatch(
             flatClaims.map((c: any) => ({
@@ -634,8 +621,7 @@ export const researchWorkflow = inngest.createFunction(
 
       // Media QC
       try {
-        // @ts-ignore
-        const qc = await MediaQCAgent.validateImages({ data: currentData } as any);
+        const qc = await MediaQCAgent.validateImages(currentData as any);
         agent.log('polish', `🖼️ Media QC: ${qc.passed ? 'PASSED' : 'WARNING'} - ${qc.report[0]}`);
         // We don't block on failure, just log metadata
         currentData._media_qc = qc;
@@ -647,8 +633,7 @@ export const researchWorkflow = inngest.createFunction(
       try {
         if (!currentData.faqs || currentData.faqs.length === 0) {
           agent.log('polish', 'Generating FAQs from technical specs...');
-          // @ts-ignore
-          const faqs = await FAQGeneratorAgent.generateFAQ({ data: currentData } as any, apiKeys);
+          const faqs = await FAQGeneratorAgent.generateFAQ(currentData as any, apiKeys);
           if (faqs.length > 0) {
             currentData.faqs = faqs;
             agent.log('polish', `✅ Generated ${faqs.length} FAQ pairs.`);

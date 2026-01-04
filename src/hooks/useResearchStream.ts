@@ -140,7 +140,7 @@ export const useResearchStream = (): UseResearchStreamResult => {
                   const stepLabel = t(`progress.steps.${data.step}`, data.step);
                   newSteps.push({
                     id: data.step,
-                    label: stepLabel,
+                    label: stepLabel as string,
                     status: 'running',
                     logStartIndex: currentLogCount,
                   });

@@ -1,19 +1,19 @@
 import { useState, useCallback } from "react";
 import { AppSidebar, ViewType } from "@/components/layout/AppSidebar";
 import { HomeScreen } from "@/components/home/HomeScreen";
-import { CreateJobForm } from "@/components/dashboard/CreateJobForm";
-import { JobFilters } from "@/components/dashboard/JobFilters";
-import { JobTable } from "@/components/dashboard/JobTable";
-import { BudgetWidget } from "@/components/dashboard/BudgetWidget";
+import { CreateJobForm } from "@/components/Dashboard/CreateJobForm";
+import { JobFilters } from "@/components/Dashboard/JobFilters";
+import { JobTable } from "@/components/Dashboard/JobTable";
+import { BudgetWidget } from "@/components/Dashboard/BudgetWidget";
 import { AgentChatStream } from "@/components/workspace/AgentChatStream";
-import { SKUCard } from "@/components/workspace/SKUCard";
+import { SKUCard } from "@/components/sku/SKUCard";
 import { WorkspaceToolbar } from "@/components/workspace/WorkspaceToolbar";
 import { EvidenceDrawer } from "@/components/workspace/EvidenceDrawer";
 import { ConflictResolutionModal } from "@/components/workspace/ConflictResolutionModal";
 import { ExportManager } from "@/components/export/ExportManager";
 import { AuditLogView } from "@/components/audit/AuditLogView";
 import { ConfigurationPanel } from "@/components/config/ConfigurationPanel";
-import { useMockData } from "@/hooks/useMockData";
+import { useRealData } from "@/hooks/useBackend";
 import { useTheme } from "@/hooks/useTheme";
 import type { JobStatus } from "@/types/job";
 import { ArrowLeft, Download } from "lucide-react";
@@ -54,7 +54,7 @@ export default function Index() {
     resolveConflict,
     addAuditEntry,
     removeBlocker,
-  } = useMockData();
+  } = useRealData();
 
   const filteredJobs = activeFilter === 'all' 
     ? jobs 
@@ -136,24 +136,41 @@ export default function Index() {
   }, []);
 
   const handleRequestFix = useCallback((blockerId: string) => {
-    toast.info('Agent is searching for missing data...');
-    setTimeout(() => {
-      removeBlocker(blockerId);
-      toast.success('Blocker resolved by agent');
-    }, 2000);
-  }, [removeBlocker]);
+    // Repair workflow is currently disabled/pending backend support
+    toast.error('Auto-repair workflow is not currently active.');
+  }, []);
 
   const handleExport = useCallback((format: 'ozon_xml' | 'yandex_yml' | 'wildberries_csv') => {
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, 1000);
+    return new Promise<void>((resolve, reject) => {
+      if (!selectedJob || !skuData) {
+        toast.error('No item to export');
+        reject();
+        return;
+      }
+      
+      const marketplace = format.split('_')[0];
+      const url = `/api/export?id=${skuData.id}&marketplace=${marketplace}`;
+      
+      // Trigger download
+      window.location.href = url;
+      resolve();
     });
-  }, []);
+  }, [selectedJob, skuData]);
 
-  const handlePublish = useCallback(() => {
-    toast.success('Published to all channels successfully!');
-  }, []);
+  const handlePublish = useCallback(async () => {
+    if (!skuData) return;
+    try {
+      const res = await fetch(`/api/items?action=approve&id=${skuData.id}`, {
+        method: 'POST'
+      });
+      if (!res.ok) throw new Error('Failed to publish');
+      
+      toast.success('Published to all channels successfully!');
+      // Assuming invalidateQueries happens via socket or we should force it
+    } catch (e) {
+      toast.error('Failed to publish item');
+    }
+  }, [skuData]);
 
   const handleStartEnrichment = useCallback((supplierString: string) => {
     createJob(supplierString);
@@ -239,86 +256,66 @@ export default function Index() {
                     {selectedJob.inputString}
                   </p>
                 </div>
-
-                <Tabs value={workspaceTab} onValueChange={(v) => setWorkspaceTab(v as 'enrichment' | 'export')}>
-                  <TabsList>
-                    <TabsTrigger value="enrichment">Enrichment</TabsTrigger>
-                    <TabsTrigger value="export" className="gap-2">
-                      <Download className="w-4 h-4" />
-                      Export
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                {workspaceTab === 'enrichment' && (
-                  <WorkspaceToolbar
-                    cost={selectedJob.cost}
-                    costLimit={systemConfig.budgetCaps.maxSpendPerSKU}
-                    duration={selectedJob.duration}
-                    durationLimit={systemConfig.budgetCaps.maxExecutionTime}
-                    onPause={handlePause}
-                    onStop={handleStop}
-                    isPaused={isPaused}
-                  />
-                )}
               </div>
             </div>
+            {/* End Header */}
 
-            {/* Workspace Content */}
-            {workspaceTab === 'enrichment' ? (
-              <div className="flex-1 flex overflow-hidden">
-                {/* Left Panel - Agent Chat (60%) */}
-                <div className="w-[60%] border-r overflow-hidden">
-                  <AgentChatStream
-                    messages={agentMessages}
-                    onDecision={handleDecision}
-                    isProcessing={isProcessing && !isPaused}
-                  />
-                </div>
+            {/* Main Workspace Content */}
+            <div className='flex-1 flex overflow-hidden'>
+              {/* Left Panel: Chat & Logs */}
+              <div className='w-1/3 min-w-[320px] max-w-[480px] border-r border-border flex flex-col bg-background'>
+                <Tabs
+                  value={workspaceTab}
+                  onValueChange={(v) => setWorkspaceTab(v as any)}
+                  className='flex-1 flex flex-col overflow-hidden'
+                >
+                  <div className='px-4 py-3 border-b border-border'>
+                    <TabsList className='grid grid-cols-2 w-full'>
+                      <TabsTrigger value='enrichment'>Research Agent</TabsTrigger>
+                      <TabsTrigger value='export'>Exports</TabsTrigger>
+                    </TabsList>
+                  </div>
 
-                {/* Right Panel - SKU Card (40%) */}
-                <div className="w-[40%] overflow-auto p-4 bg-muted/20">
+                  <div className='flex-1 overflow-hidden relative'>
+                    {workspaceTab === 'enrichment' ? (
+                      <AgentChatStream
+                        messages={agentMessages}
+                        onDecision={handleDecision}
+                        isProcessing={isProcessing && !isPaused}
+                      />
+                    ) : (
+                      <ExportManager
+                        skuId={skuData?.id}
+                        blockers={validationBlockers}
+                        onRequestFix={handleRequestFix}
+                        onExport={handleExport}
+                        onPublish={handlePublish}
+                      />
+                    )}
+                  </div>
+                </Tabs>
+              </div>
+
+              {/* Center Panel: Live SKU Card */}
+              <div className='flex-1 overflow-y-auto bg-muted/20 p-4'>
+                <div className='max-w-4xl mx-auto h-full'>
                   <SKUCard
-                    data={skuData}
-                    onViewEvidence={handleViewEvidence}
-                    onToggleLock={handleToggleLock}
+                    data={skuData?.customFields?._rawClaims?.value as any}
+                    isLoading={isProcessing && !skuData}
+                    onEdit={undefined}
                   />
                 </div>
               </div>
-            ) : (
-              <div className="flex-1 overflow-auto p-6">
-                <div className="max-w-4xl mx-auto">
-                  <ExportManager
-                    skuId={selectedJob.id}
-                    blockers={validationBlockers}
-                    onRequestFix={handleRequestFix}
-                    onExport={handleExport}
-                    onPublish={handlePublish}
-                  />
-                </div>
-              </div>
-            )}
 
-            {/* Evidence Drawer */}
-            <EvidenceDrawer
-              isOpen={evidenceDrawer.isOpen}
-              onClose={() => setEvidenceDrawer({ isOpen: false, fieldName: '' })}
-              fieldName={evidenceDrawer.fieldName}
-              evidence={getEvidence(evidenceDrawer.fieldName)}
-              onVerifyHash={handleVerifyHash}
-            />
-
-            {/* Conflict Resolution Modal */}
-            <ConflictResolutionModal
-              isOpen={!!activeConflict}
-              onClose={() => resolveConflict({ 
-                fieldName: activeConflict?.fieldName || '', 
-                selectedValue: activeConflict?.claims[0]?.value || '', 
-                source: 'left' 
-              })}
-              conflict={activeConflict}
-              onResolve={resolveConflict}
-            />
+              {/* Right Panel: Evidence Drawer */}
+              <EvidenceDrawer
+                isOpen={evidenceDrawer.isOpen}
+                onClose={() => setEvidenceDrawer({ ...evidenceDrawer, isOpen: false })}
+                fieldName={evidenceDrawer.fieldName}
+                evidence={getEvidence(evidenceDrawer.fieldName)}
+                onVerifyHash={handleVerifyHash}
+              />
+            </div>
           </div>
         )}
 

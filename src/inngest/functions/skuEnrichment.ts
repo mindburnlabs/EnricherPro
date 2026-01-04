@@ -53,17 +53,17 @@ export const skuEnrichment = inngest.createFunction(
       );
     });
 
-    // Execute Strategy 1: "Generic Web Search" (simulated via GenericScraper)
+    // Execute Strategy 1: "Generic Web Search" (simulated via FallbackSearchService)
     // In a real app, we'd map plan.strategies to specific adapters.
     const searchResults = await step.run('execute-search', async () => {
       const queries = plan.strategies.flatMap((s) => s.queries).slice(0, 3); // Limit to top 3 queries for MVP
-      const scraper = new (
-        await import('../../services/backend/GenericScraper.js')
-      ).GenericScraper();
+      const { FallbackSearchService } = await import('../../services/backend/fallback.js');
 
       const allResults = [];
       for (const q of queries) {
-        const results = await scraper.fetch(q);
+        const results = await FallbackSearchService.search(q);
+        // Map to expected intermediate format or keep as RetrieverResult
+        // We'll keep as RetrieverResult and update the consumer
         allResults.push(...results);
       }
       return allResults;
@@ -79,14 +79,14 @@ export const skuEnrichment = inngest.createFunction(
           .values({
             sourceUrl: result.url,
             sourceType: 'generic',
-            contentSnippet: result.contentSnippet || '',
-            contentHash: result.contentHash || 'hash_' + Date.now(),
-            priorityScore: result.priorityScore,
+            contentSnippet: result.markdown || '',
+            contentHash: 'hash_' + Date.now(), // Simple hash
+            priorityScore: 50, // Default for fallback
           })
           .returning();
 
         // Extract Data
-        const data = await ExtractorAgent.extract(result.contentSnippet || '', { url: result.url });
+        const data = await ExtractorAgent.extract(result.markdown || '', { url: result.url });
 
         // Map extracted data to Claims
         // Flatten ConsumableDataSchema: strictly only primitives for now

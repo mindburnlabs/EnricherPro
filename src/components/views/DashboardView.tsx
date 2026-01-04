@@ -11,6 +11,7 @@ import {
   Loader2,
   Eye,
 } from 'lucide-react';
+import { useRealData } from '@/hooks/useBackend';
 
 interface MetricCardProps {
   title: string;
@@ -50,43 +51,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
 );
 
 export const DashboardView: React.FC = () => {
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const res = await fetch('/api/jobs?limit=10');
-        if (res.ok) {
-          const data = await res.json();
-          setJobs(data.jobs || []);
-
-          // Client-side stats calculation for now
-          const totalTokens = 31100; // Placeholder until we have a proper stats endpoint
-          const estimatedCost = 1.59;
-          const apiCalls = 47;
-
-          setStats({
-            tokens: totalTokens,
-            cost: estimatedCost,
-            apiCalls: apiCalls,
-          });
-        } else {
-          console.error('Failed to fetch jobs');
-        }
-      } catch (e) {
-        console.error('Error fetching dashboard data:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchJobs();
-    // Poll every 10 seconds for updates
-    const interval = setInterval(fetchJobs, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  const { jobs, budgetData } = useRealData();
+  const loading = !jobs && !budgetData;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -150,22 +116,22 @@ export const DashboardView: React.FC = () => {
       <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
         <MetricCard
           title='Total Tokens'
-          value={stats?.tokens.toLocaleString()}
-          subtext='31% of daily quota'
+          value={budgetData?.tokenUsage.toLocaleString() || '0'}
+          subtext='Usage'
           icon={Zap}
           colorClass='text-blue-500'
         />
         <MetricCard
           title='Estimated Cost'
-          value={`$${stats?.cost.toFixed(2)}`}
+          value={`$${(budgetData?.estimatedCost || 0).toFixed(2)}`}
           subtext='$10.00 daily limit'
           icon={DollarSign}
           colorClass='text-emerald-500'
         />
         <MetricCard
           title='API Calls'
-          value={stats?.apiCalls.toLocaleString()}
-          subtext='42 calls / hour avg'
+          value={budgetData?.apiCalls.toLocaleString() || '0'}
+          subtext='searches performed'
           icon={Activity}
           colorClass='text-rose-500'
         />
@@ -200,7 +166,7 @@ export const DashboardView: React.FC = () => {
             {jobs.map((job) => (
               <tr key={job.id} className='hover:bg-primary-subtle/5 transition-colors group'>
                 <td className='px-6 py-4 truncate max-w-[200px] font-medium text-primary'>
-                  {job.inputRaw}
+                  {job.inputString}
                 </td>
                 <td className='px-6 py-4 font-mono text-xs text-primary-subtle'>
                   {job.mpn || '—'}

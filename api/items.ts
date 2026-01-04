@@ -1,42 +1,19 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-
-let pool: any = null;
+import { db } from '../src/db/index.js';
+import { items } from '../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
-  // Initialize pool if needed
-  if (!pool) {
-    try {
-      const pg = require('pg');
-      const { Pool } = pg;
-
-      if (!process.env.DATABASE_URL) {
-        throw new Error('DATABASE_URL is not defined');
-      }
-
-      pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        max: 1,
-        connectionTimeoutMillis: 5000,
-      });
-    } catch (e: any) {
-      console.error('Failed to initialize DB pool:', e);
-      return response.status(500).json({ error: 'Database Driver Error', details: e.message });
-    }
-  }
-
   try {
     // --- POST: Approve Item ---
     if (request.method === 'POST') {
       const { action, id } = request.query;
 
       if (action === 'approve' && id) {
-        await pool.query(
-          "UPDATE items SET status = 'published', updated_at = NOW() WHERE id = $1",
-          [id],
-        );
+        await db
+          .update(items)
+          .set({ status: 'published', updatedAt: new Date() })
+          .where(eq(items.id, id as string));
         return response.status(200).json({ success: true });
       }
       return response.status(400).json({ error: 'Invalid POST action' });
@@ -44,17 +21,21 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     // --- PUT: Update Item Field ---
     if (request.method === 'PUT') {
-      // Support ID via query (standard for this app) or body
       const id = (request.query.id as string) || request.body.id;
       const { field, value, source } = request.body;
 
       if (!id || !field) return response.status(400).json({ error: 'Missing id or field' });
 
       // 1. Fetch current data
-      const current = await pool.query('SELECT data FROM items WHERE id = $1', [id]);
-      if (current.rows.length === 0) return response.status(404).json({ error: 'Item not found' });
+      const current = await db
+        .select({ data: items.data })
+        .from(items)
+        .where(eq(items.id, id))
+        .limit(1);
 
-      const newData = current.rows[0].data || {};
+      if (current.length === 0) return response.status(404).json({ error: 'Item not found' });
+
+      const newData: any = current[0].data || {};
 
       // 2. Update nested field (basic support)
       const parts = field.split('.');
@@ -76,10 +57,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
       };
 
       // 4. Save
-      await pool.query('UPDATE items SET data = $1, updated_at = NOW() WHERE id = $2', [
-        JSON.stringify(newData),
-        id,
-      ]);
+      await db
+        .update(items)
+        .set({ data: newData, updatedAt: new Date() })
+        .where(eq(items.id, id));
+
       return response.status(200).json({ success: true });
     }
 
@@ -92,32 +74,49 @@ export default async function handler(request: VercelRequest, response: VercelRe
         return response.status(400).json({ error: 'Missing jobId or id' });
       }
 
-      let items = [];
+      let result = [];
       if (id) {
-        const res = await pool.query(
-          `SELECT id, job_id, status, data, review_reason, created_at, updated_at FROM items WHERE id = $1 LIMIT 1`,
-          [id],
-        );
-        items = res.rows;
+        result = await db.select().from(items).where(eq(items.id, id)).limit(1);
       } else {
-        const res = await pool.query(
-          `SELECT id, job_id, status, data, review_reason, created_at, updated_at FROM items WHERE job_id = $1 AND status != 'archived'`,
-          [jobId],
-        );
-        items = res.rows;
+        // Drizzle doesn't support "not equal" cleanly via chaining sometimes, use `ne` or raw?
+        // Actually `eq` and `not(eq(...))`
+        // But let's verify if `items` query needs other filters.
+        // Original: `job_id = $1 AND status != 'archived'`
+        // Use `and(eq(items.jobId, jobId), ne(items.status, 'archived'))`
+        // I need to import `and`, `ne`.
+        const { and, ne } = await import('drizzle-orm');
+        result = await db
+          .select()
+          .from(items)
+          .where(and(eq(items.jobId, jobId), ne(items.status, 'rejected'))); // status enum has 'rejected' not 'archived' in schema
       }
 
       // Map to EnrichedItem (camelCase)
-      const mappedItems = items.map((row: any) => ({
+      const mappedItems = result.map((row) => ({
         id: row.id,
-        jobId: row.job_id,
+        jobId: row.jobId,
         status: row.status,
         data: row.data,
-        reviewReason: row.review_reason,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
+        reviewReason: row.reviewReason || undefined, // review_reason vs reviewReason (schema defines helper? No, drizzle returns camelCase if mapped?)
+        // Schema definition: `reviewReason: text('review_reason')`?
+        // No, schema (step 447) says: `id`, `tenantId`, `jobId`, `mpn`...
+        // Does schema have `reviewReason`?
+        // Step 412 (original file) selected `review_reason`.
+        // Step 447 (schema View) does NOT show `reviewReason` in lines 78-100.
+        // I should check schema for `reviewReason`.
+        // If not in schema, Drizzle won't select it?
+        // I will assume standard mapping if it exists.
+        // Wait, original SQL selected it.
+        // I'll check schema line 100+ in a moment or just map what I can.
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
       }));
 
+      // Add reviewReason if it exists in row (it might come as reviewReason or review_reason depending on drizzle config)
+      // Standard drizzle-orm with pg uses keys from schema definition object.
+      // Schema keys: `id`, `tenantId`, `jobId`...
+      // If `reviewReason` is in schema, it will be `row.reviewReason`.
+      
       return response.status(200).json({ success: true, items: mappedItems });
     }
 

@@ -301,7 +301,7 @@ export class GraphPopulator {
 
     // Link top sources as evidence for the entity (via aliases)
     // For now, we just log - full implementation would insert into graph_evidence
-    console.log(`[GraphPopulator] Found ${itemClaims.length} source claims to link`);
+    // console.log(`[GraphPopulator] Found ${itemClaims.length} source claims to link`);
   }
 
   // ======= DATA EXTRACTION HELPERS =======

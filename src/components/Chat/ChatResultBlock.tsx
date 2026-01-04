@@ -175,7 +175,7 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({
                   {(item.status as any) === 'processing' && (
                     <Loader2 className='w-3 h-3 animate-spin' />
                   )}
-                  {t(`status.${item.status}`, (item.status as any).replace('_', ' '))}
+                  {t(`status.${item.status}`, (item.status as string).replace('_', ' ')) as string}
                 </span>
               </div>
 
