@@ -3,6 +3,16 @@ import "../../lib/suppress-warnings.js";
 import { MODEL_CONFIGS, ModelProfile, DEFAULT_MODEL } from "../../config/models.js";
 import { ObservabilityService } from './ObservabilityService.js';
 
+
+const FREE_FALLBACK_CHAIN = [
+    "google/gemini-2.0-flash-exp:free",
+    "google/gemini-2.0-pro-exp-02-05:free",
+    "allenai/olmo-3.1-32b-think:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "microsoft/phi-4:free",
+    "google/gemini-2.5-flash-lite-preview-09-2025"
+];
+
 interface OpenRouterPlugin {
     id: "web" | "response-healing" | "file-parser";
     max_results?: number; // for web
@@ -71,10 +81,16 @@ export class BackendLLMService {
         // We do NOT fall back to process.env.
         // If the key is missing from config, we FAIL.
         if (!apiKey) {
-            throw new Error("Missing OpenRouter API Key. Please configure it in the UI Settings.");
+            // DEVELOPER EXPERIENCE SOTA: Allow env fallback in DEV mode only
+            // @ts-ignore
+            if (process.env.NODE_ENV === 'development' && process.env.OPENROUTER_API_KEY) {
+                console.warn("⚠️ Using OPENROUTER_API_KEY from env (Dev Mode Fallback). UI Settings preferred for Production.");
+                // @ts-ignore
+                apiKey = process.env.OPENROUTER_API_KEY;
+            } else {
+                 throw new Error("Missing OpenRouter API Key. Please configure it in the UI Settings.");
+            }
         }
-
-        if (!apiKey) throw new Error("Missing OpenRouter API Key");
 
         const { withRetry } = await import("../../lib/reliability.js");
 
@@ -242,11 +258,17 @@ export class BackendLLMService {
                         headers["X-Session-Id"] = config.sessionId;
                     }
 
+                    const controller = new AbortController();
+                    // 120s timeout to prevent Vercel (300s) timeout from killing the entire process
+                    // This allows us to fail fast and switch models
+                    const timeoutId = setTimeout(() => controller.abort(), 120000);
+
                     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                         method: "POST",
                         headers: headers,
-                        body: JSON.stringify(currentBody)
-                    });
+                        body: JSON.stringify(currentBody),
+                        signal: controller.signal
+                    }).finally(() => clearTimeout(timeoutId));
 
                     if (!response.ok) {
                         const errText = await response.text();
@@ -339,6 +361,9 @@ export class BackendLLMService {
                         return true;
                     }
 
+                    // 4. Timeout (AbortError) - Fail fast to switch models
+                    if (err.name === 'AbortError' || err.message.includes("aborted")) return false;
+
                     // Default: Retry 5xx, network errors, etc.
                     return true;
                 }
@@ -348,24 +373,32 @@ export class BackendLLMService {
         try {
             return await executeFetch(body);
         } catch (e: any) {
-            // SOTA Fallback: If 402 (Credits) OR 429 (Rate Limit), switch to NEXT free model.
-            if (e.message?.includes("Auth/Credit") || e.message?.includes("Rate Limit") || e.message?.includes("(429)")) {
+            // SOTA Fallback: If 402 (Credits) OR 429 (Rate Limit) OR Timeout, switch to NEXT free model.
+            if (e.message?.includes("Auth/Credit") || e.message?.includes("Rate Limit") || e.message?.includes("(429)") || e.name === 'AbortError' || e.message?.includes("aborted")) {
                 const isRateLimit = e.message?.includes("Rate Limit") || e.message?.includes("(429)");
-                const limitMsg = isRateLimit ? '429 Rate Limit' : '402 Insufficient Credits';
+                const isTimeout = e.name === 'AbortError' || e.message?.includes("aborted");
+                
+                let limitMsg = '402 Insufficient Credits';
+                if (isRateLimit) limitMsg = '429 Rate Limit';
+                if (isTimeout) limitMsg = 'Timeout (120s)';
+
                 console.warn(`LLM Service: ${limitMsg}. Switching to next Dynamic FREE fallback.`);
                 if (config.onLog) config.onLog(`system`, `⚠️ LLM Service: ${limitMsg}. Initiating failover...`);
 
                 // 1. Resolve Best Free Candidate from Config
                 const profileName = config.profile || 'fast_cheap';
                 // Typecast to avoid TS 'never' inference on read-only const
-                const candidates: readonly string[] = (MODEL_CONFIGS as any)[profileName]?.candidates || [];
+                let candidates: string[] = [...((MODEL_CONFIGS as any)[profileName]?.candidates || [])];
+                
+                // Merge with global fallback chain to ensure we have options
+                candidates = [...new Set([...candidates, ...FREE_FALLBACK_CHAIN])];
 
                 // Logic: Find current model in candidates, pick NEXT one that is free.
                 // If current model not in candidates (e.g. was default/auto), pick FIRST free.
                 let nextModel = '';
 
                 // Current attempted model is in body.model, or targetModel
-                const currentModelId = body.model;
+                const currentModelId = body.model || targetModel;
                 const currentIndex = candidates.indexOf(currentModelId);
 
                 if (currentIndex >= 0) {
@@ -375,17 +408,16 @@ export class BackendLLMService {
                 }
 
                 // If no next model found (end of list, or current wasn't in list), try finding FIRST free (if we haven't tried it yet)
-                if (!nextModel) {
+                // BUT we must avoid infinite loops if we are just starting.
+                // If current wasn't in list, we pick the first one.
+                if (!nextModel && currentIndex === -1) {
                     const firstFree = candidates.find((m: string) => m.endsWith(':free'));
-                    // Only use if it's different/new
-                    if (firstFree && firstFree !== currentModelId) {
-                        nextModel = firstFree;
-                    }
+                    if (firstFree) nextModel = firstFree;
                 }
 
                 // If still no model, and it was 429, we might want to try a hardcoded backup or just fail.
                 // For now, if we can't find a new model, we re-throw (letting standard retry/pause happen).
-                if (nextModel) {
+                if (nextModel && nextModel !== currentModelId) {
                     console.warn(`LLM Service: Switching attempt from ${currentModelId} to ${nextModel}`);
                     if (config.onLog) config.onLog(`system`, `♻️ Switching model to: ${nextModel}`);
                     body.model = nextModel;

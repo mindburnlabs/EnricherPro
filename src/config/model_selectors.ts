@@ -28,11 +28,14 @@ export type ModelSelector =
 export const MODEL_SELECTOR_CONFIGS: Record<ModelProfile, { selectors: ModelSelector[]; description: string }> = {
     [ModelProfile.FAST_CHEAP]: {
         selectors: [
+            { kind: 'pattern', regex: '^google/gemini-2.0-flash-exp:free', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^google/gemini-.*flash-lite', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^anthropic/claude-.*haiku', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^openai/gpt-4o-mini$', strategy: 'latest', limit: 1 },
+            { kind: 'pattern', regex: '^meta-llama/llama-3.3-.*free', strategy: 'latest', limit: 1 },
+            { kind: 'pattern', regex: '^microsoft/phi-4:free', strategy: 'latest', limit: 1 },
             // Smart Free Fallback: Best Free model by Recency
-            { kind: 'smart_free', sort: 'recency', limit: 1 },
+            { kind: 'smart_free', sort: 'recency', limit: 2 },
             { kind: 'auto', id: 'openrouter/auto' }
         ],
         description: 'High speed, low cost parsing/normalization.'
@@ -65,12 +68,13 @@ export const MODEL_SELECTOR_CONFIGS: Record<ModelProfile, { selectors: ModelSele
 
     [ModelProfile.REASONING]: {
         selectors: [
+            { kind: 'pattern', regex: '^deepseek/deepseek-r1:free', strategy: 'latest', limit: 1 }, // Specific free
+            { kind: 'pattern', regex: '^deepseek/deepseek-r1$', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^openai/o1$', strategy: 'latest', limit: 1 },
             { kind: 'pattern', regex: '^anthropic/claude-.*sonnet', strategy: 'latest', limit: 1 },
-            { kind: 'pattern', regex: '^deepseek/deepseek-r1$', strategy: 'latest', limit: 1 },
             // Smart Free Fallback: Largest Context for Reasoning (often correlates with model size/capability for now)
             // or 'recency' to catch new strong free models
-            { kind: 'smart_free', sort: 'recency', limit: 1 },
+            { kind: 'smart_free', sort: 'recency', limit: 3 }, // Increased limit
             { kind: 'auto', id: 'openrouter/auto' }
         ],
         description: 'Conflict resolution, truth arbitration, deep reasoning.'

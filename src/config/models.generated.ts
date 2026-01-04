@@ -9,7 +9,10 @@ import { ModelProfile } from './model_selectors.js';
 export const MODEL_CONFIGS = {
   "fast_cheap": {
     "candidates": [
+      "google/gemini-2.0-flash-exp:free",
+      "meta-llama/llama-3.3-70b-instruct:free",
       "allenai/olmo-3.1-32b-think:free",
+      "xiaomi/mimo-v2-flash:free",
       "google/gemini-2.5-flash-lite-preview-09-2025",
       "anthropic/claude-haiku-4.5",
       "openai/gpt-4o-mini",
@@ -20,9 +23,11 @@ export const MODEL_CONFIGS = {
   "reasoning": {
     "candidates": [
       "allenai/olmo-3.1-32b-think:free",
+      "xiaomi/mimo-v2-flash:free",
+      "nvidia/nemotron-3-nano-30b-a3b:free",
+      "deepseek/deepseek-r1",
       "openai/o1",
       "anthropic/claude-sonnet-4.5",
-      "deepseek/deepseek-r1",
       "openrouter/auto"
     ],
     "description": "Conflict resolution, truth arbitration, deep reasoning."
