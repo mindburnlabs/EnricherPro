@@ -120,7 +120,7 @@ export class DiscoveryAgent {
         }
     }
 
-    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string, language: string = 'en', model?: string, sourceConfig?: { official: boolean, marketplace: boolean, community: boolean, specificOfficial?: string[], specificMarketplace?: string[], specificCommunity?: string[] }, useFlashPlanner: boolean = true): Promise<AgentPlan> {
+    static async plan(inputRaw: string, mode: ResearchMode = 'balanced', apiKeys?: Record<string, string>, promptOverride?: string, onLog?: (msg: string) => void, context?: string, language: string = 'en', model?: string, sourceConfig?: { official: boolean, marketplace: boolean, community: boolean, specificOfficial?: string[], specificMarketplace?: string[], specificCommunity?: string[], sourceOrder?: ('official' | 'marketplace' | 'community')[] }, useFlashPlanner: boolean = true): Promise<AgentPlan> {
 
         // 0. Auto-Detect Mode (Adaptive Strategy)
         // If mode is 'balanced' (default), we check if we should upgrade/downgrade based on complexity.
@@ -195,6 +195,9 @@ export class DiscoveryAgent {
         ${formatSourceRule("Official Sources (hp.com, canon.com, etc)", sourceConfig.official, sourceConfig.specificOfficial, "FORBIDDEN (Do not generate queries for official sites)")}
         ${formatSourceRule("Marketplaces (Amazon, Alibaba, Wildberries)", sourceConfig.marketplace, sourceConfig.specificMarketplace, "FORBIDDEN (Do not generate queries for marketplaces)")}
         ${formatSourceRule("Community/Forums (Reddit, FixYourOwnPrinter)", sourceConfig.community, sourceConfig.specificCommunity, "FORBIDDEN (Do not generate queries for forums)")}
+        
+        SOURCE PRIORITY: ${sourceConfig.sourceOrder ? sourceConfig.sourceOrder.join(' > ').toUpperCase() : 'DEFAULT'}
+        (Strictly prioritize sources in this order. If the first priority is applicable, allocate 70% of query bandwidth to it.)
         ` : "";
 
         // Dynamic Language Rules

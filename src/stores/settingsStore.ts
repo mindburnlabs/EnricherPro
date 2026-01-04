@@ -34,6 +34,7 @@ export interface SettingsState {
         specificOfficial: string[];
         specificMarketplace: string[];
         specificCommunity: string[];
+        sourceOrder: ('official' | 'marketplace' | 'community')[];
     };
 
     // Budgets/Modes
@@ -78,6 +79,7 @@ export interface SettingsState {
     setAgentModel: (agent: 'planning' | 'extraction' | 'reasoning', model: string) => void;
     // Granular Source Control
     setSpecificDomains: (type: 'official' | 'marketplace' | 'community', domains: string[]) => void;
+    setSourceOrder: (order: ('official' | 'marketplace' | 'community')[]) => void;
 
     resetPrompts: () => void;
 }
@@ -396,9 +398,9 @@ export const useSettingsStore = create<SettingsState>()(
                 marketplace: true,
                 community: true,
                 blockedDomains: ['pinterest.com', 'youtube.com'],
-                specificOfficial: [],
                 specificMarketplace: [],
-                specificCommunity: []
+                specificCommunity: [],
+                sourceOrder: ['official', 'marketplace', 'community']
             },
             budgets: {
                 fast: { maxQueries: 3, limitPerQuery: 3, concurrency: 5 },
@@ -453,11 +455,13 @@ export const useSettingsStore = create<SettingsState>()(
             setAgentModel: (agent, model) => set((state) => ({
                 [agent === 'planning' ? 'planningModel' : agent === 'extraction' ? 'extractionModel' : 'reasoningModel']: model
             })),
-            setSpecificDomains: (type, domains) => set((state) => ({
                 sources: {
                     ...state.sources,
                     [type === 'official' ? 'specificOfficial' : type === 'marketplace' ? 'specificMarketplace' : 'specificCommunity']: domains
                 }
+            })),
+            setSourceOrder: (order) => set((state) => ({
+                sources: { ...state.sources, sourceOrder: order }
             })),
             resetPrompts: () => {
                 const lang = get().language;
@@ -497,6 +501,7 @@ export const useSettingsStore = create<SettingsState>()(
                     if (!state.sources.specificOfficial) state.sources.specificOfficial = [];
                     if (!state.sources.specificMarketplace) state.sources.specificMarketplace = [];
                     if (!state.sources.specificCommunity) state.sources.specificCommunity = [];
+                    if (!state.sources.sourceOrder) state.sources.sourceOrder = ['official', 'marketplace', 'community'];
 
                     // SCRUBBER: Remove phantom 'openai/gpt-5.2' and legacy Gemini defaults
                     const invalidModelIds = ['openai/gpt-5.2', 'google/gemini-2.0-pro-exp-02-05:free', 'google/gemini-2.0-flash-exp:free'];

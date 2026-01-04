@@ -2,7 +2,7 @@ import React from 'react';
 import { Check, Clock, ShieldAlert, User, Search, Database, ArrowRight } from 'lucide-react';
 
 export const AuditTimeline: React.FC = () => {
-    // Mock Data for MVP
+    // Mock Data for MVP - Enhanced with Diff Data
     const events = [
         {
             id: 1,
@@ -11,7 +11,12 @@ export const AuditTimeline: React.FC = () => {
             agent: 'Synthesis Agent',
             action: 'Merged Data',
             details: 'Combined official sources for Canon 057 yield.',
-            status: 'success'
+            status: 'success',
+            diff: {
+                field: 'yield',
+                before: 'Unknown',
+                after: '3100 pages'
+            }
         },
         {
             id: 2,
@@ -20,7 +25,12 @@ export const AuditTimeline: React.FC = () => {
             agent: 'Governance',
             action: 'Conflict Detected',
             details: 'Yield mismatch: 3100 (Official) vs 3000 (Retailer).',
-            status: 'warning'
+            status: 'warning',
+            diff: {
+                field: 'yield',
+                before: '3000 (Retailer)',
+                after: '3100 (Official)'
+            }
         },
         {
             id: 3,
@@ -29,7 +39,12 @@ export const AuditTimeline: React.FC = () => {
             agent: 'Logistics Agent',
             action: 'Extracted Weight',
             details: 'Found 0.85kg on nix.ru.',
-            status: 'success'
+            status: 'success',
+            diff: {
+                field: 'weight',
+                before: null,
+                after: '0.85 kg'
+            }
         },
         {
             id: 4,
@@ -61,27 +76,52 @@ export const AuditTimeline: React.FC = () => {
                 {events.map((event) => (
                     <div key={event.id} className="relative pl-8">
                         {/* Timeline Dot */}
-                        <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 bg-white dark:bg-black flex items-center justify-center`}>
-                           <div className="bg-gray-200 dark:bg-gray-700 w-2 h-2 rounded-full"></div>
+                        <div className={`absolute -left-[9px] top-6 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 bg-white dark:bg-black flex items-center justify-center`}>
+                           <div className={`w-2 h-2 rounded-full ${
+                               event.status === 'warning' ? 'bg-amber-500' :
+                               event.status === 'success' ? 'bg-emerald-500' :
+                               'bg-gray-200 dark:bg-gray-700'
+                           }`}></div>
                         </div>
 
-                        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                    <div className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <div className="bg-white dark:bg-[#0f1115] border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
                                         {getIcon(event.type)}
                                     </div>
-                                    <span className="font-bold text-gray-900 dark:text-white">{event.agent}</span>
-                                    <span className="text-xs text-gray-400">•</span>
-                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{event.action}</span>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-gray-900 dark:text-white text-sm">{event.agent}</span>
+                                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 font-mono">
+                                                {event.action}
+                                            </span>
+                                        </div>
+                                        <div className="text-xs text-gray-400 mt-0.5">{event.details}</div>
+                                    </div>
                                 </div>
                                 <span className="text-xs text-gray-400 font-mono">
                                     {new Date(event.timestamp).toLocaleTimeString()}
                                 </span>
                             </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 ml-9">
-                                {event.details}
-                            </p>
+
+                            {/* Diff View */}
+                            {event.diff && (
+                                <div className="mt-4 bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-gray-800 rounded-lg p-3 text-xs font-mono">
+                                    <div className="flex items-center justify-between text-gray-500 mb-2 uppercase tracking-wider text-[10px] font-bold">
+                                        <span>{event.diff.field}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex-1 p-2 bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-400 rounded border border-red-100 dark:border-red-900/20 line-through opacity-75">
+                                            {event.diff.before || 'null'}
+                                        </div>
+                                        <ArrowRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                                        <div className="flex-1 p-2 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 rounded border border-emerald-100 dark:border-emerald-900/20 font-bold">
+                                            {event.diff.after}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}

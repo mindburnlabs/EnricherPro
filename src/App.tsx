@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { triggerResearch } from './lib/api.js';
+import { ToastProvider } from './components/layout/ToastContext.js';
 
 // Layouts & Views
 import { AppLayout } from './components/layout/AppLayout.js';
@@ -8,12 +9,14 @@ import { D2Home } from './components/views/D2Home.js';
 import { AuditTimeline } from './components/views/AuditTimeline.js';
 import { ConfigView } from './components/views/ConfigView.js';
 import { SettingsView } from './components/Settings/SettingsView.js';
+import { DashboardView } from './components/views/DashboardView.js';
 
 // Research Components
 import { ChatLayout } from './components/Chat/ChatLayout.js';
 import { ChatInterface } from './components/Chat/ChatInterface.js';
 import { SplitLayout } from './components/layout/SplitLayout.js';
 import { SKUCard } from './components/sku/SKUCard.js';
+import { ItemDetail } from './components/Research/ItemDetail.js';
 
 // Stores & Hooks
 import { useSettingsStore } from './stores/settingsStore.js';
@@ -53,10 +56,24 @@ const App: React.FC = () => {
     const { status, progress, activeSku, logs, startStream, reset } = useResearchStream();
 
     // Handler: User submits search from Home
+    // Auto-open settings if keys missing
+    const { apiKeys, sources, budgets } = useSettingsStore();
+    useEffect(() => {
+        if (!apiKeys.firecrawl || !apiKeys.openRouter) {
+             // Only auto-open if likely not configured
+             // setIsSettingsOpen(true); 
+        }
+    }, []);
+
+    // Handler: User submits search from Home
     const handleHomeSearch = async (query: string) => {
         try {
             // Trigger API to start job
-            const res = await triggerResearch(query, 'balanced');
+            const res = await triggerResearch(query, 'balanced', {
+                apiKeys,
+                budgets,
+                sourceConfig: sources
+            });
             if (res.jobId) {
                 setActiveJobId(res.jobId);
                 startStream(res.jobId);
@@ -74,14 +91,7 @@ const App: React.FC = () => {
          startStream(jobId);
     };
 
-    // Auto-open settings if keys missing
-    const { apiKeys } = useSettingsStore();
-    useEffect(() => {
-        if (!apiKeys.firecrawl || !apiKeys.openRouter) {
-             // Only auto-open if likely not configured
-             // setIsSettingsOpen(true); 
-        }
-    }, []);
+
 
     // Render View Content
     const renderContent = () => {
@@ -148,19 +158,44 @@ const App: React.FC = () => {
             case 'config':
                 return <ConfigView />;
 
+
             case 'dashboard':
-                return <div className="p-8 text-center text-primary-subtle">Dashboard Coming Soon</div>;
+                return <DashboardView />;
                 
             default:
                 return <D2Home onSearch={handleHomeSearch} />;
         }
     };
 
+    // Item Management Handlers
+    const [isItemDetailOpen, setIsItemDetailOpen] = useState(false);
+
+    const handleApproveItem = async (id: string) => {
+        try {
+            await fetch(`/api/items/${id}/approve`, { method: 'POST' });
+            // Ideally trigger refresh or update local state
+            setIsItemDetailOpen(false);
+        } catch (e) {
+            console.error("Failed to approve item", e);
+        }
+    };
+
+    const handleUpdateItem = async (id: string, field: string, value: any, source: string) => {
+        try {
+            await fetch(`/api/items/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field, value, source })
+            });
+            // Update local state if needed (optimistic)
+        } catch (e) {
+            console.error("Failed to update item", e);
+        }
+    };
+
     return (
-        <>
+        <ToastProvider>
             <AppLayout currentView={currentView} onNavigate={(v) => {
-                // If navigating away from research, maybe warn? or just switch.
-                // For now just switch.
                 setCurrentView(v as ViewState);
             }}>
                 {renderContent()}
@@ -172,7 +207,15 @@ const App: React.FC = () => {
                 onThemeChange={toggleTheme}
                 currentTheme={theme}
             />
-        </>
+
+            <ItemDetail
+                item={activeSku}
+                open={isItemDetailOpen}
+                onClose={() => setIsItemDetailOpen(false)}
+                onApprove={handleApproveItem}
+                onUpdate={handleUpdateItem}
+            />
+        </ToastProvider>
     );
 };
 

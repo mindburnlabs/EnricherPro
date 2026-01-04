@@ -7,7 +7,8 @@ import { EvidenceTooltip } from './EvidenceTooltip.js';
 import { CompletenessMeter } from './CompletenessMeter.js';
 import { ManualEntryDialog } from './ManualEntryDialog.js';
 import { ConflictResolver } from './ConflictResolver.js';
-import { PenTool, RefreshCw } from 'lucide-react';
+import { PenTool, RefreshCw, Clock } from 'lucide-react';
+import { BlockersPanel } from '../sku/BlockersPanel.js';
 
 interface ItemDetailProps {
     item: EnrichedItem | null;
@@ -71,7 +72,11 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                 onClick={() => !isNA && openCitations(fieldKey)}
                 className={`flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border transition-colors group ${fieldEnv?.is_conflict ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-500'} ${!isNA ? 'cursor-pointer' : ''}`}
             >
-                <span className="text-sm font-medium text-gray-500 capitalize">{label}</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-500 capitalize">{label}</span>
+                     {/* History Icon (Visual mock) */}
+                    <Clock size={12} className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
                 <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
                     <TrustBadge evidence={fieldEnv} />
                     <span className={`text-sm font-medium whitespace-pre-wrap text-right flex-1 break-words ${isNA ? 'text-gray-400 italic' : 'text-gray-900 dark:text-gray-100'}`}>
@@ -132,6 +137,8 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
 
+                <BlockersPanel item={item} />
+                
                 <CompletenessMeter data={data} />
 
                 {/* Identity Section */}
@@ -444,6 +451,20 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onA
                 onClose={() => setCitationField(null)}
                 fieldLabel={citationField || ''}
                 evidence={citationField ? evidence[citationField] : []}
+                onConfirm={(ev) => {
+                    // Start a manual override to confirm current value as verified
+                    if (citationField && item && onUpdate) {
+                         // We re-save the current value but with a 'verified' flag or source
+                         // For now, we reuse onUpdate with special source
+                         const currentValue = citationField.split('.').reduce((o, i) => o?.[i], item.data);
+                         onUpdate(item.id, citationField, currentValue, 'manual_verification');
+                         setCitationField(null);
+                    }
+                }}
+                onReject={() => {
+                    // Placeholder for rejection logic
+                    alert(t('common:actions.rejected_impl_pending'));
+                }}
             />
 
             <ManualEntryDialog

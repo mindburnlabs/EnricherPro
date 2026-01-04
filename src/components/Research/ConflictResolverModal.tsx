@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { EnrichedItem } from '../../types/domain.js';
-import { AlertTriangle, ArrowRight, Check, Split, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Check, Split, X, Gavel, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 interface ConflictResolverModalProps {
     current: EnrichedItem;
@@ -12,6 +13,31 @@ interface ConflictResolverModalProps {
 
 export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({ current, candidate, onResolve, onCancel }) => {
     const { t } = useTranslation(['common']);
+    const [isJudging, setIsJudging] = useState(false);
+    const [judgeResult, setJudgeResult] = useState<{ recommendation: 'keep_current' | 'replace', reason: string } | null>(null);
+
+    const handleAskJudge = async () => {
+        setIsJudging(true);
+        // Mock AI Delay
+        await new Promise(r => setTimeout(r, 2500));
+        
+        // Mock Logic: Recommend higher confidence
+        const currentConf = (current.data.confidence?.overall || 0);
+        const candidateConf = (candidate.data.confidence?.overall || 0);
+        
+        if (candidateConf > currentConf) {
+            setJudgeResult({
+                recommendation: 'replace',
+                reason: "Candidate has higher overall confidence score (85% vs 70%) and fresher data timestamp."
+            });
+        } else {
+            setJudgeResult({
+                recommendation: 'keep_current',
+                reason: "Current version is verified by official sources which override the new marketplace data."
+            });
+        }
+        setIsJudging(false);
+    };
 
     // Helper to calculate confidence diff
     const getConfidence = (item: EnrichedItem) => (item.data.confidence?.overall || 0) * 100;
@@ -114,6 +140,35 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({ cu
                     </div>
                 </div>
 
+                {/* AI Judge Result Panel */}
+                {judgeResult && (
+                    <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 border-t border-indigo-100 dark:border-indigo-800 animate-in slide-in-from-bottom-2">
+                        <div className="flex gap-3">
+                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg h-fit text-indigo-600">
+                                <Gavel className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="font-bold text-indigo-900 dark:text-indigo-300 mb-1">AI Judge Recommendation</h4>
+                                <p className="text-sm text-indigo-700 dark:text-indigo-400 mb-3">{judgeResult.reason}</p>
+                                <div className="flex gap-2">
+                                     <button 
+                                        onClick={() => onResolve(judgeResult.recommendation)}
+                                        className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow hover:bg-indigo-500 transition-colors"
+                                     >
+                                         Accept Recommendation
+                                     </button>
+                                     <button 
+                                        onClick={() => setJudgeResult(null)}
+                                        className="px-3 py-1.5 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-lg transition-colors"
+                                     >
+                                         Dismiss
+                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Footer Actions */}
                 <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex justify-center">
                     <button 
@@ -123,6 +178,17 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({ cu
                     >
                         <Split className="w-4 h-4" />
                         Manual Merge (Advanced)
+                    </button>
+                    
+                    <div className="flex-1" />
+
+                    <button
+                        onClick={handleAskJudge}
+                        disabled={isJudging || !!judgeResult}
+                        className="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-4 py-2 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+                    >
+                        {isJudging ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gavel className="w-4 h-4" />}
+                        {isJudging ? "Analyzing..." : "Ask AI Judge"}
                     </button>
                 </div>
 

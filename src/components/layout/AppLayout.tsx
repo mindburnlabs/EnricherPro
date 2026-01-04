@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
     LayoutDashboard, 
@@ -11,6 +11,8 @@ import {
     Search,
     Plus 
 } from 'lucide-react';
+import { CommandPalette } from './CommandPalette.js';
+import { StatusBar } from './StatusBar.js';
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -21,13 +23,34 @@ interface AppLayoutProps {
 export const AppLayout: React.FC<AppLayoutProps> = ({ children, currentView, onNavigate }) => {
     const { t } = useTranslation('common');
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [isCmdKOpen, setIsCmdKOpen] = useState(false);
 
-    // Mock History Data (will be replaced by real data later)
+    useEffect(() => {
+        const down = (e: KeyboardEvent) => {
+            if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                setIsCmdKOpen((open) => !open);
+            }
+        };
+        document.addEventListener('keydown', down);
+        return () => document.removeEventListener('keydown', down);
+    }, []);
+
+    // Mock History Data
     const history = [
         { id: 1, title: 'HP CF226X Specs', date: '2h ago' },
         { id: 2, title: 'Canon 057 Yield', date: '5h ago' },
         { id: 3, title: 'Brother TN-2420', date: '1d ago' },
     ];
+
+    // Helper for Breadcrumbs
+    const getBreadcrumbs = () => {
+        const path = ['Home'];
+        if (currentView !== 'home') {
+            path.push(currentView.charAt(0).toUpperCase() + currentView.slice(1));
+        }
+        return path;
+    };
 
     const NavItem = ({ view, icon: Icon, label }: { view: 'home' | 'dashboard' | 'audit' | 'config', icon: any, label: string }) => (
         <button
@@ -53,6 +76,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, currentView, onN
 
     return (
         <div className="flex h-screen bg-background text-primary overflow-hidden">
+            {/* Command Palette */}
+            <CommandPalette 
+                isOpen={isCmdKOpen} 
+                onClose={() => setIsCmdKOpen(false)}
+                onNavigate={(v) => onNavigate(v as any)}
+            />
+
             {/* Sidebar */}
             <aside 
                 className={`${isSidebarCollapsed ? 'w-16' : 'w-64'} 
@@ -135,7 +165,34 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, currentView, onN
 
             {/* Main Content Area */}
             <main className="flex-1 overflow-hidden relative flex flex-col">
-                {children}
+                {/* Top Navigation */}
+                <header className="h-14 border-b border-border-subtle flex items-center px-6 justify-between bg-surface/30 backdrop-blur-sm">
+                    {/* ... (existing header content) ... */}
+                    <div className="flex items-center text-sm text-primary-subtle">
+                         {getBreadcrumbs().map((crumb, i) => (
+                             <React.Fragment key={i}>
+                                 {i > 0 && <ChevronRight size={14} className="mx-2 text-border-highlight" />}
+                                 <span className={i === getBreadcrumbs().length - 1 ? 'font-medium text-primary' : ''}>
+                                     {i === 2 && currentView === 'home' ? `SKU: ${crumb}` : crumb}
+                                 </span>
+                             </React.Fragment>
+                         ))}
+                    </div>
+                    
+                    <div className="hidden md:flex items-center gap-4 text-xs text-primary-subtle">
+                        <span className="flex items-center gap-1 border border-border-subtle rounded px-1.5 py-0.5">
+                            <span className="font-mono">⌘</span> K
+                        </span>
+                        <span>to search...</span>
+                    </div>
+                </header>
+
+                <div className="flex-1 overflow-hidden relative">
+                    {children}
+                </div>
+
+                {/* Persistent Status Bar */}
+                <StatusBar />
             </main>
         </div>
     );

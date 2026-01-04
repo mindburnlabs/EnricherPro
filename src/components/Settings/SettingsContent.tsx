@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Moon, Sun, Globe, Brain, Zap, Key, Layout, Shield, Database, Check, History, ChevronRight, AlertCircle, RefreshCw, Wand2, Factory, Search, Server, Network } from 'lucide-react';
+import { X, Save, Moon, Sun, Globe, Brain, Zap, Key, Layout, Shield, Database, Check, History, ChevronRight, AlertCircle, RefreshCw, Wand2, Factory, Search, Server, Network, ArrowUp, ArrowDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore, SettingsState, DEFAULT_DISCOVERY_PROMPT, DEFAULT_SYNTHESIS_PROMPT, DEFAULT_DISCOVERY_PROMPT_RU, DEFAULT_SYNTHESIS_PROMPT_RU, DEFAULT_LOGISTICS_PROMPT, DEFAULT_LOGISTICS_PROMPT_RU, DEFAULT_ENRICHMENT_PROMPT } from '../../stores/settingsStore.js';
 
@@ -595,6 +595,52 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({ onClose, onThe
 
                     {activeTab === 'sources' && (
                         <div className="space-y-8 max-w-2xl animate-in slide-in-from-right-4 duration-300">
+                            <Section title={t('settings:sources.priority_title') || "SOURCE PRIORITY"}>
+                                <div className="space-y-2">
+                                    {localConfig.sources.sourceOrder.map((source, index) => (
+                                        <div key={source} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs font-bold bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 w-6 h-6 flex items-center justify-center rounded-full">
+                                                    {index + 1}
+                                                </span>
+                                                <span className="text-sm font-medium capitalize text-gray-700 dark:text-gray-300">
+                                                    {t(`settings:sources.${source}`)}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => {
+                                                        if (index === 0) return;
+                                                        const newOrder = [...localConfig.sources.sourceOrder];
+                                                        [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+                                                        setLocalConfig({ ...localConfig, sources: { ...localConfig.sources, sourceOrder: newOrder } });
+                                                    }}
+                                                    disabled={index === 0}
+                                                    className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-gray-500 disabled:opacity-30 transition-colors"
+                                                >
+                                                    <ArrowUp className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (index === localConfig.sources.sourceOrder.length - 1) return;
+                                                        const newOrder = [...localConfig.sources.sourceOrder];
+                                                        [newOrder[index + 1], newOrder[index]] = [newOrder[index], newOrder[index + 1]];
+                                                        setLocalConfig({ ...localConfig, sources: { ...localConfig.sources, sourceOrder: newOrder } });
+                                                    }}
+                                                    disabled={index === localConfig.sources.sourceOrder.length - 1}
+                                                    className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-gray-500 disabled:opacity-30 transition-colors"
+                                                >
+                                                    <ArrowDown className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">
+                                    The "Discovery Agent" will prioritize sources at the top of this list given 70% of query bandwidth.
+                                </p>
+                            </Section>
+
                             <Section title={t('settings:sources.allowed_types')}>
                                 <div className="grid grid-cols-1 gap-3">
                                     <SourceCard

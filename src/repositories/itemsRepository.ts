@@ -1,5 +1,5 @@
 
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { items, jobs } from '../db/schema.js';
 import { Transformers } from '../lib/transformers.js';
@@ -119,5 +119,23 @@ export class ItemsRepository {
         await db.update(items)
             .set({ status: status, reviewReason: reason, updatedAt: new Date() })
             .where(eq(items.id, id));
+    }
+
+    static async listAll(limit: number = 50) {
+        const results = await db.select({
+            id: items.id,
+            jobId: items.jobId,
+            mpn: items.mpn,
+            brand: items.brand,
+            status: items.status,
+            updatedAt: items.updatedAt,
+            inputRaw: jobs.inputRaw
+        })
+        .from(items)
+        .leftJoin(jobs, eq(items.jobId, jobs.id))
+        .orderBy(desc(items.updatedAt))
+        .limit(limit);
+        
+        return results;
     }
 }

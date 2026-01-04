@@ -31,6 +31,44 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onJobCreated }) =>
     const [selectedResearchItem, setSelectedResearchItem] = useState<EnrichedItem | null>(null);
     const { steps, items, logs, status, error, startStream, reset } = useResearchStream();
 
+    // Resizable Split Pane Logic
+    const [rightPanelWidth, setRightPanelWidth] = useState(45); // percentage
+    const [isResizing, setIsResizing] = useState(false);
+    const splitContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('d2_split_layout_width');
+        if (saved) setRightPanelWidth(Number(saved));
+    }, []);
+
+    const startResizing = React.useCallback(() => setIsResizing(true), []);
+    const stopResizing = React.useCallback(() => {
+        setIsResizing(false);
+        localStorage.setItem('d2_split_layout_width', rightPanelWidth.toString());
+    }, [rightPanelWidth]);
+
+    const resize = React.useCallback((e: MouseEvent) => {
+        if (isResizing && splitContainerRef.current) {
+            const containerWidth = splitContainerRef.current.clientWidth;
+            const newRightWidth = ((containerWidth - e.clientX) / containerWidth) * 100;
+            if (newRightWidth > 20 && newRightWidth < 80) {
+                setRightPanelWidth(newRightWidth);
+            }
+        }
+    }, [isResizing]);
+
+    useEffect(() => {
+        if (isResizing) {
+            window.addEventListener('mousemove', resize);
+            window.addEventListener('mouseup', stopResizing);
+        }
+        return () => {
+            window.removeEventListener('mousemove', resize);
+            window.removeEventListener('mouseup', stopResizing);
+        };
+    }, [isResizing, resize, stopResizing]);
+
+
     // ... (Effects same as before) ...
 
     const handleSearch = async (input: string | string[], mode: 'fast' | 'balanced' | 'deep', isRefinement?: boolean, forceRefresh: boolean = false) => {
@@ -173,8 +211,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onJobCreated }) =>
     };
 
     const handleUpdateItem = async (id: string, field: string, value: any, source: string) => {
-        console.log(`Manual Override: ${id} [${field}] = ${value} (via ${source})`);
-
         // Optimistic Update in UI
         if (selectedResearchItem && selectedResearchItem.id === id) {
             const newData = { ...selectedResearchItem.data };
@@ -213,10 +249,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onJobCreated }) =>
     const isEmpty = messages.length === 0;
 
     return (
-        <div className="flex h-full w-full relative overflow-hidden">
+        <div className="flex h-full w-full relative overflow-hidden" ref={splitContainerRef}>
 
-            {/* Main Chat Area - Shrinks when panel is open */}
-            <div className={`flex flex-col h-full transition-all duration-300 ease-in-out ${selectedResearchItem ? 'w-1/2 min-w-[500px]' : 'w-full max-w-4xl mx-auto px-4'}`}>
+            {/* Main Chat Area */}
+            <div 
+                className={`flex flex-col h-full transition-all duration-300 ease-in-out ${selectedResearchItem ? 'mr-0' : 'w-full max-w-4xl mx-auto px-4'}`}
+                style={selectedResearchItem ? { width: `${100 - rightPanelWidth}%` } : {}}
+            >
 
                 {/* Messages Area */}
                 <div className={`flex-1 overflow-y-auto w-full pb-32 ${isEmpty ? 'hidden' : 'block'}`}>
@@ -315,8 +354,24 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onJobCreated }) =>
 
             </div>
 
+            {/* Resizer Handle */}
+            {selectedResearchItem && (
+                 <div
+                    className={`absolute top-0 bottom-0 z-[60] w-1 cursor-col-resize hover:bg-emerald-500/50 active:bg-emerald-500 transition-colors ${isResizing ? 'bg-emerald-500' : 'bg-transparent'}`}
+                    style={{ right: `${rightPanelWidth}%` }}
+                    onMouseDown={startResizing}
+                >
+                     <div className="absolute top-1/2 -translate-y-1/2 -left-1 w-4 h-8 bg-gray-200 dark:bg-gray-700 rounded-l-md flex items-center justify-center shadow-md">
+                         <div className="w-0.5 h-4 bg-gray-400 dark:bg-gray-500 rounded-full" />
+                     </div>
+                </div>
+            )}
+
             {/* Right Detail Panel - Slide In */}
-            <div className={`fixed top-0 right-0 h-full bg-white dark:bg-gray-900 shadow-2xl transition-all duration-300 ease-in-out transform border-l border-gray-200 dark:border-gray-800 z-50 ${selectedResearchItem ? 'translate-x-0 w-1/2 min-w-[600px]' : 'translate-x-full w-0 opacity-0'}`}>
+            <div 
+                className={`fixed top-0 right-0 h-full bg-white dark:bg-gray-900 shadow-2xl transition-all duration-300 ease-in-out transform border-l border-gray-200 dark:border-gray-800 z-50 ${selectedResearchItem ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}
+                style={selectedResearchItem ? { width: `${rightPanelWidth}%` } : { width: '0px' }}
+            >
                 {selectedResearchItem && (
                     <ItemDetail
                         item={selectedResearchItem}

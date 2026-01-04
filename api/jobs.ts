@@ -1,80 +1,30 @@
-import { db } from '../src/db/index.js';
-import { jobs, skus } from '../src/db/schema.js';
-import { desc, eq } from 'drizzle-orm';
-import { getTenantId } from './_lib/context.js';
-import { v4 as uuidv4 } from 'uuid';
-import { inngest } from './_lib/inngest.js';
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import { ItemsRepository } from '../src/repositories/itemsRepository.js';
 
-export default async function handler(req: any, res: any) {
-    // GET: List jobs
-    if (req.method === 'GET') {
-        try {
-            const tenantId = getTenantId(req);
-            const limit = parseInt(req.query.limit as string) || 50;
-
-            const recentJobs = await db.select()
-                .from(jobs)
-                .where(eq(jobs.tenantId, tenantId))
-                .orderBy(desc(jobs.startTime))
-                .limit(limit);
-
-            return res.status(200).json({ jobs: recentJobs });
-        } catch (error) {
-            console.error('Failed to fetch jobs:', error);
-            return res.status(500).json({ error: 'Internal Server Error' });
-        }
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+    if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // POST: Create new Enrichment Job
-    if (req.method === 'POST') {
-        try {
-            const { supplier_string } = req.body;
-            if (!supplier_string) {
-                return res.status(400).json({ error: 'Missing supplier_string' });
-            }
+    try {
+        const limit = Number(req.query.limit) || 50;
+        const jobs = await ItemsRepository.listAll(limit);
 
-            const tenantId = getTenantId(req);
-            const jobId = uuidv4();
-            const skuId = uuidv4();
+        // Calculate basic stats for the dashboard widget
+        // In a real app, this should probably be a separate efficient query or cached
+        // For now, simple aggregation on the last 50 items
+        const stats = {
+            tokens: jobs.reduce((acc, job) => acc + 3500, 0), // Mock token count per job for now (avg)
+            cost: jobs.reduce((acc, job) => acc + 0.15, 0),   // Mock cost per job
+            apiCalls: jobs.reduce((acc, job) => acc + 12, 0)  // Mock calls per job
+        };
 
-            // 1. Create SKU
-            await db.insert(skus).values({
-                id: skuId,
-                supplierString: supplier_string,
-                publishedChannels: [],
-                blockedReasons: [],
-            });
-
-            // 2. Create Job
-            await db.insert(jobs).values({
-                id: jobId,
-                tenantId,
-                skuId, // Link!
-                inputRaw: supplier_string,
-                status: 'pending',
-                progress: 0,
-                startTime: new Date(),
-                meta: { type: 'sku_enrichment' }
-            });
-
-            // 3. Trigger Inngest
-            await inngest.send({
-                name: "app/sku.enrichment.started",
-                data: {
-                    jobId,
-                    skuId,
-                    tenantId,
-                    supplierString: supplier_string
-                }
-            });
-
-            return res.status(200).json({ jobId, skuId });
-
-        } catch (error) {
-            console.error('Failed to create job:', error);
-            return res.status(500).json({ error: 'Internal Server Error', details: String(error) });
-        }
+        return res.status(200).json({ 
+            jobs,
+            stats
+        });
+    } catch (error) {
+        console.error("Failed to fetch jobs:", error);
+        return res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    return res.status(405).json({ error: 'Method not allowed' });
 }
