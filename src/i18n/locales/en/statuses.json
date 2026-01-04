@@ -1,14 +1,14 @@
 {
-    "workflow": {
-        "pending": "Pending",
-        "running": "Running",
-        "completed": "Completed",
-        "failed": "Failed",
-        "retrying": "Retrying"
-    },
-    "errors": {
-        "unknown": "Unknown Error",
-        "network": "Network Error",
-        "rate_limit": "Rate Limit Exceeded"
-    }
+  "workflow": {
+    "pending": "Pending",
+    "running": "Running",
+    "completed": "Completed",
+    "failed": "Failed",
+    "retrying": "Retrying"
+  },
+  "errors": {
+    "unknown": "Unknown Error",
+    "network": "Network Error",
+    "rate_limit": "Rate Limit Exceeded"
+  }
 }

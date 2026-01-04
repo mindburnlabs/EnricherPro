@@ -1,100 +1,100 @@
 {
-    "app": {
-        "title": "D² Consumable Database",
-        "title_labs": "D²",
-        "subtitle": "Автономный агент глубокого исследования расходных материалов.",
-        "loading": "Загрузка...",
-        "hero_title": "Что вы хотите проверить?",
-        "hero_subtitle": "Спросите о характеристиках, наличии или совместимости."
-    },
-    "layout": {
-        "api_services": "API Сервисы",
-        "live_engine": "Активный движок",
-        "active_orchestrator": "Активный оркестратор"
-    },
-    "status": {
-        "published": "Опубликовано",
-        "processing": "Обработка",
-        "failed": "Ошибка",
-        "needs_review": "На проверку"
-    },
-    "engines": {
-        "gemini_default": "Авто-Роутер (По умолчанию)",
-        "firecrawl_agent": "Агент Firecrawl",
-        "openrouter": "OpenRouter AI"
-    },
-    "messages": {
-        "search_completed_placeholder": "Поиск завершен. Результаты появятся здесь."
-    },
-    "nav": {
-        "research": "Исследование",
-        "import": "Импорт",
-        "results": "Результаты",
-        "publication": "Готовы к публикации",
-        "settings": "Настройки"
-    },
-    "stats": {
-        "total": "Всего",
-        "ok": "Готово",
-        "needs_review": "На проверку",
-        "failed": "Ошибки",
-        "pending": "В очереди",
-        "retrying": "Повтор",
-        "manual_queue": "Ручная",
-        "error_rate": "Ошибки %",
-        "avg_time": "Ср. время",
-        "throughput": "Пропускная способность"
-    },
-    "actions": {
-        "run": "Запустить агент",
-        "retry": "Повторить",
-        "approve": "Утвердить",
-        "merge": "Объединить",
-        "cancel": "Отмена",
-        "save": "Сохранить",
-        "na": "Н/Д",
-        "search": "Поиск",
-        "clear": "Очистить",
-        "override": "Исправить",
-        "override_title": "Ручной ввод",
-        "fetch": "Получить",
-        "enter_value": "Введите значение...",
-        "source_placeholder": "напр. Проверено вручную, Сайт производителя..."
-    },
-    "progress": {
-        "thinking": "Думаю...",
-        "complete": "Исследование завершено",
-        "steps_count": "этапов",
-        "sources_found": "{{count}} источник найдено",
-        "sources_found_one": "{{count}} источник найден",
-        "sources_found_few": "{{count}} источника найдено",
-        "sources_found_many": "{{count}} источников найдено",
-        "steps": {
-            "init": "Инициализация...",
-            "initializing": "Инициализация...",
-            "normalization": "Нормализация",
-            "planning": "Планирование стратегии",
-            "parsing": "Парсинг запроса",
-            "discovery": "Первичное обнаружение",
-            "searching": "Поиск",
-            "filtering": "Фильтрация",
-            "scraping_nix": "Сканирование NIX.ru",
-            "scraping_compat": "Анализ совместимости",
-            "enrichment": "Глубокое обогащение",
-            "analyzing": "Синтез данных",
-            "auditing_images": "Аудит изображений",
-            "finalizing": "Финализация",
-            "gate_check": "Контроль качества",
-            "complete": "Готово",
-            "failed": "Ошибка"
-        }
-    },
-    "general": {
-        "yes": "Да",
-        "no": "Нет",
-        "unknown": "Неизвестно",
-        "n_a": "Н/Д",
-        "source": "Источник",
-        "verified_by": "Проверено {{name}}"
+  "app": {
+    "title": "D² Consumable Database",
+    "title_labs": "D²",
+    "subtitle": "Автономный агент глубокого исследования расходных материалов.",
+    "loading": "Загрузка...",
+    "hero_title": "Что вы хотите проверить?",
+    "hero_subtitle": "Спросите о характеристиках, наличии или совместимости."
+  },
+  "layout": {
+    "api_services": "API Сервисы",
+    "live_engine": "Активный движок",
+    "active_orchestrator": "Активный оркестратор"
+  },
+  "status": {
+    "published": "Опубликовано",
+    "processing": "Обработка",
+    "failed": "Ошибка",
+    "needs_review": "На проверку"
+  },
+  "engines": {
+    "gemini_default": "Авто-Роутер (По умолчанию)",
+    "firecrawl_agent": "Агент Firecrawl",
+    "openrouter": "OpenRouter AI"
+  },
+  "messages": {
+    "search_completed_placeholder": "Поиск завершен. Результаты появятся здесь."
+  },
+  "nav": {
+    "research": "Исследование",
+    "import": "Импорт",
+    "results": "Результаты",
+    "publication": "Готовы к публикации",
+    "settings": "Настройки"
+  },
+  "stats": {
+    "total": "Всего",
+    "ok": "Готово",
+    "needs_review": "На проверку",
+    "failed": "Ошибки",
+    "pending": "В очереди",
+    "retrying": "Повтор",
+    "manual_queue": "Ручная",
+    "error_rate": "Ошибки %",
+    "avg_time": "Ср. время",
+    "throughput": "Пропускная способность"
+  },
+  "actions": {
+    "run": "Запустить агент",
+    "retry": "Повторить",
+    "approve": "Утвердить",
+    "merge": "Объединить",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "na": "Н/Д",
+    "search": "Поиск",
+    "clear": "Очистить",
+    "override": "Исправить",
+    "override_title": "Ручной ввод",
+    "fetch": "Получить",
+    "enter_value": "Введите значение...",
+    "source_placeholder": "напр. Проверено вручную, Сайт производителя..."
+  },
+  "progress": {
+    "thinking": "Думаю...",
+    "complete": "Исследование завершено",
+    "steps_count": "этапов",
+    "sources_found": "{{count}} источник найдено",
+    "sources_found_one": "{{count}} источник найден",
+    "sources_found_few": "{{count}} источника найдено",
+    "sources_found_many": "{{count}} источников найдено",
+    "steps": {
+      "init": "Инициализация...",
+      "initializing": "Инициализация...",
+      "normalization": "Нормализация",
+      "planning": "Планирование стратегии",
+      "parsing": "Парсинг запроса",
+      "discovery": "Первичное обнаружение",
+      "searching": "Поиск",
+      "filtering": "Фильтрация",
+      "scraping_nix": "Сканирование NIX.ru",
+      "scraping_compat": "Анализ совместимости",
+      "enrichment": "Глубокое обогащение",
+      "analyzing": "Синтез данных",
+      "auditing_images": "Аудит изображений",
+      "finalizing": "Финализация",
+      "gate_check": "Контроль качества",
+      "complete": "Готово",
+      "failed": "Ошибка"
     }
+  },
+  "general": {
+    "yes": "Да",
+    "no": "Нет",
+    "unknown": "Неизвестно",
+    "n_a": "Н/Д",
+    "source": "Источник",
+    "verified_by": "Проверено {{name}}"
+  }
 }

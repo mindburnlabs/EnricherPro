@@ -1,43 +1,43 @@
-import { db } from "../db/index.js";
-import { sourceDocuments } from "../db/schema.js";
-import { eq, and, desc } from "drizzle-orm";
-import crypto from "crypto";
+import { db } from '../db/index.js';
+import { sourceDocuments } from '../db/schema.js';
+import { eq, and, desc } from 'drizzle-orm';
+import crypto from 'crypto';
 
 export class SourceDocumentRepository {
+  static async create(data: typeof sourceDocuments.$inferInsert) {
+    // Generate content hash
+    const hash = crypto
+      .createHash('md5')
+      .update(data.rawContent || data.url)
+      .digest('hex');
 
-    static async create(data: typeof sourceDocuments.$inferInsert) {
-        // Generate content hash
-        const hash = crypto.createHash('md5').update(data.rawContent || data.url).digest('hex');
+    // Simple dedupe by URL + Content Hash? Or just URL?
+    // For now, let's just insert. A unique constraint on URL might be good per job, but we might re-crawl.
 
-        // Simple dedupe by URL + Content Hash? Or just URL?
-        // For now, let's just insert. A unique constraint on URL might be good per job, but we might re-crawl.
+    const [doc] = await db
+      .insert(sourceDocuments)
+      .values({
+        ...data,
+        contentHash: hash,
+      })
+      .returning();
 
-        const [doc] = await db.insert(sourceDocuments).values({
-            ...data,
-            contentHash: hash
-        }).returning();
+    return doc;
+  }
 
-        return doc;
-    }
+  static async findByJobId(jobId: string) {
+    return db.query.sourceDocuments.findMany({
+      where: eq(sourceDocuments.jobId, jobId),
+    });
+  }
+  static async update(id: string, data: Partial<typeof sourceDocuments.$inferInsert>) {
+    await db.update(sourceDocuments).set(data).where(eq(sourceDocuments.id, id));
+  }
 
-    static async findByJobId(jobId: string) {
-        return db.query.sourceDocuments.findMany({
-            where: eq(sourceDocuments.jobId, jobId)
-        });
-    }
-    static async update(id: string, data: Partial<typeof sourceDocuments.$inferInsert>) {
-        await db.update(sourceDocuments)
-            .set(data)
-            .where(eq(sourceDocuments.id, id));
-    }
-
-    static async findByUrl(url: string) {
-        return db.query.sourceDocuments.findFirst({
-            where: and(
-                eq(sourceDocuments.url, url),
-                eq(sourceDocuments.status, 'success')
-            ),
-            orderBy: [desc(sourceDocuments.crawledAt)]
-        });
-    }
+  static async findByUrl(url: string) {
+    return db.query.sourceDocuments.findFirst({
+      where: and(eq(sourceDocuments.url, url), eq(sourceDocuments.status, 'success')),
+      orderBy: [desc(sourceDocuments.crawledAt)],
+    });
+  }
 }

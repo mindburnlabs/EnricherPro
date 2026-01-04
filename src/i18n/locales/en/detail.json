@@ -1,189 +1,189 @@
 {
-    "tabs": {
-        "specs": "Identification & Specs",
-        "network": "Network & Relations",
-        "images": "Visual Audit",
-        "evidence": "Evidence & Sources",
-        "related_products": "Related Products",
-        "intelligence": "Intelligence",
-        "faq": "AI Support FAQ"
+  "tabs": {
+    "specs": "Identification & Specs",
+    "network": "Network & Relations",
+    "images": "Visual Audit",
+    "evidence": "Evidence & Sources",
+    "related_products": "Related Products",
+    "intelligence": "Intelligence",
+    "faq": "AI Support FAQ"
+  },
+  "header": {
+    "model": "Model",
+    "system_confidence": "System Confidence",
+    "quality_matched": "Match Quality",
+    "discard": "Discard Changes",
+    "approve": "Approve PIM Record",
+    "approved": "Approved",
+    "model_placeholder": "UNDEFINED"
+  },
+  "alerts": {
+    "structural": "Structural Alert",
+    "validation_failed": "Validation Failed"
+  },
+  "conflicts": "Conflicts",
+  "conflicts_desc": "Some fields have conflicting data from different sources. Review the highlighted fields above.",
+  "identity": {
+    "title": "Identity Extraction",
+    "brand": "Brand (Authority)",
+    "mpn": "Entity Identity (MPN)",
+    "short_model": "Short Model",
+    "aliases": "Aliases",
+    "alias": "Semantic Alias",
+    "alias_placeholder": "short identifier",
+    "yield": "Yield Matrix",
+    "yield_units": {
+      "pages": "ISO/IEC PAGES (A4)",
+      "ml": "LIQUID VOLUME (ML)",
+      "copies": "COPIES"
     },
-    "header": {
-        "model": "Model",
-        "system_confidence": "System Confidence",
-        "quality_matched": "Match Quality",
-        "discard": "Discard Changes",
-        "approve": "Approve PIM Record",
-        "approved": "Approved",
-        "model_placeholder": "UNDEFINED"
+    "chip": "IC Chip Architecture",
+    "counter": "FW Logical Counter",
+    "gtin": "Barcodes (GTIN)"
+  },
+  "connectivity": {
+    "title": "Connectivity & Ports",
+    "ports": "Ports"
+  },
+  "compatibility": {
+    "title": "Compatibility",
+    "nix_verified": "NIX Verified",
+    "region_hint": "(RU Region)"
+  },
+  "compliance": {
+    "title": "Compliance & Regulation",
+    "tn_ved": "TN VED Code",
+    "marking": "Mandatory Marking"
+  },
+  "market": {
+    "eligibility": "Market Eligibility",
+    "agents_validated": "AGENTS VALIDATED",
+    "placeholder": "Verified list of compatible ID terminals..."
+  },
+  "marketing": {
+    "title": "Marketing Strategy",
+    "seo_title": "SEO Title (H1)",
+    "desc": "Product Description",
+    "bullets": "Key Features",
+    "keywords": "Keywords"
+  },
+  "logistics": {
+    "title": "Logistics Protocol",
+    "weight": "Gross Weight",
+    "dims": "Dimensions",
+    "mass": "Gross Weight",
+    "width": "Width",
+    "height": "Height",
+    "depth": "Depth",
+    "nix_verified": "NIX.ru Authority Verified",
+    "missing": "Data Missing: Request Scan",
+    "reliability": "RELIABILITY",
+    "unit_g": "g",
+    "unit_mm": "mm"
+  },
+  "evidence": {
+    "metrics_title": "Quality Metrics Panel",
+    "data_complete": "Data Completeness",
+    "source_trust": "Source Trust",
+    "validation_pass": "Validation Pass",
+    "efficiency": "Efficiency",
+    "sources_used": "Sources Used",
+    "timeline_title": "Processing Timeline",
+    "consensus_title": "Parallel Consensus Evidence",
+    "firecrawl": "Firecrawl Scraper",
+    "perplexity": "Deep Research (Perplexity)",
+    "no_direct": "No direct sources found.",
+    "no_deep": "No deep research sources found.",
+    "audit_trail": "Audit Trail",
+    "read_only": "Read Only",
+    "traceability": "Field Traceability",
+    "method": "METHOD:",
+    "grounding": "Search Grounding Sources"
+  },
+  "network": {
+    "title": "Consumables Network Graph",
+    "companions": "Companions",
+    "alternatives": "Alternatives",
+    "confidence": "Network Confidence",
+    "core_companions": "Core Companions",
+    "functional_alternatives": "Functional Alternatives",
+    "standard_unit": "Standard Unit",
+    "alt_option": "Alt Option",
+    "match": "Match",
+    "rel": "REL",
+    "cap": "Cap",
+    "no_data": "No relational data found in this run"
+  },
+  "images": {
+    "audit": "Image Audit",
+    "upload": "Upload Evidence Manually",
+    "resolution": "RESOLUTION (800x800+)",
+    "no_packaging": "NO PACKAGING",
+    "no_watermark": "NO WATERMARKS",
+    "compatible_look": "COMPATIBLE LOOK",
+    "pass": "PASS",
+    "fail": "FAIL",
+    "oem_logo": "OEM LOGO",
+    "ok": "OK",
+    "rejection_reasons": "Rejection Reasons",
+    "primary": "Primary",
+    "alt": "Product Image"
+  },
+  "specs": {
+    "title": "Specifications",
+    "tech_title": "Technical Architecture",
+    "type": "Consumable Type",
+    "types": {
+      "toner_cartridge": "Toner Cartridge",
+      "drum_unit": "Drum Unit",
+      "ink_cartridge": "Ink Cartridge",
+      "maintenance_kit": "Maintenance Kit",
+      "waste_toner": "Waste Toner Box",
+      "bottle": "Toner Bottle",
+      "other": "Other",
+      "unknown": "Unknown"
     },
-    "alerts": {
-        "structural": "Structural Alert",
-        "validation_failed": "Validation Failed"
-    },
-    "conflicts": "Conflicts",
-    "conflicts_desc": "Some fields have conflicting data from different sources. Review the highlighted fields above.",
-    "identity": {
-        "title": "Identity Extraction",
-        "brand": "Brand (Authority)",
-        "mpn": "Entity Identity (MPN)",
-        "short_model": "Short Model",
-        "aliases": "Aliases",
-        "alias": "Semantic Alias",
-        "alias_placeholder": "short identifier",
-        "yield": "Yield Matrix",
-        "yield_units": {
-            "pages": "ISO/IEC PAGES (A4)",
-            "ml": "LIQUID VOLUME (ML)",
-            "copies": "COPIES"
-        },
-        "chip": "IC Chip Architecture",
-        "counter": "FW Logical Counter",
-        "gtin": "Barcodes (GTIN)"
-    },
-    "connectivity": {
-        "title": "Connectivity & Ports",
-        "ports": "Ports"
-    },
-    "compatibility": {
-        "title": "Compatibility",
-        "nix_verified": "NIX Verified",
-        "region_hint": "(RU Region)"
-    },
-    "compliance": {
-        "title": "Compliance & Regulation",
-        "tn_ved": "TN VED Code",
-        "marking": "Mandatory Marking"
-    },
-    "market": {
-        "eligibility": "Market Eligibility",
-        "agents_validated": "AGENTS VALIDATED",
-        "placeholder": "Verified list of compatible ID terminals..."
-    },
-    "marketing": {
-        "title": "Marketing Strategy",
-        "seo_title": "SEO Title (H1)",
-        "desc": "Product Description",
-        "bullets": "Key Features",
-        "keywords": "Keywords"
-    },
-    "logistics": {
-        "title": "Logistics Protocol",
-        "weight": "Gross Weight",
-        "dims": "Dimensions",
-        "mass": "Gross Weight",
-        "width": "Width",
-        "height": "Height",
-        "depth": "Depth",
-        "nix_verified": "NIX.ru Authority Verified",
-        "missing": "Data Missing: Request Scan",
-        "reliability": "RELIABILITY",
-        "unit_g": "g",
-        "unit_mm": "mm"
-    },
-    "evidence": {
-        "metrics_title": "Quality Metrics Panel",
-        "data_complete": "Data Completeness",
-        "source_trust": "Source Trust",
-        "validation_pass": "Validation Pass",
-        "efficiency": "Efficiency",
-        "sources_used": "Sources Used",
-        "timeline_title": "Processing Timeline",
-        "consensus_title": "Parallel Consensus Evidence",
-        "firecrawl": "Firecrawl Scraper",
-        "perplexity": "Deep Research (Perplexity)",
-        "no_direct": "No direct sources found.",
-        "no_deep": "No deep research sources found.",
-        "audit_trail": "Audit Trail",
-        "read_only": "Read Only",
-        "traceability": "Field Traceability",
-        "method": "METHOD:",
-        "grounding": "Search Grounding Sources"
-    },
-    "network": {
-        "title": "Consumables Network Graph",
-        "companions": "Companions",
-        "alternatives": "Alternatives",
-        "confidence": "Network Confidence",
-        "core_companions": "Core Companions",
-        "functional_alternatives": "Functional Alternatives",
-        "standard_unit": "Standard Unit",
-        "alt_option": "Alt Option",
-        "match": "Match",
-        "rel": "REL",
-        "cap": "Cap",
-        "no_data": "No relational data found in this run"
-    },
-    "images": {
-        "audit": "Image Audit",
-        "upload": "Upload Evidence Manually",
-        "resolution": "RESOLUTION (800x800+)",
-        "no_packaging": "NO PACKAGING",
-        "no_watermark": "NO WATERMARKS",
-        "compatible_look": "COMPATIBLE LOOK",
-        "pass": "PASS",
-        "fail": "FAIL",
-        "oem_logo": "OEM LOGO",
-        "ok": "OK",
-        "rejection_reasons": "Rejection Reasons",
-        "primary": "Primary",
-        "alt": "Product Image"
-    },
-    "specs": {
-        "title": "Specifications",
-        "tech_title": "Technical Architecture",
-        "type": "Consumable Type",
-        "types": {
-            "toner_cartridge": "Toner Cartridge",
-            "drum_unit": "Drum Unit",
-            "ink_cartridge": "Ink Cartridge",
-            "maintenance_kit": "Maintenance Kit",
-            "waste_toner": "Waste Toner Box",
-            "bottle": "Toner Bottle",
-            "other": "Other",
-            "unknown": "Unknown"
-        },
-        "click_hint": "Click to view sources",
-        "yield": "Yield",
-        "color": "Color"
-    },
-    "trust": {
-        "official": "Official",
-        "consensus": "Consensus",
-        "conflict": "Conflict",
-        "web": "WEB"
-    },
-    "completeness": {
-        "title": "Data Completeness",
-        "missing": "Missing",
-        "perfect": "All required fields present",
-        "subtitle": "Fill missing fields to publish",
-        "blocking_hint": "Required fields missing. Publishing blocked."
-    },
-    "sections": {
-        "identity": "Identity",
-        "compatibility": "Compatibility",
-        "specs": "Tech Specs",
-        "logistics": "Logistics",
-        "compliance": "Compliance RU",
-        "images": "Key Assets"
-    },
-    "fields": {
-        "brand": "Brand",
-        "mpn": "MPN",
-        "images": "Images",
-        "yield": "Yield",
-        "type": "Type",
-        "color": "Color",
-        "title": "Compat List",
-        "weight": "Weight",
-        "origin": "Origin",
-        "tn_ved": "TN VED"
-    },
-    "governance": {
-        "conflict_detected": "Data Conflict Detected",
-        "conflict_desc": "Multiple trusted sources reported different values. Please select the correct one.",
-        "confirm_current": "Confirm This Value",
-        "select_alternative": "Select Alternative"
-    }
+    "click_hint": "Click to view sources",
+    "yield": "Yield",
+    "color": "Color"
+  },
+  "trust": {
+    "official": "Official",
+    "consensus": "Consensus",
+    "conflict": "Conflict",
+    "web": "WEB"
+  },
+  "completeness": {
+    "title": "Data Completeness",
+    "missing": "Missing",
+    "perfect": "All required fields present",
+    "subtitle": "Fill missing fields to publish",
+    "blocking_hint": "Required fields missing. Publishing blocked."
+  },
+  "sections": {
+    "identity": "Identity",
+    "compatibility": "Compatibility",
+    "specs": "Tech Specs",
+    "logistics": "Logistics",
+    "compliance": "Compliance RU",
+    "images": "Key Assets"
+  },
+  "fields": {
+    "brand": "Brand",
+    "mpn": "MPN",
+    "images": "Images",
+    "yield": "Yield",
+    "type": "Type",
+    "color": "Color",
+    "title": "Compat List",
+    "weight": "Weight",
+    "origin": "Origin",
+    "tn_ved": "TN VED"
+  },
+  "governance": {
+    "conflict_detected": "Data Conflict Detected",
+    "conflict_desc": "Multiple trusted sources reported different values. Please select the correct one.",
+    "confirm_current": "Confirm This Value",
+    "select_alternative": "Select Alternative"
+  }
 }

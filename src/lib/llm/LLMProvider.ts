@@ -63,7 +63,8 @@ export class OpenRouterProvider implements LLMProvider {
     // Basic estimation logic, can be refined with a pricing table map
     // E.g. $1 per million for cheap, $10 for expensive
     if (model.includes('gpt-4') || model.includes('claude-3-opus')) return (tokens / 1000000) * 10;
-    if (model.includes('flash') || model.includes('haiku') || model.includes('mini')) return (tokens / 1000000) * 0.5;
+    if (model.includes('flash') || model.includes('haiku') || model.includes('mini'))
+      return (tokens / 1000000) * 0.5;
     return (tokens / 1000000) * 1; // Default
   }
 
@@ -76,7 +77,7 @@ export class OpenRouterProvider implements LLMProvider {
     jsonMode?: boolean;
   }): Promise<CompletionResult> {
     const headers = {
-      'Authorization': `Bearer ${this.apiKey}`,
+      Authorization: `Bearer ${this.apiKey}`,
       'Content-Type': 'application/json',
       'HTTP-Referer': 'https://enricher-pro.com', // Required by OpenRouter
       'X-Title': 'EnricherPro',
@@ -94,13 +95,13 @@ export class OpenRouterProvider implements LLMProvider {
     }
 
     if (params.tools && params.tools.length > 0) {
-      body.tools = params.tools.map(t => ({
+      body.tools = params.tools.map((t) => ({
         type: 'function',
         function: {
           name: t.name,
           description: t.description,
           parameters: t.parameters,
-        }
+        },
       }));
     }
 
@@ -132,15 +133,14 @@ export class OpenRouterProvider implements LLMProvider {
 
       if (data.usage) {
         result.usage = {
-            promptTokens: data.usage.prompt_tokens,
-            completionTokens: data.usage.completion_tokens,
-            totalTokens: data.usage.total_tokens,
-            costUsd: this.estimateCost(data.usage.total_tokens, params.model) // Should mostly rely on API if provided, but calculate fallback
+          promptTokens: data.usage.prompt_tokens,
+          completionTokens: data.usage.completion_tokens,
+          totalTokens: data.usage.total_tokens,
+          costUsd: this.estimateCost(data.usage.total_tokens, params.model), // Should mostly rely on API if provided, but calculate fallback
         };
       }
 
       return result;
-
     } catch (error) {
       console.error('OpenRouter Completion Failed:', error);
       throw error;

@@ -1,30 +1,55 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import { ItemsRepository } from '../src/repositories/itemsRepository.js';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createRequire } from 'module';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-    if (req.method !== 'GET') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+const require = createRequire(import.meta.url);
 
+let pool: any = null;
+
+export default async function handler(request: VercelRequest, response: VercelResponse) {
+  if (!pool) {
     try {
-        const limit = Number(req.query.limit) || 50;
-        const jobs = await ItemsRepository.listAll(limit);
-
-        // Calculate basic stats for the dashboard widget
-        // In a real app, this should probably be a separate efficient query or cached
-        // For now, simple aggregation on the last 50 items
-        const stats = {
-            tokens: jobs.reduce((acc, job) => acc + 3500, 0), // Mock token count per job for now (avg)
-            cost: jobs.reduce((acc, job) => acc + 0.15, 0),   // Mock cost per job
-            apiCalls: jobs.reduce((acc, job) => acc + 12, 0)  // Mock calls per job
-        };
-
-        return res.status(200).json({ 
-            jobs,
-            stats
-        });
-    } catch (error) {
-        console.error("Failed to fetch jobs:", error);
-        return res.status(500).json({ error: 'Internal Server Error' });
+      const pg = require('pg');
+      const { Pool } = pg;
+      if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not defined');
+      pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        max: 1,
+        connectionTimeoutMillis: 5000,
+      });
+    } catch (e: any) {
+      return response.status(500).json({ error: 'Database Driver Error', details: e.message });
     }
+  }
+
+  try {
+    if (request.method === 'GET') {
+      const limit = request.query.limit ? parseInt(request.query.limit as string) : 50;
+
+      // Fetch jobs with some stats
+      const res = await pool.query(
+        `
+                SELECT 
+                    j.id, 
+                    j.input_raw, 
+                    j.status, 
+                    j.progress, 
+                    j.start_time as "startTime", 
+                    j.end_time as "endTime",
+                    (SELECT COUNT(*) FROM items i WHERE i.job_id = j.id) as "itemCount",
+                    (SELECT mpn FROM items i WHERE i.job_id = j.id LIMIT 1) as "firstMpn"
+                FROM jobs j
+                ORDER BY j.start_time DESC
+                LIMIT $1
+            `,
+        [limit],
+      );
+
+      return response.status(200).json({ success: true, jobs: res.rows });
+    }
+
+    return response.status(405).json({ error: 'Method Not Allowed' });
+  } catch (error: any) {
+    console.error('API Error:', error);
+    return response.status(500).json({ error: 'Internal Server Error', details: String(error) });
+  }
 }

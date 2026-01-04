@@ -98,12 +98,8 @@
           "name": "aliases_entity_id_entities_id_fk",
           "tableFrom": "aliases",
           "tableTo": "entities",
-          "columnsFrom": [
-            "entity_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entity_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -301,12 +297,8 @@
           "name": "claims_item_id_items_id_fk",
           "tableFrom": "claims",
           "tableTo": "items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -314,12 +306,8 @@
           "name": "claims_source_doc_id_source_documents_id_fk",
           "tableFrom": "claims",
           "tableTo": "source_documents",
-          "columnsFrom": [
-            "source_doc_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_doc_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -536,12 +524,8 @@
           "name": "conflict_sku_id_sku_id_fk",
           "tableFrom": "conflict",
           "tableTo": "sku",
-          "columnsFrom": [
-            "sku_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["sku_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -549,12 +533,8 @@
           "name": "conflict_resolved_claim_id_claim_id_fk",
           "tableFrom": "conflict",
           "tableTo": "claim",
-          "columnsFrom": [
-            "resolved_claim_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["resolved_claim_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -672,12 +652,8 @@
           "name": "edges_from_entity_id_entities_id_fk",
           "tableFrom": "edges",
           "tableTo": "entities",
-          "columnsFrom": [
-            "from_entity_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["from_entity_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -685,12 +661,8 @@
           "name": "edges_to_entity_id_entities_id_fk",
           "tableFrom": "edges",
           "tableTo": "entities",
-          "columnsFrom": [
-            "to_entity_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["to_entity_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -832,12 +804,8 @@
           "name": "claim_sku_id_sku_id_fk",
           "tableFrom": "claim",
           "tableTo": "sku",
-          "columnsFrom": [
-            "sku_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["sku_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -845,12 +813,8 @@
           "name": "claim_evidence_id_evidence_id_fk",
           "tableFrom": "claim",
           "tableTo": "evidence",
-          "columnsFrom": [
-            "evidence_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["evidence_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -976,12 +940,8 @@
           "name": "graph_evidence_edge_id_edges_id_fk",
           "tableFrom": "graph_evidence",
           "tableTo": "edges",
-          "columnsFrom": [
-            "edge_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["edge_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -989,12 +949,8 @@
           "name": "graph_evidence_alias_id_aliases_id_fk",
           "tableFrom": "graph_evidence",
           "tableTo": "aliases",
-          "columnsFrom": [
-            "alias_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["alias_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1112,9 +1068,7 @@
         "evidence_content_hash_unique": {
           "name": "evidence_content_hash_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "content_hash"
-          ]
+          "columns": ["content_hash"]
         }
       },
       "policies": {},
@@ -1198,12 +1152,8 @@
           "name": "frontier_job_id_jobs_id_fk",
           "tableFrom": "frontier",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1274,12 +1224,8 @@
           "name": "item_embeddings_item_id_items_id_fk",
           "tableFrom": "item_embeddings",
           "tableTo": "items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1378,12 +1324,8 @@
           "name": "items_job_id_jobs_id_fk",
           "tableFrom": "items",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1451,12 +1393,8 @@
           "name": "job_events_job_id_jobs_id_fk",
           "tableFrom": "job_events",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1689,12 +1627,8 @@
           "name": "model_usage_job_id_jobs_id_fk",
           "tableFrom": "model_usage",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1851,12 +1785,8 @@
           "name": "similar_products_sku_id_sku_id_fk",
           "tableFrom": "similar_products",
           "tableTo": "sku",
-          "columnsFrom": [
-            "sku_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["sku_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1864,12 +1794,8 @@
           "name": "similar_products_related_sku_id_sku_id_fk",
           "tableFrom": "similar_products",
           "tableTo": "sku",
-          "columnsFrom": [
-            "related_sku_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["related_sku_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1877,10 +1803,7 @@
       "compositePrimaryKeys": {
         "similar_products_sku_id_related_sku_id_pk": {
           "name": "similar_products_sku_id_related_sku_id_pk",
-          "columns": [
-            "sku_id",
-            "related_sku_id"
-          ]
+          "columns": ["sku_id", "related_sku_id"]
         }
       },
       "uniqueConstraints": {},
@@ -2036,12 +1959,8 @@
           "name": "sku_printer_compatibility_sku_id_sku_id_fk",
           "tableFrom": "sku_printer_compatibility",
           "tableTo": "sku",
-          "columnsFrom": [
-            "sku_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["sku_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2049,12 +1968,8 @@
           "name": "sku_printer_compatibility_printer_id_printer_model_id_fk",
           "tableFrom": "sku_printer_compatibility",
           "tableTo": "printer_model",
-          "columnsFrom": [
-            "printer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["printer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2062,12 +1977,8 @@
           "name": "sku_printer_compatibility_evidence_id_evidence_id_fk",
           "tableFrom": "sku_printer_compatibility",
           "tableTo": "evidence",
-          "columnsFrom": [
-            "evidence_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["evidence_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2075,10 +1986,7 @@
       "compositePrimaryKeys": {
         "sku_printer_compatibility_sku_id_printer_id_pk": {
           "name": "sku_printer_compatibility_sku_id_printer_id_pk",
-          "columns": [
-            "sku_id",
-            "printer_id"
-          ]
+          "columns": ["sku_id", "printer_id"]
         }
       },
       "uniqueConstraints": {},
@@ -2334,12 +2242,8 @@
           "name": "source_documents_job_id_jobs_id_fk",
           "tableFrom": "source_documents",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2414,9 +2318,7 @@
         "trusted_catalog_pages_url_unique": {
           "name": "trusted_catalog_pages_url_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "url"
-          ]
+          "columns": ["url"]
         }
       },
       "policies": {},

@@ -1,41 +1,41 @@
 [
-    {
-        "id": "canon-057",
-        "input": {
-            "mpn": "3009C002",
-            "model_name": "Canon 057"
-        },
-        "expected": {
-            "yield": { "value": 3100, "unit": "pages" },
-            "weight_g": 850,
-            "compatibility_snippet": "LBP223dw",
-            "brand": "Canon"
-        }
+  {
+    "id": "canon-057",
+    "input": {
+      "mpn": "3009C002",
+      "model_name": "Canon 057"
     },
-    {
-        "id": "hp-cf259x",
-        "input": {
-            "mpn": "CF259X",
-            "model_name": "HP 59X"
-        },
-        "expected": {
-            "yield": { "value": 10000, "unit": "pages" },
-            "weight_g": 1300,
-            "compatibility_snippet": "M404dn",
-            "brand": "HP"
-        }
-    },
-    {
-        "id": "kyocera-tk-1150",
-        "input": {
-            "mpn": "1T02RV0NL0",
-            "model_name": "Kyocera TK-1150"
-        },
-        "expected": {
-            "yield": { "value": 3000, "unit": "pages" },
-            "weight_g": 400,
-            "compatibility_snippet": "P2235dn",
-            "brand": "Kyocera"
-        }
+    "expected": {
+      "yield": { "value": 3100, "unit": "pages" },
+      "weight_g": 850,
+      "compatibility_snippet": "LBP223dw",
+      "brand": "Canon"
     }
+  },
+  {
+    "id": "hp-cf259x",
+    "input": {
+      "mpn": "CF259X",
+      "model_name": "HP 59X"
+    },
+    "expected": {
+      "yield": { "value": 10000, "unit": "pages" },
+      "weight_g": 1300,
+      "compatibility_snippet": "M404dn",
+      "brand": "HP"
+    }
+  },
+  {
+    "id": "kyocera-tk-1150",
+    "input": {
+      "mpn": "1T02RV0NL0",
+      "model_name": "Kyocera TK-1150"
+    },
+    "expected": {
+      "yield": { "value": 3000, "unit": "pages" },
+      "weight_g": 400,
+      "compatibility_snippet": "P2235dn",
+      "brand": "Kyocera"
+    }
+  }
 ]

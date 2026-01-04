@@ -9,12 +9,12 @@ import importPage from './import.json';
 import results from './results.json';
 
 export default {
-    common,
-    research,
-    sku,
-    statuses,
-    settings,
-    detail,
-    import: importPage,
-    results
+  common,
+  research,
+  sku,
+  statuses,
+  settings,
+  detail,
+  import: importPage,
+  results,
 };

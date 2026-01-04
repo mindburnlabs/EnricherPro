@@ -1,4 +1,3 @@
-
 import { eq, desc } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { items, jobs } from '../db/schema.js';
@@ -6,136 +5,157 @@ import { Transformers } from '../lib/transformers.js';
 import { ConsumableData } from '../types/domain.js';
 
 export class ItemsRepository {
-
-    static async createOrGet(tenantId: string, jobId: string, mpn: string, initialData: ConsumableData, forceRefresh = false) {
-        // 1. Idempotency: Check if item exists for this job
-        const existingInJob = await this.findByJobId(jobId);
-        if (existingInJob) {
-            return existingInJob;
-        }
-
-        // 2. Global Deduplication (if MPN provided)
-        if (mpn) {
-            const { DeduplicationService } = await import("../services/backend/DeduplicationService.js");
-            const duplicate = await DeduplicationService.findPotentialDuplicate(mpn);
-            if (duplicate) {
-                if (forceRefresh) {
-                    // FORCE REFRESH: Hijack the existing item for this new job
-                    const [updated] = await db.update(items)
-                        .set({
-                            jobId: jobId, // Point to new job
-                            status: 'processing', // Reset status
-                            currentStep: 'planning', // Reset step
-                            updatedAt: new Date(),
-                            reviewReason: null // Clear errors
-                        })
-                        .where(eq(items.id, duplicate.id))
-                        .returning();
-                    return updated;
-                }
-
-                // Standard Dedup: Return existing item (and let frontend see old job status potentially)
-                return this.findById(duplicate.id);
-            }
-        } // Close if(mpn)
-
-        // 3. Integrity Check: Ensure Job exists (Handle Inngest Race Condition)
-        const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId));
-        if (!job) {
-            // Throwing a standard Error forces Inngest to retry
-            throw new Error(`Integrity Error: Job ${jobId} not found during Item creation (Pre-check). Retrying...`);
-        }
-
-        try {
-            const [newItem] = await db.insert(items).values({
-                tenantId,
-                jobId,
-                mpn,
-                brand: initialData.brand,
-                // Polyfill model if missing in top-level but present elsewhere (Strict Truth Migration)
-                model: (initialData as any).model || (initialData as any).mpn_identity?.mpn || null,
-                data: Transformers.toDbData(initialData),
-                status: 'processing'
-            }).returning();
-
-            return newItem;
-        } catch (err: any) {
-            // Handle Race Condition: Job might be missing despite check (Replica lag, etc.)
-            // Postgres Error 23503 = foreign_key_violation
-            if (err?.code === '23503' && err?.constraint?.includes('items_job_id')) {
-                throw new Error(`Integrity Error (FK): Job ${jobId} not found during Item insert. Retrying...`);
-            }
-            throw err;
-        }
+  static async createOrGet(
+    tenantId: string,
+    jobId: string,
+    mpn: string,
+    initialData: ConsumableData,
+    forceRefresh = false,
+  ) {
+    // 1. Idempotency: Check if item exists for this job
+    const existingInJob = await this.findByJobId(jobId);
+    if (existingInJob) {
+      return existingInJob;
     }
 
-    static async findById(id: string) {
-        const [item] = await db.select().from(items).where(eq(items.id, id));
-        if (!item) return null;
-        return item;
-    }
-
-    static async findByJobId(jobId: string) {
-        const [item] = await db.select().from(items).where(eq(items.jobId, jobId));
-        if (!item) return null;
-        return item;
-    }
-
-    static async getDomainItem(id: string): Promise<ConsumableData | null> {
-        const item = await this.findById(id);
-        if (!item) return null;
-        return Transformers.toDomain(item);
-    }
-
-    static async updateData(id: string, partialData: Partial<ConsumableData>) {
-        // Need to fetch first to merge JSON (in a real app, use jsonb_set or deep merge)
-        // For MVP we do Read-Modify-Write
-        const current = await this.getDomainItem(id);
-        if (!current) throw new Error(`Item ${id} not found`);
-
-        const newData = { ...current, ...partialData };
-
-        const [updated] = await db.update(items)
+    // 2. Global Deduplication (if MPN provided)
+    if (mpn) {
+      const { DeduplicationService } = await import('../services/backend/DeduplicationService.js');
+      const duplicate = await DeduplicationService.findPotentialDuplicate(mpn);
+      if (duplicate) {
+        if (forceRefresh) {
+          // FORCE REFRESH: Hijack the existing item for this new job
+          const [updated] = await db
+            .update(items)
             .set({
-                data: Transformers.toDbData(newData),
-                updatedAt: new Date()
+              jobId: jobId, // Point to new job
+              status: 'processing', // Reset status
+              currentStep: 'planning', // Reset step
+              updatedAt: new Date(),
+              reviewReason: null, // Clear errors
             })
-            .where(eq(items.id, id))
+            .where(eq(items.id, duplicate.id))
             .returning();
+          return updated;
+        }
 
-        return updated;
+        // Standard Dedup: Return existing item (and let frontend see old job status potentially)
+        return this.findById(duplicate.id);
+      }
+    } // Close if(mpn)
+
+    // 3. Integrity Check: Ensure Job exists (Handle Inngest Race Condition)
+    const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId));
+    if (!job) {
+      // Throwing a standard Error forces Inngest to retry
+      throw new Error(
+        `Integrity Error: Job ${jobId} not found during Item creation (Pre-check). Retrying...`,
+      );
     }
 
-    static async updateStep(id: string, step: string) {
-        await db.update(items)
-            .set({
-                currentStep: step,
-                updatedAt: new Date()
-            })
-            .where(eq(items.id, id));
-    }
-
-    static async setStatus(id: string, status: 'processing' | 'needs_review' | 'published' | 'rejected' | 'failed', reason?: string) {
-        await db.update(items)
-            .set({ status: status, reviewReason: reason, updatedAt: new Date() })
-            .where(eq(items.id, id));
-    }
-
-    static async listAll(limit: number = 50) {
-        const results = await db.select({
-            id: items.id,
-            jobId: items.jobId,
-            mpn: items.mpn,
-            brand: items.brand,
-            status: items.status,
-            updatedAt: items.updatedAt,
-            inputRaw: jobs.inputRaw
+    try {
+      const [newItem] = await db
+        .insert(items)
+        .values({
+          tenantId,
+          jobId,
+          mpn,
+          brand: initialData.brand,
+          // Polyfill model if missing in top-level but present elsewhere (Strict Truth Migration)
+          model: (initialData as any).model || (initialData as any).mpn_identity?.mpn || null,
+          data: Transformers.toDbData(initialData),
+          status: 'processing',
         })
-        .from(items)
-        .leftJoin(jobs, eq(items.jobId, jobs.id))
-        .orderBy(desc(items.updatedAt))
-        .limit(limit);
-        
-        return results;
+        .returning();
+
+      return newItem;
+    } catch (err: any) {
+      // Handle Race Condition: Job might be missing despite check (Replica lag, etc.)
+      // Postgres Error 23503 = foreign_key_violation
+      if (err?.code === '23503' && err?.constraint?.includes('items_job_id')) {
+        throw new Error(
+          `Integrity Error (FK): Job ${jobId} not found during Item insert. Retrying...`,
+        );
+      }
+      throw err;
     }
+  }
+
+  static async findById(id: string) {
+    const [item] = await db.select().from(items).where(eq(items.id, id));
+    if (!item) return null;
+    return item;
+  }
+
+  static async findByJobId(jobId: string) {
+    const [item] = await db.select().from(items).where(eq(items.jobId, jobId));
+    if (!item) return null;
+    return item;
+  }
+
+  static async getDomainItem(id: string): Promise<ConsumableData | null> {
+    const item = await this.findById(id);
+    if (!item) return null;
+    return Transformers.toDomain(item);
+  }
+
+  static async updateData(id: string, partialData: Partial<ConsumableData>) {
+    // Need to fetch first to merge JSON (in a real app, use jsonb_set or deep merge)
+    // For MVP we do Read-Modify-Write
+    const current = await this.getDomainItem(id);
+    if (!current) throw new Error(`Item ${id} not found`);
+
+    const newData = { ...current, ...partialData };
+
+    const [updated] = await db
+      .update(items)
+      .set({
+        data: Transformers.toDbData(newData),
+        updatedAt: new Date(),
+      })
+      .where(eq(items.id, id))
+      .returning();
+
+    return updated;
+  }
+
+  static async updateStep(id: string, step: string) {
+    await db
+      .update(items)
+      .set({
+        currentStep: step,
+        updatedAt: new Date(),
+      })
+      .where(eq(items.id, id));
+  }
+
+  static async setStatus(
+    id: string,
+    status: 'processing' | 'needs_review' | 'published' | 'rejected' | 'failed',
+    reason?: string,
+  ) {
+    await db
+      .update(items)
+      .set({ status: status, reviewReason: reason, updatedAt: new Date() })
+      .where(eq(items.id, id));
+  }
+
+  static async listAll(limit: number = 50) {
+    const results = await db
+      .select({
+        id: items.id,
+        jobId: items.jobId,
+        mpn: items.mpn,
+        brand: items.brand,
+        status: items.status,
+        updatedAt: items.updatedAt,
+        inputRaw: jobs.inputRaw,
+      })
+      .from(items)
+      .leftJoin(jobs, eq(items.jobId, jobs.id))
+      .orderBy(desc(items.updatedAt))
+      .limit(limit);
+
+    return results;
+  }
 }

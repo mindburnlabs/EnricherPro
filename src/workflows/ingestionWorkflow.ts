@@ -1,9 +1,9 @@
 // workflow: ingestion-loop
-import { IngestionAgent } from "../services/agents/IngestionAgent.js";
-import { BackendFirecrawlService } from "../services/backend/firecrawl.js";
-import { db } from "../db/index.js";
-import { trustedCatalogPages } from "../db/schema.js";
-import { eq } from "drizzle-orm";
+import { IngestionAgent } from '../services/agents/IngestionAgent.js';
+import { BackendFirecrawlService } from '../services/backend/firecrawl.js';
+import { db } from '../db/index.js';
+import { trustedCatalogPages } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
 
 /**
  * The "Crawler" loop.
@@ -12,60 +12,58 @@ import { eq } from "drizzle-orm";
  * 3. Ingests Items to Graph.
  */
 export async function runIngestionLoop() {
-    console.log("🐛 Starting Ingestion Loop...");
+  console.log('🐛 Starting Ingestion Loop...');
 
-    // 1. Get Active Pages
-    const pages = await db.query.trustedCatalogPages.findMany({
-        where: (t, { eq }) => eq(t.status, 'active')
-    });
+  // 1. Get Active Pages
+  const pages = await db.query.trustedCatalogPages.findMany({
+    where: (t, { eq }) => eq(t.status, 'active'),
+  });
 
-    if (pages.length === 0) {
-        console.log("No active pages to ingest.");
-        // Seed if empty?
-        // For simulation, let's assume one.
+  if (pages.length === 0) {
+    console.log('No active pages to ingest.');
+    // Seed if empty?
+    // For simulation, let's assume one.
+  }
+
+  for (const page of pages) {
+    try {
+      console.log(`Processing ${page.url}...`);
+
+      // 2. Scrape
+      const firecrawlKey = process.env.FIRECRAWL_API_KEY;
+      const openRouterKey = process.env.OPENROUTER_API_KEY;
+
+      if (!firecrawlKey || !openRouterKey) {
+        console.warn('Skipping ingestion: Missing API Keys in environment.');
+        continue;
+      }
+
+      const result = await BackendFirecrawlService.scrape(page.url, {
+        formats: ['markdown'],
+        apiKey: firecrawlKey,
+      });
+
+      if (result.markdown) {
+        // 3. Extract
+        const items = await IngestionAgent.parseCatalog(result.markdown, page.domain, {
+          openrouter: openRouterKey,
+        });
+        console.log(`Extracted ${items.length} items.`);
+
+        // 4. Ingest
+        const ingested = await IngestionAgent.processItems(items, 'catalog_ingest');
+        console.log(`Ingested ${ingested} new graph edges.`);
+
+        // Update Timestamp
+        await db
+          .update(trustedCatalogPages)
+          .set({ lastScrapedAt: new Date() })
+          .where(eq(trustedCatalogPages.id, page.id));
+      }
+    } catch (e) {
+      console.error(`Failed to ingest ${page.url}`, e);
     }
+  }
 
-    for (const page of pages) {
-        try {
-            console.log(`Processing ${page.url}...`);
-
-            // 2. Scrape
-            const firecrawlKey = process.env.FIRECRAWL_API_KEY;
-            const openRouterKey = process.env.OPENROUTER_API_KEY;
-
-            if (!firecrawlKey || !openRouterKey) {
-                console.warn("Skipping ingestion: Missing API Keys in environment.");
-                continue;
-            }
-
-            const result = await BackendFirecrawlService.scrape(page.url, {
-                formats: ['markdown'],
-                apiKey: firecrawlKey
-            });
-
-            if (result.markdown) {
-                // 3. Extract
-                const items = await IngestionAgent.parseCatalog(
-                    result.markdown,
-                    page.domain,
-                    { openrouter: openRouterKey }
-                );
-                console.log(`Extracted ${items.length} items.`);
-
-                // 4. Ingest
-                const ingested = await IngestionAgent.processItems(items, 'catalog_ingest');
-                console.log(`Ingested ${ingested} new graph edges.`);
-
-                // Update Timestamp
-                await db.update(trustedCatalogPages)
-                    .set({ lastScrapedAt: new Date() })
-                    .where(eq(trustedCatalogPages.id, page.id));
-            }
-
-        } catch (e) {
-            console.error(`Failed to ingest ${page.url}`, e);
-        }
-    }
-
-    console.log("✅ Ingestion Loop Complete.");
+  console.log('✅ Ingestion Loop Complete.');
 }

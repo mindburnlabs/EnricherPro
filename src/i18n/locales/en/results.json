@@ -1,84 +1,84 @@
 {
-    "stats": {
-        "total": "Total",
-        "ok": "Success",
-        "needs_review": "Review",
-        "failed": "Failed",
-        "retrying": "Retrying",
-        "progress": "Progress",
-        "error_rate": "Error Rate",
-        "avg_time": "Avg Time",
-        "manual_queue": "Manual Queue",
-        "quality_score": "Quality"
-    },
-    "batch": {
-        "title": "Batch Processing",
-        "enriched": "ENRICHED",
-        "eta": "REMAINING",
-        "rate": "Rate",
-        "items_per_min": "items/min"
-    },
-    "errors": {
-        "title": "Error Pulse",
-        "total": "TOTAL",
-        "critical": "CRITICAL",
-        "retryable": "RETRYABLE"
-    },
-    "filters": {
-        "search_placeholder": "Search by model, brand...",
-        "toggle_filters": "Filters",
-        "all": "All",
-        "review": "Review",
-        "wipe": "Reset",
-        "filtered_set": "FILTERED",
-        "retry_selected": "Retry",
-        "review_pool": "Review Pool"
-    },
-    "advanced_filters": {
-        "confidence": "Confidence Level",
-        "brand": "Brand",
-        "metadata": "Error Metadata",
-        "sort": "Sort Protocol",
-        "all_levels": "All Levels",
-        "high": "High (85%+)",
-        "medium": "Medium (50-85%)",
-        "low": "Low (<50%)",
-        "all_brands": "All Brands",
-        "no_exceptions": "No Exceptions",
-        "timestamp": "Time",
-        "quality": "Quality",
-        "compute_time": "Compute",
-        "issue_volume": "Issue Volume"
-    },
-    "table": {
-        "sku": "SKU",
-        "brand_model": "Brand & Model",
-        "status": "Status & Progress",
-        "confidence": "Confidence",
-        "quality": "Quality",
-        "issues": "Issues",
-        "time": "Time",
-        "actions": "Actions",
-        "calculating": "CALC..."
-    },
-    "manual_queue": {
-        "title": "Manual Review Queue",
-        "subtitle": "Items requiring human intervention",
-        "items": "items",
-        "priority": "priority",
-        "attempt": "Attempt",
-        "retry": "Retry",
-        "remove": "Remove",
-        "missing_fields": "Missing Fields:",
-        "recommended_actions": "Recommendations:",
-        "more_recs": "more...",
-        "error_analysis": "Error Analysis:",
-        "more_errors": "more...",
-        "extracted_data": "Extracted Data:",
-        "brand": "Brand:",
-        "model": "Model:",
-        "type": "Type:",
-        "printers": "Printers:",
-        "found": "found"
-    }
+  "stats": {
+    "total": "Total",
+    "ok": "Success",
+    "needs_review": "Review",
+    "failed": "Failed",
+    "retrying": "Retrying",
+    "progress": "Progress",
+    "error_rate": "Error Rate",
+    "avg_time": "Avg Time",
+    "manual_queue": "Manual Queue",
+    "quality_score": "Quality"
+  },
+  "batch": {
+    "title": "Batch Processing",
+    "enriched": "ENRICHED",
+    "eta": "REMAINING",
+    "rate": "Rate",
+    "items_per_min": "items/min"
+  },
+  "errors": {
+    "title": "Error Pulse",
+    "total": "TOTAL",
+    "critical": "CRITICAL",
+    "retryable": "RETRYABLE"
+  },
+  "filters": {
+    "search_placeholder": "Search by model, brand...",
+    "toggle_filters": "Filters",
+    "all": "All",
+    "review": "Review",
+    "wipe": "Reset",
+    "filtered_set": "FILTERED",
+    "retry_selected": "Retry",
+    "review_pool": "Review Pool"
+  },
+  "advanced_filters": {
+    "confidence": "Confidence Level",
+    "brand": "Brand",
+    "metadata": "Error Metadata",
+    "sort": "Sort Protocol",
+    "all_levels": "All Levels",
+    "high": "High (85%+)",
+    "medium": "Medium (50-85%)",
+    "low": "Low (<50%)",
+    "all_brands": "All Brands",
+    "no_exceptions": "No Exceptions",
+    "timestamp": "Time",
+    "quality": "Quality",
+    "compute_time": "Compute",
+    "issue_volume": "Issue Volume"
+  },
+  "table": {
+    "sku": "SKU",
+    "brand_model": "Brand & Model",
+    "status": "Status & Progress",
+    "confidence": "Confidence",
+    "quality": "Quality",
+    "issues": "Issues",
+    "time": "Time",
+    "actions": "Actions",
+    "calculating": "CALC..."
+  },
+  "manual_queue": {
+    "title": "Manual Review Queue",
+    "subtitle": "Items requiring human intervention",
+    "items": "items",
+    "priority": "priority",
+    "attempt": "Attempt",
+    "retry": "Retry",
+    "remove": "Remove",
+    "missing_fields": "Missing Fields:",
+    "recommended_actions": "Recommendations:",
+    "more_recs": "more...",
+    "error_analysis": "Error Analysis:",
+    "more_errors": "more...",
+    "extracted_data": "Extracted Data:",
+    "brand": "Brand:",
+    "model": "Model:",
+    "type": "Type:",
+    "printers": "Printers:",
+    "found": "found"
+  }
 }

@@ -1,10 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: 'class',
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
@@ -28,9 +25,9 @@ module.exports = {
           warning: 'hsl(var(--color-warning) / <alpha-value>)',
           error: 'hsl(var(--color-error) / <alpha-value>)',
           info: 'hsl(var(--color-info) / <alpha-value>)',
-        }
-      }
+        },
+      },
     },
   },
   plugins: [],
-}
+};

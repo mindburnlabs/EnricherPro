@@ -1,17 +1,17 @@
 {
-    "fields": {
-        "sku": "Артикул (SKU)",
-        "model": "Модель",
-        "yield": "Ресурс",
-        "color": "Цвет",
-        "dimensions": "Размеры",
-        "weight": "Вес",
-        "compatibility": "Совместимость"
-    },
-    "units": {
-        "pages": "стр.",
-        "grams": "г",
-        "mm": "мм",
-        "pcs": "шт."
-    }
+  "fields": {
+    "sku": "Артикул (SKU)",
+    "model": "Модель",
+    "yield": "Ресурс",
+    "color": "Цвет",
+    "dimensions": "Размеры",
+    "weight": "Вес",
+    "compatibility": "Совместимость"
+  },
+  "units": {
+    "pages": "стр.",
+    "grams": "г",
+    "mm": "мм",
+    "pcs": "шт."
+  }
 }

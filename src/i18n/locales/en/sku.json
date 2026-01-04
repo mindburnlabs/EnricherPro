@@ -1,17 +1,17 @@
 {
-    "fields": {
-        "sku": "SKU",
-        "model": "Model",
-        "yield": "Yield",
-        "color": "Color",
-        "dimensions": "Dimensions",
-        "weight": "Weight",
-        "compatibility": "Compatibility"
-    },
-    "units": {
-        "pages": "pp.",
-        "grams": "g",
-        "mm": "mm",
-        "pcs": "pcs."
-    }
+  "fields": {
+    "sku": "SKU",
+    "model": "Model",
+    "yield": "Yield",
+    "color": "Color",
+    "dimensions": "Dimensions",
+    "weight": "Weight",
+    "compatibility": "Compatibility"
+  },
+  "units": {
+    "pages": "pp.",
+    "grams": "g",
+    "mm": "mm",
+    "pcs": "pcs."
+  }
 }

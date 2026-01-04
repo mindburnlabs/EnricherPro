@@ -3,33 +3,21 @@
     "target": "ES2022",
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
-    "module": "Node16",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
-    "types": [
-      "node",
-      "vitest/globals"
-    ],
-    "moduleResolution": "Node16",
+    "types": ["node", "vitest/globals"],
+    "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
     "allowJs": true,
     "jsx": "react-jsx",
     "resolveJsonModule": true,
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     },
     // "allowImportingTsExtensions": true, // Not needed for .js imports
     "noEmit": true
   },
-  "include": [
-    "src",
-    "api"
-  ]
+  "include": ["src", "api"]
 }

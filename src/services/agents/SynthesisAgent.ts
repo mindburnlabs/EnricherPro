@@ -1,44 +1,51 @@
-
-import { BackendLLMService, RoutingStrategy } from "../backend/llm.js";
-import { safeJsonParse } from "../../lib/json.js";
-import { ConsumableData } from "../../types/domain.js";
-import { ModelProfile } from "../../config/models.js";
-import { ExtractionSchema, ConsumableDataSchema } from "../../schemas/agent_schemas.js";
+import { BackendLLMService, RoutingStrategy } from '../backend/llm.js';
+import { safeJsonParse } from '../../lib/json.js';
+import { ConsumableData } from '../../types/domain.js';
+import { ModelProfile } from '../../config/models.js';
+import { ExtractionSchema, ConsumableDataSchema } from '../../schemas/agent_schemas.js';
 
 interface ExtractedClaim {
-    field: string;
-    value: any;
-    confidence: number;
-    rawSnippet: string;
+  field: string;
+  value: any;
+  confidence: number;
+  rawSnippet: string;
 }
 
 export class SynthesisAgent {
+  /**
+   * Extracts atomic claims from a single source document.
+   * PREFERS: High-speed, cheap models (ModelProfile.EXTRACTION)
+   */
+  static async extractClaims(
+    sourceText: string,
+    sourceUrl: string,
+    apiKeys?: Record<string, string>,
+    promptOverride?: string,
+    modelOverride?: string | { id: string },
+    language: string = 'en',
+    screenshotUrl?: string,
+  ): Promise<ExtractedClaim[]> {
+    const isRu = language === 'ru';
 
-    /**
-     * Extracts atomic claims from a single source document.
-     * PREFERS: High-speed, cheap models (ModelProfile.EXTRACTION)
-     */
-    static async extractClaims(sourceText: string, sourceUrl: string, apiKeys?: Record<string, string>, promptOverride?: string, modelOverride?: string | { id: string }, language: string = 'en', screenshotUrl?: string): Promise<ExtractedClaim[]> {
-        const isRu = language === 'ru';
+    // Resolve model: explicit override > settings store > default
+    const { useSettingsStore } = await import('../../stores/settingsStore.js');
+    const state = useSettingsStore.getState(); // Access state directly
+    // Note: extractionModel is the key in settingsStore for the Parser agent
+    const storeModel = state.extractionModel;
 
-        // Resolve model: explicit override > settings store > default
-        const { useSettingsStore } = await import('../../stores/settingsStore.js');
-        const state = useSettingsStore.getState(); // Access state directly
-        // Note: extractionModel is the key in settingsStore for the Parser agent
-        const storeModel = state.extractionModel;
+    let effectiveModel =
+      (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel;
 
-        let effectiveModel = (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel;
+    // Fallback only if BOTH are missing
+    if (!effectiveModel) {
+      effectiveModel = 'openrouter/auto'; // Dynamic routing to available models
+    }
 
-        // Fallback only if BOTH are missing
-        if (!effectiveModel) {
-            effectiveModel = 'openrouter/auto'; // Dynamic routing to available models
-        }
+    console.log(`[SynthesisAgent] Extracting with model: ${effectiveModel}`);
 
-        console.log(`[SynthesisAgent] Extracting with model: ${effectiveModel}`);
-
-
-
-        const systemPromptEn = promptOverride || `You are a Data Extraction Engine.
+    const systemPromptEn =
+      promptOverride ||
+      `You are a Data Extraction Engine.
         Your goal is to parse the PROVIDED user text and extract structured facts (Claims).
         
         CRITICAL INSTRUCTION:
@@ -70,8 +77,7 @@ export class SynthesisAgent {
            - "yield" -> "tech_specs.yield.value"
         `;
 
-
-        const systemPromptRu = `Вы - Движок Извлечения Данных.
+    const systemPromptRu = `Вы - Движок Извлечения Данных.
         Ваша цель - проанализировать ПРЕДОСТАВЛЕННЫЙ текст и извлечь факты.
 
         ВАЖНО:
@@ -104,151 +110,185 @@ export class SynthesisAgent {
         4. Уверенность (confidence) 0.1-1.0.
         `;
 
-        const systemPrompt = isRu ? systemPromptRu : systemPromptEn;
+    const systemPrompt = isRu ? systemPromptRu : systemPromptEn;
 
+    try {
+      const response = await BackendLLMService.complete({
+        model: effectiveModel,
+        profile: modelOverride ? undefined : ModelProfile.EXTRACTION, // Use Cheap/Fast model if no override
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: screenshotUrl
+              ? [
+                  {
+                    type: 'text',
+                    text: `Source URL: ${sourceUrl}\n\n${sourceText.substring(0, 15000)}`,
+                  },
+                  { type: 'image_url', image_url: { url: screenshotUrl } },
+                ]
+              : `Source URL: ${sourceUrl}\n\n${sourceText.substring(0, 15000)}`,
+          },
+        ],
+        jsonSchema: ExtractionSchema,
+        routingStrategy: RoutingStrategy.FAST, // Extraction is high volume
+        apiKeys,
+      });
+
+      const parsed = safeJsonParse<any>(response || '[]', []);
+      return Array.isArray(parsed) ? parsed : parsed.claims || [];
+    } catch (error: any) {
+      // Fallback: If model rejects image (404/400 support error), try TEXT ONLY
+      if (screenshotUrl && error.message?.includes('support image input')) {
+        console.warn(
+          `[SynthesisAgent] Model ${effectiveModel} rejected image. Retrying text-only...`,
+        );
         try {
-            const response = await BackendLLMService.complete({
-                model: effectiveModel,
-                profile: modelOverride ? undefined : ModelProfile.EXTRACTION, // Use Cheap/Fast model if no override
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    {
-                        role: "user",
-                        content: screenshotUrl
-                            ? [
-                                { type: "text", text: `Source URL: ${sourceUrl}\n\n${sourceText.substring(0, 15000)}` },
-                                { type: "image_url", image_url: { url: screenshotUrl } }
-                            ]
-                            : `Source URL: ${sourceUrl}\n\n${sourceText.substring(0, 15000)}`
-                    }
-                ],
-                jsonSchema: ExtractionSchema,
-                routingStrategy: RoutingStrategy.FAST, // Extraction is high volume
-                apiKeys
-            });
-
-            const parsed = safeJsonParse<any>(response || "[]", []);
-            return Array.isArray(parsed) ? parsed : (parsed.claims || []);
-        } catch (error: any) {
-            // Fallback: If model rejects image (404/400 support error), try TEXT ONLY
-            if (screenshotUrl && error.message?.includes("support image input")) {
-                console.warn(`[SynthesisAgent] Model ${effectiveModel} rejected image. Retrying text-only...`);
-                try {
-                    const response = await BackendLLMService.complete({
-                        model: effectiveModel,
-                        profile: modelOverride ? undefined : ModelProfile.EXTRACTION,
-                        messages: [
-                            { role: "system", content: systemPrompt },
-                            { role: "user", content: `Source URL: ${sourceUrl}\n\n${sourceText.substring(0, 15000)}` }
-                        ],
-                        jsonSchema: ExtractionSchema,
-                        routingStrategy: RoutingStrategy.FAST,
-                        apiKeys
-                    });
-                    const parsed = safeJsonParse<any>(response || "[]", []);
-                    return Array.isArray(parsed) ? parsed : (parsed.claims || []);
-                } catch (retryError) {
-                    console.error(`Extraction failed (retry) for ${sourceUrl}:`, retryError);
-                    return [];
-                }
-            }
-
-            console.error(`Extraction failed for ${sourceUrl}:`, error);
-            return [];
+          const response = await BackendLLMService.complete({
+            model: effectiveModel,
+            profile: modelOverride ? undefined : ModelProfile.EXTRACTION,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              {
+                role: 'user',
+                content: `Source URL: ${sourceUrl}\n\n${sourceText.substring(0, 15000)}`,
+              },
+            ],
+            jsonSchema: ExtractionSchema,
+            routingStrategy: RoutingStrategy.FAST,
+            apiKeys,
+          });
+          const parsed = safeJsonParse<any>(response || '[]', []);
+          return Array.isArray(parsed) ? parsed : parsed.claims || [];
+        } catch (retryError) {
+          console.error(`Extraction failed (retry) for ${sourceUrl}:`, retryError);
+          return [];
         }
+      }
+
+      console.error(`Extraction failed for ${sourceUrl}:`, error);
+      return [];
+    }
+  }
+
+  static async merge(
+    sources: string[],
+    schemaKey: string = 'StrictConsumableData',
+    apiKeys?: Record<string, string>,
+    promptOverride?: string,
+    onLog?: (msg: string) => void,
+    modelOverride?: string | { id: string },
+    language: string = 'en',
+    originalInput?: string,
+    onProgress?: (
+      partial: Partial<ConsumableData>,
+      chunkIndex: number,
+      totalChunks: number,
+    ) => void,
+  ): Promise<Partial<ConsumableData>> {
+    onLog?.(`Synthesizing data from ${sources.length} sources...`);
+
+    // SLIDING WINDOW BATCHING (Perplexity-Grade Scale)
+    // Process in chunks of 15 to avoid context limits and hallucinations
+    const CHUNK_SIZE = 15;
+    const chunks: string[][] = [];
+    for (let i = 0; i < sources.length; i += CHUNK_SIZE) {
+      chunks.push(sources.slice(i, i + CHUNK_SIZE));
     }
 
-    static async merge(
-        sources: string[],
-        schemaKey: string = "StrictConsumableData",
-        apiKeys?: Record<string, string>,
-        promptOverride?: string,
-        onLog?: (msg: string) => void,
-        modelOverride?: string | { id: string },
-        language: string = 'en',
-        originalInput?: string,
-        onProgress?: (partial: Partial<ConsumableData>, chunkIndex: number, totalChunks: number) => void
-    ): Promise<Partial<ConsumableData>> {
-        onLog?.(`Synthesizing data from ${sources.length} sources...`);
+    onLog?.(`Split ${sources.length} sources into ${chunks.length} parallel processing chunks.`);
 
-        // SLIDING WINDOW BATCHING (Perplexity-Grade Scale)
-        // Process in chunks of 15 to avoid context limits and hallucinations
-        const CHUNK_SIZE = 15;
-        const chunks: string[][] = [];
-        for (let i = 0; i < sources.length; i += CHUNK_SIZE) {
-            chunks.push(sources.slice(i, i + CHUNK_SIZE));
+    // STREAMING UPGRADE: Process chunks and emit partial results
+    const chunkResults: Partial<ConsumableData>[] = [];
+
+    // Process chunks in parallel (Swarm) but emit progress as each completes
+    await Promise.all(
+      chunks.map(async (chunk, index) => {
+        onLog?.(`[Swarm] Processing Chunk ${index + 1}/${chunks.length}...`);
+        const result = await this.processChunk(
+          chunk,
+          apiKeys,
+          promptOverride,
+          modelOverride,
+          language,
+          originalInput,
+        );
+        chunkResults[index] = result;
+
+        // STREAMING: Emit partial result for progressive UI
+        if (onProgress) {
+          // Merge results accumulated so far for preview
+          const accumulated = this.mergePartials(chunkResults.filter(Boolean));
+          onProgress(accumulated, index + 1, chunks.length);
         }
 
-        onLog?.(`Split ${sources.length} sources into ${chunks.length} parallel processing chunks.`);
+        return result;
+      }),
+    );
 
-        // STREAMING UPGRADE: Process chunks and emit partial results
-        const chunkResults: Partial<ConsumableData>[] = [];
+    // Final Consensus/Merge of Chunk Results
+    if (chunkResults.length === 1) {
+      return chunkResults[0];
+    } else {
+      onLog?.(`[Swarm] Merging ${chunkResults.length} chunk results into Final Truth...`);
+      return this.consensusMerge(chunkResults, apiKeys, modelOverride, language);
+    }
+  }
 
-        // Process chunks in parallel (Swarm) but emit progress as each completes
-        await Promise.all(chunks.map(async (chunk, index) => {
-            onLog?.(`[Swarm] Processing Chunk ${index + 1}/${chunks.length}...`);
-            const result = await this.processChunk(chunk, apiKeys, promptOverride, modelOverride, language, originalInput);
-            chunkResults[index] = result;
+  /**
+   * Simple client-side merge of partial results for streaming preview
+   * (Less sophisticated than consensusMerge, but fast)
+   */
+  private static mergePartials(partials: Partial<ConsumableData>[]): Partial<ConsumableData> {
+    if (partials.length === 0) return {};
+    if (partials.length === 1) return partials[0];
 
-            // STREAMING: Emit partial result for progressive UI
-            if (onProgress) {
-                // Merge results accumulated so far for preview
-                const accumulated = this.mergePartials(chunkResults.filter(Boolean));
-                onProgress(accumulated, index + 1, chunks.length);
-            }
-
-            return result;
-        }));
-
-        // Final Consensus/Merge of Chunk Results
-        if (chunkResults.length === 1) {
-            return chunkResults[0];
-        } else {
-            onLog?.(`[Swarm] Merging ${chunkResults.length} chunk results into Final Truth...`);
-            return this.consensusMerge(chunkResults, apiKeys, modelOverride, language);
+    // Simple shallow merge - later results override earlier ones
+    const merged: any = {};
+    for (const partial of partials) {
+      for (const [key, value] of Object.entries(partial)) {
+        if (value !== null && value !== undefined) {
+          // For arrays, concat and dedupe
+          if (Array.isArray(value) && Array.isArray(merged[key])) {
+            merged[key] = [...new Set([...merged[key], ...value])];
+          } else if (
+            typeof value === 'object' &&
+            typeof merged[key] === 'object' &&
+            !Array.isArray(value)
+          ) {
+            // Deep merge objects
+            merged[key] = { ...merged[key], ...value };
+          } else {
+            merged[key] = value;
+          }
         }
+      }
+    }
+    return merged;
+  }
+
+  private static async processChunk(
+    sources: string[],
+    apiKeys?: Record<string, string>,
+    promptOverride?: string,
+    modelOverride?: string | { id: string },
+    language: string = 'en',
+    originalInput?: string,
+  ): Promise<Partial<ConsumableData>> {
+    const isRu = language === 'ru';
+    const { useSettingsStore } = await import('../../stores/settingsStore.js');
+    const state = useSettingsStore.getState();
+    const storeModel = state.reasoningModel;
+    let effectiveModel =
+      (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel;
+
+    if (!effectiveModel) {
+      effectiveModel = 'openrouter/auto';
     }
 
-    /**
-     * Simple client-side merge of partial results for streaming preview
-     * (Less sophisticated than consensusMerge, but fast)
-     */
-    private static mergePartials(partials: Partial<ConsumableData>[]): Partial<ConsumableData> {
-        if (partials.length === 0) return {};
-        if (partials.length === 1) return partials[0];
-
-        // Simple shallow merge - later results override earlier ones
-        const merged: any = {};
-        for (const partial of partials) {
-            for (const [key, value] of Object.entries(partial)) {
-                if (value !== null && value !== undefined) {
-                    // For arrays, concat and dedupe
-                    if (Array.isArray(value) && Array.isArray(merged[key])) {
-                        merged[key] = [...new Set([...merged[key], ...value])];
-                    } else if (typeof value === 'object' && typeof merged[key] === 'object' && !Array.isArray(value)) {
-                        // Deep merge objects
-                        merged[key] = { ...merged[key], ...value };
-                    } else {
-                        merged[key] = value;
-                    }
-                }
-            }
-        }
-        return merged;
-    }
-
-    private static async processChunk(sources: string[], apiKeys?: Record<string, string>, promptOverride?: string, modelOverride?: string | { id: string }, language: string = 'en', originalInput?: string): Promise<Partial<ConsumableData>> {
-        const isRu = language === 'ru';
-        const { useSettingsStore } = await import('../../stores/settingsStore.js');
-        const state = useSettingsStore.getState();
-        const storeModel = state.reasoningModel;
-        let effectiveModel = (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel;
-
-        if (!effectiveModel) {
-            effectiveModel = 'openrouter/auto';
-        }
-
-        const inputGroundingPrompt = originalInput ? `
+    const inputGroundingPrompt = originalInput
+      ? `
         CRITICAL INPUT GROUNDING:
         The User explicitly requested: "${originalInput}"
         TRUST this input as a HIGH-CONFIDENCE source. 
@@ -256,9 +296,12 @@ export class SynthesisAgent {
         - If the user says "HP", then the Brand IS "HP".
         - If the user says "15K", then the Yield IS "15000 pages".
         DO NOT return "Unknown" for these fields if they are in the input.
-        ` : "";
+        `
+      : '';
 
-        const systemPromptEn = promptOverride || `You are the Synthesis Agent for the D² Consumable Database.
+    const systemPromptEn =
+      promptOverride ||
+      `You are the Synthesis Agent for the D² Consumable Database.
         Your mission is to extract PRISTINE, VERIFIED data from the provided raw text evidence.
         
         ${inputGroundingPrompt}
@@ -283,10 +326,10 @@ export class SynthesisAgent {
         7. 'related_ids': Extract list of related consumables (drums, maintenance).
 
         Input Text:
-        ${sources.join("\n\n")}
+        ${sources.join('\n\n')}
         `;
 
-        const systemPromptRu = `Вы - Агент Синтеза D² (Swarm Worker).
+    const systemPromptRu = `Вы - Агент Синтеза D² (Swarm Worker).
         Ваша миссия - извлечь ЧИСТЫЕ данные из этого пакета источников.
 
         ${inputGroundingPrompt}
@@ -306,125 +349,134 @@ export class SynthesisAgent {
            - logistics: Вес, габариты, комплектация.
 
         Входной Текст (Пакет):
-        ${sources.join("\n\n")}
+        ${sources.join('\n\n')}
         `;
 
-        const systemPrompt = isRu ? systemPromptRu : systemPromptEn;
+    const systemPrompt = isRu ? systemPromptRu : systemPromptEn;
 
+    try {
+      const response = await BackendLLMService.complete({
+        model: effectiveModel,
+        profile: modelOverride ? undefined : ModelProfile.REASONING,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: 'Extract data according to StrictConsumableData schema.' },
+        ],
+        jsonSchema: ConsumableDataSchema,
+        routingStrategy: RoutingStrategy.SMART,
+        apiKeys,
+      });
+
+      const parsed = safeJsonParse<any>(response || '{}', {});
+      return this.normalizeData(parsed);
+    } catch (error) {
+      console.error('SynthesisAgent Chunk Failed:', error);
+      return {};
+    }
+  }
+
+  private static normalizeData(data: any): any {
+    if (!data) return data;
+
+    // Yield Normalization
+    if (data.tech_specs?.yield) {
+      const y = data.tech_specs.yield;
+
+      // Standard Normalization
+      if (typeof y.standard === 'string') {
+        const s = y.standard.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (s.includes('19752')) y.standard = 'ISO_19752';
+        else if (s.includes('19798')) y.standard = 'ISO_19798';
+        else if (s.includes('24711'))
+          y.standard = 'ISO_24711'; // Ink
+        else if (s.includes('5') && (s.includes('cov') || s.includes('percent')))
+          y.standard = '5_percent_coverage';
+        else if (s.includes('manuf') || s.includes('declar')) y.standard = 'manufacturer_stated';
+      }
+
+      // Unit Normalization
+      if (typeof y.unit === 'string') {
+        const u = y.unit.toLowerCase();
+        if (u.includes('pag') || u.includes('cop') || u.includes('sheet')) y.unit = 'pages';
+        else if (u.includes('ml')) y.unit = 'ml';
+        else if (u.includes('g') || u.includes('gram')) y.unit = 'g';
+      }
+    }
+
+    // GTIN Normalization
+    if (data.gtin) {
+      if (typeof data.gtin === 'string') {
+        data.gtin = [data.gtin];
+      } else if (!Array.isArray(data.gtin)) {
+        // If it's something else weird (number, null, etc), allow empty or stringify?
+        // Safest is to force array or empty
+        data.gtin = [];
+      }
+    }
+
+    // Compatible Printers Normalization
+    if (data.compatible_printers_ru) {
+      if (typeof data.compatible_printers_ru === 'string') {
+        // Try to recover if it's a JSON string
         try {
-            const response = await BackendLLMService.complete({
-                model: effectiveModel,
-                profile: modelOverride ? undefined : ModelProfile.REASONING,
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: "Extract data according to StrictConsumableData schema." }
-                ],
-                jsonSchema: ConsumableDataSchema,
-                routingStrategy: RoutingStrategy.SMART,
-                apiKeys
-            });
-
-            const parsed = safeJsonParse<any>(response || "{}", {});
-            return this.normalizeData(parsed);
-        } catch (error) {
-            console.error("SynthesisAgent Chunk Failed:", error);
-            return {};
+          const parsed = JSON.parse(data.compatible_printers_ru);
+          if (Array.isArray(parsed)) data.compatible_printers_ru = parsed;
+          else data.compatible_printers_ru = [];
+        } catch (e) {
+          // If not JSON, maybe a CSV string? "HP 1010, HP 1020"
+          if ((data.compatible_printers_ru as string).includes(',')) {
+            data.compatible_printers_ru = (data.compatible_printers_ru as string)
+              .split(',')
+              .map((s) => ({ model: s.trim(), canonicalName: s.trim() }));
+          } else {
+            data.compatible_printers_ru = [
+              { model: data.compatible_printers_ru, canonicalName: data.compatible_printers_ru },
+            ];
+          }
         }
+      } else if (!Array.isArray(data.compatible_printers_ru)) {
+        data.compatible_printers_ru = [];
+      }
+    } else {
+      // Ensure it exists as empty array if missing, to prevent null checks downstream
+      data.compatible_printers_ru = [];
     }
 
-    private static normalizeData(data: any): any {
-        if (!data) return data;
+    return data;
+  }
 
-        // Yield Normalization
-        if (data.tech_specs?.yield) {
-            const y = data.tech_specs.yield;
+  /**
+   * SOTA 2026: Consensus Merge with Domain Trust Scoring
+   * Uses a tiered trust system to weight sources during conflict resolution.
+   *
+   * DOMAIN TRUST LEVELS:
+   * - OEM (hp.com, canon.com): 100 - Manufacturer is ground truth
+   * - Verified Retailers (nix.ru, dns-shop.ru): 85-90
+   * - General Retailers (ozon.ru, wildberries.ru): 70
+   * - OEM China (alibaba.com, 1688.com): 50
+   * - Unknown sources: 30
+   */
+  private static async consensusMerge(
+    results: Partial<ConsumableData>[],
+    apiKeys?: Record<string, string>,
+    modelOverride?: string | { id: string },
+    language: string = 'en',
+  ): Promise<Partial<ConsumableData>> {
+    // DeepSeek R1 Verification Step
+    // We take the N chunk results and ask the LLM to merge them into one Final Truth
 
-            // Standard Normalization
-            if (typeof y.standard === 'string') {
-                const s = y.standard.toLowerCase().replace(/[^a-z0-9]/g, '');
-                if (s.includes('19752')) y.standard = 'ISO_19752';
-                else if (s.includes('19798')) y.standard = 'ISO_19798';
-                else if (s.includes('24711')) y.standard = 'ISO_24711'; // Ink
-                else if (s.includes('5') && (s.includes('cov') || s.includes('percent'))) y.standard = '5_percent_coverage';
-                else if (s.includes('manuf') || s.includes('declar')) y.standard = 'manufacturer_stated';
-            }
+    const isRu = language === 'ru';
+    const { useSettingsStore } = await import('../../stores/settingsStore.js');
+    const state = useSettingsStore.getState();
+    const storeModel = state.reasoningModel;
+    let effectiveModel =
+      (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel;
+    if (!effectiveModel) effectiveModel = 'openrouter/auto';
 
-            // Unit Normalization
-            if (typeof y.unit === 'string') {
-                const u = y.unit.toLowerCase();
-                if (u.includes('pag') || u.includes('cop') || u.includes('sheet')) y.unit = 'pages';
-                else if (u.includes('ml')) y.unit = 'ml';
-                else if (u.includes('g') || u.includes('gram')) y.unit = 'g';
-            }
-        }
+    const mergedJson = JSON.stringify(results, null, 2);
 
-        // GTIN Normalization
-        if (data.gtin) {
-            if (typeof data.gtin === 'string') {
-                data.gtin = [data.gtin];
-            } else if (!Array.isArray(data.gtin)) {
-                // If it's something else weird (number, null, etc), allow empty or stringify?
-                // Safest is to force array or empty
-                data.gtin = [];
-            }
-        }
-
-
-        // Compatible Printers Normalization
-        if (data.compatible_printers_ru) {
-            if (typeof data.compatible_printers_ru === 'string') {
-                // Try to recover if it's a JSON string
-                try {
-                    const parsed = JSON.parse(data.compatible_printers_ru);
-                    if (Array.isArray(parsed)) data.compatible_printers_ru = parsed;
-                    else data.compatible_printers_ru = [];
-                } catch (e) {
-                    // If not JSON, maybe a CSV string? "HP 1010, HP 1020"
-                    if ((data.compatible_printers_ru as string).includes(',')) {
-                        data.compatible_printers_ru = (data.compatible_printers_ru as string)
-                            .split(',')
-                            .map(s => ({ model: s.trim(), canonicalName: s.trim() }));
-                    } else {
-                        data.compatible_printers_ru = [{ model: data.compatible_printers_ru, canonicalName: data.compatible_printers_ru }];
-                    }
-                }
-            } else if (!Array.isArray(data.compatible_printers_ru)) {
-                data.compatible_printers_ru = [];
-            }
-        } else {
-            // Ensure it exists as empty array if missing, to prevent null checks downstream
-            data.compatible_printers_ru = [];
-        }
-
-        return data;
-    }
-
-    /**
-     * SOTA 2026: Consensus Merge with Domain Trust Scoring
-     * Uses a tiered trust system to weight sources during conflict resolution.
-     * 
-     * DOMAIN TRUST LEVELS:
-     * - OEM (hp.com, canon.com): 100 - Manufacturer is ground truth
-     * - Verified Retailers (nix.ru, dns-shop.ru): 85-90
-     * - General Retailers (ozon.ru, wildberries.ru): 70
-     * - OEM China (alibaba.com, 1688.com): 50
-     * - Unknown sources: 30
-     */
-    private static async consensusMerge(results: Partial<ConsumableData>[], apiKeys?: Record<string, string>, modelOverride?: string | { id: string }, language: string = 'en'): Promise<Partial<ConsumableData>> {
-        // DeepSeek R1 Verification Step
-        // We take the N chunk results and ask the LLM to merge them into one Final Truth
-
-        const isRu = language === 'ru';
-        const { useSettingsStore } = await import('../../stores/settingsStore.js');
-        const state = useSettingsStore.getState();
-        const storeModel = state.reasoningModel;
-        let effectiveModel = (typeof modelOverride === 'string' ? modelOverride : modelOverride?.id) || storeModel;
-        if (!effectiveModel) effectiveModel = 'openrouter/auto';
-
-        const mergedJson = JSON.stringify(results, null, 2);
-
-        // SOTA 2026: Domain Trust Scoring System
-        const domainTrustGuide = `
+    // SOTA 2026: Domain Trust Scoring System
+    const domainTrustGuide = `
         ═══════════════════════════════════════════════════════════════════════════════
         DOMAIN TRUST SCORING (SOTA 2026)
         ═══════════════════════════════════════════════════════════════════════════════
@@ -457,7 +509,7 @@ export class SynthesisAgent {
         ═══════════════════════════════════════════════════════════════════════════════
         `;
 
-        const confidenceProtocol = `
+    const confidenceProtocol = `
         ═══════════════════════════════════════════════════════════════════════════════
         CONFIDENCE TRACKING PROTOCOL (SOTA 2026)
         ═══════════════════════════════════════════════════════════════════════════════
@@ -488,7 +540,8 @@ export class SynthesisAgent {
         ═══════════════════════════════════════════════════════════════════════════════
         `;
 
-        const systemPrompt = isRu ? `
+    const systemPrompt = isRu
+      ? `
          Вы - Агент Истины (DeepSeek Consensus) с Доменным Доверием (SOTA 2026).
          У вас есть ${results.length} частичных результатов анализа одного товара.
          Ваша цель: Объединить их в один ИДЕАЛЬНЫЙ JSON, учитывая авторитетность источников.
@@ -507,7 +560,8 @@ export class SynthesisAgent {
          
          Входные данные:
          ${mergedJson}
-         ` : `
+         `
+      : `
          You are the Truth Arbitration Agent with Domain Trust Scoring (SOTA 2026).
          You have ${results.length} partial extraction results.
          Merge them into one PERFECT JSON, weighting by source authority.
@@ -524,60 +578,60 @@ export class SynthesisAgent {
          5. MUST include _confidence_map and _uncertainty_reasons in output.
          `;
 
-        const response = await BackendLLMService.complete({
-            model: effectiveModel, // Ideally DeepSeek-R1 here
-            profile: ModelProfile.PLANNING, // High intelligence
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: "Merge into StrictConsumableData with confidence tracking." }
-            ],
-            jsonSchema: ConsumableDataSchema,
-            routingStrategy: RoutingStrategy.SMART,
-            apiKeys
-        });
+    const response = await BackendLLMService.complete({
+      model: effectiveModel, // Ideally DeepSeek-R1 here
+      profile: ModelProfile.PLANNING, // High intelligence
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: 'Merge into StrictConsumableData with confidence tracking.' },
+      ],
+      jsonSchema: ConsumableDataSchema,
+      routingStrategy: RoutingStrategy.SMART,
+      apiKeys,
+    });
 
-        const parsed = safeJsonParse<any>(response || "{}", {});
-        const normalized = this.normalizeData(parsed);
+    const parsed = safeJsonParse<any>(response || '{}', {});
+    const normalized = this.normalizeData(parsed);
 
-        // Post-processing timestamps & POLYFILL FOR LEGACY UI
-        if (normalized) {
-            const now = new Date().toISOString();
+    // Post-processing timestamps & POLYFILL FOR LEGACY UI
+    if (normalized) {
+      const now = new Date().toISOString();
 
-            // 1. Evidence Timestamps
-            if (parsed._evidence) {
-                for (const key of Object.keys(parsed._evidence)) {
-                    if (parsed._evidence[key]) {
-                        parsed._evidence[key].timestamp = now;
-                    }
-                }
-            }
-
-            // 2. BACKWARD COMPATIBILITY POLYFILL (Strict Truth -> Legacy UI)
-            // Use "as any" to write to deprecated readonly fields if necessary
-            const p = normalized as any;
-
-            // Yield
-            if (!p.yield && p.tech_specs?.yield) {
-                p.yield = p.tech_specs.yield;
-            }
-
-            // Color
-            if (!p.color && p.tech_specs?.color) {
-                p.color = p.tech_specs.color;
-            }
-
-            // Consumable Type (Family)
-            if (!p.consumable_type && p.type_classification?.family) {
-                p.consumable_type = p.type_classification.family;
-            }
-
-            // Weights/Dims (Logistics)
-            if (p.logistics) {
-                if (p.logistics.package_weight_g && !p.weight_g) p.weight_g = p.logistics.package_weight_g;
-                // Add other legacy fields if needed
-            }
+      // 1. Evidence Timestamps
+      if (parsed._evidence) {
+        for (const key of Object.keys(parsed._evidence)) {
+          if (parsed._evidence[key]) {
+            parsed._evidence[key].timestamp = now;
+          }
         }
+      }
 
-        return normalized;
+      // 2. BACKWARD COMPATIBILITY POLYFILL (Strict Truth -> Legacy UI)
+      // Use "as any" to write to deprecated readonly fields if necessary
+      const p = normalized as any;
+
+      // Yield
+      if (!p.yield && p.tech_specs?.yield) {
+        p.yield = p.tech_specs.yield;
+      }
+
+      // Color
+      if (!p.color && p.tech_specs?.color) {
+        p.color = p.tech_specs.color;
+      }
+
+      // Consumable Type (Family)
+      if (!p.consumable_type && p.type_classification?.family) {
+        p.consumable_type = p.type_classification.family;
+      }
+
+      // Weights/Dims (Logistics)
+      if (p.logistics) {
+        if (p.logistics.package_weight_g && !p.weight_g) p.weight_g = p.logistics.package_weight_g;
+        // Add other legacy fields if needed
+      }
     }
+
+    return normalized;
+  }
 }

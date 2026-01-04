@@ -4,33 +4,33 @@ import * as schema from './schema.js';
 import * as dotenv from 'dotenv';
 
 if (process.env.NODE_ENV !== 'production') {
-    dotenv.config({ path: '.env.local' });
+  dotenv.config({ path: '.env.local' });
 }
 
 // Singleton pattern for DB connection
 let dbInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
 export const getDb = () => {
-    if (dbInstance) return dbInstance;
+  if (dbInstance) return dbInstance;
 
-    if (!process.env.DATABASE_URL) {
-        throw new Error('DATABASE_URL is not defined');
-    }
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL is not defined');
+  }
 
-    const pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        max: 10, // Adjust based on Vercel limits
-    });
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 10, // Adjust based on Vercel limits
+  });
 
-    dbInstance = drizzle(pool, { schema });
-    return dbInstance;
+  dbInstance = drizzle(pool, { schema });
+  return dbInstance;
 };
 
 // For direct import usage (lazy)
 type DbInstance = ReturnType<typeof drizzle<typeof schema>>;
 export const db = new Proxy({} as DbInstance, {
-    get: (_target, prop: keyof DbInstance) => {
-        const instance = getDb();
-        return instance[prop];
-    },
+  get: (_target, prop: keyof DbInstance) => {
+    const instance = getDb();
+    return instance[prop];
+  },
 });

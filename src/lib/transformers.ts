@@ -1,4 +1,3 @@
-
 import { ConsumableData } from '../types/domain.js';
 import { items } from '../db/schema.js';
 import { InferSelectModel } from 'drizzle-orm';
@@ -7,15 +6,15 @@ import { InferSelectModel } from 'drizzle-orm';
 type DbItem = InferSelectModel<typeof items>;
 
 export const Transformers = {
-    // Convert DB Row -> Domain Type
-    toDomain: (dbItem: DbItem): ConsumableData => {
-        // We trust the JSON data stored in 'data' column
-        return dbItem.data as unknown as ConsumableData;
-    },
+  // Convert DB Row -> Domain Type
+  toDomain: (dbItem: DbItem): ConsumableData => {
+    // We trust the JSON data stored in 'data' column
+    return dbItem.data as unknown as ConsumableData;
+  },
 
-    // Convert Domain Type -> DB Insert Structure
-    toDbData: (domainData: ConsumableData) => {
-        // In strict mode, we might filter fields, but for now we store the whole blob
-        return domainData;
-    }
+  // Convert Domain Type -> DB Insert Structure
+  toDbData: (domainData: ConsumableData) => {
+    // In strict mode, we might filter fields, but for now we store the whole blob
+    return domainData;
+  },
 };

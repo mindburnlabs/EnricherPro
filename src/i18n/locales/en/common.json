@@ -1,99 +1,99 @@
 {
-    "app": {
-        "title": "D² Consumable Database",
-        "title_labs": "D²",
-        "subtitle": "Autonomous Deep Research Agent for Consumables.",
-        "loading": "Loading...",
-        "hero_title": "What do you want to verify?",
-        "hero_subtitle": "Ask anything about specs, availability, or compatibility."
-    },
-    "layout": {
-        "api_services": "API Services",
-        "live_engine": "Active Engine",
-        "active_orchestrator": "Active Orchestrator"
-    },
-    "status": {
-        "published": "Published",
-        "processing": "Processing",
-        "failed": "Failed",
-        "needs_review": "Needs Review"
-    },
-    "engines": {
-        "gemini_default": "Auto Router (Default)",
-        "firecrawl_agent": "Firecrawl Agent",
-        "openrouter": "OpenRouter AI"
-    },
-    "messages": {
-        "search_completed_placeholder": "Search completed. Results will appear here."
-    },
-    "nav": {
-        "research": "Research",
-        "import": "Import",
-        "results": "Results",
-        "publication": "Ready for Publication",
-        "settings": "Settings"
-    },
-    "stats": {
-        "total": "Total",
-        "ok": "Ready",
-        "needs_review": "Review",
-        "failed": "Failed",
-        "pending": "Pending",
-        "retrying": "Retrying",
-        "manual_queue": "Manual Queue",
-        "error_rate": "Error Rate %",
-        "avg_time": "Avg Time",
-        "throughput": "Throughput"
-    },
-    "actions": {
-        "run": "Run Agent",
-        "retry": "Retry",
-        "approve": "Approve",
-        "merge": "Merge",
-        "cancel": "Cancel",
-        "save": "Save",
-        "search": "Search",
-        "clear": "Clear",
-        "override": "Override",
-        "override_title": "Manual Override",
-        "fetch": "Fetch Data",
-        "enter_value": "Enter correct value...",
-        "source_placeholder": "e.g. Verified manually, Manufacturer site..."
-    },
-    "progress": {
-        "thinking": "Thinking...",
-        "complete": "Research Complete",
-        "steps_count": "steps",
-        "sources_found": "{{count}} sources found",
-        "sources_found_one": "{{count}} source found",
-        "sources_found_few": "{{count}} sources found",
-        "sources_found_many": "{{count}} sources found",
-        "steps": {
-            "init": "Initializing...",
-            "initializing": "Initializing...",
-            "normalization": "Normalization",
-            "planning": "Planning Strategy",
-            "parsing": "Parsing Request",
-            "discovery": "Initial Discovery",
-            "searching": "Searching",
-            "filtering": "Filtering",
-            "scraping_nix": "Scanning NIX.ru",
-            "scraping_compat": "Compatibility Analysis",
-            "enrichment": "Deep Enrichment",
-            "analyzing": "Synthesizing Data",
-            "auditing_images": "Auditing Images",
-            "finalizing": "Finalizing",
-            "gate_check": "Quality Check",
-            "complete": "Complete",
-            "failed": "Failed"
-        }
-    },
-    "general": {
-        "yes": "Yes",
-        "no": "No",
-        "unknown": "Unknown",
-        "n_a": "N/A",
-        "source": "Source",
-        "verified_by": "Verified by {{name}}"
+  "app": {
+    "title": "D² Consumable Database",
+    "title_labs": "D²",
+    "subtitle": "Autonomous Deep Research Agent for Consumables.",
+    "loading": "Loading...",
+    "hero_title": "What do you want to verify?",
+    "hero_subtitle": "Ask anything about specs, availability, or compatibility."
+  },
+  "layout": {
+    "api_services": "API Services",
+    "live_engine": "Active Engine",
+    "active_orchestrator": "Active Orchestrator"
+  },
+  "status": {
+    "published": "Published",
+    "processing": "Processing",
+    "failed": "Failed",
+    "needs_review": "Needs Review"
+  },
+  "engines": {
+    "gemini_default": "Auto Router (Default)",
+    "firecrawl_agent": "Firecrawl Agent",
+    "openrouter": "OpenRouter AI"
+  },
+  "messages": {
+    "search_completed_placeholder": "Search completed. Results will appear here."
+  },
+  "nav": {
+    "research": "Research",
+    "import": "Import",
+    "results": "Results",
+    "publication": "Ready for Publication",
+    "settings": "Settings"
+  },
+  "stats": {
+    "total": "Total",
+    "ok": "Ready",
+    "needs_review": "Review",
+    "failed": "Failed",
+    "pending": "Pending",
+    "retrying": "Retrying",
+    "manual_queue": "Manual Queue",
+    "error_rate": "Error Rate %",
+    "avg_time": "Avg Time",
+    "throughput": "Throughput"
+  },
+  "actions": {
+    "run": "Run Agent",
+    "retry": "Retry",
+    "approve": "Approve",
+    "merge": "Merge",
+    "cancel": "Cancel",
+    "save": "Save",
+    "search": "Search",
+    "clear": "Clear",
+    "override": "Override",
+    "override_title": "Manual Override",
+    "fetch": "Fetch Data",
+    "enter_value": "Enter correct value...",
+    "source_placeholder": "e.g. Verified manually, Manufacturer site..."
+  },
+  "progress": {
+    "thinking": "Thinking...",
+    "complete": "Research Complete",
+    "steps_count": "steps",
+    "sources_found": "{{count}} sources found",
+    "sources_found_one": "{{count}} source found",
+    "sources_found_few": "{{count}} sources found",
+    "sources_found_many": "{{count}} sources found",
+    "steps": {
+      "init": "Initializing...",
+      "initializing": "Initializing...",
+      "normalization": "Normalization",
+      "planning": "Planning Strategy",
+      "parsing": "Parsing Request",
+      "discovery": "Initial Discovery",
+      "searching": "Searching",
+      "filtering": "Filtering",
+      "scraping_nix": "Scanning NIX.ru",
+      "scraping_compat": "Compatibility Analysis",
+      "enrichment": "Deep Enrichment",
+      "analyzing": "Synthesizing Data",
+      "auditing_images": "Auditing Images",
+      "finalizing": "Finalizing",
+      "gate_check": "Quality Check",
+      "complete": "Complete",
+      "failed": "Failed"
     }
+  },
+  "general": {
+    "yes": "Yes",
+    "no": "No",
+    "unknown": "Unknown",
+    "n_a": "N/A",
+    "source": "Source",
+    "verified_by": "Verified by {{name}}"
+  }
 }

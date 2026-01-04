@@ -18,33 +18,33 @@ export interface SourceAdapter {
 // --- Source Manager (Circuit Breaker holder) ---
 
 export class SourceManager {
-    private adapters: SourceAdapter[] = [];
+  private adapters: SourceAdapter[] = [];
 
-    register(adapter: SourceAdapter) {
-        this.adapters.push(adapter);
-    }
+  register(adapter: SourceAdapter) {
+    this.adapters.push(adapter);
+  }
 
-    getAdapters(): SourceAdapter[] {
-        return this.adapters.sort((a, b) => b.priority - a.priority);
-    }
+  getAdapters(): SourceAdapter[] {
+    return this.adapters.sort((a, b) => b.priority - a.priority);
+  }
 
-    async fetchAll(query: string): Promise<SourceResult[]> {
-        const results: SourceResult[] = [];
-        // Sequential or parallel based on policy? Parallel is faster.
-        const promises = this.adapters.map(async (adapter) => {
-            try {
-                // TODO: Add Circuit Breaker check here
-                const adapterResults = await adapter.fetch(query);
-                return adapterResults;
-            } catch (error) {
-                console.error(`Source ${adapter.name} failed:`, error);
-                return [];
-            }
-        });
+  async fetchAll(query: string): Promise<SourceResult[]> {
+    const results: SourceResult[] = [];
+    // Sequential or parallel based on policy? Parallel is faster.
+    const promises = this.adapters.map(async (adapter) => {
+      try {
+        // TODO: Add Circuit Breaker check here
+        const adapterResults = await adapter.fetch(query);
+        return adapterResults;
+      } catch (error) {
+        console.error(`Source ${adapter.name} failed:`, error);
+        return [];
+      }
+    });
 
-        const fetchResults = await Promise.all(promises);
-        fetchResults.forEach(r => results.push(...r));
-        
-        return results.sort((a, b) => b.priorityScore - a.priorityScore);
-    }
+    const fetchResults = await Promise.all(promises);
+    fetchResults.forEach((r) => results.push(...r));
+
+    return results.sort((a, b) => b.priorityScore - a.priorityScore);
+  }
 }

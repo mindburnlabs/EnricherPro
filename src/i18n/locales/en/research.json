@@ -1,99 +1,99 @@
 {
-    "status": {
-        "initializing": "Initializing Neural Network...",
-        "planning": "Building Research Graph...",
-        "searching": "Deep Source Scanning...",
-        "reading": "Semantic Content Analysis...",
-        "analyzing": "Structuring and Validation...",
-        "verifying": "Fact Cross-Verification...",
-        "complete": "Research Complete",
-        "failed": "Research Protocol Failed",
-        "review_required": "Manual Validation Required",
-        "needs_review": "Manual Validation Required",
-        "published": "Published to PIM",
-        "processing": "Processing..."
+  "status": {
+    "initializing": "Initializing Neural Network...",
+    "planning": "Building Research Graph...",
+    "searching": "Deep Source Scanning...",
+    "reading": "Semantic Content Analysis...",
+    "analyzing": "Structuring and Validation...",
+    "verifying": "Fact Cross-Verification...",
+    "complete": "Research Complete",
+    "failed": "Research Protocol Failed",
+    "review_required": "Manual Validation Required",
+    "needs_review": "Manual Validation Required",
+    "published": "Published to PIM",
+    "processing": "Processing..."
+  },
+  "progress": {
+    "title": "Active Agent Process",
+    "step_counter": "Step {{current}} of {{total}}"
+  },
+  "composer": {
+    "placeholder": "Enter query or item list (e.g., 'HP W1331A specs', 'DK-7105 compatibility')...",
+    "button": "Start Research",
+    "suggestions": {
+      "1": "Canon C-EXV 42 Specs",
+      "2": "Compatible Toners for Kyocera M2040dn",
+      "3": "HP 106A vs 107A Comparison"
+    }
+  },
+  "conflict": {
+    "detected": "Data Anomaly Detected",
+    "detected_plural_one": "{{count}} Anomaly Detected",
+    "detected_plural_few": "{{count}} Anomalies Detected",
+    "detected_plural_many": "{{count}} Anomalies Detected",
+    "resolution_needed": "Conflict Resolution Needed",
+    "reasons_label": "Discrepancy Analysis"
+  },
+  "review": {
+    "title": "Needs Review",
+    "reasons": "Reasons: {{reason}}",
+    "unknown_mpn": "Unknown MPN",
+    "button_detail": "View Details",
+    "button_approve": "Approve",
+    "unknown_reason": "Not specified"
+  },
+  "results": {
+    "title": "Research Findings",
+    "refresh_data": "Force Refresh Data",
+    "download_csv": "Download CSV",
+    "download_json": "Download JSON",
+    "logistics_unit_g": "g",
+    "logistics_unit_mm": "mm",
+    "logistics_badge": "Logistics Data Only",
+    "faq_badge": "FAQs Available",
+    "faqs_count": "{{count}} FAQs",
+    "tn_ved": "TN VED",
+    "verified_points": "Verified Points",
+    "graph_hit": "Graph Hit",
+    "csv_headers": "ID, MPN, Brand, Model, Confidence, Status",
+    "verified": "Verified"
+  },
+  "actions": {
+    "details": "Details",
+    "approve": "Approve",
+    "approving": "Approving...",
+    "approved": "Approved"
+  },
+  "evidence": {
+    "title": "Evidence",
+    "points_verified": "Verified Points"
+  },
+  "specs": {
+    "brand": "Brand",
+    "type": "Type"
+  },
+  "interface": {
+    "welcome_title": "What do you want to verify?",
+    "welcome_subtitle": "Ask anything about specs, availability, or compatibility."
+  },
+  "modes": {
+    "fast": {
+      "label": "⚡ Fast",
+      "desc": "Quick specs check"
     },
-    "progress": {
-        "title": "Active Agent Process",
-        "step_counter": "Step {{current}} of {{total}}"
+    "balanced": {
+      "label": "⚖️ Balanced",
+      "desc": "Scrape & Verify"
     },
-    "composer": {
-        "placeholder": "Enter query or item list (e.g., 'HP W1331A specs', 'DK-7105 compatibility')...",
-        "button": "Start Research",
-        "suggestions": {
-            "1": "Canon C-EXV 42 Specs",
-            "2": "Compatible Toners for Kyocera M2040dn",
-            "3": "HP 106A vs 107A Comparison"
-        }
-    },
-    "conflict": {
-        "detected": "Data Anomaly Detected",
-        "detected_plural_one": "{{count}} Anomaly Detected",
-        "detected_plural_few": "{{count}} Anomalies Detected",
-        "detected_plural_many": "{{count}} Anomalies Detected",
-        "resolution_needed": "Conflict Resolution Needed",
-        "reasons_label": "Discrepancy Analysis"
-    },
-    "review": {
-        "title": "Needs Review",
-        "reasons": "Reasons: {{reason}}",
-        "unknown_mpn": "Unknown MPN",
-        "button_detail": "View Details",
-        "button_approve": "Approve",
-        "unknown_reason": "Not specified"
-    },
-    "results": {
-        "title": "Research Findings",
-        "refresh_data": "Force Refresh Data",
-        "download_csv": "Download CSV",
-        "download_json": "Download JSON",
-        "logistics_unit_g": "g",
-        "logistics_unit_mm": "mm",
-        "logistics_badge": "Logistics Data Only",
-        "faq_badge": "FAQs Available",
-        "faqs_count": "{{count}} FAQs",
-        "tn_ved": "TN VED",
-        "verified_points": "Verified Points",
-        "graph_hit": "Graph Hit",
-        "csv_headers": "ID, MPN, Brand, Model, Confidence, Status",
-        "verified": "Verified"
-    },
-    "actions": {
-        "details": "Details",
-        "approve": "Approve",
-        "approving": "Approving...",
-        "approved": "Approved"
-    },
-    "evidence": {
-        "title": "Evidence",
-        "points_verified": "Verified Points"
-    },
-    "specs": {
-        "brand": "Brand",
-        "type": "Type"
-    },
-    "interface": {
-        "welcome_title": "What do you want to verify?",
-        "welcome_subtitle": "Ask anything about specs, availability, or compatibility."
-    },
-    "modes": {
-        "fast": {
-            "label": "⚡ Fast",
-            "desc": "Quick specs check"
-        },
-        "balanced": {
-            "label": "⚖️ Balanced",
-            "desc": "Scrape & Verify"
-        },
-        "deep": {
-            "label": "🧠 Deep",
-            "desc": "Exhaustive (Slow)"
-        }
-    },
-    "errors": {
-        "resolution_failed": "Failed to resolve conflict."
-    },
-    "conflicts": "Data Conflicts",
-    "conflicts_desc": "Some fields have conflicting data from different sources. Review the highlighted fields above.",
-    "related_products": "Related Products"
+    "deep": {
+      "label": "🧠 Deep",
+      "desc": "Exhaustive (Slow)"
+    }
+  },
+  "errors": {
+    "resolution_failed": "Failed to resolve conflict."
+  },
+  "conflicts": "Data Conflicts",
+  "conflicts_desc": "Some fields have conflicting data from different sources. Review the highlighted fields above.",
+  "related_products": "Related Products"
 }

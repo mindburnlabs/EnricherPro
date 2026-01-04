@@ -27,7 +27,7 @@ export class NativeToolProvider implements ToolProvider {
   }
 
   async listTools(): Promise<ToolDefinition[]> {
-    return Array.from(this.tools.values()).map(t => t.definition);
+    return Array.from(this.tools.values()).map((t) => t.definition);
   }
 
   async executeTool(name: string, args: Record<string, any>): Promise<ToolResult> {

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Check, AlertTriangle, ShieldCheck, Users, Globe } from 'lucide-react';
 import { EnrichedItem, FieldEvidence } from '../../types/domain.js';
@@ -9,476 +8,607 @@ import { ManualEntryDialog } from './ManualEntryDialog.js';
 import { ConflictResolver } from './ConflictResolver.js';
 import { PenTool, RefreshCw, Clock } from 'lucide-react';
 import { BlockersPanel } from '../sku/BlockersPanel.js';
+import { ConfidenceRing } from '../common/ConfidenceRing.js';
 
 interface ItemDetailProps {
-    item: EnrichedItem | null;
-    open: boolean;
-    onClose: () => void;
-    onApprove: (id: string) => void;
-    onUpdate?: (id: string, field: string, value: any, source: string) => void;
+  item: EnrichedItem | null;
+  open: boolean;
+  onClose: () => void;
+  onApprove: (id: string) => void;
+  onUpdate?: (id: string, field: string, value: any, source: string) => void;
 }
 
 import { useTranslation } from 'react-i18next';
 
 // Trust Badge Component
 const TrustBadge = ({ evidence }: { evidence?: FieldEvidence<any> }) => {
-    const { t } = useTranslation(['detail', 'common']);
-    if (!evidence) return null;
+  const { t } = useTranslation(['detail', 'common']);
+  if (!evidence) return null;
 
-    if (evidence.method === 'official') {
-        return <span className="flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800"><ShieldCheck className="w-3 h-3" /> {t('trust.official')}</span>;
-    }
-    if (evidence.method === 'agent_result' || evidence.source_url?.includes('agent-session')) {
-        // Firecrawl Agent - High Trust
-        return <span className="flex items-center gap-1 text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800"><Users className="w-3 h-3" /> {t('common:engines.firecrawl_agent')}</span>;
-    }
-    if (evidence.method === 'consensus') {
-        return <span className="flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800"><Users className="w-3 h-3" /> {t('trust.consensus')}</span>;
-    }
-    if (evidence.source_url?.includes('nix.ru') || evidence.source_url?.includes('dns-shop.ru')) {
-        return <span className="flex items-center gap-1 text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-800"><ShieldCheck className="w-3 h-3" /> {t('compatibility.nix_verified')}</span>;
-    }
-    if (evidence.is_conflict) {
-        return <span className="flex items-center gap-1 text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800"><AlertTriangle className="w-3 h-3" /> {t('trust.conflict')}</span>;
-    }
-    return <span className="flex items-center gap-1 text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded"><Globe className="w-3 h-3" /> {t('trust.web')}</span>;
+  if (evidence.method === 'official') {
+    return (
+      <span className='flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800'>
+        <ShieldCheck className='w-3 h-3' /> {t('trust.official')}
+      </span>
+    );
+  }
+  if (evidence.method === 'agent_result' || evidence.source_url?.includes('agent-session')) {
+    // Firecrawl Agent - High Trust
+    return (
+      <span className='flex items-center gap-1 text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800'>
+        <Users className='w-3 h-3' /> {t('common:engines.firecrawl_agent')}
+      </span>
+    );
+  }
+  if (evidence.method === 'consensus') {
+    return (
+      <span className='flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800'>
+        <Users className='w-3 h-3' /> {t('trust.consensus')}
+      </span>
+    );
+  }
+  if (evidence.source_url?.includes('nix.ru') || evidence.source_url?.includes('dns-shop.ru')) {
+    return (
+      <span className='flex items-center gap-1 text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-800'>
+        <ShieldCheck className='w-3 h-3' /> {t('compatibility.nix_verified')}
+      </span>
+    );
+  }
+  if (evidence.is_conflict) {
+    return (
+      <span className='flex items-center gap-1 text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800'>
+        <AlertTriangle className='w-3 h-3' /> {t('trust.conflict')}
+      </span>
+    );
+  }
+  return (
+    <span className='flex items-center gap-1 text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded'>
+      <Globe className='w-3 h-3' /> {t('trust.web')}
+    </span>
+  );
 };
 
-export const ItemDetail: React.FC<ItemDetailProps> = ({ item, open, onClose, onApprove, onUpdate }) => {
-    const { t } = useTranslation(['detail', 'common']);
-    const [citationField, setCitationField] = useState<string | null>(null);
-    const [manualEntryField, setManualEntryField] = useState<{ key: string, label: string, current: any } | null>(null);
+export const ItemDetail: React.FC<ItemDetailProps> = ({
+  item,
+  open,
+  onClose,
+  onApprove,
+  onUpdate,
+}) => {
+  const { t } = useTranslation(['detail', 'common']);
+  const [citationField, setCitationField] = useState<string | null>(null);
+  const [manualEntryField, setManualEntryField] = useState<{
+    key: string;
+    label: string;
+    current: any;
+  } | null>(null);
 
-    if (!open || !item) return null;
+  if (!open || !item) return null;
 
-    const { data } = item;
-    const evidence = data._evidence || {};
+  const { data } = item;
+  const evidence = data._evidence || {};
 
-    const openCitations = (field: string) => {
-        setCitationField(field);
-    };
+  const openCitations = (field: string) => {
+    setCitationField(field);
+  };
 
-    const handleManualOverride = (e: React.MouseEvent, key: string, label: string, current: any) => {
-        e.stopPropagation();
-        setManualEntryField({ key, label, current });
-    };
+  const handleManualOverride = (e: React.MouseEvent, key: string, label: string, current: any) => {
+    e.stopPropagation();
+    setManualEntryField({ key, label, current });
+  };
 
-    // Helper to render a row
-    const EvidenceRow = ({ label, value, fieldEnv, fieldKey }: { label: string, value: any, fieldEnv: any, fieldKey: string }) => {
-        const isNA = value === null || value === undefined || value === '' || value === t('common:general.n_a') || (typeof value === 'object' && Object.keys(value).length === 0);
-
-        return (
-            <div
-                onClick={() => !isNA && openCitations(fieldKey)}
-                className={`flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border transition-colors group ${fieldEnv?.is_conflict ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-500'} ${!isNA ? 'cursor-pointer' : ''}`}
-            >
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-500 capitalize">{label}</span>
-                     {/* History Icon (Visual mock) */}
-                    <Clock size={12} className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-                    <TrustBadge evidence={fieldEnv} />
-                    <span className={`text-sm font-medium whitespace-pre-wrap text-right flex-1 break-words ${isNA ? 'text-gray-400 italic' : 'text-gray-900 dark:text-gray-100'}`}>
-                        {typeof value === 'object' ? JSON.stringify(value) : String(value || t('common:general.n_a'))}
-                    </span>
-
-                    {/* Actionable N/A State */}
-                    {isNA && onUpdate && (
-                        <button
-                            onClick={(e) => handleManualOverride(e, fieldKey, label, value)}
-                            className="ml-2 p-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded flex items-center gap-1 transition-colors"
-                            title={t('common:actions.override_title', 'Manual Override')}
-                        >
-                            <PenTool className="w-3 h-3" />
-                            {t('common:actions.override', 'Override')}
-                        </button>
-                    )}
-                </div>
-            </div>
-        );
-    };
-
-    const formatBool = (val?: boolean | null) => val === true ? t('common:general.yes') : val === false ? t('common:general.no') : t('common:general.unknown');
-
+  // Helper to render a row
+  const EvidenceRow = ({
+    label,
+    value,
+    fieldEnv,
+    fieldKey,
+  }: {
+    label: string;
+    value: any;
+    fieldEnv: any;
+    fieldKey: string;
+  }) => {
+    const isNA =
+      value === null ||
+      value === undefined ||
+      value === '' ||
+      value === t('common:general.n_a') ||
+      (typeof value === 'object' && Object.keys(value).length === 0);
+    // Extract confidence from evidence object (either simple number or object from DB)
+    // Adjust based on your actual data shape. Assuming fieldEnv has .confidence (0-1 or 0-100)
+    let confidence = fieldEnv?.confidence;
+    // Normalize to 0-100 if it's 0-1 float
+    if (confidence && confidence <= 1) confidence = confidence * 100;
 
     return (
-        <div className="h-full w-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col shadow-2xl z-40 relative">
-
-            {/* Header */}
-            <div className="flex-none p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-start bg-white dark:bg-gray-900">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {data.mpn_identity.mpn || t('identity.mpn')}
-                    </h2>
-                    <p className="text-gray-500 text-sm mt-1">{data.mpn_identity.canonical_model_name}</p>
-                </div>
-                <div className="flex gap-2">
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-500 transition-colors">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-            </div>
-
-            {/* Sticky Action Bar */}
-            <div className="flex-none p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 flex justify-end">
-                <button
-                    onClick={() => onApprove(item.id)}
-                    disabled={(item.status as any) === 'published'}
-                    className={`px-6 py-2 rounded-lg font-bold shadow-md transition-all flex items-center gap-2 ${(item.status as any) === 'published'
-                        ? 'bg-emerald-100 text-emerald-700 shadow-none cursor-default'
-                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20 active:scale-95'
-                        }`}
-                >
-                    <Check className="w-4 h-4" /> {(item.status as any) === 'published' ? t('header.approved') : t('header.approve')}
-                </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-
-                <BlockersPanel item={item} />
-                
-                <CompletenessMeter data={data} />
-
-                {/* Identity Section */}
-                <div id="identity">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
-                        {t('identity.title')}
-                    </h3>
-                    <div className="grid grid-cols-1 gap-3">
-                        <EvidenceRow
-                            label={t('identity.brand')}
-                            value={data.brand || t('common:general.unknown')}
-                            fieldEnv={evidence['brand']}
-                            fieldKey="brand"
-                        />
-                        <EvidenceRow
-                            label={t('specs.type')}
-                            value={data.consumable_type ? t(`specs.types.${data.consumable_type}`, data.consumable_type.replace('_', ' ')) : t('common:general.n_a')}
-                            fieldEnv={evidence['consumable_type']}
-                            fieldKey="consumable_type"
-                        />
-                        <EvidenceRow
-                            label={t('identity.mpn')}
-                            value={data.mpn_identity.mpn}
-                            fieldEnv={evidence['mpn_identity.mpn']}
-                            fieldKey="mpn_identity.mpn"
-                        />
-                        {data.short_model && (
-                            <EvidenceRow
-                                label={t('identity.short_model')}
-                                value={data.short_model}
-                                fieldEnv={evidence['short_model']}
-                                fieldKey="short_model"
-                            />
-                        )}
-                        <EvidenceRow
-                            label={t('specs.yield')}
-                            value={data.yield && data.yield.value ? `${data.yield.value} ${data.yield.unit ? t(`identity.yield_units.${data.yield.unit.toLowerCase()}`, data.yield.unit) : ''}`.trim() : t('common:general.n_a')}
-                            fieldEnv={evidence['yield.value']}
-                            fieldKey="yield.value"
-                        />
-                        <EvidenceRow
-                            label={t('specs.color')}
-                            value={data.color}
-                            fieldEnv={evidence['color']}
-                            fieldKey="color"
-                        />
-                        {data.aliases && data.aliases.length > 0 && (
-                            <EvidenceRow
-                                label={t('identity.aliases')}
-                                value={data.aliases.filter(a => a.length < 20).join(", ")} // Filter out long descriptions
-                                fieldEnv={evidence['aliases']}
-                                fieldKey="aliases"
-                            />
-                        )}
-                    </div>
-                </div>
-
-                {/* Compatibility (Promoted) */}
-                {data.compatible_printers_ru && Array.isArray(data.compatible_printers_ru) && data.compatible_printers_ru.length > 0 && (
-                    <div id="compatibility">
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-blue-500 rounded-full"></span>
-                            {t('compatibility.title')} <span className="text-xs font-normal text-gray-500">{t('compatibility.region_hint')}</span>
-                            {data.compatible_printers_ru.some(p => p.canonicalName?.includes('nix')) && (
-                                <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 rounded-full">
-                                    {t('compatibility.nix_verified')}
-                                </span>
-                            )}
-                        </h3>
-                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto shadow-inner">
-                            <div className="flex flex-wrap gap-2">
-                                {data.compatible_printers_ru.map((p, i) => (
-                                    <span key={i} className="px-2 py-1 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 text-sm hover:border-blue-400 transition-colors cursor-default">
-                                        {p.model}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Conflict Resolution Panel */}
-                {Object.entries(evidence).filter(([, e]) => (e as any)?.is_conflict).map(([key, val]) => (
-                    <ConflictResolver
-                        key={key}
-                        fieldKey={key}
-                        evidence={val as any}
-                        onResolve={(value, method) => console.log('Resolved', key, value, method)} // Placeholder handler
-                    />
-                ))}
-
-                {/* Logistics Section */}
-                <div id="logistics">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-orange-500 rounded-full"></span>
-                        {t('logistics.title')}
-                    </h3>
-                    <div className="grid grid-cols-1 gap-3">
-                        <EvidenceRow
-                            label={t('logistics.weight')}
-                            value={data.logistics?.package_weight_g ? `${data.logistics.package_weight_g} ${t('logistics.unit_g')}` : (data.weight_g ? `${data.weight_g} ${t('logistics.unit_g')}` : t('common:general.n_a'))}
-                            fieldEnv={evidence['logistics.package_weight_g'] || evidence['weight_g']}
-                            fieldKey="logistics.package_weight_g"
-                        />
-                        <EvidenceRow
-                            label={t('logistics.dims')}
-                            value={data.logistics?.width_mm ? `${data.logistics.width_mm}x${data.logistics.height_mm}x${data.logistics.depth_mm} ${t('logistics.unit_mm')}` : t('common:general.n_a')}
-                            fieldEnv={evidence['logistics.width_mm']}
-                            fieldKey="logistics.width_mm"
-                        />
-                        <EvidenceRow
-                            label={t('logistics.origin')}
-                            value={data.logistics?.origin_country || t('common:general.n_a')}
-                            fieldEnv={evidence['logistics.origin_country']}
-                            fieldKey="logistics.origin_country"
-                        />
-                    </div>
-                </div>
-
-                {/* Compliance (RU) */}
-                {(data.compliance_ru || (data as any).compliance) && (
-                    <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-red-500 rounded-full"></span>
-                            {t('compliance.title')}
-                        </h3>
-                        <div className="grid grid-cols-1 gap-3">
-                            <EvidenceRow
-                                label={t('compliance.tn_ved')}
-                                value={data.compliance_ru?.tn_ved_code || t('common:general.n_a')}
-                                fieldEnv={evidence['compliance_ru.tn_ved_code']}
-                                fieldKey="compliance_ru.tn_ved_code"
-                            />
-                            <EvidenceRow
-                                label={t('compliance.marking')}
-                                value={formatBool(data.compliance_ru?.mandatory_marking)}
-                                fieldEnv={evidence['compliance_ru.mandatory_marking']}
-                                fieldKey="compliance_ru.mandatory_marking"
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* Images Grid with Error Handling */}
-                {data.images && data.images.filter(img => img.url).length > 0 && (
-                    <div className="space-y-2">
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-gray-400 rounded-full"></span>
-                            {t('tabs.images')}
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            {data.images.slice(0, 4).map((img, idx) => (
-                                <div key={idx} className="aspect-square bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 relative group">
-                                    <img
-                                        src={img.url}
-                                        alt={t('images.alt')}
-                                        referrerPolicy="no-referrer"
-                                        className="w-full h-full object-contain p-2 hover:scale-105 transition-transform"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                            (e.target as HTMLImageElement).parentElement!.classList.add('hidden');
-                                        }}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Technical Architecture */}
-                <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-indigo-500 rounded-full"></span>
-                        {t('specs.tech_title')}
-                    </h3>
-                    <div className="grid grid-cols-1 gap-3">
-                        <EvidenceRow
-                            label={t('specs.chip')}
-                            value={formatBool(data.has_chip)}
-                            fieldEnv={evidence['has_chip']}
-                            fieldKey="has_chip"
-                        />
-                        <EvidenceRow
-                            label={t('specs.counter')}
-                            value={formatBool(data.has_page_counter)}
-                            fieldEnv={evidence['has_page_counter']}
-                            fieldKey="has_page_counter"
-                        />
-                        {data.gtin && Array.isArray(data.gtin) && data.gtin.length > 0 && (
-                            <EvidenceRow
-                                label={t('specs.gtin')}
-                                value={data.gtin.join(", ")}
-                                fieldEnv={evidence['gtin']}
-                                fieldKey="gtin"
-                            />
-                        )}
-                    </div>
-                </div>
-
-                {/* Marketing Content (SEO) */}
-                {data.marketing && (
-                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-5 border border-indigo-100 dark:border-indigo-800/50">
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-indigo-500 rounded-full"></span>
-                            {t('marketing.title')}
-                        </h3>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('marketing.seo_title')}</label>
-                                <div className="text-sm font-medium text-gray-900 dark:text-gray-100 border-b border-indigo-200 dark:border-indigo-800 pb-2">
-                                    {data.marketing.seo_title || '-'}
-                                </div>
-                            </div>
-
-                            {data.marketing.description && (
-                                <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('marketing.desc')}</label>
-                                    <div className="text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none mt-1" dangerouslySetInnerHTML={{ __html: data.marketing.description }} />
-                                </div>
-                            )}
-
-                            {data.marketing.feature_bullets && data.marketing.feature_bullets.length > 0 && (
-                                <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('marketing.bullets')}</label>
-                                    <ul className="list-disc pl-4 mt-1 space-y-1">
-                                        {data.marketing.feature_bullets.map((bullet, i) => (
-                                            <li key={i} className="text-xs text-gray-700 dark:text-gray-300">{bullet}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Connectivity (If present) */}
-                {data.connectivity && (
-                    <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-cyan-500 rounded-full"></span>
-                            {t('connectivity.title')}
-                        </h3>
-                        <div className="grid grid-cols-1 gap-3">
-                            {data.connectivity.ports && data.connectivity.ports.length > 0 && (
-                                <EvidenceRow
-                                    label={t('connectivity.ports')}
-                                    value={data.connectivity.ports.join(", ")}
-                                    fieldEnv={evidence['connectivity.ports']}
-                                    fieldKey="connectivity.ports"
-                                />
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Related SKUs (Enhanced) */}
-                {(data.related_ids || (data.related_skus && data.related_skus.length > 0)) && (
-                    <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('related_products')}</h3>
-                        <div className="flex flex-wrap gap-2">
-                            {/* Prefer Structured related_ids if available, else standard string array */}
-                            {data.related_ids ? data.related_ids.map((item, i) => (
-                                <span key={i} className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm border border-blue-100 dark:border-blue-800 flex items-center gap-2">
-                                    <span className="font-bold">{item.id}</span>
-                                    <span className="text-xs opacity-70">{item.type}</span>
-                                </span>
-                            )) : data.related_skus!.map((sku, i) => (
-                                <span key={i} className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm border border-blue-100 dark:border-blue-800">
-                                    {sku}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* FAQ Section (Demoted) */}
-                {data.faq && data.faq.length > 0 && (
-                    <div className="border-t border-gray-100 dark:border-gray-800 pt-6">
-                        <details className="group">
-                            <summary className="list-none flex items-center justify-between cursor-pointer">
-                                <h3 className="font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">
-                                    <span className="w-1 h-4 bg-purple-500 rounded-full grayscale group-hover:grayscale-0 transition-all"></span>
-                                    {t('faq')}
-                                </h3>
-                                <span className="text-xs text-gray-400 underline">Show {data.faq.length} Q&A</span>
-                            </summary>
-                            <div className="space-y-3 mt-4 animate-in slide-in-from-top-2">
-                                {data.faq.map((item, idx) => (
-                                    <div key={idx} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm opacity-75 hover:opacity-100 transition-opacity">
-                                        <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">{item.question}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">{item.answer}</p>
-                                        {item.source_url && (
-                                            <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline mt-2 block truncate">
-                                                {t('common:general.source')}: {new URL(item.source_url).hostname}
-                                            </a>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </details>
-                    </div>
-                )}
-
-            </div>
-
-            <CitationDrawer
-                isOpen={!!citationField}
-                onClose={() => setCitationField(null)}
-                fieldLabel={citationField || ''}
-                evidence={citationField ? evidence[citationField] : []}
-                onConfirm={(ev) => {
-                    // Start a manual override to confirm current value as verified
-                    if (citationField && item && onUpdate) {
-                         // We re-save the current value but with a 'verified' flag or source
-                         // For now, we reuse onUpdate with special source
-                         const currentValue = citationField.split('.').reduce((o, i) => o?.[i], item.data);
-                         onUpdate(item.id, citationField, currentValue, 'manual_verification');
-                         setCitationField(null);
-                    }
-                }}
-                onReject={() => {
-                    // Placeholder for rejection logic
-                    alert(t('common:actions.rejected_impl_pending'));
-                }}
-            />
-
-            <ManualEntryDialog
-                isOpen={!!manualEntryField}
-                onClose={() => setManualEntryField(null)}
-                onSave={(val, src) => {
-                    if (manualEntryField && onUpdate && item) {
-                        onUpdate(item.id, manualEntryField.key, val, src);
-                    }
-                }}
-                fieldLabel={manualEntryField?.label || ''}
-                fieldKey={manualEntryField?.key || ''}
-                currentValue={manualEntryField?.current}
-            />
+      <div
+        onClick={() => !isNA && openCitations(fieldKey)}
+        className={`flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border transition-colors group ${fieldEnv?.is_conflict ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-500'} ${!isNA ? 'cursor-pointer' : ''}`}
+      >
+        <div className='flex items-center gap-3'>
+          <ConfidenceRing score={!isNA ? confidence || 0 : undefined} />
+          <span className='text-sm font-medium text-gray-500 capitalize'>{label}</span>
+          {/* History Icon (Visual mock) */}
+          <Clock
+            size={12}
+            className='text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity'
+          />
         </div>
+        <div className='flex items-center gap-2 flex-1 justify-end min-w-0'>
+          <TrustBadge evidence={fieldEnv} />
+          <span
+            className={`text-sm font-medium whitespace-pre-wrap text-right flex-1 break-words ${isNA ? 'text-gray-400 italic' : 'text-gray-900 dark:text-gray-100'}`}
+          >
+            {typeof value === 'object'
+              ? JSON.stringify(value)
+              : String(value || t('common:general.n_a'))}
+          </span>
+
+          {/* Actionable N/A State */}
+          {isNA && onUpdate && (
+            <button
+              onClick={(e) => handleManualOverride(e, fieldKey, label, value)}
+              className='ml-2 p-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded flex items-center gap-1 transition-colors'
+              title={t('common:actions.override_title', 'Manual Override')}
+            >
+              <PenTool className='w-3 h-3' />
+              {t('common:actions.override', 'Override')}
+            </button>
+          )}
+        </div>
+      </div>
     );
+  };
+
+  const formatBool = (val?: boolean | null) =>
+    val === true
+      ? t('common:general.yes')
+      : val === false
+        ? t('common:general.no')
+        : t('common:general.unknown');
+
+  return (
+    <div className='h-full w-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col shadow-2xl z-40 relative'>
+      {/* Header */}
+      <div className='flex-none p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-start bg-white dark:bg-gray-900'>
+        <div>
+          <h2 className='text-2xl font-bold text-gray-900 dark:text-white'>
+            {data.mpn_identity.mpn || t('identity.mpn')}
+          </h2>
+          <p className='text-gray-500 text-sm mt-1'>{data.mpn_identity.canonical_model_name}</p>
+        </div>
+        <div className='flex gap-2'>
+          <button
+            onClick={onClose}
+            className='p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-500 transition-colors'
+          >
+            <X className='w-5 h-5' />
+          </button>
+        </div>
+      </div>
+
+      {/* Sticky Action Bar */}
+      <div className='flex-none p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 flex justify-end'>
+        <button
+          onClick={() => onApprove(item.id)}
+          disabled={(item.status as any) === 'published'}
+          className={`px-6 py-2 rounded-lg font-bold shadow-md transition-all flex items-center gap-2 ${
+            (item.status as any) === 'published'
+              ? 'bg-emerald-100 text-emerald-700 shadow-none cursor-default'
+              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20 active:scale-95'
+          }`}
+        >
+          <Check className='w-4 h-4' />{' '}
+          {(item.status as any) === 'published' ? t('header.approved') : t('header.approve')}
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className='flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar'>
+        <BlockersPanel item={item} />
+
+        <CompletenessMeter data={data} />
+
+        {/* Identity Section */}
+        <div id='identity'>
+          <h3 className='font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2'>
+            <span className='w-1 h-4 bg-emerald-500 rounded-full'></span>
+            {t('identity.title')}
+          </h3>
+          <div className='grid grid-cols-1 gap-3'>
+            <EvidenceRow
+              label={t('identity.brand')}
+              value={data.brand || t('common:general.unknown')}
+              fieldEnv={evidence['brand']}
+              fieldKey='brand'
+            />
+            <EvidenceRow
+              label={t('specs.type')}
+              value={
+                data.consumable_type
+                  ? t(`specs.types.${data.consumable_type}`, data.consumable_type.replace('_', ' '))
+                  : t('common:general.n_a')
+              }
+              fieldEnv={evidence['consumable_type']}
+              fieldKey='consumable_type'
+            />
+            <EvidenceRow
+              label={t('identity.mpn')}
+              value={data.mpn_identity.mpn}
+              fieldEnv={evidence['mpn_identity.mpn']}
+              fieldKey='mpn_identity.mpn'
+            />
+            {data.short_model && (
+              <EvidenceRow
+                label={t('identity.short_model')}
+                value={data.short_model}
+                fieldEnv={evidence['short_model']}
+                fieldKey='short_model'
+              />
+            )}
+            <EvidenceRow
+              label={t('specs.yield')}
+              value={
+                data.yield && data.yield.value
+                  ? `${data.yield.value} ${data.yield.unit ? t(`identity.yield_units.${data.yield.unit.toLowerCase()}`, data.yield.unit) : ''}`.trim()
+                  : t('common:general.n_a')
+              }
+              fieldEnv={evidence['yield.value']}
+              fieldKey='yield.value'
+            />
+            <EvidenceRow
+              label={t('specs.color')}
+              value={data.color}
+              fieldEnv={evidence['color']}
+              fieldKey='color'
+            />
+            {data.aliases && data.aliases.length > 0 && (
+              <EvidenceRow
+                label={t('identity.aliases')}
+                value={data.aliases.filter((a) => a.length < 20).join(', ')} // Filter out long descriptions
+                fieldEnv={evidence['aliases']}
+                fieldKey='aliases'
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Compatibility (Promoted) */}
+        {data.compatible_printers_ru &&
+          Array.isArray(data.compatible_printers_ru) &&
+          data.compatible_printers_ru.length > 0 && (
+            <div id='compatibility'>
+              <h3 className='font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2'>
+                <span className='w-1 h-4 bg-blue-500 rounded-full'></span>
+                {t('compatibility.title')}{' '}
+                <span className='text-xs font-normal text-gray-500'>
+                  {t('compatibility.region_hint')}
+                </span>
+                {data.compatible_printers_ru.some((p) => p.canonicalName?.includes('nix')) && (
+                  <span className='text-[10px] bg-orange-100 text-orange-700 px-1.5 rounded-full'>
+                    {t('compatibility.nix_verified')}
+                  </span>
+                )}
+              </h3>
+              <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto shadow-inner'>
+                <div className='flex flex-wrap gap-2'>
+                  {data.compatible_printers_ru.map((p, i) => (
+                    <span
+                      key={i}
+                      className='px-2 py-1 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 text-sm hover:border-blue-400 transition-colors cursor-default'
+                    >
+                      {p.model}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+        {/* Conflict Resolution Panel */}
+        {Object.entries(evidence)
+          .filter(([, e]) => (e as any)?.is_conflict)
+          .map(([key, val]) => (
+            <ConflictResolver
+              key={key}
+              fieldKey={key}
+              evidence={val as any}
+              onResolve={(value, method) => console.log('Resolved', key, value, method)} // Placeholder handler
+            />
+          ))}
+
+        {/* Logistics Section */}
+        <div id='logistics'>
+          <h3 className='font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2'>
+            <span className='w-1 h-4 bg-orange-500 rounded-full'></span>
+            {t('logistics.title')}
+          </h3>
+          <div className='grid grid-cols-1 gap-3'>
+            <EvidenceRow
+              label={t('logistics.weight')}
+              value={
+                data.logistics?.package_weight_g
+                  ? `${data.logistics.package_weight_g} ${t('logistics.unit_g')}`
+                  : data.weight_g
+                    ? `${data.weight_g} ${t('logistics.unit_g')}`
+                    : t('common:general.n_a')
+              }
+              fieldEnv={evidence['logistics.package_weight_g'] || evidence['weight_g']}
+              fieldKey='logistics.package_weight_g'
+            />
+            <EvidenceRow
+              label={t('logistics.dims')}
+              value={
+                data.logistics?.width_mm
+                  ? `${data.logistics.width_mm}x${data.logistics.height_mm}x${data.logistics.depth_mm} ${t('logistics.unit_mm')}`
+                  : t('common:general.n_a')
+              }
+              fieldEnv={evidence['logistics.width_mm']}
+              fieldKey='logistics.width_mm'
+            />
+            <EvidenceRow
+              label={t('logistics.origin')}
+              value={data.logistics?.origin_country || t('common:general.n_a')}
+              fieldEnv={evidence['logistics.origin_country']}
+              fieldKey='logistics.origin_country'
+            />
+          </div>
+        </div>
+
+        {/* Compliance (RU) */}
+        {(data.compliance_ru || (data as any).compliance) && (
+          <div>
+            <h3 className='font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2'>
+              <span className='w-1 h-4 bg-red-500 rounded-full'></span>
+              {t('compliance.title')}
+            </h3>
+            <div className='grid grid-cols-1 gap-3'>
+              <EvidenceRow
+                label={t('compliance.tn_ved')}
+                value={data.compliance_ru?.tn_ved_code || t('common:general.n_a')}
+                fieldEnv={evidence['compliance_ru.tn_ved_code']}
+                fieldKey='compliance_ru.tn_ved_code'
+              />
+              <EvidenceRow
+                label={t('compliance.marking')}
+                value={formatBool(data.compliance_ru?.mandatory_marking)}
+                fieldEnv={evidence['compliance_ru.mandatory_marking']}
+                fieldKey='compliance_ru.mandatory_marking'
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Images Grid with Error Handling */}
+        {data.images && data.images.filter((img) => img.url).length > 0 && (
+          <div className='space-y-2'>
+            <h3 className='font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2'>
+              <span className='w-1 h-4 bg-gray-400 rounded-full'></span>
+              {t('tabs.images')}
+            </h3>
+            <div className='grid grid-cols-2 gap-4'>
+              {data.images.slice(0, 4).map((img, idx) => (
+                <div
+                  key={idx}
+                  className='aspect-square bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 relative group'
+                >
+                  <img
+                    src={img.url}
+                    alt={t('images.alt')}
+                    referrerPolicy='no-referrer'
+                    className='w-full h-full object-contain p-2 hover:scale-105 transition-transform'
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).parentElement!.classList.add('hidden');
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Technical Architecture */}
+        <div>
+          <h3 className='font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2'>
+            <span className='w-1 h-4 bg-indigo-500 rounded-full'></span>
+            {t('specs.tech_title')}
+          </h3>
+          <div className='grid grid-cols-1 gap-3'>
+            <EvidenceRow
+              label={t('specs.chip')}
+              value={formatBool(data.has_chip)}
+              fieldEnv={evidence['has_chip']}
+              fieldKey='has_chip'
+            />
+            <EvidenceRow
+              label={t('specs.counter')}
+              value={formatBool(data.has_page_counter)}
+              fieldEnv={evidence['has_page_counter']}
+              fieldKey='has_page_counter'
+            />
+            {data.gtin && Array.isArray(data.gtin) && data.gtin.length > 0 && (
+              <EvidenceRow
+                label={t('specs.gtin')}
+                value={data.gtin.join(', ')}
+                fieldEnv={evidence['gtin']}
+                fieldKey='gtin'
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Marketing Content (SEO) */}
+        {data.marketing && (
+          <div className='bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-5 border border-indigo-100 dark:border-indigo-800/50'>
+            <h3 className='font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2'>
+              <span className='w-1 h-4 bg-indigo-500 rounded-full'></span>
+              {t('marketing.title')}
+            </h3>
+
+            <div className='space-y-4'>
+              <div>
+                <label className='text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
+                  {t('marketing.seo_title')}
+                </label>
+                <div className='text-sm font-medium text-gray-900 dark:text-gray-100 border-b border-indigo-200 dark:border-indigo-800 pb-2'>
+                  {data.marketing.seo_title || '-'}
+                </div>
+              </div>
+
+              {data.marketing.description && (
+                <div>
+                  <label className='text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
+                    {t('marketing.desc')}
+                  </label>
+                  <div
+                    className='text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none mt-1'
+                    dangerouslySetInnerHTML={{ __html: data.marketing.description }}
+                  />
+                </div>
+              )}
+
+              {data.marketing.feature_bullets && data.marketing.feature_bullets.length > 0 && (
+                <div>
+                  <label className='text-[10px] font-bold text-gray-400 uppercase tracking-wider'>
+                    {t('marketing.bullets')}
+                  </label>
+                  <ul className='list-disc pl-4 mt-1 space-y-1'>
+                    {data.marketing.feature_bullets.map((bullet, i) => (
+                      <li key={i} className='text-xs text-gray-700 dark:text-gray-300'>
+                        {bullet}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Connectivity (If present) */}
+        {data.connectivity && (
+          <div>
+            <h3 className='font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2'>
+              <span className='w-1 h-4 bg-cyan-500 rounded-full'></span>
+              {t('connectivity.title')}
+            </h3>
+            <div className='grid grid-cols-1 gap-3'>
+              {data.connectivity.ports && data.connectivity.ports.length > 0 && (
+                <EvidenceRow
+                  label={t('connectivity.ports')}
+                  value={data.connectivity.ports.join(', ')}
+                  fieldEnv={evidence['connectivity.ports']}
+                  fieldKey='connectivity.ports'
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Related SKUs (Enhanced) */}
+        {(data.related_ids || (data.related_skus && data.related_skus.length > 0)) && (
+          <div>
+            <h3 className='font-semibold text-gray-900 dark:text-gray-100 mb-2'>
+              {t('related_products')}
+            </h3>
+            <div className='flex flex-wrap gap-2'>
+              {/* Prefer Structured related_ids if available, else standard string array */}
+              {data.related_ids
+                ? data.related_ids.map((item, i) => (
+                    <span
+                      key={i}
+                      className='px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm border border-blue-100 dark:border-blue-800 flex items-center gap-2'
+                    >
+                      <span className='font-bold'>{item.id}</span>
+                      <span className='text-xs opacity-70'>{item.type}</span>
+                    </span>
+                  ))
+                : data.related_skus!.map((sku, i) => (
+                    <span
+                      key={i}
+                      className='px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm border border-blue-100 dark:border-blue-800'
+                    >
+                      {sku}
+                    </span>
+                  ))}
+            </div>
+          </div>
+        )}
+
+        {/* FAQ Section (Demoted) */}
+        {data.faq && data.faq.length > 0 && (
+          <div className='border-t border-gray-100 dark:border-gray-800 pt-6'>
+            <details className='group'>
+              <summary className='list-none flex items-center justify-between cursor-pointer'>
+                <h3 className='font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors'>
+                  <span className='w-1 h-4 bg-purple-500 rounded-full grayscale group-hover:grayscale-0 transition-all'></span>
+                  {t('faq')}
+                </h3>
+                <span className='text-xs text-gray-400 underline'>Show {data.faq.length} Q&A</span>
+              </summary>
+              <div className='space-y-3 mt-4 animate-in slide-in-from-top-2'>
+                {data.faq.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className='bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm opacity-75 hover:opacity-100 transition-opacity'
+                  >
+                    <p className='font-medium text-gray-900 dark:text-gray-100 mb-2'>
+                      {item.question}
+                    </p>
+                    <p className='text-sm text-gray-600 dark:text-gray-400'>{item.answer}</p>
+                    {item.source_url && (
+                      <a
+                        href={item.source_url}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='text-xs text-blue-500 hover:underline mt-2 block truncate'
+                      >
+                        {t('common:general.source')}: {new URL(item.source_url).hostname}
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </details>
+          </div>
+        )}
+      </div>
+
+      <CitationDrawer
+        isOpen={!!citationField}
+        onClose={() => setCitationField(null)}
+        fieldLabel={citationField || ''}
+        evidence={citationField ? evidence[citationField] : []}
+        onConfirm={(ev) => {
+          // Start a manual override to confirm current value as verified
+          if (citationField && item && onUpdate) {
+            // We re-save the current value but with a 'verified' flag or source
+            // For now, we reuse onUpdate with special source
+            const currentValue = citationField.split('.').reduce((o, i) => o?.[i], item.data);
+            onUpdate(item.id, citationField, currentValue, 'manual_verification');
+            setCitationField(null);
+          }
+        }}
+        onReject={() => {
+          // Placeholder for rejection logic
+          alert(t('common:actions.rejected_impl_pending'));
+        }}
+      />
+
+      <ManualEntryDialog
+        isOpen={!!manualEntryField}
+        onClose={() => setManualEntryField(null)}
+        onSave={(val, src) => {
+          if (manualEntryField && onUpdate && item) {
+            onUpdate(item.id, manualEntryField.key, val, src);
+          }
+        }}
+        fieldLabel={manualEntryField?.label || ''}
+        fieldKey={manualEntryField?.key || ''}
+        currentValue={manualEntryField?.current}
+      />
+    </div>
+  );
 };

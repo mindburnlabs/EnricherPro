@@ -1,97 +1,97 @@
 {
-    "results": {
-        "title": "РЕЗУЛЬТАТЫ ИССЛЕДОВАНИЯ",
-        "verified": "ПРОВЕРЕНО",
-        "refresh_data": "Обновить данные",
-        "download_csv": "Скачать CSV",
-        "download_json": "Скачать JSON",
-        "back_to_list": "Назад к списку"
-    },
-    "actions": {
-        "details": "Подробнее",
-        "approve": "Утвердить",
-        "approved": "Утверждено"
-    },
-    "stats": {
-        "total": "Всего",
-        "ok": "Успешно",
-        "needs_review": "Проверка",
-        "failed": "Ошибки",
-        "retrying": "Повтор",
-        "progress": "Прогресс",
-        "error_rate": "Коэф. ошибок",
-        "avg_time": "Ср. время",
-        "manual_queue": "Ручная очередь",
-        "quality_score": "Качество"
-    },
-    "batch": {
-        "title": "Пакетная обработка",
-        "enriched": "ОБОГАЩЕНО",
-        "eta": "ОСТАЛОСЬ",
-        "rate": "Скорость",
-        "items_per_min": "шт/мин"
-    },
-    "errors": {
-        "title": "Пульс ошибок",
-        "total": "ВСЕГО",
-        "critical": "КРИТИЧЕСКИЕ",
-        "retryable": "ПОВТОРЯЕМЫЕ"
-    },
-    "filters": {
-        "search_placeholder": "Поиск по модели, бренду...",
-        "toggle_filters": "Фильтры",
-        "all": "Все",
-        "review": "Проверка",
-        "wipe": "Сбросить",
-        "filtered_set": "ОТФИЛЬТРОВАНО",
-        "retry_selected": "Повторить",
-        "review_pool": "Пул проверки"
-    },
-    "advanced_filters": {
-        "confidence": "Уровень уверенности",
-        "brand": "Бренд",
-        "metadata": "Метаданные ошибок",
-        "sort": "Протокол сортировки",
-        "all_levels": "Все уровни",
-        "high": "Высокий (85%+)",
-        "medium": "Средний (50-85%)",
-        "low": "Низкий (<50%)",
-        "all_brands": "Все бренды",
-        "no_exceptions": "Без исключений",
-        "timestamp": "Время",
-        "quality": "Качество",
-        "compute_time": "Вычисления",
-        "issue_volume": "Объем проблем"
-    },
-    "table": {
-        "sku": "Артикул / SKU",
-        "brand_model": "Бренд и Модель",
-        "status": "Статус и Прогресс",
-        "confidence": "Уверенность",
-        "quality": "Качество",
-        "issues": "Проблемы",
-        "time": "Время",
-        "actions": "Действия",
-        "calculating": "РАСЧЕТ..."
-    },
-    "manual_queue": {
-        "title": "Очередь ручной проверки",
-        "subtitle": "Элементы, требующие вмешательства человека",
-        "items": "элементов",
-        "priority": "приоритет",
-        "attempt": "Попытка",
-        "retry": "Повторить",
-        "remove": "Удалить",
-        "missing_fields": "Отсутствующие поля:",
-        "recommended_actions": "Рекомендации:",
-        "more_recs": "еще рекомендации...",
-        "error_analysis": "Анализ ошибок:",
-        "more_errors": "еще ошибки...",
-        "extracted_data": "Извлеченные данные:",
-        "brand": "Бренд:",
-        "model": "Модель:",
-        "type": "Тип:",
-        "printers": "Принтеры:",
-        "found": "найдено"
-    }
+  "results": {
+    "title": "РЕЗУЛЬТАТЫ ИССЛЕДОВАНИЯ",
+    "verified": "ПРОВЕРЕНО",
+    "refresh_data": "Обновить данные",
+    "download_csv": "Скачать CSV",
+    "download_json": "Скачать JSON",
+    "back_to_list": "Назад к списку"
+  },
+  "actions": {
+    "details": "Подробнее",
+    "approve": "Утвердить",
+    "approved": "Утверждено"
+  },
+  "stats": {
+    "total": "Всего",
+    "ok": "Успешно",
+    "needs_review": "Проверка",
+    "failed": "Ошибки",
+    "retrying": "Повтор",
+    "progress": "Прогресс",
+    "error_rate": "Коэф. ошибок",
+    "avg_time": "Ср. время",
+    "manual_queue": "Ручная очередь",
+    "quality_score": "Качество"
+  },
+  "batch": {
+    "title": "Пакетная обработка",
+    "enriched": "ОБОГАЩЕНО",
+    "eta": "ОСТАЛОСЬ",
+    "rate": "Скорость",
+    "items_per_min": "шт/мин"
+  },
+  "errors": {
+    "title": "Пульс ошибок",
+    "total": "ВСЕГО",
+    "critical": "КРИТИЧЕСКИЕ",
+    "retryable": "ПОВТОРЯЕМЫЕ"
+  },
+  "filters": {
+    "search_placeholder": "Поиск по модели, бренду...",
+    "toggle_filters": "Фильтры",
+    "all": "Все",
+    "review": "Проверка",
+    "wipe": "Сбросить",
+    "filtered_set": "ОТФИЛЬТРОВАНО",
+    "retry_selected": "Повторить",
+    "review_pool": "Пул проверки"
+  },
+  "advanced_filters": {
+    "confidence": "Уровень уверенности",
+    "brand": "Бренд",
+    "metadata": "Метаданные ошибок",
+    "sort": "Протокол сортировки",
+    "all_levels": "Все уровни",
+    "high": "Высокий (85%+)",
+    "medium": "Средний (50-85%)",
+    "low": "Низкий (<50%)",
+    "all_brands": "Все бренды",
+    "no_exceptions": "Без исключений",
+    "timestamp": "Время",
+    "quality": "Качество",
+    "compute_time": "Вычисления",
+    "issue_volume": "Объем проблем"
+  },
+  "table": {
+    "sku": "Артикул / SKU",
+    "brand_model": "Бренд и Модель",
+    "status": "Статус и Прогресс",
+    "confidence": "Уверенность",
+    "quality": "Качество",
+    "issues": "Проблемы",
+    "time": "Время",
+    "actions": "Действия",
+    "calculating": "РАСЧЕТ..."
+  },
+  "manual_queue": {
+    "title": "Очередь ручной проверки",
+    "subtitle": "Элементы, требующие вмешательства человека",
+    "items": "элементов",
+    "priority": "приоритет",
+    "attempt": "Попытка",
+    "retry": "Повторить",
+    "remove": "Удалить",
+    "missing_fields": "Отсутствующие поля:",
+    "recommended_actions": "Рекомендации:",
+    "more_recs": "еще рекомендации...",
+    "error_analysis": "Анализ ошибок:",
+    "more_errors": "еще ошибки...",
+    "extracted_data": "Извлеченные данные:",
+    "brand": "Бренд:",
+    "model": "Модель:",
+    "type": "Тип:",
+    "printers": "Принтеры:",
+    "found": "найдено"
+  }
 }

@@ -3,6 +3,7 @@
 ## Deployment
 
 ### Vercel (Production)
+
 The system is designed to run on Vercel Serverless Functions.
 
 1.  **Push to Git**: `git push origin main`
@@ -15,15 +16,18 @@ The system is designed to run on Vercel Serverless Functions.
     - `INNGEST_SIGNING_KEY`: For verifying warnings
 
 ### Docker (Optional)
+
 A `Dockerfile` can be added if containerization is needed. Currently not configured.
 
 ## Monitoring
 
 ### Health Checks
+
 - **Liveness**: `GET /api/status` (Simple ping)
 - **Deep Check**: `GET /api/health/deep` (DB + API connectivity)
 
 ### Alerts
+
 - Monitor for `503 Service Unavailable` on `/api/health/deep`.
 - Monitor for `failed` count in `items` table > 10%.
 
@@ -32,14 +36,17 @@ A `Dockerfile` can be added if containerization is needed. Currently not configu
 ### Common Issues
 
 **1. "MPN missing" Error in Quality Gate**
+
 - **Cause**: LLM failed to extract MPN or product page was ambiguous.
 - **Fix**: Check source URL. If page is valid, retry job. If page is bad, item is correctly rejected.
 
 **2. Rate Limits (429)**
+
 - **Cause**: Too many `start-research` calls from same IP.
 - **Fix**: Wait 60s or whitelist IP in `src/lib/rateLimit.ts` (requires redeploy).
 
 **3. Database Connection Errors**
+
 - **Cause**: Serverless cold start or pool exhaustion.
 - **Fix**: Check Vercel/Neon dashboard. System auto-retries on next request usually.
 

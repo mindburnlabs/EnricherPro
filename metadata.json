@@ -2,9 +2,7 @@
   "name": "Consumable Enricher Pro",
   "description": "AI-powered consumable enrichment system with Russian market compliance, comprehensive validation, and complete audit trails. Transforms supplier titles into structured product data using Gemini AI, Firecrawl web scraping, and multi-source verification.",
   "version": "2.0.0",
-  "requestFramePermissions": [
-    "camera"
-  ],
+  "requestFramePermissions": ["camera"],
   "features": [
     "Automated data processing pipeline",
     "Russian market compliance (2+ source verification)",

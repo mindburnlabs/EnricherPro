@@ -2,86 +2,90 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export interface ModelConfig {
-    id: string;
-    name: string;
-    description?: string;
+  id: string;
+  name: string;
+  description?: string;
 }
 
 export interface SettingsState {
-    // LLM Selection
-    model: ModelConfig;
+  // LLM Selection
+  model: ModelConfig;
 
-    // API Keys
-    apiKeys: {
-        openRouter: string;
-        firecrawl: string;
-    };
+  // API Keys
+  apiKeys: {
+    openRouter: string;
+    firecrawl: string;
+  };
 
-    // System Prompts
-    prompts: {
-        discovery: string;
-        synthesis: string;
-        logistics: string;
-        enrichment: string;
-    };
+  // System Prompts
+  prompts: {
+    discovery: string;
+    synthesis: string;
+    logistics: string;
+    enrichment: string;
+  };
 
-    // Source Configuration
-    sources: {
-        official: boolean;
-        marketplace: boolean;
-        community: boolean;
-        blockedDomains: string[];
-        specificOfficial: string[];
-        specificMarketplace: string[];
-        specificCommunity: string[];
-        sourceOrder: ('official' | 'marketplace' | 'community')[];
-    };
+  // Source Configuration
+  sources: {
+    official: boolean;
+    marketplace: boolean;
+    community: boolean;
+    blockedDomains: string[];
+    specificOfficial: string[];
+    specificMarketplace: string[];
+    specificCommunity: string[];
+    sourceOrder: ('official' | 'marketplace' | 'community')[];
+  };
 
-    // Budgets/Modes
-    budgets: {
-        fast: { maxQueries: number; limitPerQuery: number; concurrency: number };
-        balanced: { maxQueries: number; limitPerQuery: number; concurrency: number };
-        deep: { maxQueries: number; limitPerQuery: number; concurrency: number };
-    };
+  // Budgets/Modes
+  budgets: {
+    fast: { maxQueries: number; limitPerQuery: number; concurrency: number };
+    balanced: { maxQueries: number; limitPerQuery: number; concurrency: number };
+    deep: { maxQueries: number; limitPerQuery: number; concurrency: number };
+  };
 
-    // Preferences
-    language: 'en' | 'ru';
-    useSota: boolean;
-    useFlashPlanner: boolean; // New Performance Toggle
-    routingPreference: 'performance' | 'cost';
+  // Preferences
+  language: 'en' | 'ru';
+  useSota: boolean;
+  useFlashPlanner: boolean; // New Performance Toggle
+  routingPreference: 'performance' | 'cost';
 
-    // Vertical Search
-    offlineMode: boolean;
-    preferGraph: boolean;
+  // Vertical Search
+  offlineMode: boolean;
+  preferGraph: boolean;
 
-    // Per-Agent Model Config
-    planningModel: string;
-    extractionModel: string;
-    reasoningModel: string;
+  // Per-Agent Model Config
+  planningModel: string;
+  extractionModel: string;
+  reasoningModel: string;
 
-    // Actions
-    setModel: (model: ModelConfig) => void;
-    setApiKey: (key: 'openRouter' | 'firecrawl', value: string) => void;
-    setPrompt: (agent: 'discovery' | 'synthesis' | 'logistics' | 'enrichment', value: string) => void;
-    setBudget: (mode: 'fast' | 'balanced' | 'deep', field: 'maxQueries' | 'limitPerQuery' | 'concurrency', value: number) => void;
-    toggleSource: (type: 'official' | 'marketplace' | 'community') => void;
-    addBlockedDomain: (domain: string) => void;
-    setBlockedDomains: (domains: string[]) => void;
-    removeBlockedDomain: (domain: string) => void;
-    setLanguage: (lang: 'en' | 'ru') => void;
-    setRoutingPreference: (pref: 'performance' | 'cost') => void;
-    setUseSota: (enabled: boolean) => void;
-    setUseFlashPlanner: (enabled: boolean) => void;
+  // Actions
+  setModel: (model: ModelConfig) => void;
+  setApiKey: (key: 'openRouter' | 'firecrawl', value: string) => void;
+  setPrompt: (agent: 'discovery' | 'synthesis' | 'logistics' | 'enrichment', value: string) => void;
+  setBudget: (
+    mode: 'fast' | 'balanced' | 'deep',
+    field: 'maxQueries' | 'limitPerQuery' | 'concurrency',
+    value: number,
+  ) => void;
+  toggleSource: (type: 'official' | 'marketplace' | 'community') => void;
+  addBlockedDomain: (domain: string) => void;
+  setBlockedDomains: (domains: string[]) => void;
+  removeBlockedDomain: (domain: string) => void;
+  setLanguage: (lang: 'en' | 'ru') => void;
+  setRoutingPreference: (pref: 'performance' | 'cost') => void;
+  setUseSota: (enabled: boolean) => void;
+  setUseFlashPlanner: (enabled: boolean) => void;
 
-    setOfflineMode: (enabled: boolean) => void;
-    setPreferGraph: (enabled: boolean) => void;
+  setOfflineMode: (enabled: boolean) => void;
+  setPreferGraph: (enabled: boolean) => void;
 
-    setAgentModel: (agent: 'planning' | 'extraction' | 'reasoning', model: string) => void;
-    // Granular Source Control
-    setSpecificDomains: (type: 'official' | 'marketplace' | 'community', domains: string[]) => void;
-    setSourceOrder: (order: ('official' | 'marketplace' | 'community')[]) => void;
+  setAgentModel: (agent: 'planning' | 'extraction' | 'reasoning', model: string) => void;
+  // Granular Source Control
+  setSpecificDomains: (type: 'official' | 'marketplace' | 'community', domains: string[]) => void;
+  setSourceOrder: (order: ('official' | 'marketplace' | 'community')[]) => void;
 
-    resetPrompts: () => void;
+  resetPrompts: () => void;
 }
 
 export const DEFAULT_DISCOVERY_PROMPT = `        Your goal is to analyze the user input and construct a precise, HIGH-RECALL search strategy.
@@ -380,140 +384,174 @@ Your goal is to create a JSON Schema(draft-07) that perfectly captures the "Enri
 `;
 
 export const useSettingsStore = create<SettingsState>()(
-    persist(
-        (set, get) => ({
-            model: { id: 'openrouter/auto', name: 'OpenRouter Auto' },
-            apiKeys: {
-                openRouter: '',
-                firecrawl: ''
+  persist(
+    (set, get) => ({
+      model: { id: 'openrouter/auto', name: 'OpenRouter Auto' },
+      apiKeys: {
+        openRouter: '',
+        firecrawl: '',
+      },
+      prompts: {
+        discovery: DEFAULT_DISCOVERY_PROMPT,
+        synthesis: DEFAULT_SYNTHESIS_PROMPT,
+        logistics: DEFAULT_LOGISTICS_PROMPT,
+        enrichment: DEFAULT_ENRICHMENT_PROMPT,
+      },
+      sources: {
+        official: true,
+        marketplace: true,
+        community: true,
+        blockedDomains: ['pinterest.com', 'youtube.com'],
+        specificOfficial: [],
+        specificMarketplace: [],
+        specificCommunity: [],
+        sourceOrder: ['official', 'marketplace', 'community'],
+      },
+      budgets: {
+        fast: { maxQueries: 3, limitPerQuery: 3, concurrency: 5 },
+        balanced: { maxQueries: 6, limitPerQuery: 5, concurrency: 8 },
+        deep: { maxQueries: 15, limitPerQuery: 8, concurrency: 12 },
+      },
+      language: 'en',
+      useSota: false,
+      useFlashPlanner: true, // Default to true for speed
+      routingPreference: 'performance',
+
+      offlineMode: false,
+      preferGraph: true,
+
+      planningModel: 'openrouter/auto',
+      extractionModel: 'openrouter/auto',
+      reasoningModel: 'openrouter/auto',
+
+      setModel: (model) => set({ model }),
+      setApiKey: (key, value) => set((state) => ({ apiKeys: { ...state.apiKeys, [key]: value } })),
+      setPrompt: (agent, value) =>
+        set((state) => ({ prompts: { ...state.prompts, [agent]: value } })),
+      // setAgentModel handled below
+      setBudget: (mode, field, value) =>
+        set((state) => ({
+          budgets: {
+            ...state.budgets,
+            [mode]: {
+              ...state.budgets[mode],
+              [field]: value,
             },
-            prompts: {
-                discovery: DEFAULT_DISCOVERY_PROMPT,
-                synthesis: DEFAULT_SYNTHESIS_PROMPT,
-                logistics: DEFAULT_LOGISTICS_PROMPT,
-                enrichment: DEFAULT_ENRICHMENT_PROMPT
-            },
-            sources: {
-                official: true,
-                marketplace: true,
-                community: true,
-                blockedDomains: ['pinterest.com', 'youtube.com'],
-                specificMarketplace: [],
-                specificCommunity: [],
-                sourceOrder: ['official', 'marketplace', 'community']
-            },
-            budgets: {
-                fast: { maxQueries: 3, limitPerQuery: 3, concurrency: 5 },
-                balanced: { maxQueries: 6, limitPerQuery: 5, concurrency: 8 },
-                deep: { maxQueries: 15, limitPerQuery: 8, concurrency: 12 }
-            },
-            language: 'en',
-            useSota: false,
-            useFlashPlanner: true, // Default to true for speed
-            routingPreference: 'performance',
+          },
+        })),
+      toggleSource: (type) =>
+        set((state) => ({
+          sources: { ...state.sources, [type]: !state.sources[type] },
+        })),
+      addBlockedDomain: (domain) =>
+        set((state) => ({
+          sources: { ...state.sources, blockedDomains: [...state.sources.blockedDomains, domain] },
+        })),
+      setBlockedDomains: (domains) =>
+        set((state) => ({
+          sources: { ...state.sources, blockedDomains: domains },
+        })),
+      removeBlockedDomain: (domain) =>
+        set((state) => ({
+          sources: {
+            ...state.sources,
+            blockedDomains: state.sources.blockedDomains.filter((d) => d !== domain),
+          },
+        })),
+      setLanguage: (lang) => set({ language: lang }),
+      setRoutingPreference: (pref) => set({ routingPreference: pref }),
+      setUseSota: (useSota) => set({ useSota }),
+      setUseFlashPlanner: (useFlashPlanner) => set({ useFlashPlanner }),
 
-            offlineMode: false,
-            preferGraph: true,
+      setOfflineMode: (offlineMode) => set({ offlineMode }),
+      setPreferGraph: (preferGraph) => set({ preferGraph }),
 
-            planningModel: 'openrouter/auto',
-            extractionModel: 'openrouter/auto',
-            reasoningModel: 'openrouter/auto',
+      setAgentModel: (agent, model) =>
+        set((state) => ({
+          [agent === 'planning'
+            ? 'planningModel'
+            : agent === 'extraction'
+              ? 'extractionModel'
+              : 'reasoningModel']: model,
+        })),
 
-            setModel: (model) => set({ model }),
-            setApiKey: (key, value) => set((state) => ({ apiKeys: { ...state.apiKeys, [key]: value } })),
-            setPrompt: (agent, value) => set((state) => ({ prompts: { ...state.prompts, [agent]: value } })),
-            // setAgentModel handled below
-            setBudget: (mode, field, value) => set((state) => ({
-                budgets: {
-                    ...state.budgets,
-                    [mode]: {
-                        ...state.budgets[mode],
-                        [field]: value
-                    }
-                }
-            })),
-            toggleSource: (type) => set((state) => ({
-                sources: { ...state.sources, [type]: !state.sources[type] }
-            })),
-            addBlockedDomain: (domain) => set((state) => ({
-                sources: { ...state.sources, blockedDomains: [...state.sources.blockedDomains, domain] }
-            })),
-            setBlockedDomains: (domains) => set((state) => ({
-                sources: { ...state.sources, blockedDomains: domains }
-            })),
-            removeBlockedDomain: (domain) => set((state) => ({
-                sources: { ...state.sources, blockedDomains: state.sources.blockedDomains.filter(d => d !== domain) }
-            })),
-            setLanguage: (lang) => set({ language: lang }),
-            setRoutingPreference: (pref) => set({ routingPreference: pref }),
-            setUseSota: (useSota) => set({ useSota }),
-            setUseFlashPlanner: (useFlashPlanner) => set({ useFlashPlanner }),
+      setSpecificDomains: (type, domains) =>
+        set((state) => ({
+          sources: {
+            ...state.sources,
+            [type === 'official'
+              ? 'specificOfficial'
+              : type === 'marketplace'
+                ? 'specificMarketplace'
+                : 'specificCommunity']: domains,
+          },
+        })),
 
-            setOfflineMode: (offlineMode) => set({ offlineMode }),
-            setPreferGraph: (preferGraph) => set({ preferGraph }),
+      setSourceOrder: (order) =>
+        set((state) => ({
+          sources: { ...state.sources, sourceOrder: order },
+        })),
 
-            setAgentModel: (agent, model) => set((state) => ({
-                [agent === 'planning' ? 'planningModel' : agent === 'extraction' ? 'extractionModel' : 'reasoningModel']: model
-            })),
-                sources: {
-                    ...state.sources,
-                    [type === 'official' ? 'specificOfficial' : type === 'marketplace' ? 'specificMarketplace' : 'specificCommunity']: domains
-                }
-            })),
-            setSourceOrder: (order) => set((state) => ({
-                sources: { ...state.sources, sourceOrder: order }
-            })),
-            resetPrompts: () => {
-                const lang = get().language;
-                set((state) => ({
-                    prompts: {
-                        discovery: lang === 'ru' ? DEFAULT_DISCOVERY_PROMPT_RU : DEFAULT_DISCOVERY_PROMPT,
-                        synthesis: lang === 'ru' ? DEFAULT_SYNTHESIS_PROMPT_RU : DEFAULT_SYNTHESIS_PROMPT,
-                        logistics: lang === 'ru' ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT,
-                        enrichment: DEFAULT_ENRICHMENT_PROMPT
-                    }
-                }));
-            }
-        }),
-        {
-            name: 'd-squared-settings',
-            // Define a migration to add new defaults if missing
-            onRehydrateStorage: () => (state) => {
-                if (state) {
-                    if (!state.prompts.logistics) {
-                        state.prompts.logistics = state.language === 'ru' ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT;
-                    }
-                    if (!state.prompts.enrichment) state.prompts.enrichment = DEFAULT_ENRICHMENT_PROMPT;
-                    if (!state.planningModel) state.planningModel = 'openrouter/auto';
-                    if (!state.extractionModel) state.extractionModel = 'openrouter/auto';
-                    if (!state.reasoningModel) state.reasoningModel = 'openrouter/auto';
-                    if (state.useSota === undefined) state.useSota = false;
-                    if (state.useFlashPlanner === undefined) state.useFlashPlanner = true;
-                    // Migration for budgets concurrency
-                    (['fast', 'balanced', 'deep'] as const).forEach(m => {
-                        if (!state.budgets[m].concurrency) state.budgets[m].concurrency = m === 'deep' ? 10 : 5;
-                    });
+      resetPrompts: () => {
+        const lang = get().language;
+        set((state) => ({
+          prompts: {
+            discovery: lang === 'ru' ? DEFAULT_DISCOVERY_PROMPT_RU : DEFAULT_DISCOVERY_PROMPT,
+            synthesis: lang === 'ru' ? DEFAULT_SYNTHESIS_PROMPT_RU : DEFAULT_SYNTHESIS_PROMPT,
+            logistics: lang === 'ru' ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT,
+            enrichment: DEFAULT_ENRICHMENT_PROMPT,
+          },
+        }));
+      },
+    }),
+    {
+      name: 'd-squared-settings',
+      // Define a migration to add new defaults if missing
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          if (!state.prompts.logistics) {
+            state.prompts.logistics =
+              state.language === 'ru' ? DEFAULT_LOGISTICS_PROMPT_RU : DEFAULT_LOGISTICS_PROMPT;
+          }
+          if (!state.prompts.enrichment) state.prompts.enrichment = DEFAULT_ENRICHMENT_PROMPT;
+          if (!state.planningModel) state.planningModel = 'openrouter/auto';
+          if (!state.extractionModel) state.extractionModel = 'openrouter/auto';
+          if (!state.reasoningModel) state.reasoningModel = 'openrouter/auto';
+          if (state.useSota === undefined) state.useSota = false;
+          if (state.useFlashPlanner === undefined) state.useFlashPlanner = true;
+          // Migration for budgets concurrency
+          (['fast', 'balanced', 'deep'] as const).forEach((m) => {
+            if (!state.budgets[m].concurrency) state.budgets[m].concurrency = m === 'deep' ? 10 : 5;
+          });
 
-                    if (state.offlineMode === undefined) state.offlineMode = false;
-                    if (state.preferGraph === undefined) state.preferGraph = true;
+          if (state.offlineMode === undefined) state.offlineMode = false;
+          if (state.preferGraph === undefined) state.preferGraph = true;
 
-                    // Migration for Specific Domains
-                    if (!state.sources.specificOfficial) state.sources.specificOfficial = [];
-                    if (!state.sources.specificMarketplace) state.sources.specificMarketplace = [];
-                    if (!state.sources.specificCommunity) state.sources.specificCommunity = [];
-                    if (!state.sources.sourceOrder) state.sources.sourceOrder = ['official', 'marketplace', 'community'];
+          // Migration for Specific Domains
+          if (!state.sources.specificOfficial) state.sources.specificOfficial = [];
+          if (!state.sources.specificMarketplace) state.sources.specificMarketplace = [];
+          if (!state.sources.specificCommunity) state.sources.specificCommunity = [];
+          if (!state.sources.sourceOrder)
+            state.sources.sourceOrder = ['official', 'marketplace', 'community'];
 
-                    // SCRUBBER: Remove phantom 'openai/gpt-5.2' and legacy Gemini defaults
-                    const invalidModelIds = ['openai/gpt-5.2', 'google/gemini-2.0-pro-exp-02-05:free', 'google/gemini-2.0-flash-exp:free'];
+          // SCRUBBER: Remove phantom 'openai/gpt-5.2' and legacy Gemini defaults
+          const invalidModelIds = [
+            'openai/gpt-5.2',
+            'google/gemini-2.0-pro-exp-02-05:free',
+            'google/gemini-2.0-flash-exp:free',
+          ];
 
-                    if (state.model?.id && invalidModelIds.includes(state.model.id)) {
-                        state.model = { id: 'openrouter/auto', name: 'OpenRouter Auto' };
-                    }
-                    if (state.planningModel && invalidModelIds.includes(state.planningModel)) state.planningModel = 'openrouter/auto';
-                    if (state.extractionModel && invalidModelIds.includes(state.extractionModel)) state.extractionModel = 'openrouter/auto';
-                    if (state.reasoningModel && invalidModelIds.includes(state.reasoningModel)) state.reasoningModel = 'openrouter/auto';
-                }
-            }
+          if (state.model?.id && invalidModelIds.includes(state.model.id)) {
+            state.model = { id: 'openrouter/auto', name: 'OpenRouter Auto' };
+          }
+          if (state.planningModel && invalidModelIds.includes(state.planningModel))
+            state.planningModel = 'openrouter/auto';
+          if (state.extractionModel && invalidModelIds.includes(state.extractionModel))
+            state.extractionModel = 'openrouter/auto';
+          if (state.reasoningModel && invalidModelIds.includes(state.reasoningModel))
+            state.reasoningModel = 'openrouter/auto';
         }
-    )
+      },
+    },
+  ),
 );

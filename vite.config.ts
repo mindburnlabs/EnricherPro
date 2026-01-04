@@ -7,7 +7,13 @@ import react from '@vitejs/plugin-react';
 const originalEmitWarning = process.emitWarning;
 process.emitWarning = (warning, ...args) => {
   if (typeof warning === 'string' && warning.includes('url.parse()')) return;
-  if (warning && typeof warning === 'object' && warning.name === 'DeprecationWarning' && warning.message.includes('url.parse()')) return;
+  if (
+    warning &&
+    typeof warning === 'object' &&
+    warning.name === 'DeprecationWarning' &&
+    warning.message.includes('url.parse()')
+  )
+    return;
   // @ts-ignore
   return originalEmitWarning.call(process, warning, ...args);
 };
@@ -22,24 +28,24 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: 'http://localhost:3002', // Self-target if using Vercel Dev, or different port if separate backend
           changeOrigin: true,
-          rewrite: (path) => path // Vercel dev handles /api
-        }
-      }
+          rewrite: (path) => path, // Vercel dev handles /api
+        },
+      },
     },
     plugins: [react()],
     build: {
       rollupOptions: {
         output: {
           manualChunks: {
-            vendor: ['react', 'react-dom', 'lucide-react']
-          }
-        }
-      }
+            vendor: ['react', 'react-dom', 'lucide-react'],
+          },
+        },
+      },
     },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
-      }
-    }
+      },
+    },
   };
 });
