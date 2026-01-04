@@ -2,7 +2,7 @@
 import { IngestionAgent } from "../services/agents/IngestionAgent.js";
 import { BackendFirecrawlService } from "../services/backend/firecrawl.js";
 import { db } from "../db/index.js";
-import { trustedCatalogPages } from "../db/schema_graph.js";
+import { trustedCatalogPages } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
 /**

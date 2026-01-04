@@ -724,6 +724,8 @@ export const researchWorkflow = inngest.createFunction(
             const { ClaimsRepository } = await import("../../repositories/ClaimsRepository.js");
             const { TrustEngine } = await import("../../services/engine/TrustEngine.js");
             const { SynthesisAgent } = await import("../../services/agents/SynthesisAgent.js");
+            const { MediaQCAgent } = await import("../../services/agents/MediaQCAgent.js");
+            const { FAQGeneratorAgent } = await import("../../services/agents/FAQGeneratorAgent.js");
 
             const allClaims = await ClaimsRepository.findByItemId(item.id);
             const claimsByField: Record<string, any[]> = {};
@@ -819,23 +821,59 @@ export const researchWorkflow = inngest.createFunction(
             return resolvedData;
         });
 
+        // 4.5 Polish (FAQ & Media QC) - Ensuring 'finalData' is defined
+        await step.run("transition-polish", () => agent.transition('polish' as any));
+        const polishedData = await step.run("polish-data", async () => {
+             // Re-import to be safe or use outer scope if available. Use dynamic import inside step to ensure scope.
+             const { MediaQCAgent } = await import("../../services/agents/MediaQCAgent.js");
+             const { FAQGeneratorAgent } = await import("../../services/agents/FAQGeneratorAgent.js");
+
+             let currentData = { ...extractedData }; // Clone
+
+             // Media QC
+             try {
+                // @ts-ignore
+                const qc = await MediaQCAgent.validateImages({ data: currentData } as any);
+                agent.log('polish', `🖼️ Media QC: ${qc.passed ? 'PASSED' : 'WARNING'} - ${qc.report[0]}`);
+                // We don't block on failure, just log metadata
+                currentData._media_qc = qc;
+             } catch(e) { console.warn("Media QC Error", e); }
+
+             // FAQ Generation
+             try {
+                 if (!currentData.faqs || currentData.faqs.length === 0) {
+                     agent.log('polish', 'Generating FAQs from technical specs...');
+                     // @ts-ignore
+                     const faqs = await FAQGeneratorAgent.generateFAQ({ data: currentData } as any, apiKeys);
+                     if (faqs.length > 0) {
+                        currentData.faqs = faqs;
+                        agent.log('polish', `✅ Generated ${faqs.length} FAQ pairs.`);
+                     }
+                 }
+             } catch(e) { console.warn("FAQ Gen Error", e); }
+
+             return currentData;
+        });
+        
+        const finalData = polishedData;
+
         // 5. Verification
         await step.run("transition-gate-check", () => agent.transition('gate_check'));
         const verification = await step.run("verify-data", async () => {
             const { QualityGatekeeper } = await import("../../services/agents/QualityGatekeeper.js");
-            return await QualityGatekeeper.validate(extractedData as any, language);
+            return await QualityGatekeeper.validate(finalData as any, language);
         });
 
         // 6. DB Update
         const result = await step.run("finalize-db", async () => {
-            return await agent.complete(verification, extractedData);
+            return await agent.complete(verification, finalData);
         });
 
         // 7. Graph Population
         await step.run("populate-graph", async () => {
             try {
                 const { GraphPopulator } = await import("../../services/ingestion/GraphPopulator.js");
-                const graphResult = await GraphPopulator.populateFromResearch(item.id, extractedData as any, jobId);
+                const graphResult = await GraphPopulator.populateFromResearch(item.id, finalData as any, jobId);
                 agent.log('orchestrator', `📊 Graph populated: ${graphResult.entitiesCreated} entities, ${graphResult.edgesCreated} edges`);
                 return graphResult;
             } catch (e: any) {

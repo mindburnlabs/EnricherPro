@@ -1,10 +1,8 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-
-let pool: any = null;
+import { db } from '../src/db/index.js';
+import { jobs, items, jobEvents, skus } from '../src/db/schema.js';
+import { eq, gt, and, desc } from 'drizzle-orm';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     if (request.method !== 'GET') {
@@ -17,112 +15,151 @@ export default async function handler(request: VercelRequest, response: VercelRe
         return response.status(400).json({ error: 'Missing or invalid jobId' });
     }
 
-    // Initialize pool if needed
-    if (!pool) {
-        const pg = require('pg');
-        const { Pool } = pg;
-        if (!process.env.DATABASE_URL) {
-            console.error("DATABASE_URL missing");
-            return response.status(500).json({ error: 'Server Configuration Error' });
-        }
-        pool = new Pool({
-            connectionString: process.env.DATABASE_URL,
-            max: 1, // Serverless: limit connections
-        });
-    }
-
     // Set headers for SSE
     response.setHeader('Content-Type', 'text/event-stream');
     response.setHeader('Cache-Control', 'no-cache');
     response.setHeader('Connection', 'keep-alive');
+    // Allow CORS for local dev if needed, though usually handled by proxy
     response.setHeader('Access-Control-Allow-Origin', '*');
 
     // Send initial connection message
     response.write(`data: ${JSON.stringify({ type: 'connected', jobId })}\n\n`);
 
-    const pollInterval = 2000; // Poll every 2 seconds
+    const pollInterval = 1000; // Poll every 1 second
     let lastStep = '';
     let lastStatus = '';
     let lastUpdatedAt = 0;
-    let lastLogTimestamp = new Date(0);
+    // Track last log timestamp to only fetch new ones. 
+    // Initialize to epoch 0 to fetch all logs on first connect (or recent ones)
+    // For now, let's start from "now" minus a buffer if we want history, 
+    // or just 0 to get full history for the session.
+    let lastLogTimestamp = new Date(0); 
 
     const intervalId = setInterval(async () => {
         try {
-            // Query Items
-            const itemsResult = await pool.query(
-                `SELECT * FROM items WHERE job_id = $1 LIMIT 1`,
-                [jobId]
-            );
-            const item = itemsResult.rows[0];
+            // 1. Fetch Job & Item Status
+            // We join items to get the current step/status
+            const jobData = await db.query.jobs.findFirst({
+                where: eq(jobs.id, jobId),
+                with: {
+                    // We can also fetch the linked item directly here if relations are set up, 
+                    // but let's query broadly to be safe.
+                    items: {
+                        limit: 1
+                    }
+                }
+            });
 
-            if (item) {
-                const currentUpdatedAt = item.updated_at ? new Date(item.updated_at).getTime() : 0;
+            if (!jobData) {
+                // Job might not be created yet if race condition, or invalid
+                // We'll just wait.
+                return;
+            }
 
-                // 1. Fetch new logs separately (Incremental)
-                const logsResult = await pool.query(
-                    `SELECT * FROM job_events WHERE job_id = $1 AND timestamp > $2 ORDER BY timestamp ASC`,
-                    [jobId, lastLogTimestamp.toISOString()]
-                );
-                const logs = logsResult.rows.map((row: any) => ({
-                    // Map snake_case to camelCase if needed, though simple fields usually match or are handled
-                    id: row.id,
-                    jobId: row.job_id,
-                    tenantId: row.tenant_id,
-                    agent: row.agent,
-                    message: row.message,
-                    type: row.type,
-                    timestamp: row.timestamp
+            const item = jobData.items[0];
+            
+            // 2. Fetch New Logs
+            // We use 'jobEvents' table
+            const newLogs = await db.query.jobEvents.findMany({
+                where: and(
+                    eq(jobEvents.jobId, jobId),
+                    gt(jobEvents.timestamp, lastLogTimestamp)
+                ),
+                orderBy: [desc(jobEvents.timestamp)], // We'll reverse them or trusted sort
+            });
+
+            if (newLogs.length > 0) {
+                // Drizzle returns dates as Date objects usually
+                // Update cursor to the newest log
+                // Sort by timestamp asc for the client
+                newLogs.sort((a:any, b:any) => a.timestamp.getTime() - b.timestamp.getTime());
+                
+                lastLogTimestamp = newLogs[newLogs.length - 1].timestamp;
+
+                const logPayload = newLogs.map(l => ({
+                    id: l.id,
+                    jobId: l.jobId,
+                    type: l.type,
+                    agent: l.agent,
+                    message: l.message,
+                    timestamp: l.timestamp.toISOString()
                 }));
 
-                if (logs.length > 0) {
-                    // Update cursor to the newest log's timestamp
-                    const newestLog = logs[logs.length - 1];
-                    if (newestLog && newestLog.timestamp) {
-                        lastLogTimestamp = new Date(newestLog.timestamp);
-                    }
-                    response.write(`data: ${JSON.stringify({ type: 'logs', logs })}\n\n`);
-                }
-
-                // 2. Check Item Status
-                // item columns are snake_case from pg: current_step, status, updated_at
-                const currentStep = item.current_step || '';
-                const status = item.status || '';
-
-                if (currentStep !== lastStep || status !== lastStatus || currentUpdatedAt > lastUpdatedAt) {
-
-                    const payload = {
-                        type: 'update',
-                        step: currentStep,
-                        status: status,
-                        data: item.data,
-                        reviewReason: item.review_reason
-                    };
-
-                    response.write(`data: ${JSON.stringify(payload)}\n\n`);
-
-                    lastStep = currentStep;
-                    lastStatus = status;
-                    lastUpdatedAt = currentUpdatedAt;
-
-                    // If final status, close connection
-                    if (['published', 'needs_review', 'failed'].includes(status)) {
-                        response.write(`data: ${JSON.stringify({ type: 'complete', status: status })}\n\n`);
-                        clearInterval(intervalId);
-                        response.end();
-                    }
-                }
-            } else {
-                // Item not found yet
+                response.write(`data: ${JSON.stringify({ type: 'logs', logs: logPayload })}\n\n`);
             }
+
+            // 3. Check for Status Updates (Job or Item)
+            const currentStep = item?.currentStep || '';
+            const currentStatus = jobData.status || 'pending';
+            const itemUpdatedAt = item?.updatedAt ? item.updatedAt.getTime() : 0;
+            const jobProgress = jobData.progress || 0;
+
+            if (currentStep !== lastStep || currentStatus !== lastStatus || itemUpdatedAt > lastUpdatedAt) {
+                
+                const payload = {
+                    type: 'update',
+                    step: currentStep,
+                    status: currentStatus,
+                    progress: jobProgress,
+                    reviewReason: item?.reviewReason
+                };
+
+                response.write(`data: ${JSON.stringify(payload)}\n\n`);
+
+                lastStep = currentStep;
+                lastStatus = currentStatus;
+                lastUpdatedAt = itemUpdatedAt;
+            }
+
+            // 4. Check for SKU Data Updates (The "Real-Time Product Card")
+            // Only if we have a linked SKU (from the new schema logic)
+            // The job schema has `skuId`.
+            if (jobData.skuId) {
+                const skuData = await db.query.skus.findFirst({
+                    where: eq(skus.id, jobData.skuId),
+                    with: {
+                        claims: true
+                    }
+                });
+
+                if (skuData) {
+                    // Normalize for frontend "View Model"
+                    // We send the whole object or partials. 
+                    // sending whole object is safer for consistency for now.
+                    response.write(`data: ${JSON.stringify({ 
+                        type: 'data_update', 
+                        data: {
+                            id: skuData.id,
+                            mpn: skuData.mpn,
+                            brand: skuData.brand,
+                            title: skuData.supplierString,
+                            yield: skuData.yieldPages, // direct field
+                            specs: {
+                                color: skuData.color,
+                                packageWeight: skuData.packageWeightG,
+                                packageDimensions: [skuData.packageLengthMm, skuData.packageWidthMm, skuData.packageHeightMm].filter(Boolean).join('x')
+                            },
+                            claims: skuData.claims // Full claims for evidence drawer
+                        } 
+                    })}\n\n`);
+                }
+            }
+
+
+            // 5. Completion Check
+            if (['completed', 'failed'].includes(currentStatus)) {
+                response.write(`data: ${JSON.stringify({ type: 'complete', status: currentStatus })}\n\n`);
+                clearInterval(intervalId);
+                response.end();
+            }
+
         } catch (error) {
             console.error("SSE Poll Error:", error);
-            response.write(`data: ${JSON.stringify({ type: 'error', message: 'Internal polling error: ' + String(error) })}\n\n`);
-            clearInterval(intervalId);
-            response.end();
+            // Don't close stream on transient error
         }
     }, pollInterval);
 
-    // Clean up on client disconnect
+    // Clean up
     request.on('close', () => {
         clearInterval(intervalId);
         response.end();

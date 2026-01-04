@@ -1,7 +1,7 @@
 import { db } from '../../db/index.js';
-import { modelUsage } from '../../db/schema_observability.js';
+import { modelUsage } from '../../db/schema.js';
 import { eq, sql, desc, and, gte, lte } from 'drizzle-orm';
-import type { AgentUsageSummary, ModelUsageSummary, JobUsageSummary } from '../../db/schema_observability.js';
+import type { AgentUsageSummary, ModelUsageSummary, JobUsageSummary } from '../../types/observability_types.js';
 
 // OpenRouter Pricing (as of Jan 2026) - per 1M tokens
 // These should be updated periodically or fetched from API

@@ -1,174 +1,184 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StepStatus, EnrichedItem, ConsumableData } from '../types/domain.js';
 import { getItems } from '../lib/api.js';
 
 type ResearchStatus = 'idle' | 'running' | 'completed' | 'failed';
 
-// Synthesis progress for progressive UI updates
-export interface SynthesisProgress {
-    partial: Partial<ConsumableData>;
-    chunkIndex: number;
-    totalChunks: number;
-    isComplete: boolean;
-}
-
-interface UseResearchStreamResult {
-    steps: StepStatus[];
-    items: EnrichedItem[];
-    status: ResearchStatus;
-    error: string | null;
-    synthesisPreview: SynthesisProgress | null; // Progressive synthesis data
-    startStream: (jobId: string) => void;
-    reset: () => void;
-}
-
 export interface ResearchLog {
     id: string;
+    jobId: string;
     agent: string;
     message: string;
     type: 'info' | 'warning' | 'error' | 'success';
     timestamp: string;
 }
 
+// Unified State Result
+interface UseResearchStreamResult {
+    // Pipeline State
+    status: ResearchStatus;
+    steps: StepStatus[];
+    progress: number;
+    error: string | null;
+    
+    // Data State
+    activeSku: EnrichedItem | null; // The "Real-Time Product Card" data
+    items: EnrichedItem[]; // Final Results
+    
+    // Observability
+    logs: ResearchLog[];
+    
+    // Actions
+    startStream: (jobId: string) => void;
+    reset: () => void;
+}
+
 import { useTranslation } from 'react-i18next';
 
-export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchLog[] } => {
+export const useResearchStream = (): UseResearchStreamResult => {
     const { t } = useTranslation('common');
-    const [steps, setSteps] = useState<StepStatus[]>([]);
-    const [items, setItems] = useState<EnrichedItem[]>([]);
-    const [logs, setLogs] = useState<ResearchLog[]>([]); // New Log State
+    
     const [status, setStatus] = useState<ResearchStatus>('idle');
+    const [steps, setSteps] = useState<StepStatus[]>([]);
+    const [progress, setProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
-    const [synthesisPreview, setSynthesisPreview] = useState<SynthesisProgress | null>(null);
+    const [activeSku, setActiveSku] = useState<EnrichedItem | null>(null);
+    const [items, setItems] = useState<EnrichedItem[]>([]);
+    const [logs, setLogs] = useState<ResearchLog[]>([]);
+
+    const logsRef = useRef<ResearchLog[]>([]);
+    const eventSourceRef = useRef<EventSource | null>(null);
 
     const reset = useCallback(() => {
-        setSteps([]);
-        setItems([]);
-        setLogs([]);
         setStatus('idle');
+        setSteps([]);
+        setProgress(0);
         setError(null);
-        setSynthesisPreview(null);
+        setActiveSku(null);
+        setLogs([]);
+        logsRef.current = [];
+        if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+            eventSourceRef.current = null;
+        }
     }, []);
-
-    const logsRef = React.useRef<ResearchLog[]>([]);
 
     const startStream = useCallback((jobId: string) => {
         reset();
         setStatus('running');
-        logsRef.current = []; // Reset ref
 
-        // Initial step
-        setSteps([{ id: 'init', label: t('progress.steps.init', 'Initializing Research...'), status: 'running', logStartIndex: 0 }]);
+        // Initial "Planning" step
+        setSteps([{ 
+            id: 'init', 
+            label: t('progress.steps.init', 'Initializing...'), 
+            status: 'running', 
+            logStartIndex: 0 
+        }]);
 
         const eventSource = new EventSource(`/api/sse?jobId=${jobId}`);
+        eventSourceRef.current = eventSource;
+
+        eventSource.onopen = () => {
+            console.log('[SSE] Connected');
+        };
 
         eventSource.onmessage = async (event) => {
             try {
                 const data = JSON.parse(event.data);
 
-                if (data.type === 'connected') {
-                    return;
-                }
+                switch (data.type) {
+                    case 'connected':
+                        // Connection confirmed
+                        break;
 
-                if (data.type === 'logs') {
-                    // Dedup and append
-                    setLogs(prev => {
-                        const newLogs = (data.logs as ResearchLog[]).filter(l => !prev.some(p => p.id === l.id));
-                        if (newLogs.length === 0) return prev;
-                        // Sort by timestamp
-                        const updated = [...prev, ...newLogs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-                        logsRef.current = updated; // Sync ref
-                        return updated;
-                    });
-                }
-
-                if (data.type === 'update') {
-                    // Map backend step to UI step
-                    // Backend steps: 'planning', 'searching', 'enrichment', 'gate_check'
-                    const mapStepLabel = (s: string) => {
-                        switch (s) {
-                            case 'planning': return t('progress.steps.planning', 'Planning Strategy');
-                            case 'searching': return t('progress.steps.searching', 'Gathering Intelligence');
-                            case 'enrichment': return t('progress.steps.enrichment', 'Synthesizing & Extracting');
-                            case 'gate_check': return t('progress.steps.gate_check', 'Quality Gatekeeper Validation');
-                            default: return t('progress.steps.processing', 'Processing...');
+                    case 'logs':
+                        // Append new logs
+                        if (Array.isArray(data.logs)) {
+                            setLogs(prev => {
+                                const newLogs = (data.logs as ResearchLog[]).filter(l => !prev.some(p => p.id === l.id));
+                                if (newLogs.length === 0) return prev;
+                                
+                                const updated = [...prev, ...newLogs].sort((a, b) => 
+                                    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+                                );
+                                logsRef.current = updated;
+                                return updated;
+                            });
                         }
-                    };
+                        break;
 
-                    setSteps(prev => {
-                        // Avoid duplicates if current step is same
-                        if (prev.length > 0 && prev[prev.length - 1].id === data.step) {
-                            return prev;
+                    case 'update':
+                        // Job Status / Step Update
+                        if (data.status) {
+                            if (data.status === 'failed') setStatus('failed');
+                            // We don't auto-set completed here, we wait for 'complete' event usually, 
+                            // or handle it if status is 'needs_review' etc.
                         }
+                        if (data.progress) setProgress(data.progress);
+                        
+                        // Map step to UI
+                        if (data.step) {
+                            setSteps(prev => {
+                                const last = prev[prev.length - 1];
+                                if (last && last.id === data.step) return prev;
 
-                        // Mark previous as done and capture log end index
-                        const currentLogCount = logsRef.current.length;
-                        const newSteps = prev.map(s => {
-                            if (s.status === 'running') {
-                                return { ...s, status: 'completed' as const, logEndIndex: currentLogCount };
-                            }
-                            return s;
-                        });
+                                const currentLogCount = logsRef.current.length;
+                                
+                                // Close previous
+                                const newSteps = prev.map(s => s.status === 'running' 
+                                    ? { ...s, status: 'completed' as const, logEndIndex: currentLogCount } 
+                                    : s
+                                );
 
-                        // Add new
-                        return [...newSteps, {
-                            id: data.step,
-                            label: mapStepLabel(data.step),
-                            status: 'running',
-                            logStartIndex: currentLogCount
-                        }];
-                    });
-                }
-
-
-                if (data.type === 'complete') {
-                    setStatus('completed');
-                    eventSource.close();
-
-                    // Fetch final results
-                    const itemsRes = await getItems(jobId);
-                    if (itemsRes.success) {
-                        setItems(itemsRes.items);
-                    }
-
-                    // Mark last step as done
-                    setSteps(prev => prev.map(s => {
-                        if (s.status === 'running') {
-                            return { ...s, status: 'completed', logEndIndex: logsRef.current.length };
+                                // Add new
+                                const stepLabel = t(`progress.steps.${data.step}`, data.step);
+                                newSteps.push({
+                                    id: data.step,
+                                    label: stepLabel,
+                                    status: 'running',
+                                    logStartIndex: currentLogCount
+                                });
+                                return newSteps;
+                            });
                         }
-                        return s;
-                    }));
-                }
+                        break;
 
-                if (data.type === 'error') {
-                    console.error('SSE Error Message:', data.message);
-                    setError(data.message);
-                    setStatus('failed');
-                    eventSource.close();
-                }
+                    case 'data_update':
+                        // Real-time Product Card update
+                        if (data.data) {
+                            setActiveSku(data.data as EnrichedItem);
+                        }
+                        break;
 
-                // Handle progressive synthesis updates
-                if (data.type === 'synthesis_progress') {
-                    setSynthesisPreview({
-                        partial: data.partial,
-                        chunkIndex: data.chunkIndex,
-                        totalChunks: data.totalChunks,
-                        isComplete: data.isComplete || false,
-                    });
+                    case 'complete':
+                        setStatus(data.status === 'failed' ? 'failed' : 'completed');
+                        eventSource.close();
+                        
+                        // Create final step completion
+                        setSteps(prev => prev.map(s => s.status === 'running' 
+                            ? { ...s, status: 'completed' as const, logEndIndex: logsRef.current.length } 
+                            : s
+                        ));
+                        break;
+
+                    case 'error':
+                        console.error('[SSE] Error:', data.message);
+                        setError(data.message);
+                        setStatus('failed');
+                        eventSource.close();
+                        break;
                 }
 
             } catch (err) {
-                console.error("Failed to parse SSE", err);
+                console.error('[SSE] Parse Error:', err);
             }
         };
 
         eventSource.onerror = (err) => {
-            console.error("SSE Connection Error", err);
-            // Don't close immediately, SSE tries to reconnect. 
-            // But for this use-case, maybe we should close if persistent.
-            // For now, let's assume it might recover or eventual timeout.
+            console.error('[SSE] Connection Error', err);
             if (eventSource.readyState === EventSource.CLOSED) {
-                setError("Connection lost");
+                // If it closed unexpectedly
+                setError('Connection lost');
                 setStatus('failed');
             }
         };
@@ -176,7 +186,27 @@ export const useResearchStream = (): UseResearchStreamResult & { logs: ResearchL
         return () => {
             eventSource.close();
         };
+
     }, [reset, t]);
 
-    return { steps, items, logs, status, error, synthesisPreview, startStream, reset };
+    // Cleanup
+    useEffect(() => {
+        return () => {
+            if (eventSourceRef.current) {
+                eventSourceRef.current.close();
+            }
+        };
+    }, []);
+
+    return { 
+        status, 
+        steps, 
+        progress, 
+        error, 
+        activeSku, 
+        items, // Exposed for final results
+        logs, 
+        startStream, 
+        reset 
+    };
 };

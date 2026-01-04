@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getDb } from './_lib/db.js';
+import { db } from '../src/db/index.js';
+import { items } from '../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     if (request.method !== 'POST') {
@@ -13,8 +15,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
             return response.status(400).json({ error: 'Missing itemId' });
         }
 
-        const db = await getDb();
-        await db.query(`UPDATE items SET status = 'published' WHERE id = $1`, [itemId]);
+        await db.update(items)
+            .set({ status: 'published' })
+            .where(eq(items.id, itemId));
 
         return response.status(200).json({ success: true });
     } catch (error) {

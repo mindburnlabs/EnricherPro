@@ -1,4 +1,5 @@
 
+import "../lib/suppress-warnings.js";
 import { Inngest } from "inngest";
 import { eventSchemas } from "../lib/events.js";
 

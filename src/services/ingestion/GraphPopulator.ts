@@ -1,5 +1,5 @@
 import { db } from '../../db/index.js';
-import { entities, aliases, edges, evidence } from '../../db/schema_graph_lite.js';
+import { entities, aliases, edges, evidence } from '../../db/schema.js';
 import { claims } from '../../db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import type { ConsumableData } from '../../types/domain.js';

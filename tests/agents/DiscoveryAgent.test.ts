@@ -7,6 +7,11 @@ import { BackendFirecrawlService } from '../../src/services/backend/firecrawl';
 // Mock dependencies
 vi.mock('../../src/services/backend/llm');
 vi.mock('../../src/services/backend/firecrawl');
+vi.mock('../../src/services/backend/GraphService', () => ({
+    GraphService: {
+        resolveIdentity: vi.fn().mockResolvedValue(null)
+    }
+}));
 
 describe('DiscoveryAgent', () => {
 

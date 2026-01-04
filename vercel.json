@@ -1,23 +1,15 @@
 {
-    "rewrites": [
-        {
-            "source": "/api/:match*",
-            "destination": "/api/:match*"
-        },
-        {
-            "source": "/(.*)",
-            "destination": "/index.html"
-        }
-    ],
-    "headers": [
-        {
-            "source": "/(.*)",
-            "headers": [
-                {
-                    "key": "Content-Security-Policy",
-                    "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: data: https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https:;"
-                }
-            ]
-        }
-    ]
+  "version": 2,
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "outputDirectory": "dist",
+  "regions": ["iad1"],
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "env": {
+    "NODE_OPTIONS": "--no-deprecation"
+  }
 }

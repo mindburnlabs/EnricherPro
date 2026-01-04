@@ -2,6 +2,12 @@
 import "../../lib/suppress-warnings.js";
 import { MODEL_CONFIGS, ModelProfile, DEFAULT_MODEL } from "../../config/models.js";
 import { ObservabilityService } from './ObservabilityService.js';
+import { logger } from '../../utils/logger.js';
+import { CircuitBreaker } from '../../utils/circuitBreaker.js';
+import { SecurityUtils } from '../../utils/security.js';
+import { cache } from '../../utils/simpleCache.js';
+
+const llmCircuit = new CircuitBreaker('llm-service', { failureThreshold: 5, resetTimeout: 60000 });
 
 
 const FREE_FALLBACK_CHAIN = [
@@ -69,7 +75,11 @@ interface CompletionConfig {
     };
 
     // UI Feedback
+    // UI Feedback
     onLog?: (category: string, msg: string) => void;
+
+    // Caching
+    skipCache?: boolean;
 }
 
 export class BackendLLMService {
@@ -80,11 +90,11 @@ export class BackendLLMService {
         // Strict UI Control:
         // We do NOT fall back to process.env.
         // If the key is missing from config, we FAIL.
-        if (!apiKey) {
+        if (!SecurityUtils.validateApiKey(apiKey, 'OpenRouter')) {
             // DEVELOPER EXPERIENCE SOTA: Allow env fallback in DEV mode only
             // @ts-ignore
             if (process.env.NODE_ENV === 'development' && process.env.OPENROUTER_API_KEY) {
-                console.warn("⚠️ Using OPENROUTER_API_KEY from env (Dev Mode Fallback). UI Settings preferred for Production.");
+                logger.warn("⚠️ Using OPENROUTER_API_KEY from env (Dev Mode Fallback). UI Settings preferred for Production.");
                 // @ts-ignore
                 apiKey = process.env.OPENROUTER_API_KEY;
             } else {
@@ -128,7 +138,7 @@ export class BackendLLMService {
 
         // SANITIZER: Catch phantom models that don't exist
         if (targetModel === 'openai/gpt-5.2') {
-            console.warn("LLM Service: Detected invalid model 'openai/gpt-5.2'. Auto-correcting to 'openrouter/auto'.");
+            logger.warn("LLM Service: Detected invalid model 'openai/gpt-5.2'. Auto-correcting to 'openrouter/auto'.");
             targetModel = 'openrouter/auto';
         }
 
@@ -244,6 +254,18 @@ export class BackendLLMService {
 
         // 4. Refactored Execution with Smart Fallback for 400s
         const executeFetch = async (currentBody: any) => {
+            // CACHE CHECK
+            // We cache if not skipping, and (temp < 0.1 or dev mode)
+            const shouldUseCache = !config.skipCache && (config.temperature === undefined || config.temperature < 0.1 || process.env.NODE_ENV === 'development');
+            const cacheKey = cache.generateKey(`llm_${targetModel}`, currentBody);
+            
+            if (shouldUseCache) {
+                const cached = cache.get<string>(cacheKey);
+                if (cached) {
+                    return cached;
+                }
+            }
+
             const startTime = Date.now();
             return await withRetry(async () => {
                 try {
@@ -274,9 +296,9 @@ export class BackendLLMService {
                         const errText = await response.text();
                         // QUIET FALLBACK: If 429 and using free model, just warn (because we have fallback logic)
                         if (response.status === 429 && targetModel.endsWith(':free')) {
-                            console.warn(`LLM Service: Rate Limit (429) on ${targetModel}. Error Body:`, errText);
+                            logger.warn(`LLM Service: Rate Limit (429) on ${targetModel}. Error Body: ${errText}`);
                         } else {
-                            console.error(`LLM Service Error Body:`, errText);
+                            logger.error(`LLM Service Error Body: ${errText}`);
                         }
 
                         let errMsg = errText;
@@ -305,6 +327,11 @@ export class BackendLLMService {
 
                     const content = data.choices[0].message?.content;
                     if (!content) throw new Error("Empty content in LLM response");
+
+                    // CACHE SET
+                    if (shouldUseCache) {
+                        cache.set(cacheKey, content);
+                    }
 
                     // OBSERVABILITY: Track successful request
                     if (config.agentContext) {
@@ -371,7 +398,7 @@ export class BackendLLMService {
         };
 
         try {
-            return await executeFetch(body);
+            return await llmCircuit.execute(() => executeFetch(body));
         } catch (e: any) {
             // SOTA Fallback: If 402 (Credits) OR 429 (Rate Limit) OR Timeout, switch to NEXT free model.
             if (e.message?.includes("Auth/Credit") || e.message?.includes("Rate Limit") || e.message?.includes("(429)") || e.name === 'AbortError' || e.message?.includes("aborted")) {
@@ -382,8 +409,8 @@ export class BackendLLMService {
                 if (isRateLimit) limitMsg = '429 Rate Limit';
                 if (isTimeout) limitMsg = 'Timeout (120s)';
 
-                console.warn(`LLM Service: ${limitMsg}. Switching to next Dynamic FREE fallback.`);
                 if (config.onLog) config.onLog(`system`, `⚠️ LLM Service: ${limitMsg}. Initiating failover...`);
+                logger.warn(`LLM Service: ${limitMsg}. Switching to next Dynamic FREE fallback.`);
 
                 // 1. Resolve Best Free Candidate from Config
                 const profileName = config.profile || 'fast_cheap';
@@ -418,7 +445,7 @@ export class BackendLLMService {
                 // If still no model, and it was 429, we might want to try a hardcoded backup or just fail.
                 // For now, if we can't find a new model, we re-throw (letting standard retry/pause happen).
                 if (nextModel && nextModel !== currentModelId) {
-                    console.warn(`LLM Service: Switching attempt from ${currentModelId} to ${nextModel}`);
+                    logger.warn(`LLM Service: Switching attempt from ${currentModelId} to ${nextModel}`, { traceId: config.sessionId });
                     if (config.onLog) config.onLog(`system`, `♻️ Switching model to: ${nextModel}`);
                     body.model = nextModel;
 
@@ -430,14 +457,14 @@ export class BackendLLMService {
                     return await executeFetch(body);
                 }
 
-                console.warn("LLM Service: No alternative free models found in profile. Propagating error.");
+                logger.warn("LLM Service: No alternative free models found in profile. Propagating error.");
                 throw e;
             }
 
             // SOTA Fallback: If 400 Error AND we used json_schema, try again without it.
             // Many providers (Anthropic, Gemini via OR) fail hard on 'json_schema' even with strict:false
             if (e.message?.includes("(400)") && body.response_format?.type === 'json_schema') {
-                console.warn("LLM Service: 400 Error with json_schema. Retrying with RAW prompt fallback...", e.message);
+                logger.warn(`LLM Service: 400 Error with json_schema. Retrying with RAW prompt fallback... ${e.message}`);
                 delete body.response_format;
 
                 // Append instruction to system prompt to ensure JSON

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BarChart3, Zap, Clock, DollarSign, RefreshCw, Cpu, AlertTriangle, X } from 'lucide-react';
-import type { AgentUsageSummary, ModelUsageSummary } from '../db/schema_observability.js';
+import type { AgentUsageSummary, ModelUsageSummary } from '../types/observability_types.js';
 
 // API Fetcher (we'll add the API endpoint later)
 async function fetchObservabilityData(endpoint: string, params: Record<string, string> = {}) {

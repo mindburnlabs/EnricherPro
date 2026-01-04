@@ -28,10 +28,21 @@ export type ResearchCompletedEvent = {
     };
 };
 
+export type SKUEnrichmentStartedEvent = {
+    name: "app/sku.enrichment.started";
+    data: {
+        jobId: string;
+        skuId: string;
+        tenantId: string;
+        supplierString: string;
+    };
+};
+
 export type Events = {
     "app/research.started": ResearchStartedEvent;
     "app/research.step": ResearchStepEvent;
     "app/research.completed": ResearchCompletedEvent;
+    "app/sku.enrichment.started": SKUEnrichmentStartedEvent;
 };
 
 // Validated Schema for Inngest
