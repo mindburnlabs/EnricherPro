@@ -18,7 +18,12 @@
     "step_counter": "Этап {{current}} из {{total}}"
   },
   "composer": {
-    "placeholder": "Введите запрос или список артикулов (например: 'HP W1331A specs', 'DK-7105 compatibility')...",
+    "placeholder": "Введите MPN, описание товара или список для анализа...",
+    "oracle_found": "Оракул нашел похожие товары ({{count}})",
+    "match": "% Совпадение",
+    "refine_placeholder": "Задайте уточняющий вопрос...",
+    "refine_btn": "Уточнить",
+    "upload_context": "Загрузить контекст",
     "button": "Запустить исследование",
     "suggestions": {
       "1": "Характеристики Canon C-EXV 42",
@@ -56,7 +61,8 @@
     "verified_points": "Точек проверено",
     "graph_hit": "Из Графа",
     "csv_headers": "ID, MPN, Бренд, Модель, Уверенность, Статус",
-    "verified": "Проверено"
+    "verified": "Проверено",
+    "high_confidence": "Высокая уверенность"
   },
   "actions": {
     "details": "Подробнее",

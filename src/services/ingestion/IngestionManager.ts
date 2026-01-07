@@ -35,7 +35,7 @@ export class IngestionManager {
     // For now, let's assume we just adding them to frontier as 'domain_map' tasks if not present
     // Implementation simplified for "Graph-Lite" MVP
 
-    console.log(`[Ingestion] Found ${catalogs.length} active catalogs.`);
+    // Found catalogs.length active catalogs.
   }
 
   /**
@@ -54,7 +54,7 @@ export class IngestionManager {
    * Runs the full pipeline for a single target to backfill the graph.
    */
   static async ingestOnDemand(url: string, jobId: string): Promise<boolean> {
-    console.log(`[Ingestion] Starting On-Demand Backfill for: ${url}`);
+    // Starting On-Demand Backfill for: url
 
     try {
       // A. SCAPE

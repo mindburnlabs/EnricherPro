@@ -21,15 +21,18 @@ import {
   ArrowRight,
   Clock,
   User,
-  FileText
+  FileText,
+  AlertCircle,
+  RefreshCw 
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 export interface AuditEntry {
   id: string;
   timestamp: Date;
-  action: 'field_lock' | 'manual_override' | 'conflict_resolution' | 'agent_update';
+  action: 'field_lock' | 'manual_override' | 'conflict_resolution' | 'agent_update' | 'update';
   fieldName: string;
   beforeValue: string | null;
   afterValue: string;
@@ -49,13 +52,7 @@ const actionIcons = {
   manual_override: Edit3,
   conflict_resolution: GitMerge,
   agent_update: FileText,
-};
-
-const actionLabels = {
-  field_lock: 'Field Locked',
-  manual_override: 'Manual Override',
-  conflict_resolution: 'Conflict Resolved',
-  agent_update: 'Agent Update',
+  update: RefreshCw,
 };
 
 const actionColors = {
@@ -63,11 +60,21 @@ const actionColors = {
   manual_override: 'bg-status-conflict/10 text-status-conflict',
   conflict_resolution: 'bg-status-ready/10 text-status-ready',
   agent_update: 'bg-status-verified/10 text-status-verified',
+  update: 'bg-blue-100 text-blue-700',
 };
 
 export function AuditLogView({ entries, onFilterChange }: AuditLogViewProps) {
+  const { t } = useTranslation('audit');
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
+
+  const actionLabels = {
+    field_lock: t('filters.field_locked', 'Field Locked'),
+    manual_override: t('filters.manual_override', 'Manual Override'),
+    conflict_resolution: t('filters.conflict_resolved', 'Conflict Resolved'),
+    agent_update: t('filters.agent_update', 'Agent Update'),
+    update: t('filters.general_update', 'Update'),
+  };
 
   const filteredEntries = entries.filter(entry => {
     const matchesSearch = 
@@ -96,7 +103,7 @@ export function AuditLogView({ entries, onFilterChange }: AuditLogViewProps) {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search by field name or value..."
+                placeholder={t('search_placeholder', "Search by field name or value...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -125,10 +132,10 @@ export function AuditLogView({ entries, onFilterChange }: AuditLogViewProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="w-5 h-5" />
-            Audit Timeline
+            {t('title', 'Audit Log')}
           </CardTitle>
           <CardDescription>
-            Complete history of all data modifications with before/after values
+            {t('subtitle', 'Track all data changes and user actions for compliance')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -183,17 +190,17 @@ export function AuditLogView({ entries, onFilterChange }: AuditLogViewProps) {
                           {/* Before/After Values */}
                           <div className="flex items-center gap-3 mt-2 p-3 bg-muted/50 rounded-lg">
                             <div className="flex-1">
-                              <div className="text-xs text-muted-foreground mb-1">Before</div>
+                              <div className="text-xs text-muted-foreground mb-1">{t('labels.before', 'Before')}</div>
                               <div className={cn(
                                 "font-mono text-sm",
                                 !entry.beforeValue && "text-muted-foreground italic"
                               )}>
-                                {entry.beforeValue || 'Empty'}
+                                {entry.beforeValue || t('labels.empty', 'Empty')}
                               </div>
                             </div>
                             <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
                             <div className="flex-1">
-                              <div className="text-xs text-muted-foreground mb-1">After</div>
+                              <div className="text-xs text-muted-foreground mb-1">{t('labels.after', 'After')}</div>
                               <div className="font-mono text-sm font-medium">
                                 {entry.afterValue}
                               </div>
@@ -208,7 +215,7 @@ export function AuditLogView({ entries, onFilterChange }: AuditLogViewProps) {
                               )}
                               {entry.source && (
                                 <p className="flex items-center gap-1 mt-1">
-                                  Source: <span className="font-mono">{entry.source}</span>
+                                  {t('labels.source', 'Source')}: <span className="font-mono">{entry.source}</span>
                                 </p>
                               )}
                             </div>
@@ -232,7 +239,7 @@ export function AuditLogView({ entries, onFilterChange }: AuditLogViewProps) {
               <div className="h-32 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
                   <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No audit entries found</p>
+                  <p className="text-sm">{t('empty_state', 'No audit entries found')}</p>
                 </div>
               </div>
             )}

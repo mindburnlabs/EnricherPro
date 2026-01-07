@@ -59,7 +59,8 @@
     "override_title": "Ручной ввод",
     "fetch": "Получить",
     "enter_value": "Введите значение...",
-    "source_placeholder": "напр. Проверено вручную, Сайт производителя..."
+    "source_placeholder": "напр. Проверено вручную, Сайт производителя...",
+    "rejected_impl_pending": "Функция отклонения в разработке"
   },
   "progress": {
     "thinking": "Думаю...",

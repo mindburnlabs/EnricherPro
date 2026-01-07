@@ -1,0 +1,37 @@
+{
+  "title": "Enrichment Jobs",
+  "subtitle": "Create and manage your data enrichment tasks",
+  "search_placeholder": "Search by input string or filter...",
+  "new_job": "Create Job",
+  "bulk_csv": "Bulk CSV",
+  "filters": {
+    "all": "All Jobs",
+    "running": "Running",
+    "completed": "Completed",
+    "failed": "Failed",
+    "needs_review": "Needs Review",
+    "blocked": "Blocked",
+    "ready_to_publish": "Ready to Publish"
+  },
+  "table": {
+    "input": "Input String",
+    "mpn": "MPN",
+    "brand": "Brand",
+    "status": "Status",
+    "time": "Timestamp"
+  },
+  "budget": {
+    "title": "Budget Overview",
+    "tokens": "Tokens",
+    "cost": "Cost",
+    "api_calls": "API Calls"
+  },
+  "status": {
+    "running": "Running",
+    "completed": "Completed",
+    "failed": "Failed",
+    "needs_review": "Needs Review",
+    "blocked": "Blocked",
+    "ready_to_publish": "Ready to Publish"
+  }
+}

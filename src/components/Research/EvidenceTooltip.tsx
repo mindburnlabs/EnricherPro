@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Info, ExternalLink, ShieldCheck, Clock } from 'lucide-react';
 
 interface EvidenceTooltipProps {
@@ -14,6 +15,7 @@ interface EvidenceTooltipProps {
 }
 
 export const EvidenceTooltip: React.FC<EvidenceTooltipProps> = ({ evidence, label, children }) => {
+  const { t } = useTranslation('detail');
   if (!evidence) return <>{children}</>;
 
   return (
@@ -26,7 +28,7 @@ export const EvidenceTooltip: React.FC<EvidenceTooltipProps> = ({ evidence, labe
 
       <div className='absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-gray-900 text-white text-xs rounded-xl shadow-2xl p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-gray-700'>
         <div className='font-bold flex items-center justify-between border-b border-gray-700 pb-2 mb-2'>
-          <span>{label} Evidence</span>
+          <span>{t('tooltip.evidence_title', { label })}</span>
           {evidence.confidence && (
             <span
               className={`flex items-center gap-1 ${evidence.confidence > 0.8 ? 'text-emerald-400' : 'text-amber-400'}`}
@@ -39,7 +41,7 @@ export const EvidenceTooltip: React.FC<EvidenceTooltipProps> = ({ evidence, labe
 
         {evidence.source_url && (
           <div className='mb-2'>
-            <span className='text-gray-400 block mb-0.5'>Source:</span>
+            <span className='text-gray-400 block mb-0.5'>{t('tooltip.source')}</span>
             <span className='truncate block text-blue-300 max-w-full'>
               {new URL(evidence.source_url).hostname}
             </span>

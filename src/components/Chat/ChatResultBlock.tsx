@@ -140,7 +140,7 @@ export const ChatResultBlock: React.FC<ChatResultBlockProps> = ({
                   {(item.data.confidence?.overall || 0) > 85 && (
                     <div
                       className='flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-[10px] font-bold text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30'
-                      title='High Confidence'
+                      title={t('results.high_confidence', 'High Confidence')}
                     >
                       <Check className='w-3 h-3' />
                       {t('results.verified', 'Verified')}

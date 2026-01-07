@@ -344,7 +344,7 @@ export function ConfigurationPanel({ config = defaultConfig, onSave }: Configura
             <div className="space-y-2">
               <Label>Orchestrator Model</Label>
               <Select
-                value={localConfig.llmSettings.orchestratorModel}
+                value={localConfig.llmSettings.orchestratorModel || ''}
                 onValueChange={(value) => updateConfig('llmSettings', { orchestratorModel: value })}
               >
                 <SelectTrigger>
@@ -363,7 +363,7 @@ export function ConfigurationPanel({ config = defaultConfig, onSave }: Configura
             <div className="space-y-2">
               <Label>Sub-Agent Model</Label>
               <Select
-                value={localConfig.llmSettings.subAgentModel}
+                value={localConfig.llmSettings.subAgentModel || ''}
                 onValueChange={(value) => updateConfig('llmSettings', { subAgentModel: value })}
               >
                 <SelectTrigger>
@@ -387,7 +387,7 @@ export function ConfigurationPanel({ config = defaultConfig, onSave }: Configura
                 <p className="text-xs text-muted-foreground">Show real-time agent responses</p>
               </div>
               <Switch
-                checked={localConfig.llmSettings.enableStreaming}
+                checked={localConfig.llmSettings.enableStreaming ?? false}
                 onCheckedChange={(enableStreaming) => 
                   updateConfig('llmSettings', { enableStreaming })
                 }
@@ -396,10 +396,10 @@ export function ConfigurationPanel({ config = defaultConfig, onSave }: Configura
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Temperature: {localConfig.llmSettings.temperature}</Label>
+                <Label>Temperature: {localConfig.llmSettings.temperature ?? 0.3}</Label>
               </div>
               <Slider
-                value={[localConfig.llmSettings.temperature]}
+                value={[localConfig.llmSettings.temperature ?? 0.3]}
                 onValueChange={([temperature]) => 
                   updateConfig('llmSettings', { temperature })
                 }

@@ -141,7 +141,7 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({
           <div className='bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-4 shadow-sm relative overflow-hidden'>
             <div className='flex items-center gap-2 mb-2 text-indigo-700 dark:text-indigo-300 font-semibold text-sm'>
               <Database className='w-4 h-4' />
-              <span>The Oracle Found Similar Items ({memoryResults.length})</span>
+              <span>{t('composer.oracle_found', { count: memoryResults.length })}</span>
             </div>
             <div className='space-y-2'>
               {memoryResults.map((res: any, idx) => (
@@ -154,7 +154,7 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({
                     {res.content}
                   </p>
                   <div className='text-xs text-indigo-500 mt-1 font-mono'>
-                    {(res.similarity * 100).toFixed(1)}% Match
+                    {(res.similarity * 100).toFixed(1)} {t('composer.match')}
                   </div>
                 </div>
               ))}
@@ -180,7 +180,7 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={isRefining ? 'Ask a follow-up question...' : t('composer.placeholder')}
+            placeholder={isRefining ? t('composer.refine_placeholder') : t('composer.placeholder')}
             className='w-full min-h-[72px] p-5 pb-14 bg-transparent text-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none font-medium leading-relaxed rounded-[26px]'
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -292,7 +292,7 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({
                                     `}
                 >
                   <span className={isRefining ? 'animate-pulse' : ''}>✨</span>
-                  <span>Refine</span>
+                  <span>{t('composer.refine_btn')}</span>
                 </button>
               )}
             </div>
@@ -300,7 +300,7 @@ export const ResearchComposer: React.FC<ResearchComposerProps> = ({
             <div className='flex items-center gap-2'>
               <label
                 className='p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700/50 active:scale-95 duration-200'
-                title='Upload Context'
+                title={t('composer.upload_context')}
               >
                 <Paperclip className='w-4 h-4' />
                 <input

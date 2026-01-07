@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { db } from '../src/db/index.js';
 import { items } from '../src/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   try {
@@ -78,17 +78,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
       if (id) {
         result = await db.select().from(items).where(eq(items.id, id)).limit(1);
       } else {
-        // Drizzle doesn't support "not equal" cleanly via chaining sometimes, use `ne` or raw?
-        // Actually `eq` and `not(eq(...))`
-        // But let's verify if `items` query needs other filters.
-        // Original: `job_id = $1 AND status != 'archived'`
-        // Use `and(eq(items.jobId, jobId), ne(items.status, 'archived'))`
-        // I need to import `and`, `ne`.
-        const { and, ne } = await import('drizzle-orm');
         result = await db
           .select()
           .from(items)
-          .where(and(eq(items.jobId, jobId), ne(items.status, 'rejected'))); // status enum has 'rejected' not 'archived' in schema
+          .where(and(eq(items.jobId, jobId), ne(items.status, 'rejected')));
       }
 
       // Map to EnrichedItem (camelCase)
@@ -97,17 +90,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         jobId: row.jobId,
         status: row.status,
         data: row.data,
-        reviewReason: row.reviewReason || undefined, // review_reason vs reviewReason (schema defines helper? No, drizzle returns camelCase if mapped?)
-        // Schema definition: `reviewReason: text('review_reason')`?
-        // No, schema (step 447) says: `id`, `tenantId`, `jobId`, `mpn`...
-        // Does schema have `reviewReason`?
-        // Step 412 (original file) selected `review_reason`.
-        // Step 447 (schema View) does NOT show `reviewReason` in lines 78-100.
-        // I should check schema for `reviewReason`.
-        // If not in schema, Drizzle won't select it?
-        // I will assume standard mapping if it exists.
-        // Wait, original SQL selected it.
-        // I'll check schema line 100+ in a moment or just map what I can.
+        reviewReason: row.reviewReason || undefined,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       }));

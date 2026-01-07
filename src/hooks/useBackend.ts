@@ -51,7 +51,7 @@ const mapSKUFromBackend = (item: any): SKUData | null => {
     heroImage: d.product_image_main ? { url: d.product_image_main, qcStatus: 'pending' } : undefined,
     // Store raw claims/evidence for getEvidence()
     customFields: {
-        _rawClaims: { value: item, status: 'pending' } // Hack to pass raw EnrichedItem through
+        _rawClaims: { value: item, status: 'pending' } // Bridge to support legacy evidence viewers expecting full item object
     }
   };
 };
@@ -216,6 +216,54 @@ export function useResolveConflict() {
   });
 }
 
+// --- CONFIG HOOKS ---
+
+export function useSystemConfig() {
+  return useQuery({
+    queryKey: ['config'],
+    queryFn: async () => {
+      const data = await fetchJson('/api/config');
+      return {
+        budgetCaps: data.budgetCaps || {},
+        llmSettings: data.llmSettings || {},
+        sourcePriorities: data.sourcePriorities || [],
+      };
+    },
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useUpdateConfig() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { key: string; value: any }) => {
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Failed to save config');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['config'] });
+    },
+  });
+}
+
+export function usePublishItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, target }: { id: string; target: string }) => {
+      return api.publishItem(id, target);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['job'] });
+    },
+  });
+}
+
 // --- REAL DATA HOOK ---
 
 export function useRealData() {
@@ -223,8 +271,13 @@ export function useRealData() {
   const { data: stats } = useDashboardStats();
   const { data: auditEntries = [] } = useAuditLogs();
   
+  // Config Hook
+  const { data: systemConfig = { budgetCaps: {}, llmSettings: {}, sourcePriorities: [] } } = useSystemConfig();
+  const updateConfigMutation = useUpdateConfig();
+
   const createJobMutation = useCreateJob();
   const resolveConflictMutation = useResolveConflict();
+  const publishItemMutation = usePublishItem();
 
   // Selected Job State
   const [selectedJob, setSelectedJob] = React.useState<Job | null>(null);
@@ -245,9 +298,9 @@ export function useRealData() {
 
   const budgetData: BudgetData = {
     tokenUsage: totalTokens,
-    tokenLimit: 1000000, // 1M Token Limit
+    tokenLimit: 1000000, 
     estimatedCost: totalCost,
-    costLimit: 50.00, // $50 Limit
+    costLimit: 50.00, 
     apiCalls: totalCalls,
     apiCallLimit: 5000,
   };
@@ -268,7 +321,7 @@ export function useRealData() {
     }
   };
 
-  // Stubs for features not yet fully backend-wired but preventing crash
+  // Evidence selector helper (extracts from loaded skuData)
   const getEvidence = (fieldName: string) => {
       if (!skuData?.customFields?._rawClaims?.value) return [];
       
@@ -283,7 +336,7 @@ export function useRealData() {
           fieldName,
           value: String(ev.value || ''),
           sourceUrl: ev.source_url || '',
-          sourceType: (ev.method as any) || 'official', // Safe cast to string union
+          sourceType: (ev.method as any) || 'official', 
           snippet: ev.raw_snippet || '', 
           confidence: ev.confidence || 0,
           verified: ev.status === 'verified',
@@ -291,8 +344,6 @@ export function useRealData() {
       }];
   };
 
-  /* Stubs for now */
-  const triggerConflict = (field: string) => { /* Not implemented on backend */ }; 
   const addAuditEntry = async (entry: any) => {
     try {
       // Map frontend entry to backend schema
@@ -304,14 +355,20 @@ export function useRealData() {
         userId: entry.userId || 'system',
       };
       await api.createAuditEntry(payload);
-      // mutate('/api/audit'); // If we used SWR for audit logs
     } catch (e) {
       console.error('Failed to create audit entry', e);
     }
   };
-  const removeBlocker = (id: string) => { /* Blocker removal via resolveConflict */ };
-  const setSkuData = (update: any) => console.warn("Use resolveConflict to modify data", update);
-  const setSystemConfig = (config: any) => { /* System config is read-only in this view */ };
+  
+  // Real implementation of setSystemConfig
+  const setSystemConfig = (key: string, value: any) => {
+    updateConfigMutation.mutate({ key, value });
+  };
+  
+  const publishItem = async (id: string, target: string) => {
+      await publishItemMutation.mutateAsync({ id, target });
+  };
+  
   const getFilterCounts = () => ({
       all: jobs.length,
       running: jobs.filter((j: Job) => j.status === 'running').length,
@@ -325,12 +382,12 @@ export function useRealData() {
   return {
     jobs,
     selectedJob,
-    agentMessages, // Real-time!
+    agentMessages, 
     skuData,
     budgetData,
     isProcessing: selectedJob?.status === 'running',
     auditEntries,
-    systemConfig: { budgetCaps: {}, llmSettings: {}, sourcePriorities: [] } as any,
+    systemConfig,
     validationBlockers: React.useMemo(() => {
         if (!skuData?.customFields?._rawClaims?.value) return [];
         const item = skuData.customFields._rawClaims.value as unknown as EnrichedItem;
@@ -346,16 +403,13 @@ export function useRealData() {
             } as ValidationBlocker))
         );
     }, [skuData]),
-    activeConflict: null, // Could be derived from items with status 'needs_review'
     selectJob,
     createJob,
     getEvidence,
     getFilterCounts,
-    setSkuData,
     setSystemConfig,
-    triggerConflict,
     resolveConflict,
     addAuditEntry,
-    removeBlocker,
+    publishItem,
   };
 }

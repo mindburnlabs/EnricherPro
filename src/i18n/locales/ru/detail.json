@@ -6,7 +6,8 @@
     "evidence": "Доказательства и Источники",
     "related_products": "Связанные товары",
     "intelligence": "Интеллект",
-    "faq": "AI Support FAQ"
+    "faq": "AI Support FAQ",
+    "show_qa": "Показать {{count}} Q&A"
   },
   "header": {
     "model": "Модель",
@@ -147,11 +148,59 @@
     "origin": "Страна",
     "tn_ved": "ТН ВЭД"
   },
+  "tooltip": {
+    "evidence_title": "{{label}} Доказательство",
+    "source": "Источник:"
+  },
   "governance": {
     "conflict_detected": "Обнаружен Конфликт Данных",
     "conflict_desc": "Несколько доверенных источников сообщают разные значения. Выберите верное.",
     "confirm_current": "Подтвердить Текущее",
-    "select_alternative": "Выбрать Альтернативу"
+    "select_alternative": "Выбрать Альтернативу",
+    "choose_version": "Выберите, какую версию оставить.",
+    "current_version": "Текущая версия",
+    "new_candidate": "Новый кандидат",
+    "keep_current": "Оставить текущее",
+    "accept_new": "Принять новое",
+    "manual_merge": "Ручное слияние",
+    "ai_judge_title": "Рекомендация AI Судьи",
+    "ai_judge_accept": "Принять рекомендацию",
+    "ai_judge_dismiss": "Скрыть",
+    "ask_judge": "Спросить AI Судью",
+    "analyzing": "Анализ..."
+  },
+  "drawer": {
+    "verified_from": "Проверено по {{count}} источникам",
+    "verified_from_one": "Проверено по {{count}} источнику",
+    "verified_from_few": "Проверено по {{count}} источникам",
+    "conflict": "КОНФЛИКТ",
+    "verified": "ПОДТВЕРЖДЕНО",
+    "unverified": "НЕ ПОДТВЕРЖДЕНО",
+    "conf_short": "{{val}}% Увер.",
+    "captured_semantic": "Доказательство извлечено семантически.",
+    "method": "Метод: {{method}}",
+    "confirm": "Подтвердить",
+    "reject": "Отклонить",
+    "unknown_source": "Неизвестный источник"
+  },
+  "judge": {
+    "title": "Рекомендация AI Судьи",
+    "accept": "Принять рекомендацию",
+    "dismiss": "Скрыть",
+    "ask": "Спросить AI Судью",
+    "analyzing": "Анализ..."
+  },
+  "actions": {
+    "confirm": "Подтвердить",
+    "reject": "Отклонить",
+    "keep_current": "Оставить текущее",
+    "accept_new": "Принять новое",
+    "manual_merge": "Ручное слияние (Advanced)"
+  },
+  "labels": {
+    "current_version": "Текущая версия",
+    "new_candidate": "Новый кандидат",
+    "unknown_source": "Неизвестный источник"
   },
   "specs": {
     "title": "ХАРАКТЕРИСТИКИ",

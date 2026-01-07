@@ -5,23 +5,24 @@ import { useResearchStream } from '../../hooks/useResearchStream.js';
 import { ChatMessage } from './types.js';
 import { ThinkingBlock } from './ThinkingBlock.js';
 import { ChatResultBlock } from './ChatResultBlock.js';
-import { triggerResearch, approveItem } from '../../lib/api.js';
+import { triggerResearch, approveItem, publishItem } from '../../lib/api.js';
 import { EnrichedItem } from '../../types/domain.js';
 import { User } from 'lucide-react';
 import { useSettingsStore } from '../../stores/settingsStore.js';
 import { ConflictResolverModal } from '../Research/ConflictResolverModal.js';
 
 interface ChatInterfaceProps {
+  initialJobId?: string | null;
   onJobCreated?: (jobId: string) => void;
 }
 
 import { ItemDetail } from '../Research/ItemDetail.js';
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onJobCreated }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialJobId, onJobCreated }) => {
   const { t } = useTranslation('common');
   const config = useSettingsStore();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(initialJobId || null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // ... (State declarations same as before) ...
@@ -73,6 +74,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onJobCreated }) =>
   }, [isResizing, resize, stopResizing]);
 
   // ... (Effects same as before) ...
+
+  useEffect(() => {
+    if (initialJobId) {
+      setActiveJobId(initialJobId);
+      startStream(initialJobId);
+      // We might want to construct a "fake" history message if the stream doesn't provide it
+      // For now, the ThinkingBlock and Logs will be populated by the stream
+      setMessages([{
+        id: 'restored-session',
+        role: 'assistant',
+        content: '',
+        status: 'running', 
+        steps: [],
+        timestamp: Date.now()
+      }]);
+    }
+  }, [initialJobId, startStream]);
 
   const handleSearch = async (
     input: string | string[],
@@ -174,9 +192,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onJobCreated }) =>
     }
   };
 
-  const handleApprove = async (itemId: string) => {
+  const handleApprove = async (itemId: string, target?: string) => {
     try {
-      await approveItem(itemId);
+      if (target) {
+        await publishItem(itemId, target);
+      } else {
+        await approveItem(itemId);
+      }
+      
       // Ideally update local state too to remove "Needs Review" badge
       setMessages((prev) =>
         prev.map((msg) => {
@@ -193,8 +216,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onJobCreated }) =>
         setSelectedResearchItem((prev) => (prev ? { ...prev, status: 'published' as any } : null));
       }
     } catch (e) {
-      console.error('Failed to approve item', e);
-      alert('Failed to approve item. Please try again.');
+      console.error('Failed to approve/publish item', e);
+      alert('Failed to process item. Please try again.');
     }
   };
 

@@ -1,0 +1,37 @@
+{
+  "title": "Задачи обогащения",
+  "subtitle": "Создавайте и управляйте задачами по обогащению данных",
+  "search_placeholder": "Введите строку поставщика или выберите фильтр...",
+  "new_job": "Новая задача",
+  "bulk_csv": "CSV Импорт",
+  "filters": {
+    "all": "Все",
+    "running": "Выполняется",
+    "completed": "Готово",
+    "failed": "Ошибка",
+    "needs_review": "На проверку",
+    "blocked": "Заблокировано",
+    "ready_to_publish": "К публикации"
+  },
+  "table": {
+    "input": "Входная строка",
+    "mpn": "MPN",
+    "brand": "Бренд",
+    "status": "Статус",
+    "time": "Время"
+  },
+  "budget": {
+    "title": "Бюджет",
+    "tokens": "Токены",
+    "cost": "Стоимость",
+    "api_calls": "API Вызовы"
+  },
+  "status": {
+    "running": "В работе",
+    "completed": "Завершено",
+    "failed": "Сбой",
+    "needs_review": "Проверка",
+    "blocked": "Блок",
+    "ready_to_publish": "Публикация"
+  }
+}

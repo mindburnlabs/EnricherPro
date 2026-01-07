@@ -17,8 +17,8 @@ import { ItemsListSidebar } from './ItemsListSidebar.js';
 
 interface AppLayoutProps {
   children: React.ReactNode;
-  currentView: 'home' | 'dashboard' | 'audit' | 'config';
-  onNavigate: (view: 'home' | 'dashboard' | 'audit' | 'config') => void;
+  currentView: 'home' | 'jobs' | 'audit' | 'config' | 'research';
+  onNavigate: (view: 'home' | 'jobs' | 'audit' | 'config' | 'research') => void;
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children, currentView, onNavigate }) => {
@@ -37,12 +37,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, currentView, onN
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // Mock History Data
-  const history = [
-    { id: 1, title: 'HP CF226X Specs', date: '2h ago' },
-    { id: 2, title: 'Canon 057 Yield', date: '5h ago' },
-    { id: 3, title: 'Brother TN-2420', date: '1d ago' },
-  ];
+
 
   // Helper for Breadcrumbs
   const getBreadcrumbs = () => {
@@ -58,7 +53,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, currentView, onN
     icon: Icon,
     label,
   }: {
-    view: 'home' | 'dashboard' | 'audit' | 'config';
+    view: 'home' | 'jobs' | 'audit' | 'config' | 'research';
     icon: any;
     label: string;
   }) => (
@@ -130,9 +125,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, currentView, onN
           <div className='space-y-1'>
             <NavItem view='home' icon={Search} label={t('nav.search', 'Search')} />
             <NavItem
-              view='dashboard'
+              view='jobs'
               icon={LayoutDashboard}
-              label={t('nav.dashboard', 'Dashboard')}
+              label={t('nav.jobs', 'Jobs')}
             />
             <NavItem view='audit' icon={FileText} label={t('nav.audit', 'Audit Log')} />
             <NavItem view='config' icon={Settings} label={t('nav.config', 'Configuration')} />

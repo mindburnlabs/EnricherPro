@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Clock, Loader2, AlertCircle } from 'lucide-react';
+import { useJobs } from '@/hooks/useBackend';
 
 interface SidebarItemProps {
-  date: string;
+  date: Date;
   label: string;
   status: string;
   onClick: () => void;
@@ -19,8 +20,8 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ label, date, status, onClick 
     />
     <div className='min-w-0 flex-1'>
       <div className='text-sm text-primary truncate'>{label}</div>
-      <div className='text-[10px] text-primary-subtle truncate flex items-center gap-1'>
-        {new Date(date).toLocaleDateString()}
+      <div className='text-left text-[10px] text-primary-subtle truncate flex items-center gap-1'>
+        {date.toLocaleDateString()}
         {status === 'failed' && <AlertCircle size={8} className='text-red-500' />}
       </div>
     </div>
@@ -28,45 +29,29 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ label, date, status, onClick 
 );
 
 export const ItemsListSidebar: React.FC = () => {
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: jobs, isLoading } = useJobs();
 
-  useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        // We use jobs endpoint for now to get the recent "searches"
-        const res = await fetch('/api/jobs?limit=10');
-        if (res.ok) {
-          const data = await res.json();
-          setItems(data.jobs || []);
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchItems();
-  }, []);
-
-  if (loading)
+  if (isLoading)
     return (
       <div className='px-3 py-2 text-xs text-primary-subtle flex gap-2'>
         <Loader2 size={12} className='animate-spin' /> Loading...
       </div>
     );
+  
+  // Show last 5
+  const recentJobs = (jobs || []).slice(0, 5);
 
   return (
     <>
-      {items.map((job) => (
+      {recentJobs.map((job) => (
         <SidebarItem
           key={job.id}
-          label={job.inputRaw}
-          date={job.startTime}
+          label={job.inputString}
+          date={job.createdAt}
           status={job.status}
           onClick={() => {
             // In a real app, navigation logic here
-            window.location.href = `/?jobId=${job.id}`;
+            // window.location.href = `/?jobId=${job.id}`;
           }}
         />
       ))}

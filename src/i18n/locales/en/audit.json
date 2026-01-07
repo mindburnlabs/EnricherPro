@@ -1,0 +1,20 @@
+{
+  "title": "Audit Log",
+  "subtitle": "Track all data changes and user actions for compliance",
+  "search_placeholder": "Search by field name or value...",
+  "filters": {
+    "field_locked": "Field Locked",
+    "manual_override": "Manual Override",
+    "conflict_resolved": "Conflict Resolved",
+    "agent_update": "Agent Update"
+  },
+  "labels": {
+    "timeline": "Audit Timeline",
+    "timeline_desc": "Complete history of all data modifications with before/after values",
+    "before": "Before",
+    "after": "After",
+    "empty": "Empty",
+    "source": "Source"
+  },
+  "empty_state": "No audit entries found"
+}

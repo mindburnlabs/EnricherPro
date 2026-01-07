@@ -88,3 +88,10 @@ export const createAuditEntry = async (entry: any) => {
     headers: { 'Content-Type': 'application/json' },
   }).then((r) => r.json());
 };
+
+export const publishItem = async (itemId: string, target: string) => {
+  return fetch(`/api/items?action=approve&id=${itemId}&target=${target}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  }).then((r) => r.json());
+};

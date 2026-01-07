@@ -15,7 +15,7 @@ export class FallbackScraper {
    * Mimics the Firecrawl 'scrape' response structure.
    */
   static async scrape(url: string): Promise<any> {
-    console.log(`[FallbackScraper] Attempting local scrape for: ${url}`);
+    // Attempting local scrape for: url
 
     try {
       // 1. Validate URL

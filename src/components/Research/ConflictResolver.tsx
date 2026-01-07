@@ -52,7 +52,7 @@ export const ConflictResolver: React.FC<ConflictResolverProps> = ({
         {/* Column A: Current/Primary Value */}
         <div className='bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700 relative group hover:border-blue-400 transition-colors'>
           <div className='absolute top-2 right-2 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-[10px] rounded text-gray-500'>
-            Current
+            {t('labels.current_version')}
           </div>
           <div className='text-sm font-bold text-gray-900 dark:text-gray-100 mb-1 break-words'>
             {String(currentValue.value)}
@@ -69,7 +69,7 @@ export const ConflictResolver: React.FC<ConflictResolverProps> = ({
                 {new URL(currentValue.source).hostname}
               </a>
             ) : (
-              <span>Unknown Source</span>
+              <span>{t('drawer.unknown_source')}</span>
             )}
             <span>•</span>
             <span>{Math.round(currentValue.confidence * 100)}% Conf.</span>
@@ -90,7 +90,7 @@ export const ConflictResolver: React.FC<ConflictResolverProps> = ({
             className='bg-white dark:bg-gray-800 p-3 rounded border border-amber-200 dark:border-amber-900/50 relative group hover:border-amber-400 transition-colors'
           >
             <div className='absolute top-2 right-2 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-[10px] rounded text-amber-700 dark:text-amber-400'>
-              Conflict
+              {t('drawer.conflict')}
             </div>
             <div className='text-sm font-bold text-gray-900 dark:text-gray-100 mb-1 break-words'>
               {String(conflict.value)}
@@ -107,7 +107,7 @@ export const ConflictResolver: React.FC<ConflictResolverProps> = ({
                   {new URL(conflict.source.url).hostname}
                 </a>
               ) : (
-                <span>Unknown Source</span>
+                <span>{t('drawer.unknown_source')}</span>
               )}
               <span>•</span>
               <span>{Math.round(conflict.confidence * 100)}% Conf.</span>

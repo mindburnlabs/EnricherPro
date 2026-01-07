@@ -2,9 +2,11 @@ import React from 'react';
 import { Activity, DollarSign, CloudLightning } from 'lucide-react';
 
 import { useResearchStream } from '../../hooks/useResearchStream.js';
+import { useRealData } from '@/hooks/useBackend';
 
 export const StatusBar: React.FC = () => {
   const { status, steps } = useResearchStream();
+  const { budgetData } = useRealData();
 
   const isRunning = status === 'running';
   const progress =
@@ -48,14 +50,14 @@ export const StatusBar: React.FC = () => {
           title='Tokens used in current session'
         >
           <Activity size={12} />
-          12.5k / 50k
+          {budgetData.tokenUsage.toLocaleString()} / {budgetData.tokenLimit.toLocaleString()}
         </span>
         <span
           className='flex items-center gap-1 hover:text-primary transition-colors cursor-help'
           title='Estimated cost'
         >
           <DollarSign size={12} />
-          0.023
+          {budgetData.estimatedCost.toFixed(3)}
         </span>
       </div>
     </div>

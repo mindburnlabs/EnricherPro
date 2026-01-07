@@ -3,6 +3,7 @@ import { Search, Upload, ArrowRight, Zap, Shield, Clock, Box } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface HomeScreenProps {
   onStartEnrichment: (supplierString: string) => void;
@@ -16,27 +17,28 @@ const suggestions = [
   "Brother TN-2420 Toner Cartridge",
 ];
 
-const features = [
-  {
-    icon: Zap,
-    title: "AI-Powered Extraction",
-    description: "Automatically extract MPN, brand, and specs from any supplier string",
-  },
-  {
-    icon: Shield,
-    title: "Multi-Source Verification",
-    description: "Cross-reference data from official sites, marketplaces, and PDFs",
-  },
-  {
-    icon: Clock,
-    title: "Real-Time Processing",
-    description: "Watch agents work in real-time with full transparency",
-  },
-];
-
 export function HomeScreen({ onStartEnrichment, onBulkUpload }: HomeScreenProps) {
+  const { t } = useTranslation('home');
   const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+
+  const features = [
+    {
+      icon: Zap,
+      title: t('features.extraction_title', "AI-Powered Extraction"),
+      description: t('features.extraction_desc', "Automatically extract MPN, brand, and specs from any supplier string"),
+    },
+    {
+      icon: Shield,
+      title: t('features.verification_title', "Multi-Source Verification"),
+      description: t('features.verification_desc', "Cross-reference data from official sites, marketplaces, and PDFs"),
+    },
+    {
+      icon: Clock,
+      title: t('features.realtime_title', "Real-Time Processing"),
+      description: t('features.realtime_desc', "Watch agents work in real-time with full transparency"),
+    },
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,19 +59,18 @@ export function HomeScreen({ onStartEnrichment, onBulkUpload }: HomeScreenProps)
         <div className="text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
             <Box className="w-4 h-4" />
-            <span>AI Data Enrichment</span>
+            <span>{t('badge', 'AI Data Enrichment')}</span>
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
               beta
             </Badge>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-            Enrich product data
+            {t('title_prefix', 'Enrich product data')}
             <br />
-            <span className="text-primary">in seconds</span>
+            <span className="text-primary">{t('title_suffix', 'in seconds')}</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Paste a supplier string and let our AI agents extract, verify, and format 
-            product data for any marketplace.
+            {t('subtitle', 'Paste a supplier string and let our AI agents extract, verify, and format product data for any marketplace.')}
           </p>
         </div>
 
@@ -94,7 +95,7 @@ export function HomeScreen({ onStartEnrichment, onBulkUpload }: HomeScreenProps)
                 onChange={(e) => setInputValue(e.target.value)}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                placeholder="Enter supplier string (e.g., 'HP CE505X Black LaserJet Toner 80A')"
+                placeholder={t('search_placeholder', "Enter supplier string (e.g., 'HP CE505X Black LaserJet Toner 80A')")}
                 className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground outline-none text-lg"
               />
               <Button 
@@ -103,7 +104,7 @@ export function HomeScreen({ onStartEnrichment, onBulkUpload }: HomeScreenProps)
                 disabled={!inputValue.trim()}
                 className="ml-4 rounded-xl px-6 gap-2"
               >
-                <span>Enrich</span>
+                <span>{t('enrich_btn', 'Enrich')}</span>
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
@@ -118,14 +119,14 @@ export function HomeScreen({ onStartEnrichment, onBulkUpload }: HomeScreenProps)
               className="text-muted-foreground hover:text-foreground gap-2"
             >
               <Upload className="w-4 h-4" />
-              <span>Or upload CSV for bulk processing</span>
+              <span>{t('bulk_upload', 'Or upload CSV for bulk processing')}</span>
             </Button>
           </div>
         </form>
 
         {/* Suggestions */}
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground text-center">Try an example:</p>
+          <p className="text-sm text-muted-foreground text-center">{t('try_example', 'Try an example:')}</p>
           <div className="flex flex-wrap justify-center gap-2">
             {suggestions.map((suggestion) => (
               <button

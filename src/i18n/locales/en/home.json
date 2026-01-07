@@ -1,0 +1,18 @@
+{
+  "badge": "AI Data Enrichment",
+  "title_prefix": "Enrich product data",
+  "title_suffix": "in seconds",
+  "subtitle": "Paste a supplier string and let our AI agents extract, verify, and format product data for any marketplace.",
+  "search_placeholder": "Enter supplier string (e.g., 'HP CE505X Black LaserJet Toner 80A')",
+  "enrich_btn": "Enrich",
+  "bulk_upload": "Or upload CSV for bulk processing",
+  "try_example": "Try an example:",
+  "features": {
+    "extraction_title": "AI-Powered Extraction",
+    "extraction_desc": "Automatically extract MPN, brand, and specs from any supplier string",
+    "verification_title": "Multi-Source Verification",
+    "verification_desc": "Cross-reference data from official sites, marketplaces, and PDFs",
+    "realtime_title": "Real-Time Processing",
+    "realtime_desc": "Watch agents work in real-time with full transparency"
+  }
+}

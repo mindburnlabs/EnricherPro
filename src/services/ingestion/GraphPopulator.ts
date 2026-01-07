@@ -25,7 +25,8 @@ export class GraphPopulator {
     entitiesCreated: number;
     edgesCreated: number;
   }> {
-    console.log(`[GraphPopulator] Starting population for item ${itemId}`);
+
+    // Starting population for item itemId
 
     let entitiesCreated = 0;
     let edgesCreated = 0;
@@ -77,9 +78,8 @@ export class GraphPopulator {
         await this.linkEvidenceFromClaims(tx, itemId, consumableEntity.id);
       });
 
-      console.log(
-        `[GraphPopulator] Completed: ${entitiesCreated} entities, ${edgesCreated} edges created`,
-      );
+
+      // Completed: entitiesCreated entities, edgesCreated edges created
     } catch (error) {
       console.error('[GraphPopulator] Error during population:', error);
       throw error;

@@ -41,7 +41,7 @@ export class SynthesisAgent {
       effectiveModel = 'openrouter/auto'; // Dynamic routing to available models
     }
 
-    console.log(`[SynthesisAgent] Extracting with model: ${effectiveModel}`);
+
 
     const systemPromptEn =
       promptOverride ||

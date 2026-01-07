@@ -15,9 +15,9 @@ export class CompatibilityGraphBuilder {
   ) {
     if (!printers || printers.length === 0) return;
 
-    console.log(
-      `[CompatibilityGraphBuilder] Processing ${printers.length} printers for SKU ${skuId}`,
-    );
+    if (!printers || printers.length === 0) return;
+
+    // Processing printers.length printers for SKU skuId
 
     for (const printerRaw of printers) {
       const printerName = printerRaw.trim();

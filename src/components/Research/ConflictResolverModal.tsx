@@ -17,7 +17,7 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
   onResolve,
   onCancel,
 }) => {
-  const { t } = useTranslation(['common']);
+  const { t } = useTranslation(['detail', 'common']);
   const [isJudging, setIsJudging] = useState(false);
   const [judgeResult, setJudgeResult] = useState<{
     recommendation: 'keep_current' | 'replace';
@@ -64,9 +64,9 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
               <AlertTriangle className='w-6 h-6' />
             </div>
             <div>
-              <h2 className='text-xl font-bold text-gray-900 dark:text-white'>Conflict Detected</h2>
+              <h2 className='text-xl font-bold text-gray-900 dark:text-white'>{t('governance.conflict_detected', 'Conflict Detected')}</h2>
               <p className='text-sm text-amber-700 dark:text-amber-400'>
-                Please choose which version to keep.
+                {t('governance.choose_version', 'Please choose which version to keep.')}
               </p>
             </div>
           </div>
@@ -82,10 +82,10 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
             <div className='space-y-4'>
               <div className='flex items-center justify-between'>
                 <h3 className='font-bold text-gray-500 uppercase tracking-wider text-xs'>
-                  Current Version
+                  {t('labels.current_version')}
                 </h3>
                 <span className='text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-gray-600 dark:text-gray-300'>
-                  {getConfidence(current)}% Conf.
+                  {t('drawer.conf_short', { val: Math.round(getConfidence(current)) })}
                 </span>
               </div>
               <div className='border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-800/50'>
@@ -103,7 +103,7 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
                   <div>
                     <label className='text-[10px] text-gray-400'>Specs</label>
                     <div className='text-sm'>
-                      Yield: {current.data.tech_specs.yield.value || '-'}{' '}
+                      {t('specs.yield')}: {current.data.tech_specs.yield.value || '-'}{' '}
                       {current.data.tech_specs.yield.unit || ''}
                     </div>
                   </div>
@@ -113,7 +113,7 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
                 onClick={() => onResolve('keep_current')}
                 className='w-full py-3 rounded-xl border border-gray-200 dark:border-gray-700 font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors'
               >
-                Keep Current
+                {t('actions.keep_current')}
               </button>
             </div>
 
@@ -121,10 +121,10 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
             <div className='space-y-4'>
               <div className='flex items-center justify-between'>
                 <h3 className='font-bold text-emerald-600 uppercase tracking-wider text-xs'>
-                  New Candidate
+                  {t('labels.new_candidate')}
                 </h3>
                 <span className='text-xs bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded text-emerald-600 dark:text-emerald-400'>
-                  {getConfidence(candidate)}% Conf.
+                  {t('drawer.conf_short', { val: Math.round(getConfidence(candidate)) })}
                 </span>
               </div>
               <div className='border-2 border-emerald-500/20 rounded-xl p-4 bg-emerald-50/10 dark:bg-emerald-900/10'>
@@ -142,7 +142,7 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
                   <div>
                     <label className='text-[10px] text-gray-400'>Specs</label>
                     <div className='text-sm'>
-                      Yield: {candidate.data.tech_specs.yield.value || '-'}{' '}
+                      {t('specs.yield')}: {candidate.data.tech_specs.yield.value || '-'}{' '}
                       {candidate.data.tech_specs.yield.unit || ''}
                     </div>
                   </div>
@@ -153,7 +153,7 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
                 className='w-full py-3 rounded-xl bg-emerald-600 text-white font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-500 transition-colors flex items-center justify-center gap-2'
               >
                 <Check className='w-4 h-4' />
-                Accept New Version
+                {t('actions.accept_new')}
               </button>
             </div>
           </div>
@@ -168,7 +168,7 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
               </div>
               <div className='flex-1'>
                 <h4 className='font-bold text-indigo-900 dark:text-indigo-300 mb-1'>
-                  AI Judge Recommendation
+                  {t('judge.title', 'AI Judge Recommendation')}
                 </h4>
                 <p className='text-sm text-indigo-700 dark:text-indigo-400 mb-3'>
                   {judgeResult.reason}
@@ -178,13 +178,13 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
                     onClick={() => onResolve(judgeResult.recommendation)}
                     className='px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow hover:bg-indigo-500 transition-colors'
                   >
-                    Accept Recommendation
+                    {t('judge.accept', 'Accept Recommendation')}
                   </button>
                   <button
                     onClick={() => setJudgeResult(null)}
                     className='px-3 py-1.5 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-lg transition-colors'
                   >
-                    Dismiss
+                    {t('judge.dismiss', 'Dismiss')}
                   </button>
                 </div>
               </div>
@@ -200,7 +200,7 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
             title='Not implemented fully in MVP'
           >
             <Split className='w-4 h-4' />
-            Manual Merge (Advanced)
+            {t('actions.manual_merge')}
           </button>
 
           <div className='flex-1' />
@@ -215,7 +215,7 @@ export const ConflictResolverModal: React.FC<ConflictResolverModalProps> = ({
             ) : (
               <Gavel className='w-4 h-4' />
             )}
-            {isJudging ? 'Analyzing...' : 'Ask AI Judge'}
+            {isJudging ? t('judge.analyzing') : t('judge.ask')}
           </button>
         </div>
       </div>

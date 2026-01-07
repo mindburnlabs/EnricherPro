@@ -1,19 +1,12 @@
-import {
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-  jsonb,
-  boolean,
-  integer,
-  index,
-  vector,
-  numeric,
-  uniqueIndex,
-  primaryKey,
-  check,
-} from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, jsonb, integer, boolean, numeric, index, unique, vector, uniqueIndex, primaryKey, check } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
+
+// --- System Configuration ---
+export const systemConfig = pgTable('system_config', {
+  key: text('key').primaryKey(), // e.g., 'llmSettings', 'budgetCaps'
+  value: jsonb('value').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
 
 // --- JOBS (The "Deep Research" Session) ---
 export const jobs = pgTable('jobs', {

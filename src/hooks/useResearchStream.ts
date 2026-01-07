@@ -82,7 +82,7 @@ export const useResearchStream = (): UseResearchStreamResult => {
       eventSourceRef.current = eventSource;
 
       eventSource.onopen = () => {
-        console.log('[SSE] Connected');
+        // Connected
       };
 
       eventSource.onmessage = async (event) => {

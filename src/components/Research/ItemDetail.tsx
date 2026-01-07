@@ -9,12 +9,13 @@ import { ConflictResolver } from './ConflictResolver.js';
 import { PenTool, RefreshCw, Clock } from 'lucide-react';
 import { BlockersPanel } from '../sku/BlockersPanel.js';
 import { ConfidenceRing } from '../common/ConfidenceRing.js';
+import { PublishModal } from '../sku/PublishModal.js';
 
 interface ItemDetailProps {
   item: EnrichedItem | null;
   open: boolean;
   onClose: () => void;
-  onApprove: (id: string) => void;
+  onApprove: (id: string, target?: string) => void;
   onUpdate?: (id: string, field: string, value: any, source: string) => void;
 }
 
@@ -77,6 +78,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({
 }) => {
   const { t } = useTranslation(['detail', 'common']);
   const [citationField, setCitationField] = useState<string | null>(null);
+  const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [manualEntryField, setManualEntryField] = useState<{
     key: string;
     label: string;
@@ -191,7 +193,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({
       {/* Sticky Action Bar */}
       <div className='flex-none p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 flex justify-end'>
         <button
-          onClick={() => onApprove(item.id)}
+          onClick={() => setIsPublishOpen(true)}
           disabled={(item.status as any) === 'published'}
           className={`px-6 py-2 rounded-lg font-bold shadow-md transition-all flex items-center gap-2 ${
             (item.status as any) === 'published'
@@ -200,7 +202,7 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({
           }`}
         >
           <Check className='w-4 h-4' />{' '}
-          {(item.status as any) === 'published' ? t('header.approved') : t('header.approve')}
+          {(item.status as any) === 'published' ? t('header.approved') : t('header.publish', 'Publish')}
         </button>
       </div>
 
@@ -314,7 +316,11 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({
               key={key}
               fieldKey={key}
               evidence={val as any}
-              onResolve={(value, method) => console.log('Resolved', key, value, method)} // Placeholder handler
+              onResolve={(value, method) => {
+                if (onUpdate && item) {
+                  onUpdate(item.id, key, value, method === 'manual' ? 'manual_override' : 'source_verification');
+                }
+              }}
             />
           ))}
 
@@ -546,7 +552,9 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({
                   <span className='w-1 h-4 bg-purple-500 rounded-full grayscale group-hover:grayscale-0 transition-all'></span>
                   {t('faq')}
                 </h3>
-                <span className='text-xs text-gray-400 underline'>Show {data.faq.length} Q&A</span>
+                <span className='text-xs text-gray-400 underline'>
+                  {t('tabs.show_qa', { count: data.faq.length, defaultValue: 'Show {{count}} Q&A' })}
+                </span>
               </summary>
               <div className='space-y-3 mt-4 animate-in slide-in-from-top-2'>
                 {data.faq.map((item, idx) => (
@@ -608,6 +616,16 @@ export const ItemDetail: React.FC<ItemDetailProps> = ({
         fieldLabel={manualEntryField?.label || ''}
         fieldKey={manualEntryField?.key || ''}
         currentValue={manualEntryField?.current}
+      />
+
+      <PublishModal
+        isOpen={isPublishOpen}
+        onClose={() => setIsPublishOpen(false)}
+        item={item}
+        onPublish={async (target) => {
+           await onApprove(item.id, target);
+           setIsPublishOpen(false);
+        }}
       />
     </div>
   );
